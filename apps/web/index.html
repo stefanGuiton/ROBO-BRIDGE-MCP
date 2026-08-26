@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="ROBO-SIM-MCP: an agent-native SCARA robotics simulation workcell.">
+  <title>ROBO-SIM-MCP</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">AGENT-NATIVE ROBOTICS</p>
+        <h1>ROBO-SIM-MCP</h1>
+      </div>
+      <div class="header-status">
+        <span class="live-dot"></span>
+        <span id="webmcpStatus">Checking WebMCP…</span>
+      </div>
+    </header>
+
+    <section id="viewport" aria-label="Interactive SCARA workcell"></section>
+
+    <aside class="panel status-panel">
+      <div class="panel-title-row">
+        <div>
+          <p class="eyebrow">SHARED STATE</p>
+          <h2>Robot</h2>
+        </div>
+        <span class="chip">SCARA</span>
+      </div>
+      <dl class="readouts">
+        <div><dt>θ₁</dt><dd data-readout="theta">—</dd></div>
+        <div><dt>θ₂</dt><dd data-readout="psi">—</dd></div>
+        <div><dt>X</dt><dd data-readout="x">—</dd></div>
+        <div><dt>Y</dt><dd data-readout="y">—</dd></div>
+        <div><dt>Z</dt><dd data-readout="z">—</dd></div>
+        <div><dt>Gripper</dt><dd data-readout="gripper">—</dd></div>
+        <div><dt>Mode</dt><dd data-readout="mode">—</dd></div>
+        <div><dt>Physics</dt><dd data-readout="physics">checking…</dd></div>
+      </dl>
+      <p class="interaction-hint">Drag the gripper sideways for XY. Hold Shift or drag vertically for Z.</p>
+    </aside>
+
+    <aside class="panel scene-panel">
+      <div class="panel-title-row">
+        <div>
+          <p class="eyebrow">STRUCTURED WORLD</p>
+          <h2>Scene</h2>
+        </div>
+      </div>
+      <div id="sceneList" class="scene-list"></div>
+      <label class="quality-row">Quality
+        <select id="quality">
+          <option value="balanced" selected>Balanced</option>
+          <option value="performance">Performance</option>
+          <option value="cinematic">Cinematic</option>
+        </select>
+      </label>
+    </aside>
+
+    <section class="panel task-panel">
+      <div class="task-heading">
+        <div>
+          <p class="eyebrow">HUMAN + AGENT WORKFLOW</p>
+          <h2>Pick and place</h2>
+        </div>
+        <span id="planStatus" class="plan-status" data-kind="neutral">Ready</span>
+      </div>
+      <div class="button-grid">
+        <button id="planRed" class="button primary">Plan red cube</button>
+        <button id="planBlue" class="button primary">Plan blue cube</button>
+        <button id="simulate" class="button">Validate physics</button>
+        <button id="execute" class="button success">Execute</button>
+        <button id="gripperOpen" class="button compact">Open gripper</button>
+        <button id="gripperClose" class="button compact">Close gripper</button>
+        <button id="fitView" class="button compact">Fit view</button>
+        <button id="reset" class="button compact danger">Reset</button>
+      </div>
+      <ol id="operationLog" class="operation-log" aria-live="polite"></ol>
+    </section>
+
+    <div class="bottom-note">WebMCP tools call the same controller as manual interaction. Invalid motion holds the last accepted pose.</div>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+# Pre-existing work and challenge provenance
+
+## Purpose
+
+This file separates work that existed before the 2026 OpenAI WebMCP Challenge from new ROBO-SIM-MCP work. Update it before public release and pin every source to exact commits.
+
+## Private source reviewed
+
+Private repository: `stefanGuiton/SCARA-SIM`
+
+Reviewed branches:
+
+- `main`
+- `codex/phase1-benchy-lab`
+
+Challenge-relevant review point visible through private GitHub access:
+
+- PR #1 head observed during foundation work: `e3ed10db526afa697cdd06cb8145a2d05a7a7a3d`
+- earlier documented checkpoint: `596f32c4a4ac2e69a0136de126f21d900e0fc27f`
+- `main` baseline shown by PR #1: `43b2d309dc4523b3cc3b12bc49a8e431915c90c6`
+
+These values must be rechecked before submission.
+
+## Observed pre-existing capabilities
+
+Before ROBO-SIM-MCP foundation work, SCARA-SIM already contained or documented:
+
+- browser SCARA geometry and scene layout;
+- Three.js r185 reference runtime;
+- PBR metallic materials;
+- HDR/PMREM environment lighting;
+- PBR Neutral tone mapping;
+- shadows, SSAO, FXAA, MSAA, and quality controls;
+- orbit, pan, fit, play, and path controls;
+- end-effector XY dragging and Z dragging;
+- exact SCARA link lengths `340.313 mm` and `249.960 mm`;
+- fail-closed RRF-style SCARA state integration;
+- structured Cartesian and joint request functions;
+- isolated path preview;
+- deterministic kinematics tests and parity evidence;
+- a scene-generic rendering seam;
+- photo-booth lighting research and implementation work.
+
+## New work in this foundation ZIP
+
+The following was created as ROBO-SIM-MCP foundation work:
+
+- standalone public-safe project structure;
+- clean analytic SCARA core written without RepRapFirmware source;
+- shared `RobotController` for manual and agent actions;
+- structured workcell scene model;
+- two-finger gripper model and state;
+- pick-and-place waypoint generator;
+- nine WebMCP tool definitions using `document.modelContext`;
+- browser/physics protocol;
+- FastAPI service;
+- deterministic physics fallback;
+- Newton integration boundary;
+- challenge master plan;
+- test suites and verification script.
+
+## Private repository extraction limitation
+
+The build VM could inspect the private repository through the connected GitHub tool, but it could not clone the private repository into the container. Direct network access from the container was unavailable. Therefore, this ZIP contains a clean standalone foundation and does not contain the full SCARA-SIM repository.
+
+On the target PC, clone or open the private SCARA-SIM checkout and perform a file-by-file extraction review before public release.
+
+## Public repository rule
+
+Do not publish:
+
+- the full private SCARA-SIM repository;
+- RepRapFirmware source or archives;
+- private paths, logs, credentials, or machine configuration;
+- assets without verified redistribution rights;
+- claims that unfinished SCARA-SIM work was completed before the challenge.
+
+## Required pre-submission evidence
+
+Create a table with:
+
+- public file path;
+- originating private path, if any;
+- original commit SHA;
+- original creation date;
+- challenge modification date;
+- licence basis;
+- reviewer decision.

@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!*.env.example
+evidence/local/
+physics/newton-service/output/
+
+# Preserved transfer/reference inputs (not project source)
+/ROBO-SIM-MCP-foundation-v0.1.0/
+/ROBO-SIM-MCP-foundation-v0.1.0.zip
+/newton-main/
+/newton-main.zip
+
+# Local browser automation and captured runtime artifacts
+/.playwright-cli/
+/output/playwright/

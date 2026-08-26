@@ -1,0 +1,49 @@
+{
+  "project": "ROBO-SIM-MCP",
+  "version": "0.1.0-foundation",
+  "checks": [
+    {
+      "name": "JavaScript tests",
+      "command": [
+        "node",
+        "--test",
+        "tests/js/scara.test.js",
+        "tests/js/controller.test.js",
+        "tests/js/webmcp.test.js"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "Physics tests",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "pytest",
+        "physics/newton-service/tests",
+        "-q"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "JavaScript syntax",
+      "exitCode": 0,
+      "files": 11,
+      "failures": []
+    },
+    {
+      "name": "Python compile",
+      "exitCode": 0,
+      "files": 13
+    },
+    {
+      "name": "Required files",
+      "exitCode": 0,
+      "missing": []
+    }
+  ],
+  "ok": true,
+  "browserRuntimeTested": false,
+  "browserRuntimeNote": "The build VM had no direct network access, so Three.js CDN loading and WebMCP browser execution require the target PC.",
+  "newtonRuntimeTested": false,
+  "newtonRuntimeNote": "Newton and Warp were not installed in the build VM. The integration boundary is scaffolded; deterministic fallback tests pass."
+}

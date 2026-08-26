@@ -1,0 +1,37 @@
+from __future__ import annotations
+
+import argparse
+import http.server
+import socketserver
+from pathlib import Path
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        '.js': 'text/javascript; charset=utf-8',
+        '.mjs': 'text/javascript; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+    }
+
+    def end_headers(self) -> None:
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+        super().end_headers()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', default='127.0.0.1')
+    parser.add_argument('--port', type=int, default=8769)
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1] / 'apps' / 'web'
+    handler = lambda *a, **kw: Handler(*a, directory=str(root), **kw)  # noqa: E731
+    with socketserver.ThreadingTCPServer((args.host, args.port), handler) as server:
+        server.daemon_threads = True
+        print(f'ROBO-SIM-MCP web: http://{args.host}:{args.port}')
+        server.serve_forever()
+
+
+if __name__ == '__main__':
+    main()
