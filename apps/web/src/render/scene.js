@@ -1,299 +1,54 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createScaraRobot } from './robot.js';
 import { createWorkcell } from './workcell.js';
 
 export function createRobotLabRenderer({ viewport, robotController, sceneState, onInteraction }) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x111820);
-  scene.fog = new THREE.FogExp2(0x111820, 0.0005);
-
+  scene.background = new THREE.Color(0xf8fafc);
+  scene.fog = null;
   const camera = new THREE.PerspectiveCamera(31, 1, 1, 5000);
-  camera.position.set(930, 720, 980);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  camera.position.set(760, 665, 850);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.42;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = true;
   viewport.appendChild(renderer.domElement);
-
   const gl = renderer.getContext();
   const debugRendererInfo = gl.getExtension('WEBGL_debug_renderer_info');
-  const rendererIdentity = Object.freeze({
-    backend: 'webgl2',
-    threeRevision: THREE.REVISION,
-    vendor: debugRendererInfo ? String(gl.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)) : null,
-    renderer: debugRendererInfo ? String(gl.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)) : null,
-    version: String(gl.getParameter(gl.VERSION))
-  });
-
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const room = new RoomEnvironment();
-  const environment = pmrem.fromScene(room, 0.04);
-  scene.environment = environment.texture;
-  room.dispose();
-
-  RectAreaLightUniformsLib.init();
-  const key = new THREE.RectAreaLight(0xfff3e0, 8.5, 550, 550);
-  key.position.set(-320, 820, 450);
-  key.lookAt(0, 180, 0);
-  scene.add(key);
-  const fill = new THREE.RectAreaLight(0xd8e8ff, 5.8, 520, 400);
-  fill.position.set(620, 460, -320);
-  fill.lookAt(0, 180, 0);
-  scene.add(fill);
-  const rim = new THREE.RectAreaLight(0xffffff, 5.4, 440, 360);
-  rim.position.set(-100, 620, -700);
-  rim.lookAt(0, 220, 0);
-  scene.add(rim);
-  const shadowKey = new THREE.DirectionalLight(0xffffff, 3.2);
-  shadowKey.position.set(-300, 900, 500);
-  shadowKey.castShadow = true;
-  shadowKey.shadow.mapSize.set(4096, 4096);
-  shadowKey.shadow.camera.left = -900;
-  shadowKey.shadow.camera.right = 900;
-  shadowKey.shadow.camera.top = 900;
-  shadowKey.shadow.camera.bottom = -900;
-  shadowKey.shadow.camera.near = 80;
-  shadowKey.shadow.camera.far = 1900;
-  shadowKey.shadow.bias = -0.00018;
-  shadowKey.shadow.normalBias = 1.0;
-  scene.add(shadowKey);
-  scene.add(new THREE.HemisphereLight(0xe9f4ff, 0x1a2430, 1.5));
-
-  const robot = createScaraRobot(robotController.getConfig());
-  scene.add(robot.root);
-  const workcell = createWorkcell(sceneState);
-  scene.add(workcell.root);
-
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.075;
-  controls.screenSpacePanning = true;
-  controls.minDistance = 520;
-  controls.maxDistance = 2200;
-  controls.target.set(0, 240, 0);
-  controls.update();
-
-  const pathMaterial = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9 });
-  const path = new THREE.Line(new THREE.BufferGeometry(), pathMaterial);
-  path.frustumCulled = false;
-  scene.add(path);
-  const targetMarker = new THREE.Mesh(
-    new THREE.TorusGeometry(34, 4, 12, 64),
-    new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9 })
-  );
-  targetMarker.rotation.x = Math.PI / 2;
-  targetMarker.visible = false;
-  scene.add(targetMarker);
-
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-  const hit = new THREE.Vector3();
-  const tempWorld = new THREE.Vector3();
-  let dragging = false;
-  let dragPointerId = null;
-  let dragKind = null;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragStartZ = 0;
-
-  function pointerNdc(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  }
-
-  function updateRay(event) {
-    pointerNdc(event);
-    raycaster.setFromCamera(pointer, camera);
-  }
-
-  function beginDrag(event) {
-    if (event.button !== 0) return;
-    updateRay(event);
-    const intersects = raycaster.intersectObject(robot.endEffectorPick, false);
-    if (!intersects.length) return;
-    event.preventDefault();
-    event.stopPropagation();
-    dragging = true;
-    dragPointerId = event.pointerId;
-    dragKind = null;
-    dragStartX = event.clientX;
-    dragStartY = event.clientY;
-    dragStartZ = robotController.getState().cartesian.zMm;
-    robot.getEndEffectorWorldPosition(tempWorld);
-    dragPlane.constant = -tempWorld.y;
-    controls.enabled = false;
-    renderer.domElement.setPointerCapture?.(event.pointerId);
-    renderer.domElement.style.cursor = 'grabbing';
-    onInteraction?.({ type: 'drag_started' });
-  }
-
-  function moveDrag(event) {
-    if (!dragging || event.pointerId !== dragPointerId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const dx = event.clientX - dragStartX;
-    const dy = event.clientY - dragStartY;
-    if (!dragKind && Math.hypot(dx, dy) > 6) {
-      dragKind = event.shiftKey || Math.abs(dy) > Math.abs(dx) * 1.12 ? 'z' : 'xy';
-    }
-    if (dragKind === 'z') {
-      const scale = Math.max(0.45, Math.min(1.15, camera.position.distanceTo(controls.target) / 1050));
-      const current = robotController.getState().cartesian;
-      const result = robotController.moveEndEffector({
-        xMm: current.xMm,
-        yMm: current.yMm,
-        zMm: dragStartZ - dy * scale
-      });
-      onInteraction?.({ type: 'manual_move', result });
-    } else if (dragKind === 'xy') {
-      updateRay(event);
-      if (raycaster.ray.intersectPlane(dragPlane, hit)) {
-        const current = robotController.getState().cartesian;
-        const result = robotController.moveEndEffector({ xMm: hit.x, yMm: -hit.z, zMm: current.zMm });
-        onInteraction?.({ type: 'manual_move', result });
-      }
-    }
-  }
-
-  function endDrag(event) {
-    if (!dragging || event.pointerId !== dragPointerId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    dragging = false;
-    dragPointerId = null;
-    dragKind = null;
-    controls.enabled = true;
-    renderer.domElement.releasePointerCapture?.(event.pointerId);
-    renderer.domElement.style.cursor = 'default';
-    onInteraction?.({ type: 'drag_ended' });
-  }
-
-  renderer.domElement.addEventListener('pointerdown', beginDrag, true);
-  renderer.domElement.addEventListener('pointermove', moveDrag, true);
-  renderer.domElement.addEventListener('pointerup', endDrag, true);
-  renderer.domElement.addEventListener('pointercancel', endDrag, true);
-  renderer.domElement.addEventListener('contextmenu', (event) => event.preventDefault());
-  renderer.domElement.addEventListener('pointermove', (event) => {
-    if (dragging) return;
-    updateRay(event);
-    renderer.domElement.style.cursor = raycaster.intersectObject(robot.endEffectorPick, false).length ? 'grab' : 'default';
-  });
-
-  robotController.subscribe((_event, state) => robot.applyState(state));
-
-  function displayTrajectory(trajectory, status = 'proposed') {
-    const colours = { proposed: 0x38bdf8, validated: 0x22c55e, invalid: 0xef4444, warning: 0xf59e0b };
-    path.material.color.setHex(colours[status] ?? colours.proposed);
-    const points = trajectory.map((point) => new THREE.Vector3(point.xMm, 92 + point.zMm, -point.yMm));
-    path.geometry.dispose();
-    path.geometry = new THREE.BufferGeometry().setFromPoints(points);
-    path.visible = points.length > 1;
-    if (points.length) {
-      targetMarker.position.copy(points[points.length - 1]);
-      targetMarker.visible = true;
-      targetMarker.material.color.setHex(colours[status] ?? colours.proposed);
-    }
-  }
-
-  function clearTrajectory() {
-    path.visible = false;
-    targetMarker.visible = false;
-  }
-
-  function fitView() {
-    camera.position.set(930, 720, 980);
-    controls.target.set(0, 240, 0);
-    controls.update();
-  }
-
-  function resize() {
-    const rect = viewport.getBoundingClientRect();
-    camera.aspect = rect.width / rect.height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(rect.width, rect.height, false);
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  let disposed = false;
-  let previousFrameAt = performance.now();
-  const frameIntervals = [];
-  function animate() {
-    if (disposed) return;
-    requestAnimationFrame(animate);
-    const frameAt = performance.now();
-    const interval = frameAt - previousFrameAt;
-    previousFrameAt = frameAt;
-    if (interval > 0 && interval < 1000) {
-      frameIntervals.push(interval);
-      if (frameIntervals.length > 240) frameIntervals.shift();
-    }
-    controls.update();
-    const state = robotController.getState();
-    if (state.gripper.holdingObjectId) {
-      robot.getEndEffectorWorldPosition(tempWorld);
-      workcell.setHeldObjectPose(state.gripper.holdingObjectId, tempWorld);
-    }
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  return {
-    scene,
-    camera,
-    renderer,
-    controls,
-    robot,
-    workcell,
-    displayTrajectory,
-    clearTrajectory,
-    fitView,
-    getDiagnostics() {
-      const sorted = [...frameIntervals].sort((a, b) => a - b);
-      const percentile = (fraction) => sorted.length
-        ? sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * fraction))]
-        : null;
-      const medianIntervalMs = percentile(0.5);
-      return {
-        ...rendererIdentity,
-        frameSampleCount: sorted.length,
-        medianIntervalMs,
-        p95IntervalMs: percentile(0.95),
-        approximateFps: medianIntervalMs ? 1000 / medianIntervalMs : null,
-        pixelRatio: renderer.getPixelRatio()
-      };
-    },
-    setQuality(mode) {
-      if (mode === 'performance') {
-        renderer.setPixelRatio(1);
-        shadowKey.shadow.mapSize.set(1024, 1024);
-      } else if (mode === 'cinematic') {
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        shadowKey.shadow.mapSize.set(4096, 4096);
-      } else {
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        shadowKey.shadow.mapSize.set(2048, 2048);
-      }
-      shadowKey.shadow.map?.dispose();
-      shadowKey.shadow.map = null;
-      resize();
-    },
-    dispose() {
-      disposed = true;
-      window.removeEventListener('resize', resize);
-      controls.dispose();
-      renderer.dispose();
-      environment.dispose();
-      pmrem.dispose();
-    }
-  };
+  const rendererIdentity = Object.freeze({backend:'webgl2',threeRevision:THREE.REVISION,vendor:debugRendererInfo?String(gl.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)):null,renderer:debugRendererInfo?String(gl.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)):null,version:String(gl.getParameter(gl.VERSION))});
+  const pmrem = new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+  const room = new RoomEnvironment(); let environmentTarget = pmrem.fromScene(room, 0.055); scene.environment = environmentTarget.texture; room.dispose();
+  scene.add(new THREE.HemisphereLight(0xffffff,0xeaf0f7,1.75)); scene.add(new THREE.AmbientLight(0xffffff,0.48));
+  const key=new THREE.DirectionalLight(0xffffff,4.6); key.position.set(330,900,620); key.castShadow=true; key.shadow.mapSize.set(4096,4096); key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;key.shadow.camera.near=80;key.shadow.camera.far=1800;key.shadow.bias=-.00022;key.shadow.normalBias=1.1;key.shadow.radius=3.2;scene.add(key);
+  const fill=new THREE.DirectionalLight(0xe8f2ff,2.0);fill.position.set(-620,520,-460);scene.add(fill); const frontFill=new THREE.DirectionalLight(0xffffff,1.35);frontFill.position.set(520,360,-680);scene.add(frontFill); const rim=new THREE.DirectionalLight(0xffffff,1.65);rim.position.set(-180,620,760);scene.add(rim);
+  const robot=createScaraRobot(robotController.getConfig());scene.add(robot.root); const workcell=createWorkcell(sceneState);scene.add(workcell.root);
+  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.075;controls.minDistance=340;controls.maxDistance=1800;controls.enablePan=true;controls.screenSpacePanning=true;controls.mouseButtons.LEFT=THREE.MOUSE.ROTATE;controls.mouseButtons.MIDDLE=THREE.MOUSE.PAN;controls.mouseButtons.RIGHT=THREE.MOUSE.PAN;controls.target.set(0,240,0);controls.update();
+  const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const ssaoPass=new SSAOPass(scene,camera,1,1);ssaoPass.kernelRadius=13;ssaoPass.minDistance=.0012;ssaoPass.maxDistance=.055;composer.addPass(ssaoPass);composer.addPass(new OutputPass());
+  const path=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x4d96ff,transparent:true,opacity:.72}));path.frustumCulled=false;scene.add(path); const targetMarker=new THREE.Mesh(new THREE.TorusGeometry(34,4,12,64),new THREE.MeshBasicMaterial({color:0x4d96ff,transparent:true,opacity:.72}));targetMarker.rotation.x=Math.PI/2;targetMarker.visible=false;scene.add(targetMarker);let trajectoryAvailable=false,trajectoryVisible=false;
+  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3(),tempWorld=new THREE.Vector3();let dragging=false,dragPointerId=null,dragKind=null,dragStartX=0,dragStartY=0,dragStartZ=0;
+  function pointerNdc(e){const r=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1} function updateRay(e){pointerNdc(e);raycaster.setFromCamera(pointer,camera)}
+  function beginDrag(e){if(e.button!==0)return;updateRay(e);if(!raycaster.intersectObject(robot.endEffectorPick,false).length)return;e.preventDefault();e.stopPropagation();dragging=true;dragPointerId=e.pointerId;dragKind=null;dragStartX=e.clientX;dragStartY=e.clientY;dragStartZ=robotController.getState().cartesian.zMm;robot.getEndEffectorWorldPosition(tempWorld);dragPlane.constant=-tempWorld.y;controls.enabled=false;renderer.domElement.setPointerCapture?.(e.pointerId);renderer.domElement.style.cursor='grabbing';onInteraction?.({type:'drag_started'})}
+  function moveDrag(e){if(!dragging||e.pointerId!==dragPointerId)return;e.preventDefault();e.stopPropagation();const dx=e.clientX-dragStartX,dy=e.clientY-dragStartY;if(!dragKind&&Math.hypot(dx,dy)>6)dragKind=e.shiftKey||Math.abs(dy)>Math.abs(dx)*1.12?'z':'xy';if(dragKind==='z'){const scale=Math.max(.45,Math.min(1.15,camera.position.distanceTo(controls.target)/1050)),current=robotController.getState().cartesian,result=robotController.moveEndEffector({xMm:current.xMm,yMm:current.yMm,zMm:dragStartZ-dy*scale});onInteraction?.({type:'manual_move',result})}else if(dragKind==='xy'){updateRay(e);if(raycaster.ray.intersectPlane(dragPlane,hit)){const current=robotController.getState().cartesian,result=robotController.moveEndEffector({xMm:hit.x,yMm:-hit.z,zMm:current.zMm});onInteraction?.({type:'manual_move',result})}}}
+  function endDrag(e){if(!dragging||e.pointerId!==dragPointerId)return;e.preventDefault();e.stopPropagation();dragging=false;dragPointerId=null;dragKind=null;controls.enabled=true;renderer.domElement.releasePointerCapture?.(e.pointerId);renderer.domElement.style.cursor='default';onInteraction?.({type:'drag_ended'})}
+  renderer.domElement.addEventListener('pointerdown',beginDrag,true);renderer.domElement.addEventListener('pointermove',moveDrag,true);renderer.domElement.addEventListener('pointerup',endDrag,true);renderer.domElement.addEventListener('pointercancel',endDrag,true);renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());renderer.domElement.addEventListener('pointermove',e=>{if(dragging)return;updateRay(e);const hover=raycaster.intersectObject(robot.endEffectorPick,false).length>0;renderer.domElement.style.cursor=hover?'grab':'default';document.querySelector('#ikPill')?.classList.toggle('show',hover)});
+  robotController.subscribe((_e,state)=>robot.applyState(state));
+  function displayTrajectory(trajectory,status='proposed'){const colours={proposed:0x4d96ff,validated:0x22c55e,invalid:0xef4444,warning:0xf59e0b};path.material.color.setHex(colours[status]??colours.proposed);const points=trajectory.map(p=>new THREE.Vector3(p.xMm,92+p.zMm,-p.yMm));path.geometry.dispose();path.geometry=new THREE.BufferGeometry().setFromPoints(points);trajectoryAvailable=points.length>1;trajectoryVisible=trajectoryAvailable;path.visible=trajectoryVisible;if(points.length){targetMarker.position.copy(points[points.length-1]);targetMarker.visible=trajectoryVisible;targetMarker.material.color.setHex(colours[status]??colours.proposed)}}
+  function clearTrajectory(){trajectoryAvailable=false;trajectoryVisible=false;path.visible=false;targetMarker.visible=false} function toggleTrajectory(){if(!trajectoryAvailable)return false;trajectoryVisible=!trajectoryVisible;path.visible=trajectoryVisible;targetMarker.visible=trajectoryVisible;return trajectoryVisible} function fitView(){camera.position.set(760,665,850);controls.target.set(0,240,0);controls.update()} function setMouseMode(mode){controls.mouseButtons.LEFT=mode==='pan'?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;controls.mouseButtons.MIDDLE=THREE.MOUSE.PAN;controls.mouseButtons.RIGHT=THREE.MOUSE.PAN}
+  function setVisibility(kind,visible){if(kind==='robot')robot.root.visible=visible;if(kind==='base')robot.base.visible=visible;if(kind==='grid'){workcell.grid.visible=visible;workcell.floor.visible=visible}}
+  async function loadEnvironmentFile(file){if(!file||!(/\.(hdr|exr)$/i.test(file.name)))return{ok:false,reason:'Use a .hdr or .exr file'};const url=URL.createObjectURL(file);try{const loader=/\.exr$/i.test(file.name)?new EXRLoader():new RGBELoader(),source=await loader.loadAsync(url),next=pmrem.fromEquirectangular(source);source.dispose();const previous=environmentTarget;environmentTarget=next;scene.environment=environmentTarget.texture;previous?.dispose();return{ok:true}}catch(error){return{ok:false,reason:error instanceof Error?error.message:String(error)}}finally{URL.revokeObjectURL(url)}}
+  function resize(){const r=viewport.getBoundingClientRect();camera.aspect=r.width/r.height;camera.updateProjectionMatrix();renderer.setSize(r.width,r.height,false);composer.setSize(r.width,r.height)}window.addEventListener('resize',resize);resize();
+  let disposed=false,previousFrameAt=performance.now();const frameIntervals=[];function animate(){if(disposed)return;requestAnimationFrame(animate);const frameAt=performance.now(),interval=frameAt-previousFrameAt;previousFrameAt=frameAt;if(interval>0&&interval<1000){frameIntervals.push(interval);if(frameIntervals.length>240)frameIntervals.shift()}controls.update();const state=robotController.getState();if(state.gripper.holdingObjectId){robot.getEndEffectorWorldPosition(tempWorld);workcell.setHeldObjectPose(state.gripper.holdingObjectId,tempWorld)}composer.render()}animate();
+  return{scene,camera,renderer,controls,robot,workcell,displayTrajectory,clearTrajectory,toggleTrajectory,fitView,setMouseMode,setVisibility,loadEnvironmentFile,getDiagnostics(){const sorted=[...frameIntervals].sort((a,b)=>a-b),percentile=f=>sorted.length?sorted[Math.min(sorted.length-1,Math.floor((sorted.length-1)*f))]:null,medianIntervalMs=percentile(.5);return{...rendererIdentity,frameSampleCount:sorted.length,medianIntervalMs,p95IntervalMs:percentile(.95),approximateFps:medianIntervalMs?1000/medianIntervalMs:null,pixelRatio:renderer.getPixelRatio(),toneMapping:'ACESFilmic',toneMappingExposure:renderer.toneMappingExposure,ssaoEnabled:ssaoPass.enabled}},setQuality(mode){if(mode==='performance'){renderer.setPixelRatio(1);key.shadow.mapSize.set(1024,1024);ssaoPass.enabled=false}else if(mode==='cinematic'){renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));key.shadow.mapSize.set(4096,4096);ssaoPass.enabled=true}else{renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));key.shadow.mapSize.set(2048,2048);ssaoPass.enabled=true}key.shadow.map?.dispose();key.shadow.map=null;resize()},dispose(){disposed=true;window.removeEventListener('resize',resize);controls.dispose();renderer.dispose();environmentTarget.dispose();pmrem.dispose()}}
 }
