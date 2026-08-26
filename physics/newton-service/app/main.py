@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import SimulationRequest, SimulationResponse
+from .models import SceneState, SimulationRequest, SimulationResponse
 from .service import PhysicsService
 
 app = FastAPI(
@@ -26,6 +26,24 @@ def health() -> dict[str, object]:
     return service.health()
 
 
+@app.post("/v1/scene/sync")
+def synchronise_scene(scene: SceneState) -> dict[str, object]:
+    return service.synchronise_scene(scene)
+
+
+@app.post("/v1/scene/reset")
+def reset_scene() -> dict[str, object]:
+    return service.reset_scene()
+
+
 @app.post("/v1/simulate/trajectory", response_model=SimulationResponse)
 def simulate_trajectory(request: SimulationRequest) -> SimulationResponse:
     return service.simulate(request)
+
+
+@app.get("/v1/results/{request_id}", response_model=SimulationResponse)
+def get_result(request_id: str) -> SimulationResponse:
+    result = service.get_result(request_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="simulation_result_not_found")
+    return result

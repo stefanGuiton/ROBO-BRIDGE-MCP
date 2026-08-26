@@ -143,7 +143,8 @@ async function executeCurrentPlan({ signal } = {}) {
   }
 
   const objectId = currentPlan.objectId;
-  const destination = sceneState.getObject(currentPlan.destinationId);
+  const validatedObject = lastSimulation.finalObjectStates?.find((object) => object.id === objectId);
+  if (!validatedObject) return { ok: false, reason: 'physics_final_object_state_missing' };
   for (let index = 0; index < currentPlan.waypoints.length - 1; index += 1) {
     const start = currentPlan.waypoints[index];
     const end = currentPlan.waypoints[index + 1];
@@ -157,11 +158,7 @@ async function executeCurrentPlan({ signal } = {}) {
       robotController.setHeldObject(null);
       sceneState.updateObject(objectId, {
         heldBy: null,
-        position: {
-          xMm: destination.position.xMm,
-          yMm: destination.position.yMm,
-          zMm: destination.size.zMm + 25
-        }
+        position: validatedObject.position
       }, 'object_placed');
       rendererApi.workcell.clearHeldObjectPose(objectId);
     }
@@ -174,14 +171,21 @@ async function executeCurrentPlan({ signal } = {}) {
   return completed;
 }
 
-function resetWorkcell() {
+async function resetWorkcell({ signal } = {}) {
   currentPlan = null;
   lastSimulation = null;
   robotController.reset();
   sceneState.reset();
   rendererApi.clearTrajectory();
   ui?.setPlanStatus('Ready', 'neutral');
-  return { ok: true, robot: getRobotState(), sceneRevision: getSceneState().revision };
+  const physics = await physicsClient.resetScene({ signal });
+  return {
+    ok: true,
+    robot: getRobotState(),
+    sceneRevision: getSceneState().revision,
+    physicsReset: physics.ok === true,
+    physicsWarning: physics.ok ? null : physics.reason
+  };
 }
 
 const actions = {
@@ -197,7 +201,11 @@ const actions = {
 };
 
 ui = createUi({ robotController, sceneState, physicsClient, actions, rendererApi });
-registerWebMcpTools(actions).then((result) => ui.setWebMcpStatus(result));
+registerWebMcpTools(actions, (event) => {
+  const reason = event.reason ? `: ${event.reason}` : '';
+  const kind = event.status === 'rejected' ? 'error' : event.status === 'succeeded' ? 'success' : 'info';
+  ui.addLog(`WebMCP ${event.status}: ${event.toolName}${reason}`, kind);
+}).then((result) => ui.setWebMcpStatus(result));
 
 window.__ROBO_SIM__ = Object.freeze({
   version: '0.1.0-foundation',

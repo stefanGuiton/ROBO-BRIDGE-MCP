@@ -7,16 +7,32 @@
       "command": [
         "node",
         "--test",
+        "--test-concurrency=1",
         "tests/js/scara.test.js",
         "tests/js/controller.test.js",
         "tests/js/webmcp.test.js"
       ],
-      "exitCode": 0
+      "exitCode": 0,
+      "mode": "direct-module-fallback-after-spawn-eperm",
+      "files": [
+        {
+          "file": "tests/js/scara.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/controller.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/webmcp.test.js",
+          "exitCode": 0
+        }
+      ]
     },
     {
       "name": "Physics tests",
       "command": [
-        "/opt/pyvenv/bin/python",
+        "D:\\ROBO-SIM-MCP\\.venv\\Scripts\\python.exe",
         "-m",
         "pytest",
         "physics/newton-service/tests",
@@ -33,7 +49,7 @@
     {
       "name": "Python compile",
       "exitCode": 0,
-      "files": 13
+      "files": 14
     },
     {
       "name": "Required files",
@@ -42,8 +58,9 @@
     }
   ],
   "ok": true,
-  "browserRuntimeTested": false,
-  "browserRuntimeNote": "The build VM had no direct network access, so Three.js CDN loading and WebMCP browser execution require the target PC.",
-  "newtonRuntimeTested": false,
-  "newtonRuntimeNote": "Newton and Warp were not installed in the build VM. The integration boundary is scaffolded; deterministic fallback tests pass."
+  "browserRuntimeTested": true,
+  "browserRuntimeEvidence": "evidence\\setup\\browser\\runtime-results.json",
+  "newtonRuntimeTested": true,
+  "newtonRuntimeEvidence": "evidence\\setup\\newton-runtime-results.json",
+  "newtonRuntimeNote": null
 }

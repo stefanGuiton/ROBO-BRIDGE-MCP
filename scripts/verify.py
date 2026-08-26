@@ -19,9 +19,50 @@ def run(name: str, command: list[str], cwd: Path = ROOT) -> dict[str, object]:
     return {'name': name, 'command': command, 'exitCode': result.returncode}
 
 
+def run_javascript_tests() -> dict[str, object]:
+    files = [
+        'tests/js/scara.test.js',
+        'tests/js/controller.test.js',
+        'tests/js/webmcp.test.js',
+    ]
+    command = ['node', '--test', '--test-concurrency=1', *files]
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+    if result.returncode == 0:
+        print('[JavaScript tests] exit=0')
+        print(result.stdout.rstrip())
+        return {'name': 'JavaScript tests', 'command': command, 'exitCode': 0, 'mode': 'node-test-runner'}
+
+    combined_output = f'{result.stdout}\n{result.stderr}'
+    if 'spawn EPERM' not in combined_output:
+        print('[JavaScript tests] exit=1')
+        print(combined_output.rstrip())
+        return {'name': 'JavaScript tests', 'command': command, 'exitCode': result.returncode}
+
+    # Some managed Windows environments block node:test worker creation. A
+    # directly executed test module still uses node:test assertions but stays
+    # in one process, so verify each file separately as a fail-closed fallback.
+    fallback_results = []
+    for path in files:
+        fallback = subprocess.run(['node', path], cwd=ROOT, text=True, capture_output=True)
+        fallback_results.append({'file': path, 'exitCode': fallback.returncode})
+        if fallback.stdout:
+            print(fallback.stdout.rstrip())
+        if fallback.stderr:
+            print(fallback.stderr.rstrip())
+    exit_code = 0 if all(item['exitCode'] == 0 for item in fallback_results) else 1
+    print(f'[JavaScript tests] managed-worker fallback exit={exit_code}')
+    return {
+        'name': 'JavaScript tests',
+        'command': command,
+        'exitCode': exit_code,
+        'mode': 'direct-module-fallback-after-spawn-eperm',
+        'files': fallback_results,
+    }
+
+
 def main() -> int:
     checks: list[dict[str, object]] = []
-    checks.append(run('JavaScript tests', ['node', '--test', 'tests/js/scara.test.js', 'tests/js/controller.test.js', 'tests/js/webmcp.test.js']))
+    checks.append(run_javascript_tests())
     checks.append(run('Physics tests', [sys.executable, '-m', 'pytest', 'physics/newton-service/tests', '-q']))
 
     js_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / 'apps' / 'web' / 'src').rglob('*.js'))
@@ -54,15 +95,21 @@ def main() -> int:
     missing = [path for path in required if not (ROOT / path).is_file()]
     checks.append({'name': 'Required files', 'exitCode': 1 if missing else 0, 'missing': missing})
 
+    browser_results_path = ROOT / 'evidence' / 'setup' / 'browser' / 'runtime-results.json'
+    newton_results_path = ROOT / 'evidence' / 'setup' / 'newton-runtime-results.json'
+    browser_results = json.loads(browser_results_path.read_text(encoding='utf-8')) if browser_results_path.is_file() else None
+    newton_results = json.loads(newton_results_path.read_text(encoding='utf-8')) if newton_results_path.is_file() else None
+
     result = {
         'project': 'ROBO-SIM-MCP',
         'version': '0.1.0-foundation',
         'checks': checks,
         'ok': all(check['exitCode'] == 0 for check in checks),
-        'browserRuntimeTested': False,
-        'browserRuntimeNote': 'The build VM had no direct network access, so Three.js CDN loading and WebMCP browser execution require the target PC.',
-        'newtonRuntimeTested': False,
-        'newtonRuntimeNote': 'Newton and Warp were not installed in the build VM. The integration boundary is scaffolded; deterministic fallback tests pass.',
+        'browserRuntimeTested': bool(browser_results and browser_results.get('ok')),
+        'browserRuntimeEvidence': str(browser_results_path.relative_to(ROOT)) if browser_results else None,
+        'newtonRuntimeTested': bool(newton_results and newton_results.get('ok')),
+        'newtonRuntimeEvidence': str(newton_results_path.relative_to(ROOT)) if newton_results else None,
+        'newtonRuntimeNote': None if newton_results else 'Installed, but runtime qualification is paused by the GPU thermal stop condition.',
     }
     evidence = ROOT / 'evidence' / 'foundation-verification.json'
     evidence.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')

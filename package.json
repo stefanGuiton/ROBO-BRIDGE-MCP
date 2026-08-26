@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "serve:web": "python scripts/serve_web.py",
-    "test:js": "node --test tests/js/*.test.js",
+    "test:js": "node --test --test-concurrency=1 tests/js/*.test.js",
     "test:physics": "python -m pytest physics/newton-service/tests -q",
     "verify": "python scripts/verify.py"
   },

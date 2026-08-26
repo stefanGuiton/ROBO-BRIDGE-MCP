@@ -2,66 +2,68 @@
 
 ## Current state
 
-ROBO-SIM-MCP foundation v0.1.0 is built.
+ROBO-SIM-MCP is a working local integration checkpoint. It is not yet the final challenge submission.
 
-Verified in the build VM:
+Verified on the target PC:
 
-- 12 JavaScript and WebMCP-contract tests pass;
-- 5 Python physics/API tests pass;
+- browser app and physics service boot locally at ports 8769 and 8001;
+- SCARA, workcell, cubes, bins, obstacle, gripper, PBR materials, and shadows render;
+- orbit, pan, fit, manual XY drag, manual Z drag, and gripper controls work;
+- the shared controller rejects invalid movement without changing the last valid pose;
+- dense trajectory validation rejects unsafe sparse chords;
+- radial transfers avoid the SCARA inner workspace;
+- nine WebMCP tools are discovered and call the same controller as the human UI;
+- actual WebMCP red and blue pick-and-place workflows pass with the deterministic backend;
+- Newton 1.5.0 and Warp 1.16.0 import in the project VENV;
+- the official Newton `basic_shapes` example passes headlessly on CPU;
+- three Newton-only cases pass: safe grasp/place, offset-grasp failure, and obstacle collision;
+- the HTTP service provides health, scene sync/reset, trajectory simulation, and result retrieval;
+- no physical SCARA or Duet hardware was contacted.
+
+Current automated checkpoint:
+
+- 15 JavaScript tests pass;
+- 6 standard Python physics/API tests pass;
+- 3 Newton runtime tests pass when explicitly enabled;
 - 11 browser JavaScript files pass syntax checks;
-- 12 Python files compile;
-- physics health endpoint works;
-- static web server returns the app HTML.
+- 14 Python files compile;
+- `scripts/verify.py` passes and links the browser/Newton evidence records.
 
-Not verified:
+## Safety and runtime choices
 
-- Three.js browser rendering;
-- WebMCP in Chrome/ChatGPT;
-- Newton/Warp runtime;
-- private SCARA-SIM file-by-file visual comparison.
+- The deterministic backend remains the default.
+- Newton must be selected explicitly with `--physics-backend newton`.
+- Newton qualification currently defaults to CPU.
+- Warp's cache is project-local under `.cache/warp` and ignored by Git.
+- CUDA execution has not been accepted because the GTX 1070 previously reached 90 C under unrelated graphics load.
+- GPU temperature was 56 C at the publication preflight.
 
-## First target-PC commands
+## Remaining bounded work
 
-```bat
-SETUP_WINDOWS.bat
-START_WINDOWS.bat
+1. Run a fresh browser session with `--physics-backend newton`.
+2. Verify browser to HTTP to Newton to browser state transfer for one complete pick-and-place.
+3. Measure repeated CPU result variability and record exact final poses.
+4. Capture fresh post-Newton browser and console evidence.
+5. Complete `evidence/setup/final-verification.md` and the final acceptance report.
+6. Continue premium SCARA visual adaptation only where provenance is clear.
+
+## Commands
+
+```powershell
+.venv\Scripts\python.exe scripts\verify.py
+.venv\Scripts\python.exe scripts\run_foundation.py
 ```
 
-Then open:
+After checking temperature, start the Newton-backed service explicitly:
 
-- web: `http://127.0.0.1:8769`
-- physics health: `http://127.0.0.1:8001/health`
+```powershell
+.venv\Scripts\python.exe scripts\run_foundation.py --physics-backend newton
+```
 
-## First Codex task
+Run real Newton acceptance explicitly:
 
-Read:
-
-- `MASTER_PLAN.md`
-- `AGENTS.md`
-- `evidence/FOUNDATION_STATUS.md`
-- `docs/SCARA_SIM_ADAPTATION_MATRIX.md`
-- `docs/NEWTON_NEXT_TASK.md`
-
-Then perform only P1 target-PC qualification.
-
-Do not start Newton work until the browser qualification passes.
-
-## Recommended Codex prompt
-
-```text
-Review and qualify the local ROBO-SIM-MCP foundation. Read MASTER_PLAN.md,
-AGENTS.md, evidence/FOUNDATION_STATUS.md, and docs/SCARA_SIM_ADAPTATION_MATRIX.md.
-
-First run the existing verification without editing code. Then start the web and
-physics services and test the real browser on this PC. Verify scene boot, manual
-XY drag, Shift/vertical Z drag, gripper controls, red plan, physics validation,
-execution, reset, console output, and frame rate. Capture fixed screenshots and
-record exact observed results.
-
-Also inspect the private SCARA-SIM checkout at the exact pinned branch/commit,
-but do not copy files yet. Produce a ranked visual/control adaptation report and
-update provenance evidence. Do not install Newton, do not create a public repo,
-do not push, and do not change architecture during this task.
-
-Give a PASS / CHANGES REQUIRED verdict for P1 browser qualification.
+```powershell
+$env:ROBO_SIM_RUN_NEWTON_TESTS = '1'
+$env:ROBO_SIM_NEWTON_DEVICE = 'cpu'
+.venv\Scripts\python.exe -m pytest physics\newton-service\tests\test_newton.py -v
 ```

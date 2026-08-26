@@ -59,6 +59,47 @@ export class PhysicsClient {
       timeout.dispose();
     }
   }
+
+  async synchroniseScene(scene, { signal } = {}) {
+    return this.#post('/v1/scene/sync', scene, { signal, timeoutMs: 3000 });
+  }
+
+  async resetScene({ signal } = {}) {
+    return this.#post('/v1/scene/reset', null, { signal, timeoutMs: 3000 });
+  }
+
+  async getResult(requestId, { signal } = {}) {
+    const timeout = withTimeout(3000, signal);
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/results/${encodeURIComponent(requestId)}`, { signal: timeout.signal });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) return { ok: false, reason: body.detail || `Physics service returned ${response.status}` };
+      return body;
+    } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+    } finally {
+      timeout.dispose();
+    }
+  }
+
+  async #post(path, payload, { signal, timeoutMs }) {
+    const timeout = withTimeout(timeoutMs, signal);
+    try {
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload === null ? undefined : JSON.stringify(payload),
+        signal: timeout.signal
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) return { ok: false, reason: body.detail || `Physics service returned ${response.status}` };
+      return body;
+    } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+    } finally {
+      timeout.dispose();
+    }
+  }
 }
 
 function pointInsideExpandedBox(point, object, expansionMm) {

@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "url": "http://127.0.0.1:8769",
+  "renderer": "WebGL2 / Three.js r185",
+  "frameTiming": {
+    "medianMs": 8.8,
+    "p95Ms": 13.8,
+    "note": "Observed requestAnimationFrame timing only; not a certified FPS result."
+  },
+  "rendered": [
+    "SCARA",
+    "table/workcell",
+    "red and blue cubes",
+    "red and blue bins",
+    "yellow obstacle",
+    "parallel gripper"
+  ],
+  "manualControls": {
+    "orbit": "pass",
+    "pan": "pass",
+    "fit": "pass",
+    "xyDrag": "pass",
+    "zDrag": "pass",
+    "gripperOpenClose": "pass"
+  },
+  "controller": {
+    "preview": "pass",
+    "execution": "pass after radial-transfer repair",
+    "unreachableFailClosed": "pass",
+    "lastValidPosePreserved": "pass",
+    "structuredVisibleStateAgreement": "pass"
+  },
+  "webmcp": {
+    "toolCount": 9,
+    "actualDiscovery": "pass",
+    "actualExecution": "pass",
+    "actualRejectedCommand": "pass",
+    "redPickAndPlace": "pass",
+    "bluePickAndPlace": "pass"
+  },
+  "screenshots": [
+    "initial-workcell.png",
+    "red-plan-preview.png",
+    "red-physics-validated.png",
+    "red-executed-repaired.png",
+    "red-blue-complete.png",
+    "manual-xy-drag.png",
+    "manual-z-drag.png",
+    "camera-orbit.png",
+    "camera-pan.png",
+    "renderer-webmcp-diagnostics.png"
+  ]
+}

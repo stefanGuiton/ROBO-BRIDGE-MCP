@@ -10,6 +10,8 @@ export function createUi({ robotController, sceneState, physicsClient, actions, 
     gripper: document.querySelector('[data-readout="gripper"]'),
     mode: document.querySelector('[data-readout="mode"]'),
     physics: document.querySelector('[data-readout="physics"]'),
+    renderer: document.querySelector('[data-readout="renderer"]'),
+    frame: document.querySelector('[data-readout="frame"]'),
     sceneList: document.querySelector('#sceneList'),
     log: document.querySelector('#operationLog'),
     webmcp: document.querySelector('#webmcpStatus'),
@@ -82,6 +84,20 @@ export function createUi({ robotController, sceneState, physicsClient, actions, 
     elements.physics.textContent = health.ok ? `${health.backend} ready` : 'browser fallback';
     addLog(health.ok ? `Physics service ready: ${health.backend}` : 'Physics service unavailable; browser fallback active');
   });
+
+  function renderDiagnostics() {
+    const diagnostics = rendererApi.getDiagnostics();
+    elements.renderer.textContent = `${diagnostics.backend} · three r${diagnostics.threeRevision}`;
+    elements.renderer.title = [diagnostics.vendor, diagnostics.renderer, diagnostics.version].filter(Boolean).join(' · ');
+    elements.frame.textContent = diagnostics.medianIntervalMs
+      ? `${format(diagnostics.medianIntervalMs)} ms median · ${format(diagnostics.p95IntervalMs)} ms p95`
+      : 'measuring…';
+    elements.frame.title = diagnostics.approximateFps
+      ? `${format(diagnostics.approximateFps)} approximate RAF FPS; diagnostic only, not certification`
+      : '';
+  }
+  renderDiagnostics();
+  setInterval(renderDiagnostics, 1000);
 
   return {
     addLog,

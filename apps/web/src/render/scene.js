@@ -19,8 +19,18 @@ export function createRobotLabRenderer({ viewport, robotController, sceneState, 
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   viewport.appendChild(renderer.domElement);
+
+  const gl = renderer.getContext();
+  const debugRendererInfo = gl.getExtension('WEBGL_debug_renderer_info');
+  const rendererIdentity = Object.freeze({
+    backend: 'webgl2',
+    threeRevision: THREE.REVISION,
+    vendor: debugRendererInfo ? String(gl.getParameter(debugRendererInfo.UNMASKED_VENDOR_WEBGL)) : null,
+    renderer: debugRendererInfo ? String(gl.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL)) : null,
+    version: String(gl.getParameter(gl.VERSION))
+  });
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   const room = new RoomEnvironment();
@@ -215,9 +225,18 @@ export function createRobotLabRenderer({ viewport, robotController, sceneState, 
   resize();
 
   let disposed = false;
+  let previousFrameAt = performance.now();
+  const frameIntervals = [];
   function animate() {
     if (disposed) return;
     requestAnimationFrame(animate);
+    const frameAt = performance.now();
+    const interval = frameAt - previousFrameAt;
+    previousFrameAt = frameAt;
+    if (interval > 0 && interval < 1000) {
+      frameIntervals.push(interval);
+      if (frameIntervals.length > 240) frameIntervals.shift();
+    }
     controls.update();
     const state = robotController.getState();
     if (state.gripper.holdingObjectId) {
@@ -238,6 +257,21 @@ export function createRobotLabRenderer({ viewport, robotController, sceneState, 
     displayTrajectory,
     clearTrajectory,
     fitView,
+    getDiagnostics() {
+      const sorted = [...frameIntervals].sort((a, b) => a - b);
+      const percentile = (fraction) => sorted.length
+        ? sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * fraction))]
+        : null;
+      const medianIntervalMs = percentile(0.5);
+      return {
+        ...rendererIdentity,
+        frameSampleCount: sorted.length,
+        medianIntervalMs,
+        p95IntervalMs: percentile(0.95),
+        approximateFps: medianIntervalMs ? 1000 / medianIntervalMs : null,
+        pixelRatio: renderer.getPixelRatio()
+      };
+    },
     setQuality(mode) {
       if (mode === 'performance') {
         renderer.setPixelRatio(1);

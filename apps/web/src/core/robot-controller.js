@@ -6,7 +6,7 @@ import {
   validateJointState,
   workspace
 } from './scara.js';
-import { lerpWaypoint, validateCartesianWaypoints } from './trajectory.js';
+import { lerpWaypoint, sampleWaypoints, validateCartesianWaypoints } from './trajectory.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -121,10 +121,13 @@ export class RobotController {
   }
 
   previewTrajectory(waypoints) {
-    const validation = validateCartesianWaypoints(waypoints, this.#state.joints, this.#config);
+    const sampledWaypoints = sampleWaypoints(waypoints, 24);
+    const validation = validateCartesianWaypoints(sampledWaypoints, this.#state.joints, this.#config);
     return {
       ...validation,
       op: 'preview_trajectory',
+      waypointCount: waypoints.length,
+      sampledPointCount: sampledWaypoints.length,
       stateUnchanged: true,
       accepted: this.getState()
     };

@@ -99,4 +99,7 @@ def test_service_health_reports_newton_boundary_honestly() -> None:
     health = PhysicsService().health()
     assert health["ok"] is True
     assert health["backend"] == "deterministic-physics-fallback"
-    assert health["newton"]["integrationReady"] is False
+    assert health["requestedBackend"] == "fallback"
+    assert health["requestedBackendReady"] is True
+    assert health["newton"]["integrationReady"] is True
+    assert health["newton"]["available"] is True

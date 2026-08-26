@@ -11,7 +11,15 @@ All request trajectory coordinates are in millimetres:
 
 Scene-object `position.zMm` is the object centre above the table surface. The foundation physics service converts it to the machine-Z frame with the documented tool offset.
 
-## Endpoint
+## Endpoints
+
+- `GET /health` — backend, package, scene, and result-store status;
+- `POST /v1/scene/sync` — synchronise the structured scene without moving the robot;
+- `POST /v1/scene/reset` — clear the physics scene and stored results;
+- `POST /v1/simulate/trajectory` — validate a complete candidate trajectory;
+- `GET /v1/results/{requestId}` — retrieve a stored structured result.
+
+## Trajectory simulation
 
 `POST /v1/simulate/trajectory`
 

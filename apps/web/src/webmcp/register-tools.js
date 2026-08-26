@@ -3,7 +3,7 @@ function compact(value) {
   return text.length <= 1450 ? text : `${text.slice(0, 1410)}…"truncated":true}`;
 }
 
-export async function registerWebMcpTools(api) {
+export async function registerWebMcpTools(api, onLifecycle = () => {}) {
   const modelContext = document.modelContext;
   if (!modelContext?.registerTool) {
     return { ok: false, reason: 'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
@@ -110,7 +110,26 @@ export async function registerWebMcpTools(api) {
 
   const controller = new AbortController();
   for (const tool of tools) {
-    await modelContext.registerTool(tool, { signal: controller.signal });
+    const execute = tool.execute;
+    const registeredTool = {
+      ...tool,
+      async execute(...args) {
+        onLifecycle({ status: 'executing', toolName: tool.name });
+        try {
+          const result = await execute(...args);
+          let parsed = null;
+          try { parsed = typeof result === 'string' ? JSON.parse(result) : result; } catch { /* compact output remains valid tool data */ }
+          const status = parsed?.ok === false ? 'rejected' : 'succeeded';
+          onLifecycle({ status, toolName: tool.name, reason: parsed?.reason ?? null });
+          return result;
+        } catch (error) {
+          onLifecycle({ status: 'rejected', toolName: tool.name, reason: String(error) });
+          throw error;
+        }
+      }
+    };
+    await modelContext.registerTool(registeredTool, { signal: controller.signal });
+    onLifecycle({ status: 'discovered', toolName: tool.name });
   }
   return { ok: true, toolCount: tools.length, toolNames: tools.map((tool) => tool.name), controller };
 }

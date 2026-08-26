@@ -18,13 +18,13 @@ Implemented:
 - nine WebMCP tools registered through `document.modelContext.registerTool()`;
 - FastAPI physics protocol;
 - deterministic collision, grasp, release, gravity-settlement, and final-state backend;
-- explicit Newton/Warp integration boundary;
+- bounded Newton/Warp rigid-body validation with a trajectory-driven gripper proxy;
 - automated JavaScript, WebMCP-contract, and Python tests.
 
 Not yet implemented or proven:
 
 - final SCARA-SIM V8 visual extraction and pixel-level comparison;
-- real Newton articulation/contact simulation;
+- browser-to-Newton end-to-end acceptance and repeated-run variability measurement;
 - hosted physics backend;
 - WebMCP execution in ChatGPT's built-in browser;
 - browser runtime testing in this build VM;
@@ -45,16 +45,24 @@ The browser loads Three.js from jsDelivr. Internet access is required for the fi
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -r physics/newton-service/requirements.txt
+.venv/Scripts/python -m pip install -r physics/newton-service/requirements-dev.txt
 .venv/Scripts/python scripts/verify.py
 .venv/Scripts/python scripts/run_foundation.py
 ```
 
+Newton is optional and intentionally separate from the baseline setup:
+
+```powershell
+.venv\Scripts\python.exe -m pip install --use-feature=truststore -r physics\newton-service\requirements-newton.txt
+```
+
 ## Newton setup
 
-Use a dedicated Python 3.10-3.12 environment and follow Newton's current installation guide. The foundation includes `requirements-newton.txt`, but the Newton backend remains deliberately inactive until its SCARA articulation and contact tests exist.
+Use the project Python 3.10-3.12 environment and follow Newton's current installation guide. The deterministic fallback remains the default; opt into the bounded Newton validator only after installation and thermal qualification:
 
-```bash
-python scripts/check_newton.py
+```powershell
+.venv\Scripts\python.exe scripts\check_newton.py
+.venv\Scripts\python.exe scripts\run_foundation.py --physics-backend newton
 ```
 
 ## Important files

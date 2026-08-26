@@ -2,32 +2,42 @@
 
 Date: 2026-08-26
 
-Status: **FOUNDATION BUILT — NOT CHALLENGE READY**
+Status: **TARGET-PC FOUNDATION QUALIFIED — FINAL CHALLENGE ACCEPTANCE PENDING**
 
-## Observed in this ZIP
+## Verified on this PC
 
-- JavaScript kinematics/controller/WebMCP tests: 12/12 pass.
-- Python physics/API tests: 5/5 pass.
-- Python source compiles.
-- WebMCP tool source is present.
-- Browser source is present.
-- Physics service and deterministic backend are present.
-- Newton detection and integration boundary are present.
+- JavaScript kinematics/controller/WebMCP tests: 15/15 pass.
+- Standard Python physics/API tests: 6/6 pass; 3 Newton tests are skipped unless explicitly enabled.
+- Explicit Newton CPU physics tests: 3/3 pass in 57.82 seconds.
+- Browser JavaScript syntax: 11 files pass.
+- Python source compilation: 14 files pass.
+- Browser app and physics service boot at `127.0.0.1:8769` and `127.0.0.1:8001`.
+- SCARA, workcell, cubes, bins, obstacle, gripper, PBR materials, and shadows render.
+- Manual XY/Z movement, orbit, pan, fit, and gripper controls pass.
+- Invalid motion fails closed and preserves the last valid pose.
+- Actual WebMCP discovery and execution pass for nine tools.
+- Red and blue pick-and-place pass through the deterministic browser workflow.
+- Newton 1.5.0 and Warp 1.16.0 import from the project VENV.
+- Official Newton `basic_shapes` passes for 20 headless CPU frames.
+- Newton safe grasp/place, offset-grasp failure, and obstacle collision pass.
+- No physical robot or Duet hardware was contacted.
 
-## Not observed in the build VM
+## Evidence
 
-- Browser rendering, because the VM container had no direct network access to load Three.js from the CDN.
-- WebMCP tool discovery or execution in Chrome/ChatGPT.
-- Newton/Warp import or simulation.
-- SCARA-SIM private repository clone inside the container.
-- Hosted deployment.
+- `evidence/setup/browser/runtime-results.json`
+- `evidence/setup/browser/*.png`
+- `evidence/setup/newton-installation.md`
+- `evidence/setup/newton-runtime-results.json`
+- `evidence/foundation-verification.json`
+- `evidence/setup/baseline-verification.md`
 
-## Required target-PC checks
+## Remaining acceptance gates
 
-1. Run `SETUP_WINDOWS.bat`.
-2. Run `START_WINDOWS.bat`.
-3. Check the 3D scene and manual XY/Z drag.
-4. Check plan → physics → execute.
-5. Use a WebMCP-enabled browser to inspect nine tools.
-6. Clone/open private SCARA-SIM and compare V8 visuals and controls.
-7. Start the bounded Newton task in `docs/NEWTON_NEXT_TASK.md`.
+- fresh browser-to-Newton end-to-end pick-and-place;
+- repeated final-pose variability measurement;
+- post-Newton browser/console screenshots;
+- 19/20 complete reliability trials;
+- hosted deployment, demo video, and submission evidence;
+- final provenance/licence review before any public release.
+
+The deterministic physics backend remains the default. Newton is an explicit CPU-qualified option. CUDA is detected but not accepted because the GTX 1070 previously reached 90 C under unrelated graphics load.
