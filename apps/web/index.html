@@ -1,100 +1,101 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="ROBO-SIM-MCP: an agent-native SCARA robotics simulation workcell.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="description" content="ROBO-SIM-MCP: an agent-native SCARA robotics simulation workcell." />
   <title>ROBO-SIM-MCP</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main id="app">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">AGENT-NATIVE ROBOTICS</p>
-        <h1>ROBO-SIM-MCP</h1>
-      </div>
-      <div class="header-status">
-        <span class="live-dot"></span>
-        <span id="webmcpStatus">Checking WebMCP…</span>
-      </div>
-    </header>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><div class="title">ROBO-SIM-MCP</div></div>
+    <div class="top-actions">
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06L3.8 16.94l.06-.06A1.7 1.7 0 0 0 4.2 15a1.7 1.7 0 0 0-.6-1A1.7 1.7 0 0 0 2.5 13.6H2.4v-4h.1A1.7 1.7 0 0 0 4.2 8.6a1.7 1.7 0 0 0-.34-1.88L3.8 6.66 6.66 3.8l.06.06A1.7 1.7 0 0 0 8.6 4.2a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 10 2.5V2.4h4v.1a1.7 1.7 0 0 0 1 1.7 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 8.6a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1a1.7 1.7 0 0 0-1.7 1z"/></svg></button>
+      <button id="moreBtn" class="icon-btn dots" aria-label="More">⋮</button>
+    </div>
+  </header>
 
-    <section id="viewport" aria-label="Interactive SCARA workcell"></section>
+  <div id="viewport"></div>
 
-    <aside class="panel status-panel">
-      <div class="panel-title-row">
-        <div>
-          <p class="eyebrow">SHARED STATE</p>
-          <h2>Robot</h2>
-        </div>
-        <span class="chip">SCARA</span>
-      </div>
-      <dl class="readouts">
-        <div><dt>θ₁</dt><dd data-readout="theta">—</dd></div>
-        <div><dt>θ₂</dt><dd data-readout="psi">—</dd></div>
-        <div><dt>X</dt><dd data-readout="x">—</dd></div>
-        <div><dt>Y</dt><dd data-readout="y">—</dd></div>
-        <div><dt>Z</dt><dd data-readout="z">—</dd></div>
-        <div><dt>Gripper</dt><dd data-readout="gripper">—</dd></div>
-        <div><dt>Mode</dt><dd data-readout="mode">—</dd></div>
-        <div><dt>Physics</dt><dd data-readout="physics">checking…</dd></div>
-        <div><dt>Renderer</dt><dd data-readout="renderer">checking…</dd></div>
-        <div><dt>Frame</dt><dd data-readout="frame">measuring…</dd></div>
-      </dl>
-      <p class="interaction-hint">Drag the gripper sideways for XY. Hold Shift or drag vertically for Z.</p>
-    </aside>
+  <section class="card status-card" aria-label="Status">
+    <div class="card-head"><div class="card-title">Status</div></div>
+    <div class="readout-row"><span>θ₁ (Base)</span><b data-readout="theta">—</b></div>
+    <div class="readout-row"><span>θ₂ (Shoulder)</span><b data-readout="psi">—</b></div>
+    <div class="readout-row"><span>X (Horizontal)</span><b data-readout="x">—</b></div>
+    <div class="readout-row"><span>Y (Vertical)</span><b data-readout="y">—</b></div>
+    <div class="readout-row"><span>Z (Tool)</span><b data-readout="z">—</b></div>
+    <div class="readout-row"><span>Mode</span><b data-readout="mode">—</b></div>
+  </section>
 
-    <aside class="panel scene-panel">
-      <div class="panel-title-row">
-        <div>
-          <p class="eyebrow">STRUCTURED WORLD</p>
-          <h2>Scene</h2>
-        </div>
-      </div>
-      <div id="sceneList" class="scene-list"></div>
-      <label class="quality-row">Quality
-        <select id="quality">
-          <option value="balanced" selected>Balanced</option>
-          <option value="performance">Performance</option>
-          <option value="cinematic">Cinematic</option>
-        </select>
-      </label>
-    </aside>
+  <section class="card scene-card" aria-label="Scene">
+    <div class="card-head scene-head"><div class="card-title">Scene</div><div class="chevron">⌃</div></div>
+    <div class="toggle-row"><span>Robot</span><button id="toggleRobot" class="switch on" aria-label="Toggle robot"></button></div>
+    <div class="toggle-row"><span>Base</span><button id="toggleBase" class="switch on" aria-label="Toggle base"></button></div>
+    <div class="toggle-row"><span>Grid</span><button id="toggleGrid" class="switch on" aria-label="Toggle grid"></button></div>
+    <div class="toggle-row"><span>Axes</span><button id="toggleAxes" class="switch on" aria-label="Toggle axes"></button></div>
+    <div class="env-divider"></div>
+    <div class="env-row"><span id="envName" class="env-label" title="Studio environment">Studio</span><button id="envBtn" class="env-btn">Load HDRI</button></div>
+    <input id="envInput" type="file" accept=".hdr,.exr,image/vnd.radiance" hidden />
+  </section>
 
-    <section class="panel task-panel">
-      <div class="task-heading">
-        <div>
-          <p class="eyebrow">HUMAN + AGENT WORKFLOW</p>
-          <h2>Pick and place</h2>
-        </div>
-        <span id="planStatus" class="plan-status" data-kind="neutral">Ready</span>
-      </div>
-      <div class="button-grid">
-        <button id="planRed" class="button primary">Plan red cube</button>
-        <button id="planBlue" class="button primary">Plan blue cube</button>
-        <button id="simulate" class="button">Validate physics</button>
-        <button id="execute" class="button success">Execute</button>
-        <button id="gripperOpen" class="button compact">Open gripper</button>
-        <button id="gripperClose" class="button compact">Close gripper</button>
-        <button id="fitView" class="button compact">Fit view</button>
-        <button id="reset" class="button compact danger">Reset</button>
-      </div>
-      <ol id="operationLog" class="operation-log" aria-live="polite"></ol>
-    </section>
+  <div id="axisTriad" class="axis-triad" aria-hidden="true">
+    <div class="axis-origin"></div><div class="axis-line axis-x"></div><div class="axis-line axis-y"></div><div class="axis-line axis-z"></div>
+    <div class="axis-label x">X</div><div class="axis-label y">Y</div><div class="axis-label z">Z</div>
+  </div>
 
-    <div class="bottom-note">WebMCP tools call the same controller as manual interaction. Invalid motion holds the last accepted pose.</div>
-  </main>
+  <div id="ikPill" class="ik-pill">Drag gripper · inverse kinematics</div>
+  <div id="toast" class="toast"></div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
-    }
+  <nav class="toolbar" aria-label="Viewer controls">
+    <button id="orbitBtn" class="tool active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M4.7 8.5A8 8 0 0 1 18 5.2"/><path d="M17 2.8l1.3 2.6-2.7.8"/><path d="M19.3 15.5A8 8 0 0 1 6 18.8"/><path d="M7 21.2l-1.3-2.6 2.7-.8"/></svg><span>Orbit</span></button>
+    <button id="panBtn" class="tool"><svg viewBox="0 0 24 24"><path d="M8 11V6.5a1.5 1.5 0 0 1 3 0V10"/><path d="M11 10V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M14 10V7a1.5 1.5 0 0 1 3 0v5"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V15c0 4-2.8 6-6.5 6H12c-2.3 0-3.9-1-5.1-2.9L4 13.6a1.55 1.55 0 0 1 2.5-1.8L8 13.5z"/></svg><span>Pan</span></button>
+    <button id="fitBtn" class="tool"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/></svg><span>Fit</span></button>
+    <div class="sep"></div>
+    <button id="playBtn" class="tool"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg><span>Play</span></button>
+    <button id="pathBtn" class="tool"><svg viewBox="0 0 24 24"><path d="M3 17c3-8 6 3 9-5s6-3 9-6"/><circle cx="3" cy="17" r="1"/><circle cx="21" cy="6" r="1"/></svg><span>Path</span></button>
+  </nav>
+
+  <div id="settingsMenu" class="popup-menu" hidden>
+    <div class="popup-title">Quality</div>
+    <button data-quality="performance">Performance</button>
+    <button data-quality="balanced" class="selected">Balanced</button>
+    <button data-quality="cinematic">Cinematic</button>
+    <div class="popup-divider"></div>
+    <div class="popup-meta" data-readout="renderer">Renderer checking…</div>
+    <div class="popup-meta" data-readout="frame">Frame timing…</div>
+    <div class="popup-meta" data-readout="physics">Physics checking…</div>
+  </div>
+
+  <div id="actionMenu" class="popup-menu" hidden>
+    <div class="popup-title">Workcell</div>
+    <button id="planRed">Plan red cube</button>
+    <button id="planBlue">Plan blue cube</button>
+    <button id="simulate">Validate physics</button>
+    <button id="gripperOpen">Open gripper</button>
+    <button id="gripperClose">Close gripper</button>
+    <button id="reset" class="danger-item">Reset</button>
+  </div>
+
+  <div class="compat-hidden" aria-hidden="true">
+    <span data-readout="gripper">—</span>
+    <span id="webmcpStatus">Checking WebMCP…</span>
+    <span id="planStatus" data-kind="neutral">Ready</span>
+    <div id="sceneList"></div>
+    <ol id="operationLog"></ol>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
   }
-  </script>
-  <script type="module" src="./src/main.js"></script>
+}
+</script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>
