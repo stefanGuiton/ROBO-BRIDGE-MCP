@@ -72,6 +72,19 @@ The local Oracle 1 package was supplied after the foundation ZIP and was reviewe
 
 The Oracle package did not include a normal repository clone, so its patch was not applied blindly. No source from `D:\SCARA-Simulator` was copied, and no RepRapFirmware source or physical-robot control was added.
 
+## Oracle 2 integration work — 2026-08-27
+
+The local Oracle 2 package was supplied under `downloads from oracle` and reviewed as an external compiler/game implementation package. Its source base metadata is `09e323b5fa44b80dcbac38c97440962bed13811a`. The adapted contributions are recorded in `docs/ORACLE_2_IMPORT_AUDIT.md` and include:
+
+- deterministic OKLab palette matching and alpha-aware image-to-Blueprint compilation;
+- stable target IDs, logical 2x4 brick geometry, board mapping, and Blueprint invariants;
+- seeded inventory spawning with exact colour counts and no-overlap checks;
+- immutable BuildBoard occupancy/correction state;
+- Co-Build and Race game state plus deterministic scoring;
+- a standalone local compiler lab and focused tests/evidence scripts.
+
+The Oracle 2 package was a partial runnable snapshot rather than a normal clone. Its compatibility reconstruction, duplicate old WebMCP path, raw screenshots/logs, and package metadata were not copied over existing project code. The compiler/game state is not yet wired to the Oracle 1 UR10 controller or browser WebMCP surface; that bridge is the next bounded task. No third-party source, branded asset, RepRapFirmware source, or physical-robot control was added.
+
 ## Private repository extraction limitation
 
 The build VM could inspect the private repository through the connected GitHub tool, but it could not clone the private repository into the container. Direct network access from the container was unavailable. Therefore, this ZIP contains a clean standalone foundation and does not contain the full SCARA-SIM repository.

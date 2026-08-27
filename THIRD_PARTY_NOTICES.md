@@ -23,3 +23,7 @@ The Oracle 1 UR10-class kinematics uses published DH dimensions attributed in so
 ## Oracle 1 contribution
 
 Oracle 1 supplied dependency-free implementation material and tests. The material was adapted into this repository and is audited in `docs/ORACLE_1_IMPORT_AUDIT.md`. No third-party package was installed for that integration, and no RepRapFirmware source was copied.
+
+## Oracle 2 contribution
+
+Oracle 2 supplied dependency-free compiler, inventory, board, game-state, and test material. The material was adapted into this repository and is audited in `docs/ORACLE_2_IMPORT_AUDIT.md`. The package supplied no third-party runtime source or redistribution licence; it is treated as project-owned implementation material for this private repository. No external image assets, branded construction data, or RepRapFirmware source was copied.

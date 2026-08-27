@@ -30,6 +30,11 @@ def run_javascript_tests() -> dict[str, object]:
         'tests/js/latch-collision.test.js',
         'tests/js/reliability.test.js',
         'tests/js/logo-webmcp.test.js',
+        'tests/js/logo-palette.test.js',
+        'tests/js/logo-compiler.test.js',
+        'tests/js/logo-inventory.test.js',
+        'tests/js/logo-board.test.js',
+        'tests/js/logo-game.test.js',
     ]
     command = ['node', '--test', '--test-concurrency=1', *files]
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
@@ -98,6 +103,14 @@ def main() -> int:
         'apps/web/src/logo/main.js',
         'apps/web/src/render/robot-renderer.js',
         'apps/web/src/webmcp/register-logo-tools.js',
+        'apps/web/compiler.html',
+        'apps/web/src/logo/compiler.js',
+        'apps/web/src/logo/compiler-debug.js',
+        'apps/web/src/bricks/inventory.js',
+        'apps/web/src/bricks/build-board.js',
+        'apps/web/src/game/co-build.js',
+        'apps/web/src/game/race.js',
+        'apps/web/src/game/scoring.js',
         'physics/newton-service/app/main.py',
         'physics/newton-service/app/newton_backend.py',
     ]
@@ -107,9 +120,11 @@ def main() -> int:
     browser_results_path = ROOT / 'evidence' / 'oracle1' / 'browser-runtime-results.json'
     retained_browser_results_path = ROOT / 'evidence' / 'setup' / 'browser' / 'runtime-results.json'
     newton_results_path = ROOT / 'evidence' / 'setup' / 'newton-runtime-results.json'
+    oracle2_results_path = ROOT / 'evidence' / 'oracle2' / 'verification.json'
     browser_results = json.loads(browser_results_path.read_text(encoding='utf-8')) if browser_results_path.is_file() else None
     retained_browser_results = json.loads(retained_browser_results_path.read_text(encoding='utf-8')) if retained_browser_results_path.is_file() else None
     newton_results = json.loads(newton_results_path.read_text(encoding='utf-8')) if newton_results_path.is_file() else None
+    oracle2_results = json.loads(oracle2_results_path.read_text(encoding='utf-8')) if oracle2_results_path.is_file() else None
 
     result = {
         'project': 'LOGO ROBO',
@@ -124,6 +139,8 @@ def main() -> int:
         'newtonRuntimeTested': bool(newton_results and newton_results.get('ok')),
         'newtonRuntimeEvidence': str(newton_results_path.relative_to(ROOT)) if newton_results else None,
         'newtonRuntimeNote': None if newton_results else 'Installed, but runtime qualification is paused by the GPU thermal stop condition.',
+        'oracle2CompilerGameVerified': bool(oracle2_results and oracle2_results.get('ok')),
+        'oracle2CompilerGameEvidence': str(oracle2_results_path.relative_to(ROOT)) if oracle2_results else None,
         'oracle1WorkspaceEvidence': 'evidence/oracle1/workspace-qualification.json' if (ROOT / 'evidence/oracle1/workspace-qualification.json').is_file() else None,
         'oracle1ReliabilityEvidence': 'evidence/oracle1/reliability-results.json' if (ROOT / 'evidence/oracle1/reliability-results.json').is_file() else None,
         'oracle1PerformanceEvidence': 'evidence/oracle1/performance-results.json' if (ROOT / 'evidence/oracle1/performance-results.json').is_file() else None,

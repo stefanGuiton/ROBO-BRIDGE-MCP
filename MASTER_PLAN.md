@@ -2661,6 +2661,8 @@ Complete one manual robot pick and place.
 
 ## P4 — Logo compiler
 
+**Status:** Compiler foundation integrated; browser upload and controller bridge pending.
+
 ### Objective
 
 Turn an image into a live blueprint.
@@ -2715,6 +2717,8 @@ Make tray and board observable to the agent.
 
 ## P6 — WebMCP primitive loop
 
+**Status:** Oracle 1 primitive manipulation surface integrated; generated-build loop pending.
+
 ### Objective
 
 Agent can build one brick by itself.
@@ -2738,6 +2742,8 @@ One natural-language task causes the agent to complete a full pick/place without
 
 ## P7 — Co-Build
 
+**Status:** Deterministic Co-Build state model integrated; browser/controller bridge pending.
+
 ### Objective
 
 Human and agent build the same blueprint together.
@@ -2760,6 +2766,8 @@ Human and agent build the same blueprint together.
 ---
 
 ## P8 — Race
+
+**Status:** Deterministic Race state model integrated; browser game surface pending.
 
 ### Objective
 
@@ -3115,44 +3123,26 @@ LOGO ROBO challenge v2 is done when:
 
 ## 48. Immediate next implementation task
 
-### Task: build the first LOGO ROBO vertical slice
+### Task: bridge the deterministic compiler to the authoritative robot runtime
 
-Do not implement the whole compiler or Race first.
+The Oracle 1 hard-coded manipulation slice and the Oracle 2 compiler/game foundation now exist as separate tested boundaries. Connect them through one explicit adapter before adding a larger generated-build scenario:
 
-Build one complete hard-coded brick loop through the final architecture:
-
-1. replace the SCARA hero with or add the UR10-class arm;
-2. lock fixed downward TCP orientation;
-3. create one white generic 2×4 brick in the tray;
-4. create one white target slot on the board;
-5. create `move_tool`;
-6. create `latch`;
-7. create `unlatch`;
-8. create `tray_camera`;
-9. return one camera detection with bbox and XYZ;
-10. draw the same detection as a green overlay;
-11. register the primitive WebMCP tools;
-12. have an agent observe the brick;
-13. move above it;
-14. descend;
-15. latch;
-16. lift;
-17. observe the board;
-18. move above the target;
-19. descend;
-20. unlatch;
-21. verify the target;
-22. repeat this test 20 times.
+1. define the coordinate transform from the compiler's centred board limits to the Oracle 1 workcell;
+2. create a generated round from `Blueprint` targets and seeded inventory;
+3. render inventory and board targets from the same immutable Blueprint/build snapshot;
+4. adapt `BuildBoard` placement results to the controller-facing `BoardAdapter` without duplicating occupancy truth;
+5. route manual brick dragging and WebMCP observation/action calls through the same controller and build state;
+6. expose read-only compiler/build state and bounded compiler actions through the existing primitive WebMCP seam;
+7. test unreachable, occupied, wrong-colour, and collision failures as structured replanning signals;
+8. run the browser compiler lab and generated pick/place loop in a supported browser context.
 
 ### Acceptance
 
-- no joint command is exposed;
-- the same robot controller is used by WebMCP and rendering;
-- camera observation and overlay agree;
-- 19/20 or better successful loops;
-- no fatal console error.
-
-Only after this vertical slice passes should work split into the full logo compiler, Co-Build, and Race.
+- no joint command or high-level `place_brick` command is exposed;
+- one Blueprint, one inventory, one build board, and one authoritative robot controller drive rendering, manual controls, WebMCP, and scoring;
+- compiler preview and physical target map agree after the coordinate transform;
+- invalid motion and failed placement preserve accepted state and return structured reasons;
+- the browser-generated round passes the focused manual and agent workflows without fatal console errors.
 
 ---
 

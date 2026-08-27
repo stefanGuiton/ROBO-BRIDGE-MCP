@@ -1,0 +1,14 @@
+{
+  "seed": "0x4c4f474f",
+  "total": 1000,
+  "passed": 1000,
+  "failed": 0,
+  "elapsedMs": 23428.8174,
+  "avgCompileAndInvariantMs": 23.4288174,
+  "brickCount": {
+    "min": 2,
+    "max": 124,
+    "mean": 47.803
+  },
+  "failures": []
+}

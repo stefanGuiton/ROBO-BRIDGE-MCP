@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: **LOGO ROBO ORACLE 1 INTEGRATED — FULL CHALLENGE ACCEPTANCE PENDING**
+Status: **LOGO ROBO ORACLE 2 COMPILER/GAME INTEGRATED — FULL CHALLENGE ACCEPTANCE PENDING**
 
 ## Oracle 1 integration status
 
@@ -13,13 +13,23 @@ Status: **LOGO ROBO ORACLE 1 INTEGRATED — FULL CHALLENGE ACCEPTANCE PENDING**
 - The retained SCARA/WebGL/Newton foundation remains available and was not deleted or silently replaced.
 - See `docs/ORACLE_1_IMPORT_AUDIT.md` and `evidence/oracle1/` for import decisions and current evidence.
 
+## Oracle 2 integration status
+
+- The deterministic compiler converts bounded local image data into an immutable Blueprint with stable target IDs, palette colours, world-space target poses, and invariant validation.
+- Seeded inventory spawning, immutable BuildBoard state, Co-Build, Race, and scoring are integrated as browser-independent modules.
+- The compiler lab is available at `/compiler.html`; it is a separate page and does not replace the authoritative Oracle 1 UR10 manipulation page.
+- The compiler/game bridge to the Oracle 1 controller and WebMCP surface is intentionally not claimed yet because the board coordinate and snap contracts still need an explicit adapter.
+- See `docs/ORACLE_2_IMPORT_AUDIT.md` and `evidence/oracle2/` for import decisions and generated evidence.
+
 ## Verified on this PC
 
-- JavaScript kinematics/controller/WebMCP tests: 15/15 pass.
+- Combined JavaScript suites: 63/63 test cases pass through the managed-Windows direct-module fallback after Node worker creation reports `spawn EPERM`.
+- Oracle 2 compiler/inventory/board/game suites: 27/27 test cases pass.
 - Standard Python physics/API tests: 6/6 pass; 3 Newton tests are skipped unless explicitly enabled.
 - Explicit Newton CPU physics tests: 3/3 pass in 57.82 seconds.
-- Browser JavaScript syntax: 11 files pass.
+- Browser JavaScript syntax: 34 files pass.
 - Python source compilation: 14 files pass.
+- Root verification was run with the project-local `D:\ROBO-SIM-MCP\.venv\Scripts\python.exe`; machine-wide Python is not treated as project evidence.
 - Browser app and physics service boot at `127.0.0.1:8769` and `127.0.0.1:8001`.
 - SCARA, workcell, cubes, bins, obstacle, gripper, PBR materials, and shadows render.
 - Manual XY/Z movement, orbit, pan, fit, and gripper controls pass.
@@ -37,6 +47,10 @@ Status: **LOGO ROBO ORACLE 1 INTEGRATED — FULL CHALLENGE ACCEPTANCE PENDING**
 - `evidence/setup/browser/*.png`
 - `evidence/setup/newton-installation.md`
 - `evidence/setup/newton-runtime-results.json`
+- `evidence/oracle2/verification.json`
+- `evidence/oracle2/randomized-invariants.json`
+- `evidence/oracle2/compiler-benchmarks.json`
+- `evidence/oracle2/manual-flow.json`
 - `evidence/foundation-verification.json`
 - `evidence/setup/baseline-verification.md`
 

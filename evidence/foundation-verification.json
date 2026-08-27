@@ -1,7 +1,7 @@
 {
   "project": "LOGO ROBO",
   "repository": "stefanGuiton/LOGO-ROBO-MCP",
-  "version": "0.2.0-oracle1-ur10",
+  "version": "0.3.0-oracle2-compiler-game",
   "checks": [
     {
       "name": "JavaScript tests",
@@ -16,7 +16,12 @@
         "tests/js/robot-controller.test.js",
         "tests/js/latch-collision.test.js",
         "tests/js/reliability.test.js",
-        "tests/js/logo-webmcp.test.js"
+        "tests/js/logo-webmcp.test.js",
+        "tests/js/logo-palette.test.js",
+        "tests/js/logo-compiler.test.js",
+        "tests/js/logo-inventory.test.js",
+        "tests/js/logo-board.test.js",
+        "tests/js/logo-game.test.js"
       ],
       "exitCode": 0,
       "mode": "direct-module-fallback-after-spawn-eperm",
@@ -52,6 +57,26 @@
         {
           "file": "tests/js/logo-webmcp.test.js",
           "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-palette.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-compiler.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-inventory.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-board.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-game.test.js",
+          "exitCode": 0
         }
       ]
     },
@@ -69,7 +94,7 @@
     {
       "name": "JavaScript syntax",
       "exitCode": 0,
-      "files": 23,
+      "files": 34,
       "failures": []
     },
     {
@@ -91,6 +116,8 @@
   "newtonRuntimeTested": true,
   "newtonRuntimeEvidence": "evidence\\setup\\newton-runtime-results.json",
   "newtonRuntimeNote": null,
+  "oracle2CompilerGameVerified": true,
+  "oracle2CompilerGameEvidence": "evidence\\oracle2\\verification.json",
   "oracle1WorkspaceEvidence": "evidence/oracle1/workspace-qualification.json",
   "oracle1ReliabilityEvidence": "evidence/oracle1/reliability-results.json",
   "oracle1PerformanceEvidence": "evidence/oracle1/performance-results.json"

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LOGO ROBO — Compiler Lab</title>
+  <link rel="stylesheet" href="compiler.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ORACLE 2 / LIVE BLUEPRINT TRUTH</p>
+        <h1>LOGO ROBO <span>Compiler Lab</span></h1>
+        <p class="lede">Local image → deterministic 2×4 brick blueprint. The preview and board view both render the immutable Blueprint.</p>
+      </div>
+      <div class="status"><span class="dot"></span><strong id="status">READY</strong><small id="compile-time">—</small></div>
+    </header>
+
+    <section class="toolbar card">
+      <div class="control patterns">
+        <label>Test pattern</label>
+        <div id="pattern-buttons" class="segmented"></div>
+      </div>
+      <div class="control">
+        <label for="budget">Brick budget <strong id="budget-value">48</strong></label>
+        <input id="budget" type="range" min="12" max="128" step="1" value="48">
+      </div>
+      <div class="control">
+        <label for="fit">Fit</label>
+        <select id="fit"><option value="contain">Contain</option><option value="cover">Cover</option></select>
+      </div>
+      <label class="upload button">Upload PNG / JPEG / WebP<input id="file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+    </section>
+
+    <section class="compare-grid">
+      <article class="card panel">
+        <div class="panel-head"><div><span>01</span><h2>Source</h2></div><small>local only</small></div>
+        <div class="canvas-stage source-stage"><canvas id="source-canvas" width="512" height="512"></canvas></div>
+      </article>
+      <article class="card panel accent">
+        <div class="panel-head"><div><span>02</span><h2>Compiled bricks</h2></div><small>Blueprint targets</small></div>
+        <div class="canvas-stage"><canvas id="preview-canvas" width="640" height="480"></canvas></div>
+      </article>
+      <article class="card panel">
+        <div class="panel-head"><div><span>03</span><h2>Physical board map</h2></div><small>world-space poses</small></div>
+        <div class="canvas-stage board-stage"><canvas id="board-canvas" width="640" height="480"></canvas></div>
+      </article>
+    </section>
+
+    <section class="truth-grid">
+      <article class="card metric"><span>GRID</span><strong id="grid-metric">—</strong><small>logical cells</small></article>
+      <article class="card metric"><span>BRICKS</span><strong id="brick-metric">—</strong><small id="budget-metric">budget —</small></article>
+      <article class="card metric"><span>BOARD</span><strong id="board-metric">—</strong><small>millimetres</small></article>
+      <article class="card metric"><span>BLUEPRINT</span><strong id="id-metric">—</strong><small>stable ID</small></article>
+    </section>
+
+    <section class="card details">
+      <div><p class="eyebrow">COLOUR INVENTORY</p><div id="colour-counts" class="colour-counts"></div></div>
+      <div><p class="eyebrow">INVARIANTS</p><div id="invariants" class="checks"></div></div>
+    </section>
+  </main>
+  <script type="module" src="src/logo/compiler-debug.js"></script>
+</body>
+</html>

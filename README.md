@@ -1,6 +1,6 @@
 # LOGO ROBO
 
-LOGO ROBO is an agent-native browser robotics workcell. A human and a WebMCP agent share one authoritative six-axis UR10-class robot, brick scene, controller, and accepted state. The current checkpoint is the Oracle 1 Cartesian manipulation vertical slice for the private repository `stefanGuiton/LOGO-ROBO-MCP`.
+LOGO ROBO is an agent-native browser robotics workcell. A human and a WebMCP agent share one authoritative six-axis UR10-class robot, brick scene, controller, and accepted state. The current checkpoint combines the Oracle 1 Cartesian manipulation vertical slice with the Oracle 2 deterministic compiler and compiler-game foundation for the private repository `stefanGuiton/LOGO-ROBO-MCP`.
 
 ## Current checkpoint
 
@@ -13,9 +13,11 @@ The default browser page now demonstrates:
 - a procedural workcell renderer with tray, board, TCP marker, camera presets, and frame timing;
 - manual Cartesian controls and the same controller exposed through seven primitive WebMCP tools;
 - structured robot/world revisions and browser-visible WebMCP lifecycle diagnostics;
+- deterministic local image-to-Blueprint compilation with OKLab palette matching, alpha-aware coverage, stable target IDs, seeded inventory spawning, and invariant validation;
+- standalone compiler lab at `http://127.0.0.1:8769/compiler.html` plus tested Co-Build and Race state models;
 - the retained SCARA/WebGL/Newton foundation for later challenge work.
 
-This is a working integration checkpoint, not the finished image compiler, perception, Co-Build/Race, or submission package.
+This is a working integration checkpoint, not the finished image-to-robot bridge, simulator-native perception loop, WebMCP compiler/game surface, or submission package.
 
 ## Quick start on Windows
 
@@ -36,6 +38,9 @@ Useful JavaScript commands:
 ```powershell
 npm run test:js
 npm run test:oracle1
+npm run test:oracle2
+npm run test:logo
+npm run manual:logo
 npm run qualify:oracle1
 npm run reliability:oracle1
 npm run performance:oracle1
@@ -60,12 +65,16 @@ Do not use this project to connect to a physical robot, Duet, or ROS system.
 - `apps/web/src/robot/controller.js` — authoritative UR10-class accepted state.
 - `apps/web/src/robot/kinematics.js` — browser FK/IK authority.
 - `apps/web/src/webmcp/register-logo-tools.js` — primitive WebMCP contract.
+- `apps/web/src/logo/compiler.js` and `apps/web/src/logo/compiler-debug.js` — Oracle 2 deterministic compiler and local lab.
+- `apps/web/src/bricks/build-board.js` and `apps/web/src/game/` — compiler target state, Co-Build, Race, and scoring models.
 - `apps/web/src/core/` and `apps/web/src/webmcp/register-tools.js` — retained SCARA foundation path.
 - `physics/newton-service/app/` — optional physics integration boundary.
 - `docs/ORACLE_1_IMPORT_AUDIT.md` — source-by-source Oracle 1 integration decisions.
+- `docs/ORACLE_2_IMPORT_AUDIT.md` — source-by-source Oracle 2 compiler/game integration decisions.
 - `evidence/oracle1/` — current Oracle 1 qualification and reliability evidence.
+- `evidence/oracle2/` — current Oracle 2 compiler/game evidence.
 - `evidence/foundation-verification.json` — generated full-project verification record.
 
 ## Safety and provenance
 
-The project is simulation-only. No physical robot or Duet hardware command path is included. Generic bricks and procedural robot visuals are used; no LEGO branding, manufacturer mesh, or RepRapFirmware source is copied. See `PREEXISTING_WORK.md`, `THIRD_PARTY_NOTICES.md`, and `docs/ORACLE_1_IMPORT_AUDIT.md` for provenance boundaries.
+The project is simulation-only. No physical robot or Duet hardware command path is included. Generic bricks and procedural robot visuals are used; no LEGO branding, manufacturer mesh, or RepRapFirmware source is copied. See `PREEXISTING_WORK.md`, `THIRD_PARTY_NOTICES.md`, and the Oracle import audits for provenance boundaries.
