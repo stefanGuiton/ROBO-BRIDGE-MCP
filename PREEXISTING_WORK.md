@@ -83,7 +83,20 @@ The local Oracle 2 package was supplied under `downloads from oracle` and review
 - Co-Build and Race game state plus deterministic scoring;
 - a standalone local compiler lab and focused tests/evidence scripts.
 
-The Oracle 2 package was a partial runnable snapshot rather than a normal clone. Its compatibility reconstruction, duplicate old WebMCP path, raw screenshots/logs, and package metadata were not copied over existing project code. The compiler/game state is not yet wired to the Oracle 1 UR10 controller or browser WebMCP surface; that bridge is the next bounded task. No third-party source, branded asset, RepRapFirmware source, or physical-robot control was added.
+The Oracle 2 package was a partial runnable snapshot rather than a normal clone. Its compatibility reconstruction, duplicate old WebMCP path, raw screenshots/logs, and package metadata were not copied over existing project code. The compiler/game state remains a separate deterministic foundation pending the generated multi-brick adapter. No third-party source, branded asset, RepRapFirmware source, or physical-robot control was added.
+
+## Oracle 3 integration work — 2026-08-27
+
+The local Oracle 3 package was supplied under `downloads from oracle` and reviewed as an external perception/WebMCP implementation package. Its source base metadata is `09e323b5fa44b80dcbac38c97440962bed13811a`. The adapted contributions are recorded in `docs/ORACLE_3_IMPORT_AUDIT.md` and include:
+
+- simulator-native vector/matrix projection, camera rigs, bounded 3D-to-pixel observations, and approximate occlusion;
+- immutable observation snapshots, stable world revisions, active-object association, and stale-observation recovery;
+- six primitive WebMCP tools using `document.modelContext.registerTool(...)` with JSON schemas and lifecycle diagnostics;
+- bounded agent activity phases for observe, target, move, latch, verify, place, and recover;
+- an explicit adapter from the Oracle 3 runtime contract to the existing Oracle 1 UR10 `RobotController` and `BoardAdapter`;
+- deterministic fixture, recovery/performance scripts, browser-served debug page, and focused tests/evidence.
+
+The Oracle 3 package was a sparse runnable snapshot rather than a normal clone. Its duplicate compatibility `core/*` and physics paths were not copied, and the retained SCARA WebMCP module was not overwritten. No third-party source, computer-vision dependency, branded asset, RepRapFirmware source, or physical-robot control was added. The generated multi-brick compiler-to-controller bridge and native WebMCP tool-selection acceptance remain future gates.
 
 ## Private repository extraction limitation
 

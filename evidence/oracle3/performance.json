@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-08-27T16:35:19.789Z",
+  "units": "milliseconds",
+  "observationGeneration": {
+    "20": {
+      "runs": 60,
+      "p50Ms": 2.9566999999999553,
+      "p95Ms": 3.7644000000000233,
+      "p99Ms": 6.788400000000024,
+      "maxMs": 7.944999999999993
+    },
+    "50": {
+      "runs": 60,
+      "p50Ms": 6.039199999999937,
+      "p95Ms": 6.751800000000003,
+      "p99Ms": 6.983100000000036,
+      "maxMs": 7.13009999999997
+    },
+    "100": {
+      "runs": 60,
+      "p50Ms": 10.982799999999997,
+      "p95Ms": 11.859399999999823,
+      "p99Ms": 12.016200000000026,
+      "maxMs": 12.609800000000178
+    }
+  },
+  "handlerLatency": {
+    "get_build_state": {
+      "runs": 120,
+      "p50Ms": 0.05410000000006221,
+      "p95Ms": 0.35619999999994434,
+      "p99Ms": 0.5691000000001623,
+      "maxMs": 0.7122999999999138
+    },
+    "observe_camera": {
+      "runs": 120,
+      "p50Ms": 5.587999999999738,
+      "p95Ms": 6.299800000000232,
+      "p99Ms": 6.695600000000013,
+      "maxMs": 6.7832999999998265
+    }
+  },
+  "targets": {
+    "observationAbsoluteMaxMs": 100,
+    "observationPreferredP95Ms": 20
+  },
+  "notes": [
+    "Observation is request-driven, not recomputed every animation frame.",
+    "Handler latency excludes robot animation because the fixture moveTool is instantaneous."
+  ]
+}

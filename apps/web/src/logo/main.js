@@ -3,7 +3,8 @@ import { makeBrick } from '../bricks/brick-spec.js';
 import { RobotRenderer } from '../render/robot-renderer.js';
 import { RobotController, RobotError } from '../robot/controller.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
-import { registerLogoWebMcpTools } from '../webmcp/register-logo-tools.js';
+import { createLogoRoboRuntime } from './runtime.js';
+import { registerWebMcpTools } from '../webmcp/register-oracle3-tools.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -187,6 +188,7 @@ const actions = {
   runPickPlace,
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 500 }, { signal })
 };
+const runtime = createLogoRoboRuntime({ controller, board });
 
 function updateUi() {
   const state = controller.getState();
@@ -278,7 +280,7 @@ setInterval(() => {
 }, 500);
 window.addEventListener('resize', () => renderer.render());
 
-registerLogoWebMcpTools(actions, updateToolDiagnostics).then((result) => {
+registerWebMcpTools(runtime, updateToolDiagnostics).then((result) => {
   if (!webmcpEl) return;
   if (result.ok) {
     webmcpEl.textContent = `${result.toolCount} TOOLS READY`;
@@ -292,8 +294,9 @@ registerLogoWebMcpTools(actions, updateToolDiagnostics).then((result) => {
 });
 
 window.__LOGO_ROBO__ = Object.freeze({
-  version: '0.2.0-oracle1-ur10',
+  version: '0.4.0-oracle3-perception-webmcp',
   actions,
+  runtime,
   robotController: controller,
   board,
   renderer,
@@ -303,6 +306,8 @@ window.__LOGO_ROBO__ = Object.freeze({
   get scene() { return getSceneState(); }
 });
 window.__LOGO_ROBO_ORACLE1__ = { controller, renderer, board, runPickPlace, resetScene, layout: CHALLENGE_LAYOUT };
+window.__LOGO_ROBO_ORACLE3__ = { runtime, controller, board, renderer };
+window.__LOGO_ROBO_RUNTIME__ = runtime;
 window.__ROBO_SIM__ = window.__LOGO_ROBO__;
 
 if (evidenceMode) {

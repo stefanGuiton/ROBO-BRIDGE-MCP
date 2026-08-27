@@ -2691,6 +2691,8 @@ Turn an image into a live blueprint.
 
 ## P5 — Simulator-native perception
 
+**Status:** Oracle 3 perception and observation layer integrated; native browser tool selection pending.
+
 ### Objective
 
 Make tray and board observable to the agent.
@@ -2717,11 +2719,11 @@ Make tray and board observable to the agent.
 
 ## P6 — WebMCP primitive loop
 
-**Status:** Oracle 1 primitive manipulation surface integrated; generated-build loop pending.
+**Status:** Oracle 3 six-tool primitive loop is connected to the single-target Oracle 1 UR10 controller; generated multi-brick loop pending.
 
 ### Objective
 
-Agent can build one brick by itself.
+Agent can observe, move, latch, release, and verify one brick through the same controller used by the human UI.
 
 ### Tasks
 
@@ -3125,7 +3127,7 @@ LOGO ROBO challenge v2 is done when:
 
 ### Task: bridge the deterministic compiler to the authoritative robot runtime
 
-The Oracle 1 hard-coded manipulation slice and the Oracle 2 compiler/game foundation now exist as separate tested boundaries. Connect them through one explicit adapter before adding a larger generated-build scenario:
+The Oracle 1 hard-coded manipulation slice, the Oracle 2 compiler/game foundation, and the Oracle 3 perception/primitive WebMCP loop now exist as tested boundaries. Connect the compiler/game state through one explicit adapter before adding a larger generated-build scenario:
 
 1. define the coordinate transform from the compiler's centred board limits to the Oracle 1 workcell;
 2. create a generated round from `Blueprint` targets and seeded inventory;

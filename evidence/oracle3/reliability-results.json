@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-08-27T16:35:20.935Z",
+  "rounds": 50,
+  "passed": 50,
+  "failed": 0,
+  "passRate": 1,
+  "recovery": {
+    "humanInterference": {
+      "pass": true,
+      "error": "stale_state"
+    },
+    "failedLatch": {
+      "pass": true,
+      "error": "no_brick_in_capture"
+    },
+    "collision": {
+      "pass": true,
+      "error": "collision"
+    },
+    "targetOccupied": {
+      "pass": true
+    }
+  },
+  "failures": []
+}

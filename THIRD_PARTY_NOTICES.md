@@ -27,3 +27,7 @@ Oracle 1 supplied dependency-free implementation material and tests. The materia
 ## Oracle 2 contribution
 
 Oracle 2 supplied dependency-free compiler, inventory, board, game-state, and test material. The material was adapted into this repository and is audited in `docs/ORACLE_2_IMPORT_AUDIT.md`. The package supplied no third-party runtime source or redistribution licence; it is treated as project-owned implementation material for this private repository. No external image assets, branded construction data, or RepRapFirmware source was copied.
+
+## Oracle 3 contribution
+
+Oracle 3 supplied dependency-free simulator-native perception, camera projection, bounded primitive WebMCP handlers, a deterministic fixture, and qualification scripts. The material was adapted into this repository and is audited in `docs/ORACLE_3_IMPORT_AUDIT.md`. The package supplied no third-party runtime source or new package dependency; its separate redistribution licence is not established, so this contribution remains private project-owned implementation material pending final provenance review. No computer-vision package, branded asset, RepRapFirmware source, or physical-robot control was copied.
