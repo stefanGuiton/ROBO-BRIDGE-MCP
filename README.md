@@ -1,82 +1,71 @@
-# ROBO-SIM-MCP
+# LOGO ROBO
 
-An agent-native browser robotics workcell. Humans and WebMCP agents use the same SCARA controller, scene state, gripper, trajectories, and physics-validation protocol.
+LOGO ROBO is an agent-native browser robotics workcell. A human and a WebMCP agent share one authoritative six-axis UR10-class robot, brick scene, controller, and accepted state. The current checkpoint is the Oracle 1 Cartesian manipulation vertical slice for the private repository `stefanGuiton/LOGO-ROBO-MCP`.
 
-## Foundation status
+## Current checkpoint
 
-This ZIP is a **working foundation**, not a finished challenge submission.
+The default browser page now demonstrates:
 
-Implemented:
+- procedural six-axis UR10-class geometry driven by published DH dimensions;
+- fixed-down Cartesian TCP control with damped-least-squares IK, limits, continuity, and fail-closed motion;
+- one generic unbranded 2x4 construction brick;
+- measured latch, rigid carry, release, and board snap behaviour;
+- a procedural workcell renderer with tray, board, TCP marker, camera presets, and frame timing;
+- manual Cartesian controls and the same controller exposed through seven primitive WebMCP tools;
+- structured robot/world revisions and browser-visible WebMCP lifecycle diagnostics;
+- the retained SCARA/WebGL/Newton foundation for later challenge work.
 
-- procedural high-detail SCARA browser model using the locked `340.313 mm` and `249.960 mm` links;
-- PBR metal materials, product-style lighting, shadows, workcell, bins, cubes, and obstacle;
-- manual XY and Z end-effector manipulation;
-- fail-closed analytic FK/IK with branch continuity and last-valid-pose behaviour;
-- parallel-gripper state and animation;
-- structured scene and robot state;
-- path planning, preview, validation, and playback;
-- nine WebMCP tools registered through `document.modelContext.registerTool()`;
-- FastAPI physics protocol;
-- deterministic collision, grasp, release, gravity-settlement, and final-state backend;
-- bounded Newton/Warp rigid-body validation with a trajectory-driven gripper proxy;
-- automated JavaScript, WebMCP-contract, and Python tests.
-
-Not yet implemented or proven:
-
-- final SCARA-SIM V8 visual extraction and pixel-level comparison;
-- browser-to-Newton end-to-end acceptance and repeated-run variability measurement;
-- hosted physics backend;
-- WebMCP execution in ChatGPT's built-in browser;
-- browser runtime testing in this build VM;
-- production WebGPU renderer;
-- challenge submission assets.
+This is a working integration checkpoint, not the finished image compiler, perception, Co-Build/Race, or submission package.
 
 ## Quick start on Windows
 
-1. Extract the ZIP.
-2. Run `SETUP_WINDOWS.bat`.
-3. Run `START_WINDOWS.bat`.
-4. Open `http://127.0.0.1:8769` if the browser does not open.
+From `D:\ROBO-SIM-MCP`:
 
-The browser loads Three.js from jsDelivr. Internet access is required for the first browser run unless Three.js is later vendored.
-
-## Manual commands
-
-```bash
+```powershell
 python -m venv .venv
-.venv/Scripts/python -m pip install -r physics/newton-service/requirements.txt
-.venv/Scripts/python -m pip install -r physics/newton-service/requirements-dev.txt
-.venv/Scripts/python scripts/verify.py
-.venv/Scripts/python scripts/run_foundation.py
+.venv\Scripts\python.exe -m pip install -r physics\newton-service\requirements.txt
+.venv\Scripts\python.exe -m pip install -r physics\newton-service\requirements-dev.txt
+.venv\Scripts\python.exe scripts\verify.py
+.venv\Scripts\python.exe scripts\run_foundation.py
 ```
 
-Newton is optional and intentionally separate from the baseline setup:
+Open [http://127.0.0.1:8769](http://127.0.0.1:8769) if the browser does not open automatically. The default browser path has no Node dependency installation; the retained SCARA page still uses its existing Three.js import map from jsDelivr.
+
+Useful JavaScript commands:
+
+```powershell
+npm run test:js
+npm run test:oracle1
+npm run qualify:oracle1
+npm run reliability:oracle1
+npm run performance:oracle1
+```
+
+## Newton boundary
+
+Newton is optional and intentionally separate from the browser baseline. It validates bounded manipulation physics through the existing HTTP service; it does not replace the browser’s UR10 kinematics or accepted robot state.
 
 ```powershell
 .venv\Scripts\python.exe -m pip install --use-feature=truststore -r physics\newton-service\requirements-newton.txt
-```
-
-## Newton setup
-
-Use the project Python 3.10-3.12 environment and follow Newton's current installation guide. The deterministic fallback remains the default; opt into the bounded Newton validator only after installation and thermal qualification:
-
-```powershell
 .venv\Scripts\python.exe scripts\check_newton.py
 .venv\Scripts\python.exe scripts\run_foundation.py --physics-backend newton
 ```
 
+Do not use this project to connect to a physical robot, Duet, or ROS system.
+
 ## Important files
 
-- `MASTER_PLAN.md` — complete project and challenge execution plan.
-- `PREEXISTING_WORK.md` — provenance boundary for SCARA-SIM work.
-- `apps/web/src/core/robot-controller.js` — shared human/agent robot state.
-- `apps/web/src/webmcp/register-tools.js` — WebMCP tool definitions.
-- `physics/newton-service/app/newton_backend.py` — Newton integration boundary.
-- `physics/newton-service/app/fallback_backend.py` — tested foundation physics.
-- `docs/PROTOCOL.md` — browser/physics contract.
-- `docs/NEWTON_NEXT_TASK.md` — next bounded Newton implementation task.
-- `evidence/foundation-verification.json` — generated verification record.
+- `MASTER_PLAN.md` — authoritative LOGO ROBO challenge plan.
+- `apps/web/index.html` and `apps/web/src/logo/main.js` — default Oracle 1 browser vertical slice.
+- `apps/web/src/robot/controller.js` — authoritative UR10-class accepted state.
+- `apps/web/src/robot/kinematics.js` — browser FK/IK authority.
+- `apps/web/src/webmcp/register-logo-tools.js` — primitive WebMCP contract.
+- `apps/web/src/core/` and `apps/web/src/webmcp/register-tools.js` — retained SCARA foundation path.
+- `physics/newton-service/app/` — optional physics integration boundary.
+- `docs/ORACLE_1_IMPORT_AUDIT.md` — source-by-source Oracle 1 integration decisions.
+- `evidence/oracle1/` — current Oracle 1 qualification and reliability evidence.
+- `evidence/foundation-verification.json` — generated full-project verification record.
 
-## Safety boundary
+## Safety and provenance
 
-This project is simulation-only. It contains no Duet connection, no physical robot control, and no real-machine command path.
+The project is simulation-only. No physical robot or Duet hardware command path is included. Generic bricks and procedural robot visuals are used; no LEGO branding, manufacturer mesh, or RepRapFirmware source is copied. See `PREEXISTING_WORK.md`, `THIRD_PARTY_NOTICES.md`, and `docs/ORACLE_1_IMPORT_AUDIT.md` for provenance boundaries.

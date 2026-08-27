@@ -1,8 +1,17 @@
 # Foundation status
 
-Date: 2026-08-26
+Date: 2026-08-27
 
-Status: **TARGET-PC FOUNDATION QUALIFIED — FINAL CHALLENGE ACCEPTANCE PENDING**
+Status: **LOGO ROBO ORACLE 1 INTEGRATED — FULL CHALLENGE ACCEPTANCE PENDING**
+
+## Oracle 1 integration status
+
+- The default page is now the LOGO ROBO UR10-class Cartesian manipulation vertical slice.
+- The adapted controller owns accepted TCP/joint state; manual controls and the seven primitive WebMCP tools use that same controller.
+- Oracle 1 focused tests pass: 6 kinematics, 5 controller, 6 latch/collision, 1 reliability, and 2 WebMCP contract tests.
+- Workspace qualification passes 1,000/1,000 samples; reliability qualification passes 50/50 trials.
+- The retained SCARA/WebGL/Newton foundation remains available and was not deleted or silently replaced.
+- See `docs/ORACLE_1_IMPORT_AUDIT.md` and `evidence/oracle1/` for import decisions and current evidence.
 
 ## Verified on this PC
 

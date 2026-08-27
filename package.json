@@ -1,11 +1,15 @@
 {
   "name": "robo-sim-mcp",
-  "version": "0.1.0-foundation",
+  "version": "0.2.0-oracle1-ur10",
   "private": true,
   "type": "module",
   "scripts": {
     "serve:web": "python scripts/serve_web.py",
     "test:js": "node --test --test-concurrency=1 tests/js/*.test.js",
+    "test:oracle1": "node scripts/verify_oracle1.mjs",
+    "qualify:oracle1": "node scripts/qualify_workspace.mjs",
+    "reliability:oracle1": "node scripts/reliability.mjs",
+    "performance:oracle1": "node scripts/performance_check.mjs",
     "test:physics": "python -m pytest physics/newton-service/tests -q",
     "verify": "python scripts/verify.py"
   },

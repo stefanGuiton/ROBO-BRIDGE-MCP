@@ -1,0 +1,20 @@
+{
+  "date": "2026-08-27",
+  "url": "http://127.0.0.1:8769",
+  "status": "static-http-pass",
+  "checks": {
+    "indexStatusCode": 200,
+    "indexTitle": "LOGO ROBO — UR10 Manipulation Runtime",
+    "indexLoadsLogoEntry": true,
+    "indexContainsUr10Label": true,
+    "logoMainStatusCode": 200,
+    "logoMainContainsRobotController": true,
+    "logoMainContainsWebMcpRegistration": true,
+    "rendererStatusCode": 200,
+    "rendererContainsCanvasRenderer": true
+  },
+  "interactiveBrowser": {
+    "status": "not-qualified",
+    "reason": "The in-app browser connector could not initialize in this session and the ephemeral Playwright CLI download was not approved. No interactive pass is claimed."
+  }
+}

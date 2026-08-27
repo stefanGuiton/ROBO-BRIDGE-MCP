@@ -1,4 +1,4 @@
-# Codex instructions
+# Codex instructions for LOGO ROBO
 
 ## Read first
 
@@ -10,13 +10,13 @@
 
 ## Architecture rules
 
-- The robot controller owns accepted SCARA state.
+- The robot controller owns accepted browser robot state. The current default vertical slice is UR10-class LOGO ROBO; the retained SCARA controller remains a separate foundation path.
 - Manual controls and WebMCP tools must call the same controller.
 - Rendering must not own kinematic truth.
 - Invalid motion must keep the last accepted pose.
 - Trajectory preview must not mutate accepted state.
 - Physics success must be measured, not asserted.
-- Newton must not duplicate or silently replace SCARA kinematics.
+- Newton must not duplicate or silently replace browser kinematics.
 - Do not add real-robot, Duet, or ROS control during the challenge MVP.
 - Do not include RepRapFirmware source.
 

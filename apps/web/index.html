@@ -2,99 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="ROBO-SIM-MCP: an agent-native SCARA robotics simulation workcell.">
-  <title>ROBO-SIM-MCP</title>
-  <link rel="stylesheet" href="./styles.css">
+  <meta name="description" content="LOGO ROBO: an agent-native UR10 manipulation runtime with shared human and WebMCP control.">
+  <title>LOGO ROBO — UR10 Manipulation Runtime</title>
+  <link rel="stylesheet" href="./logo.css">
 </head>
 <body>
-  <main id="app">
+  <main class="shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">AGENT-NATIVE ROBOTICS</p>
-        <h1>ROBO-SIM-MCP</h1>
-      </div>
-      <div class="header-status">
-        <span class="live-dot"></span>
-        <span id="webmcpStatus">Checking WebMCP…</span>
-      </div>
+      <div class="brand"><span class="brand-mark">LR</span><div><strong>LOGO ROBO</strong><small>UR10 MANIPULATION RUNTIME</small></div></div>
+      <div class="status"><span class="dot"></span><span data-status>READY</span><span class="divider"></span><span data-webmcp>CHECKING WEBMCP</span></div>
     </header>
 
-    <section id="viewport" aria-label="Interactive SCARA workcell"></section>
-
-    <aside class="panel status-panel">
-      <div class="panel-title-row">
-        <div>
-          <p class="eyebrow">SHARED STATE</p>
-          <h2>Robot</h2>
-        </div>
-        <span class="chip">SCARA</span>
+    <section class="stage" aria-label="LOGO ROBO six-axis robot workcell">
+      <canvas id="scene" aria-label="LOGO ROBO six-axis robot workcell"></canvas>
+      <div class="hud hud-left">
+        <span>TCP</span><strong data-tcp>—</strong>
+        <span>JOINTS</span><strong data-joints>—</strong>
       </div>
-      <dl class="readouts">
-        <div><dt>θ₁</dt><dd data-readout="theta">—</dd></div>
-        <div><dt>θ₂</dt><dd data-readout="psi">—</dd></div>
-        <div><dt>X</dt><dd data-readout="x">—</dd></div>
-        <div><dt>Y</dt><dd data-readout="y">—</dd></div>
-        <div><dt>Z</dt><dd data-readout="z">—</dd></div>
-        <div><dt>Gripper</dt><dd data-readout="gripper">—</dd></div>
-        <div><dt>Mode</dt><dd data-readout="mode">—</dd></div>
-        <div><dt>Physics</dt><dd data-readout="physics">checking…</dd></div>
-        <div><dt>Renderer</dt><dd data-readout="renderer">checking…</dd></div>
-        <div><dt>Frame</dt><dd data-readout="frame">measuring…</dd></div>
-      </dl>
-      <p class="interaction-hint">Drag the gripper sideways for XY. Hold Shift or drag vertically for Z.</p>
-    </aside>
-
-    <aside class="panel scene-panel">
-      <div class="panel-title-row">
-        <div>
-          <p class="eyebrow">STRUCTURED WORLD</p>
-          <h2>Scene</h2>
-        </div>
+      <div class="hud hud-right">
+        <span>ROBOT REV</span><strong data-rrev>0</strong>
+        <span>WORLD REV</span><strong data-wrev>0</strong>
+        <span>FRAME</span><strong data-fps>—</strong>
       </div>
-      <div id="sceneList" class="scene-list"></div>
-      <label class="quality-row">Quality
-        <select id="quality">
-          <option value="balanced" selected>Balanced</option>
-          <option value="performance">Performance</option>
-          <option value="cinematic">Cinematic</option>
-        </select>
-      </label>
-    </aside>
-
-    <section class="panel task-panel">
-      <div class="task-heading">
-        <div>
-          <p class="eyebrow">HUMAN + AGENT WORKFLOW</p>
-          <h2>Pick and place</h2>
-        </div>
-        <span id="planStatus" class="plan-status" data-kind="neutral">Ready</span>
-      </div>
-      <div class="button-grid">
-        <button id="planRed" class="button primary">Plan red cube</button>
-        <button id="planBlue" class="button primary">Plan blue cube</button>
-        <button id="simulate" class="button">Validate physics</button>
-        <button id="execute" class="button success">Execute</button>
-        <button id="gripperOpen" class="button compact">Open gripper</button>
-        <button id="gripperClose" class="button compact">Close gripper</button>
-        <button id="fitView" class="button compact">Fit view</button>
-        <button id="reset" class="button compact danger">Reset</button>
-      </div>
-      <ol id="operationLog" class="operation-log" aria-live="polite"></ol>
+      <div class="legend"><span><i class="cyan"></i>accepted TCP</span><span><i class="amber"></i>tool</span><span><i class="ghost"></i>snap target</span></div>
     </section>
 
-    <div class="bottom-note">WebMCP tools call the same controller as manual interaction. Invalid motion holds the last accepted pose.</div>
-  </main>
+    <aside class="controls">
+      <div class="control-head"><span>MANIPULATION</span><strong>Cartesian only</strong></div>
+      <div class="metric-grid">
+        <div><span>Tool</span><strong>FIXED DOWN</strong></div>
+        <div><span>Speed cap</span><strong>650 mm/s</strong></div>
+        <div><span>Held brick</span><strong data-held>NONE</strong></div>
+        <div><span>IK</span><strong>6-AXIS DLS</strong></div>
+      </div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
-    }
-  }
-  </script>
-  <script type="module" src="./src/main.js"></script>
+      <div class="section-label">HUMAN CONTROL · SHARED TCP</div>
+      <form class="move-form" data-move-form>
+        <label><span>X mm</span><input name="xMm" type="number" step="0.1" value="600" required></label>
+        <label><span>Y mm</span><input name="yMm" type="number" step="0.1" value="0" required></label>
+        <label><span>Z mm</span><input name="zMm" type="number" step="0.1" value="450" required></label>
+        <label><span>Speed</span><input name="speedMmS" type="number" step="1" min="1" max="650" value="500" required></label>
+        <button type="submit" class="primary">MOVE TOOL</button>
+      </form>
+      <div class="quick-targets">
+        <button type="button" data-target="home">LOAD HOME</button>
+        <button type="button" data-target="pickup">LOAD PICKUP</button>
+        <button type="button" data-target="target">LOAD TARGET</button>
+      </div>
+
+      <div class="section-label">VERTICAL SLICE</div>
+      <div class="actions">
+        <button type="button" data-action="run" class="primary">RUN PICK + PLACE</button>
+        <button type="button" data-action="latch">LATCH</button>
+        <button type="button" data-action="unlatch">UNLATCH</button>
+        <button type="button" data-action="home">HOME</button>
+        <button type="button" data-action="reset">RESET</button>
+      </div>
+      <div class="views">
+        <button type="button" data-view="hero">HERO</button><button type="button" data-view="top">TOP</button>
+        <button type="button" data-view="tray">TRAY</button><button type="button" data-view="target">TARGET</button>
+      </div>
+
+      <div class="webmcp-panel">
+        <div class="section-label">WEBMCP DIAGNOSTICS</div>
+        <div class="tool-list" data-tool-list><span data-status="pending">awaiting secure context</span></div>
+      </div>
+      <div class="event-log" data-log aria-live="polite"><p><time>BOOT</time><span>Runtime ready</span></p></div>
+    </aside>
+  </main>
+  <script type="module" src="./src/logo/main.js"></script>
 </body>
 </html>

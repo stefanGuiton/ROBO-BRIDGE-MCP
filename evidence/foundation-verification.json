@@ -1,6 +1,7 @@
 {
-  "project": "ROBO-SIM-MCP",
-  "version": "0.1.0-foundation",
+  "project": "LOGO ROBO",
+  "repository": "stefanGuiton/LOGO-ROBO-MCP",
+  "version": "0.2.0-oracle1-ur10",
   "checks": [
     {
       "name": "JavaScript tests",
@@ -10,7 +11,12 @@
         "--test-concurrency=1",
         "tests/js/scara.test.js",
         "tests/js/controller.test.js",
-        "tests/js/webmcp.test.js"
+        "tests/js/webmcp.test.js",
+        "tests/js/robot-kinematics.test.js",
+        "tests/js/robot-controller.test.js",
+        "tests/js/latch-collision.test.js",
+        "tests/js/reliability.test.js",
+        "tests/js/logo-webmcp.test.js"
       ],
       "exitCode": 0,
       "mode": "direct-module-fallback-after-spawn-eperm",
@@ -25,6 +31,26 @@
         },
         {
           "file": "tests/js/webmcp.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/robot-kinematics.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/robot-controller.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/latch-collision.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/reliability.test.js",
+          "exitCode": 0
+        },
+        {
+          "file": "tests/js/logo-webmcp.test.js",
           "exitCode": 0
         }
       ]
@@ -43,7 +69,7 @@
     {
       "name": "JavaScript syntax",
       "exitCode": 0,
-      "files": 11,
+      "files": 23,
       "failures": []
     },
     {
@@ -58,9 +84,14 @@
     }
   ],
   "ok": true,
-  "browserRuntimeTested": true,
-  "browserRuntimeEvidence": "evidence\\setup\\browser\\runtime-results.json",
+  "browserRuntimeTested": false,
+  "browserRuntimeEvidence": null,
+  "retainedFoundationBrowserRuntimeTested": true,
+  "retainedFoundationBrowserRuntimeEvidence": "evidence\\setup\\browser\\runtime-results.json",
   "newtonRuntimeTested": true,
   "newtonRuntimeEvidence": "evidence\\setup\\newton-runtime-results.json",
-  "newtonRuntimeNote": null
+  "newtonRuntimeNote": null,
+  "oracle1WorkspaceEvidence": "evidence/oracle1/workspace-qualification.json",
+  "oracle1ReliabilityEvidence": "evidence/oracle1/reliability-results.json",
+  "oracle1PerformanceEvidence": "evidence/oracle1/performance-results.json"
 }

@@ -1,6 +1,6 @@
 # LOGO ROBO Master Plan v2.0
 
-**Repository:** `stefanGuiton/ROBO-SIM-MCP`  
+**Repository:** `stefanGuiton/LOGO-ROBO-MCP`
 **Challenge product:** **LOGO ROBO**  
 **Date:** 2026-08-27  
 **Status:** Authoritative challenge plan. This document supersedes ROBO-SIM-MCP Master Plan v1.0.  
@@ -123,7 +123,7 @@ This makes the project relevant to:
 
 **LOGO ROBO**
 
-Repository name can remain `ROBO-SIM-MCP` during the challenge.
+The local project directory remains `ROBO-SIM-MCP`; the private repository is now named `LOGO-ROBO-MCP`.
 
 ### 3.2 Public terminology
 

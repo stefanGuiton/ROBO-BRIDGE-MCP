@@ -59,6 +59,19 @@ The following was created as ROBO-SIM-MCP foundation work:
 - challenge master plan;
 - test suites and verification script.
 
+## Oracle 1 integration work — 2026-08-27
+
+The local Oracle 1 package was supplied after the foundation ZIP and was reviewed as an external implementation package, not as trusted Git history. Its adapted contributions are recorded in `docs/ORACLE_1_IMPORT_AUDIT.md` and include:
+
+- UR10-class published DH definition and browser FK/IK;
+- bounded Cartesian controller with fail-closed state and revisions;
+- generic 2x4 brick, latch, carry, release, and board snap seam;
+- dependency-free vertical-slice renderer and manual controls;
+- primitive WebMCP schemas and lifecycle diagnostics;
+- focused kinematics, controller, latch/collision, reliability, and qualification tests.
+
+The Oracle package did not include a normal repository clone, so its patch was not applied blindly. No source from `D:\SCARA-Simulator` was copied, and no RepRapFirmware source or physical-robot control was added.
+
 ## Private repository extraction limitation
 
 The build VM could inspect the private repository through the connected GitHub tool, but it could not clone the private repository into the container. Direct network access from the container was unavailable. Therefore, this ZIP contains a clean standalone foundation and does not contain the full SCARA-SIM repository.

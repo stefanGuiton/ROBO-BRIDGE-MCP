@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PACKAGE = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
 
 
 def run(name: str, command: list[str], cwd: Path = ROOT) -> dict[str, object]:
@@ -24,6 +25,11 @@ def run_javascript_tests() -> dict[str, object]:
         'tests/js/scara.test.js',
         'tests/js/controller.test.js',
         'tests/js/webmcp.test.js',
+        'tests/js/robot-kinematics.test.js',
+        'tests/js/robot-controller.test.js',
+        'tests/js/latch-collision.test.js',
+        'tests/js/reliability.test.js',
+        'tests/js/logo-webmcp.test.js',
     ]
     command = ['node', '--test', '--test-concurrency=1', *files]
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
@@ -89,27 +95,38 @@ def main() -> int:
         'apps/web/index.html',
         'apps/web/src/main.js',
         'apps/web/src/webmcp/register-tools.js',
+        'apps/web/src/logo/main.js',
+        'apps/web/src/render/robot-renderer.js',
+        'apps/web/src/webmcp/register-logo-tools.js',
         'physics/newton-service/app/main.py',
         'physics/newton-service/app/newton_backend.py',
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     checks.append({'name': 'Required files', 'exitCode': 1 if missing else 0, 'missing': missing})
 
-    browser_results_path = ROOT / 'evidence' / 'setup' / 'browser' / 'runtime-results.json'
+    browser_results_path = ROOT / 'evidence' / 'oracle1' / 'browser-runtime-results.json'
+    retained_browser_results_path = ROOT / 'evidence' / 'setup' / 'browser' / 'runtime-results.json'
     newton_results_path = ROOT / 'evidence' / 'setup' / 'newton-runtime-results.json'
     browser_results = json.loads(browser_results_path.read_text(encoding='utf-8')) if browser_results_path.is_file() else None
+    retained_browser_results = json.loads(retained_browser_results_path.read_text(encoding='utf-8')) if retained_browser_results_path.is_file() else None
     newton_results = json.loads(newton_results_path.read_text(encoding='utf-8')) if newton_results_path.is_file() else None
 
     result = {
-        'project': 'ROBO-SIM-MCP',
-        'version': '0.1.0-foundation',
+        'project': 'LOGO ROBO',
+        'repository': 'stefanGuiton/LOGO-ROBO-MCP',
+        'version': PACKAGE.get('version'),
         'checks': checks,
         'ok': all(check['exitCode'] == 0 for check in checks),
         'browserRuntimeTested': bool(browser_results and browser_results.get('ok')),
         'browserRuntimeEvidence': str(browser_results_path.relative_to(ROOT)) if browser_results else None,
+        'retainedFoundationBrowserRuntimeTested': bool(retained_browser_results and retained_browser_results.get('ok')),
+        'retainedFoundationBrowserRuntimeEvidence': str(retained_browser_results_path.relative_to(ROOT)) if retained_browser_results else None,
         'newtonRuntimeTested': bool(newton_results and newton_results.get('ok')),
         'newtonRuntimeEvidence': str(newton_results_path.relative_to(ROOT)) if newton_results else None,
         'newtonRuntimeNote': None if newton_results else 'Installed, but runtime qualification is paused by the GPU thermal stop condition.',
+        'oracle1WorkspaceEvidence': 'evidence/oracle1/workspace-qualification.json' if (ROOT / 'evidence/oracle1/workspace-qualification.json').is_file() else None,
+        'oracle1ReliabilityEvidence': 'evidence/oracle1/reliability-results.json' if (ROOT / 'evidence/oracle1/reliability-results.json').is_file() else None,
+        'oracle1PerformanceEvidence': 'evidence/oracle1/performance-results.json' if (ROOT / 'evidence/oracle1/performance-results.json').is_file() else None,
     }
     evidence = ROOT / 'evidence' / 'foundation-verification.json'
     evidence.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
