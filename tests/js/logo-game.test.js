@@ -1,10 +1,47 @@
-import test from 'node:test';import assert from 'node:assert/strict';import{compileImageData}from'../../apps/web/src/logo/compiler.js';import{makePattern}from'../../apps/web/src/logo/patterns.js';import{CoBuildGame}from'../../apps/web/src/game/co-build.js';import{RaceGame}from'../../apps/web/src/game/race.js';import{scoreCoBuild,scoreRace}from'../../apps/web/src/game/scoring.js';
-const bp=compileImageData(makePattern('glyph',72),{brickBudget:12,boardLimits:{maxWidthMm:160,maxHeightMm:128}}).blueprint;
-function input(t,brickId,actor,nowMs=0){return{brickId,colour:t.colour,position:{xMm:t.worldXmm,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0,actor,nowMs}}
-test('Co-Build claims are metadata and human placement clears agent claim',()=>{const game=new CoBuildGame(bp),t=bp.targets[0];assert.equal(game.claimTarget(t.targetId,'agent').accepted,true);const r=game.place(input(t,'b1','human',100));assert.equal(r.accepted,true);assert.equal(game.board.getTarget(t.targetId).claimOwner,null);assert.equal(game.getBuildState().contributions.human,1)});
-test('claim conflict has stable result and no physical lock side effect',()=>{const game=new CoBuildGame(bp),t=bp.targets[0];game.claimTarget(t.targetId,'human');const conflict=game.claimTarget(t.targetId,'agent');assert.equal(conflict.accepted,false);assert.equal(conflict.reason,'claim_conflict');const r=game.place(input(t,'b2','agent',100));assert.equal(r.accepted,true)});
-test('Co-Build completes only when all targets are correct',()=>{const game=new CoBuildGame(bp);game.start(0);bp.targets.forEach((t,i)=>game.place(input(t,`b${i}`,i%2?'human':'agent',100+i)));assert.equal(game.getBuildState().status,'complete');const score=scoreCoBuild(game,1000);assert.equal(score.correctTargets,bp.targets.length);assert.equal(score.humanCorrectPlacements+score.agentCorrectPlacements,bp.targets.length)});
-test('Race uses same blueprint with separate occupancy and same start event',()=>{const game=new RaceGame(bp,{maxTcpSpeedMmS:500}),state=game.start(50),t=bp.targets[0];game.place('human',input(t,'h1','human',70));assert.equal(state.blueprintId,bp.blueprintId);assert.equal(game.human.progress().correctTargets,1);assert.equal(game.ai.progress().correctTargets,0);assert.equal(game.startedAtMs,50);assert.equal(game.maxTcpSpeedMmS,500)});
-test('Race winner and deterministic tie rule',()=>{const game=new RaceGame(bp);game.start(0);bp.targets.forEach((t,i)=>{game.place('human',input(t,`h${i}`,'human',100));game.place('ai',input(t,`a${i}`,'agent',120))});assert.equal(game.winner(),'human');assert.equal(scoreRace(game,200).winner,'human')});
-test('build-state query is compact, filterable, and carries adapter runtime fields',()=>{const game=new CoBuildGame(bp,{maxTcpSpeedMmS:700});game.start(10);const colour=bp.targets[0].colour;const state=game.getBuildState({status:'unfilled',colour,limit:2},{heldBrickId:'held_7',nowMs:25});assert.equal(state.mode,'co-build');assert.equal(state.maxTcpSpeedMmS,700);assert.equal(state.heldBrickId,'held_7');assert.equal(state.timer.elapsedMs,15);assert.ok(state.targets.length<=2);assert.ok(state.targets.every(t=>t.colour===colour&&!t.occupiedBy))});
-test('race build-state query selects one board but keeps shared race truth',()=>{const game=new RaceGame(bp,{maxTcpSpeedMmS:900});game.start(5);const state=game.getBuildState({side:'ai',limit:1},{heldBrickId:'robot_brick',nowMs:20});assert.equal(state.mode,'race');assert.equal(state.side,'ai');assert.equal(state.maxTcpSpeedMmS,900);assert.equal(state.heldBrickId,'robot_brick');assert.equal(state.blueprintId,bp.blueprintId);assert.equal(state.elapsedMs,15);assert.ok(state.targets.length<=1)});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { compileImageData } from '../../apps/web/src/logo/compiler.js';
+import { makePattern } from '../../apps/web/src/logo/patterns.js';
+import { CoBuildGame } from '../../apps/web/src/game/co-build.js';
+import { RaceGame } from '../../apps/web/src/game/race.js';
+import { scoreCoBuild, scoreRace } from '../../apps/web/src/game/scoring.js';
+
+const blueprint = compileImageData(makePattern('glyph', 72), { brickBudget: 12, boardLimits: { maxWidthMm: 160, maxHeightMm: 128 } }).blueprint;
+const input = (target, brickId, actor, nowMs = 0) => ({ brickId, colour: target.colour, position: { xMm: target.worldXmm, yMm: target.worldYmm, zMm: target.worldZmm }, yawDeg: 0, actor, nowMs });
+
+test('Co-Build uses its one board for claims, placement, contributions, and completion', () => {
+  const game = new CoBuildGame(blueprint);
+  game.start(0);
+  const target = blueprint.targets[0];
+  assert.equal(game.claimTarget(target.targetId, 'agent').ok, true);
+  assert.equal(game.place(input(target, 'human-b1', 'human', 100)).ok, true);
+  assert.equal(game.board.getTarget(target.targetId).claimOwner, 'none');
+  blueprint.targets.slice(1).forEach((candidate, index) => game.place(input(candidate, `b${index}`, index % 2 ? 'human' : 'agent', 110 + index)));
+  const score = scoreCoBuild(game, 1000);
+  assert.equal(score.completionStatus, 'complete');
+  assert.equal(score.humanCorrectPlacements + score.agentCorrectPlacements, blueprint.targets.length);
+});
+
+test('claim conflict is stable but a later measured physical placement can override coordination metadata', () => {
+  const game = new CoBuildGame(blueprint);
+  const target = blueprint.targets[0];
+  game.claimTarget(target.targetId, 'human');
+  const conflict = game.claimTarget(target.targetId, 'agent');
+  assert.equal(conflict.reason, 'claim_conflict');
+  const placement = game.place(input(target, 'agent-b', 'agent', 100));
+  assert.equal(placement.ok, true);
+  assert.equal(game.board.getTarget(target.targetId).completedBy, 'agent');
+});
+
+test('Race explicitly owns two physical board states and has deterministic winner rules', () => {
+  const game = new RaceGame(blueprint, { maxTcpSpeedMmS: 500 });
+  game.start(0);
+  blueprint.targets.forEach((target, index) => {
+    game.place('human', input(target, `h${index}`, 'human', 100));
+    game.place('agent', input(target, `a${index}`, 'agent', 120));
+  });
+  assert.equal(game.winner(), 'human');
+  assert.equal(game.human.progress().correctTargets, blueprint.targets.length);
+  assert.equal(game.agent.progress().correctTargets, blueprint.targets.length);
+  assert.equal(scoreRace(game, 200).winner, 'human');
+});

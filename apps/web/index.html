@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="LOGO ROBO: an agent-native UR10 manipulation runtime with shared human and WebMCP control.">
-  <title>LOGO ROBO — UR10 Manipulation Runtime</title>
+  <meta name="description" content="LOGO ROBO: a shared-state UR10-class multi-brick browser robotics demo with primitive WebMCP control.">
+  <title>LOGO ROBO SIM V2 — UR10 Manipulation Runtime</title>
   <link rel="stylesheet" href="./logo.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">LR</span><div><strong>LOGO ROBO</strong><small>UR10 MANIPULATION RUNTIME</small></div></div>
+      <div class="brand"><span class="brand-mark">LR</span><div><strong>LOGO ROBO SIM V2</strong><small>POST-AUDIT UR10 RUNTIME</small></div></div>
       <div class="status"><span class="dot"></span><span data-status>READY</span><span class="divider"></span><span data-webmcp>CHECKING WEBMCP</span></div>
     </header>
 
@@ -24,6 +24,7 @@
       <div class="hud hud-right">
         <span>ROBOT REV</span><strong data-rrev>0</strong>
         <span>WORLD REV</span><strong data-wrev>0</strong>
+        <span>BUILD</span><strong data-progress>0/0</strong>
         <span>FRAME</span><strong data-fps>—</strong>
       </div>
       <div class="legend"><span><i class="cyan"></i>accepted TCP</span><span><i class="amber"></i>tool</span><span><i class="ghost"></i>snap target</span></div>
@@ -52,9 +53,10 @@
         <button type="button" data-target="target">LOAD TARGET</button>
       </div>
 
-      <div class="section-label">VERTICAL SLICE</div>
+      <div class="section-label">LIVE COMPILED ROUND</div>
       <div class="actions">
-        <button type="button" data-action="run" class="primary">RUN PICK + PLACE</button>
+        <button type="button" data-action="run" class="primary">PLACE NEXT BRICK</button>
+        <button type="button" data-action="round" class="primary">BUILD FULL ROUND</button>
         <button type="button" data-action="latch">LATCH</button>
         <button type="button" data-action="unlatch">UNLATCH</button>
         <button type="button" data-action="home">HOME</button>

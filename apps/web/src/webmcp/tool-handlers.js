@@ -6,83 +6,84 @@ const COLOURS = new Set(['white','black','red','blue','yellow','green']);
 const TYPES = new Set(['brick','target']);
 const STATUSES = new Set(['unfilled','filled','correct','incorrect']);
 const OWNERS = new Set(['human','agent','none']);
-const finite = (v) => typeof v === 'number' && Number.isFinite(v);
-function inputError(message) { return machineError('invalid_input', message); }
-function cleanLimit(value, defaultValue = 20) { return value === undefined ? defaultValue : value; }
-function validateLimit(value) { return Number.isInteger(value) && value >= 1 && value <= 50; }
-function maybeWorldRevision(bridge) { const r = bridge.getWorldRevision(); return Number.isSafeInteger(r) ? r : -1; }
+const finite = (value) => typeof value === 'number' && Number.isFinite(value);
+const inputError = (message) => machineError('invalid_input', message);
+
+function validateRevision(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
 
 export function createLogoRoboToolHandlers({ bridge, observationService = createObservationService({ bridge }), activity = createAgentActivity() }) {
-  let lastBuildState = null;
   async function getBuildState(input = {}) {
     if (input.status !== undefined && !STATUSES.has(input.status)) return inputError('Unknown status filter.');
     if (input.colour !== undefined && !COLOURS.has(String(input.colour).toLowerCase())) return inputError('Unknown colour filter.');
     if (input.claimOwner !== undefined && !OWNERS.has(input.claimOwner)) return inputError('Unknown claimOwner filter.');
-    const limit = cleanLimit(input.limit); if (!validateLimit(limit)) return inputError('limit must be an integer from 1 to 50.');
+    const limit = input.limit === undefined ? 12 : input.limit;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 20) return inputError('limit must be an integer from 1 to 20.');
     const result = await bridge.game.getBuildState({ ...input, limit });
     if (result?.ok === false) return result;
-    lastBuildState = result;
-    activity.push('VERIFY', `BUILD STATE ${Math.round(Number(result.progress?.percent ?? result.progressPercent ?? 0))}%`, { worldRevision: result.worldRevision ?? maybeWorldRevision(bridge) });
     return result;
   }
+
+  async function getRobotState() { return bridge.robot.getState(); }
+  async function getWorkspace() { return bridge.robot.getWorkspace(); }
 
   async function observeCamera(input = {}) {
     if (input.colour !== undefined && !COLOURS.has(String(input.colour).toLowerCase())) return inputError('Unknown colour filter.');
     if (input.type !== undefined && !TYPES.has(input.type)) return inputError('Unknown type filter.');
     const result = await observationService.observe(input);
-    if (result.ok) activity.push('OBSERVE', `${result.cameraId} -> ${result.detections.length} visible`, { sequence: result.sequence, snapshotRevision: result.snapshotRevision });
     return result;
   }
 
-  async function moveTool(input = {}) {
+  async function moveTool(input = {}, options = {}) {
     for (const field of ['xMm','yMm','zMm','speedMmS']) if (!finite(input[field])) return inputError(`${field} must be finite.`);
-    if (input.xMm < -1200 || input.xMm > 1200 || input.yMm < -1200 || input.yMm > 1200 || input.zMm < -200 || input.zMm > 1600) return inputError('XYZ is outside broad workcell bounds.');
-    if (input.speedMmS <= 0 || input.speedMmS > 3000) return inputError('speedMmS must be greater than 0 and not more than 3000.');
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const before = bridge.getWorldRevision();
+    if (before !== input.expectedWorldRevision) return machineError('stale_state', 'World state changed. Read state again before moving.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
     const associated = observationService.associateMove(input);
-    if (associated) activity.push('TARGET', `${associated.objectId} @ ${Math.round(associated.worldXmm)},${Math.round(associated.worldYmm)},${Math.round(associated.worldZmm)}`, { objectId: associated.objectId });
-    const before = maybeWorldRevision(bridge);
-    if (associated && associated.snapshotRevision >= 0 && before >= 0 && associated.snapshotRevision !== before) {
-      const current = await bridge.world.getObjectById(associated.objectId);
-      const moved = !current || current.visible === false || current.state === 'taken' || Math.hypot(
-        Number(current?.position?.xMm ?? Infinity) - associated.worldXmm,
-        Number(current?.position?.yMm ?? Infinity) - associated.worldYmm,
-        Number(current?.position?.zMm ?? Infinity) - associated.worldZmm
-      ) > 4;
-      if (moved) {
-        activity.push('RECOVER', `stale observation for ${associated.objectId}`, { observedRevision: associated.snapshotRevision, worldRevision: before });
-        return machineError('stale_state', 'The observed object coordinate is stale. Observe again.', { observedRevision: associated.snapshotRevision, worldRevision: before });
-      }
-    }
-    const result = await bridge.robot.moveTool(input);
+    if (associated) activity.push('TARGET', `${associated.objectId} @ ${Math.round(input.xMm)},${Math.round(input.yMm)},${Math.round(input.zMm)}`, { objectId: associated.objectId, snapshotRevision: associated.snapshotRevision });
+    const result = await bridge.robot.moveTool(input, { signal: options.signal });
     if (result?.ok === false) { activity.push('RECOVER', `MOVE ${result.reason}`, { requested: input }); return result; }
-    activity.push('MOVE', 'TCP move accepted', { requested: input, appliedSpeedMmS: result.appliedSpeedMmS });
+    activity.push('MOVE', 'TCP move accepted', { requested: input, appliedSpeedMmS: result.appliedSpeedMmS, worldRevision: result.worldRevision });
     return result;
   }
 
-  async function latch() {
-    const result = await bridge.robot.latch();
+  async function latch(input = {}) {
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const result = await bridge.robot.latch({ expectedWorldRevision: input.expectedWorldRevision, actor: 'agent' });
     if (result?.ok === false) { activity.push('RECOVER', `LATCH ${result.reason}`); return result; }
     const id = result.brick?.id ?? result.brickId ?? result.heldBrickId ?? null;
     if (id) observationService.setActiveObject(id);
-    activity.push('LATCH', id ? `latched ${id}` : 'latch accepted', { objectId: id });
+    activity.push('LATCH', id ? `latched ${id}` : 'latch accepted', { objectId: id, worldRevision: result.worldRevision });
     return result;
   }
 
-  async function unlatch() {
-    const result = await bridge.robot.unlatch();
+  async function unlatch(input = {}) {
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const result = await bridge.robot.unlatch({ expectedWorldRevision: input.expectedWorldRevision, actor: 'agent' });
     if (result?.ok === false) { activity.push('RECOVER', `UNLATCH ${result.reason}`); return result; }
     const targetId = result.targetSnap?.targetId ?? result.targetId ?? null;
-    activity.push(result.correctness === true || result.correct === true ? 'PLACE' : 'VERIFY', targetId ? `released -> ${targetId}` : 'released brick', { targetId, correctness: result.correctness ?? result.correct });
+    activity.push(result.correctness ? 'PLACE' : 'VERIFY', targetId ? `released -> ${targetId}` : 'released brick', { targetId, correctness: result.correctness, worldRevision: result.worldRevision });
     return result;
   }
 
   async function claimTarget(input = {}) {
     if (typeof input.targetId !== 'string' || input.targetId.length < 1 || input.targetId.length > 64 || !/^[A-Za-z0-9_.:-]+$/.test(input.targetId)) return inputError('targetId is invalid.');
-    const result = await bridge.game.claimTarget(input.targetId);
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const result = await bridge.game.claimTarget(input.targetId, 'agent', input.expectedWorldRevision);
     if (result?.ok === false) { activity.push('RECOVER', `CLAIM ${result.reason}`, { targetId: input.targetId }); return result; }
-    activity.push('TARGET', `claimed ${input.targetId}`, { targetId: input.targetId });
+    activity.push('TARGET', `claimed ${input.targetId}`, { targetId: input.targetId, worldRevision: result.worldRevision });
     return result;
   }
 
-  return Object.freeze({ getBuildState, observeCamera, moveTool, latch, unlatch, claimTarget, observationService, activity, getLastBuildState: () => lastBuildState });
+  async function resetWorkcell(input = {}) {
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const before = bridge.getWorldRevision();
+    if (before !== input.expectedWorldRevision) return machineError('stale_state', 'World state changed. Read state again before resetting.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
+    const result = await bridge.robot.reset(input);
+    activity.clear();
+    return result;
+  }
+
+  return Object.freeze({ getBuildState, getRobotState, getWorkspace, observeCamera, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
 }

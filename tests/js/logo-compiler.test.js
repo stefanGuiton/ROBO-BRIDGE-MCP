@@ -8,3 +8,8 @@ test('contain preserves approximate aspect and cover is supported',()=>{const im
 test('alpha-weighted colour ignores fully transparent RGB garbage',()=>{const img=blank(32,16);for(let y=0;y<16;y++)for(let x=0;x<32;x++){pixel(img,x,y,x<16?[214,48,54,255]:[0,0,255,0])}const bp=compileImageData(img,{brickBudget:8,boardLimits:{maxWidthMm:64,maxHeightMm:32}}).blueprint;assert.ok(bp.targets.length>0);assert.ok(bp.targets.every(t=>t.colour==='red'))});
 test('source input limits reject absurd dimensions before work',()=>{const image={width:5000,height:1,data:new Uint8ClampedArray(5000*4)};assert.throws(()=>compileImageData(image),/image_too_large/)});
 test('mixed palette edges do not invent a third source colour',()=>{const bp=compileImageData(makePattern('diagonal',128),{brickBudget:48}).blueprint;const colours=new Set(bp.targets.map(t=>t.colour));assert.deepEqual([...colours].sort(),['blue','red','white'])});
+
+test('1024-pixel compiler cap prevents high-memory integral allocations', async () => {
+  const image = { width: 1025, height: 1, data: new Uint8ClampedArray(1025 * 4) };
+  assert.throws(() => compileImageData(image), /image_too_large/);
+});

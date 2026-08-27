@@ -1,35 +1,15 @@
-# Codex instructions for LOGO ROBO
+# LOGO ROBO SIM V2 agent rules
 
-## Read first
-
-1. `MASTER_PLAN.md`
-2. `README.md`
-3. `PREEXISTING_WORK.md`
-4. `evidence/FOUNDATION_STATUS.md`
-5. `docs/NEWTON_NEXT_TASK.md`
-
-## Architecture rules
-
-- The robot controller owns accepted browser robot state. The current default vertical slice is UR10-class LOGO ROBO; the retained SCARA controller remains a separate foundation path.
-- Manual controls and WebMCP tools must call the same controller.
-- Rendering must not own kinematic truth.
-- Invalid motion must keep the last accepted pose.
-- Trajectory preview must not mutate accepted state.
-- Physics success must be measured, not asserted.
-- Newton must not duplicate or silently replace browser kinematics.
-- Do not add real-robot, Duet, or ROS control during the challenge MVP.
-- Do not include RepRapFirmware source.
-
-## Verification
-
-Run:
-
-```bash
-python scripts/verify.py
-```
-
-A change is not complete until relevant tests pass and `evidence/foundation-verification.json` is updated.
-
-## Challenge scope
-
-Must-have work wins over generic robot support, WebGPU migration, path tracing, or broad platform work.
+- Simulation only. Never connect this repository to physical robotics hardware.
+- `apps/web/src/robot/controller.js` is the only live robot state authority.
+- `apps/web/src/bricks/build-board.js` is the only live board/claim/occupancy authority.
+- Both must use the same `RevisionClock`.
+- Do not add a second SCARA controller, board adapter, physics service, or duplicate WebMCP registrar.
+- NVIDIA Newton is intentionally removed. Do not restore it.
+- Keep WebMCP primitive and Cartesian-only. Do not expose joints or a high-level build/playback shortcut.
+- Every mutating tool must require the latest exact `worldRevision` and must forward cancellation.
+- Read-only tools must not change world state or revisions.
+- Compiler targets must pass through the explicit live-machine transform before execution.
+- Tests must be read-only by default. Generated evidence requires an explicit command.
+- Do not claim native WebMCP acceptance unless it was executed in a supported browser.
+- Do not claim exact moving-link/table collision fidelity without a calibrated visual-link collision model.

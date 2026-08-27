@@ -1,72 +1,98 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BoardAdapter } from '../../apps/web/src/bricks/board-adapter.js';
-import { makeBrick } from '../../apps/web/src/bricks/brick-spec.js';
-import { RobotController } from '../../apps/web/src/robot/controller.js';
-import { CHALLENGE_LAYOUT } from '../../apps/web/src/robot/ur10-definition.js';
+import { createLiveHarness } from '../helpers/live-harness.js';
 import { distance3 } from '../../apps/web/src/robot/math.js';
 
-function fixture(options = {}) {
-  const board = new BoardAdapter([{ id: 'target', colour: 'white', position: { xMm: 655, yMm: 220, zMm: 34.8 }, yawRad: 0 }]);
-  const brick = makeBrick({ id: 'brick', colour: 'white', xMm: 520, yMm: -230, zMm: 34.8 });
-  return { board, brick, robot: new RobotController({ board, bricks: [brick], timeScale: 0, ...options }) };
-}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-test('straight Cartesian move reaches requested TCP and increments revision', async () => {
-  const { robot } = fixture();
-  const before = robot.getState();
-  const target = { xMm: 580, yMm: -90, zMm: 330 };
-  const result = await robot.moveTool({ ...target, speedMmS: 500 });
+test('Cartesian move reaches target and enforces actual peak speed/acceleration limits', async () => {
+  const { controller } = createLiveHarness();
+  const target = { xMm: 492, yMm: -263, zMm: 400 };
+  const result = await controller.moveTool({ ...target, speedMmS: 500 });
   assert.equal(result.ok, true);
-  assert.ok(distance3(robot.getState().tcp, target) < 0.1);
-  assert.ok(robot.getState().robotRevision > before.robotRevision);
-  assert.ok(robot.getState().worldRevision > before.worldRevision);
-  assert.ok(result.diagnostics.samples > 2);
+  assert.ok(distance3(controller.getState().tcp, target) < 0.1);
+  assert.ok(result.diagnostics.peakTcpSpeedMmS <= 500 + 1e-9);
+  assert.ok(result.diagnostics.accelerationMmS2 <= controller.accelerationLimitMmS2 + 1e-9);
+  assert.ok(result.diagnostics.estimatedMaxJointSpeedRadS <= controller.jointSpeedLimitRadS + 1e-9);
+  assert.ok(result.diagnostics.estimatedMaxJointAccelerationRadS2 <= controller.jointAccelerationLimitRadS2 + 1e-9);
 });
 
-test('speed cap rejects without changing accepted pose', async () => {
-  const { robot } = fixture();
-  const before = robot.getState();
-  await assert.rejects(
-    robot.moveTool({ xMm: 580, yMm: 0, zMm: 300, speedMmS: 9999 }),
-    (error) => error.code === 'speed_limit'
-  );
-  assert.deepEqual(robot.getState().tcp, before.tcp);
-  assert.equal(robot.getState().robotRevision, before.robotRevision);
+test('invalid and over-speed requests preserve the accepted pose', async () => {
+  const { controller } = createLiveHarness();
+  const before = controller.getState();
+  await assert.rejects(controller.moveTool({ xMm: NaN, yMm: 0, zMm: 300, speedMmS: 100 }), (error) => error.code === 'invalid_input');
+  await assert.rejects(controller.moveTool({ xMm: 580, yMm: 0, zMm: 300, speedMmS: 651 }), (error) => error.code === 'speed_limit');
+  assert.deepEqual(controller.getState().tcp, before.tcp);
+  assert.equal(controller.getState().robotRevision, before.robotRevision);
 });
 
-test('invalid target fails closed', async () => {
-  const { robot } = fixture();
-  const before = robot.getState();
-  await assert.rejects(robot.moveTool({ xMm: NaN, yMm: 0, zMm: 250, speedMmS: 100 }), (error) => error.code === 'invalid_input');
-  assert.deepEqual(robot.getState().tcp, before.tcp);
+test('reset cancels active motion and stale operation cannot overwrite reset pose', async () => {
+  const { controller, makeBricks } = createLiveHarness({ timeScale: 0.25 });
+  const moving = controller.moveTool({ xMm: 492, yMm: -263, zMm: 400, speedMmS: 80 });
+  const caught = moving.catch((error) => error);
+  await sleep(10);
+  const resetState = await controller.reset({ bricks: makeBricks() });
+  const error = await caught;
+  assert.equal(error.code, 'cancelled');
+  assert.equal(controller.getState().operationState, 'idle');
+  assert.deepEqual(controller.getState().tcp, resetState.tcp);
 });
 
-test('cancellation preserves last accepted safe pose', async () => {
-  const { robot } = fixture({ timeScale: 0.25 });
-  const target = { xMm: 500, yMm: -230, zMm: 255 };
-  const aborter = new AbortController();
-  const promise = robot.moveTool({ ...target, speedMmS: 120, signal: aborter.signal });
-  setTimeout(() => aborter.abort(), 25);
-  await assert.rejects(promise, (error) => error.code === 'cancelled');
-  const state = robot.getState();
-  assert.equal(state.moving, false);
-  assert.ok(distance3(state.tcp, target) > 1);
+test('latch and unlatch reject while motion is planning or moving', async () => {
+  const { controller } = createLiveHarness({ timeScale: 0.2 });
+  const moving = controller.moveTool({ xMm: 492, yMm: -263, zMm: 400, speedMmS: 100 });
+  const earlyLatch = await controller.latch();
+  assert.equal(earlyLatch.reason, 'operation_in_progress');
+  const earlyUnlatch = await controller.unlatch();
+  assert.equal(earlyUnlatch.reason, 'operation_in_progress');
+  controller.activeAbortController?.abort();
+  await assert.rejects(moving, (error) => error.code === 'cancelled');
 });
 
-test('held brick follows the accepted TCP during transfer', async () => {
-  const { robot } = fixture();
-  await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupAboveTcp, speedMmS: 500 });
-  await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupTcp, speedMmS: 250 });
-  assert.equal(robot.latch().success, true);
-  await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupAboveTcp, speedMmS: 300 });
-  const state = robot.getState();
-  const brick = robot.getBricks()[0];
-  near(brick.position.xMm, state.tcp.xMm, 1e-6);
-  near(brick.position.yMm, state.tcp.yMm, 1e-6);
-  near(brick.position.zMm, state.tcp.zMm - 6.6, 1e-6);
+test('queued move with stale expected revision is rejected at execution time', async () => {
+  const { controller } = createLiveHarness();
+  const revision = controller.getState().worldRevision;
+  const first = controller.moveTool({ xMm: 492, yMm: -263, zMm: 400, speedMmS: 400, expectedWorldRevision: revision });
+  const second = controller.moveTool({ xMm: 530, yMm: -263, zMm: 400, speedMmS: 400, expectedWorldRevision: revision });
+  const secondResult = second.catch((error) => error);
+  assert.equal((await first).ok, true);
+  const error = await secondResult;
+  assert.equal(error.code, 'stale_state');
 });
 
-function near(a, b, tolerance) {
-  assert.ok(Math.abs(a - b) <= tolerance, a + ' != ' + b);
-}
+test('human loose-brick interference is rechecked during motion', async () => {
+  const { controller } = createLiveHarness({ timeScale: 0.15 });
+  const bricks = controller.getBricks();
+  const red = bricks.find((brick) => brick.colour === 'red');
+  const blue = bricks.find((brick) => brick.colour === 'blue');
+  const pickup = { xMm: red.position.xMm, yMm: red.position.yMm, zMm: red.position.zMm + 6.6 };
+  await controller.moveTool({ ...pickup, zMm: 400, speedMmS: 400 });
+  await controller.moveTool({ ...pickup, speedMmS: 180 });
+  assert.equal((await controller.latch({ actor: 'agent' })).ok, true);
+  await controller.moveTool({ ...pickup, zMm: 400, speedMmS: 250 });
+  let interfered = false;
+  const unsubscribe = controller.subscribe((event) => {
+    if (!interfered && event.type === 'motion_sample') {
+      interfered = true;
+      controller.moveLooseBrick(blue.id, { xMm: 600, yMm: 0, zMm: 450 });
+    }
+  });
+  const move = controller.moveTool({ xMm: 600, yMm: 0, zMm: 450, speedMmS: 120 });
+  await assert.rejects(move, (error) => error.code === 'collision');
+  unsubscribe();
+  assert.equal(interfered, true);
+  assert.equal(controller.getState().moving, false);
+});
+
+test('reset invalidates active and already-queued pre-reset moves', async () => {
+  const { controller, makeBricks } = createLiveHarness({ timeScale: 0.2 });
+  const first = controller.moveTool({ xMm: 492, yMm: -263, zMm: 400, speedMmS: 80 }).catch((error) => error);
+  const second = controller.moveTool({ xMm: 530, yMm: -263, zMm: 400, speedMmS: 80 }).catch((error) => error);
+  await sleep(10);
+  const reset = await controller.reset({ bricks: makeBricks() });
+  const [firstResult, secondResult] = await Promise.all([first, second]);
+  assert.equal(firstResult.code, 'cancelled');
+  assert.equal(secondResult.code, 'cancelled');
+  assert.deepEqual(controller.getState().tcp, reset.tcp);
+  assert.equal(controller.pendingMoveCount, 0);
+});

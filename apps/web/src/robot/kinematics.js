@@ -228,8 +228,9 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
     if (!result.ok) continue;
     const validation = validateJointState(result.jointsRad, definition);
     if (!validation.ok) continue;
-    solutions.push({ ...result, continuityScore: seedDistance(result.jointsRad, reference) });
-    if (result.continuityScore < 0.35 && result.positionErrorMm < 0.05) break;
+    const candidate = { ...result, continuityScore: seedDistance(result.jointsRad, reference) };
+    solutions.push(candidate);
+    if (candidate.continuityScore < 0.35 && candidate.positionErrorMm < 0.05) break;
   }
 
   if (solutions.length === 0) return { ok: false, reason: 'ik_failed' };
@@ -239,6 +240,14 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
   if (maxJointDelta > (options.maxBranchJumpRad ?? 1.65)) {
     return { ok: false, reason: 'joint_limit', diagnostics: { maxJointDeltaRad: maxJointDelta, cause: 'branch_jump' } };
   }
+  const singularityMargin = Math.min(
+    Math.abs(Math.sin(selected.jointsRad[2])),
+    Math.abs(Math.sin(selected.jointsRad[4])),
+    Math.abs(Math.sin(selected.jointsRad[1] + selected.jointsRad[2]))
+  );
+  if (singularityMargin < (options.minSingularityMargin ?? 0.003)) {
+    return { ok: false, reason: 'ik_failed', diagnostics: { cause: 'near_singularity', singularityMargin } };
+  }
   return {
     ok: true,
     jointsRad: selected.jointsRad,
@@ -247,7 +256,9 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
     orientationErrorRad: selected.orientationErrorRad,
     iterations: selected.iterations,
     candidateCount: solutions.length,
-    maxJointDeltaRad: maxJointDelta
+    maxJointDeltaRad: maxJointDelta,
+    singularityMargin,
+    nearSingularity: singularityMargin < 0.03
   };
 }
 

@@ -1,19 +1,21 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { createCameraRig } from '../perception/camera-rig.js';
+import { forwardKinematics } from '../robot/kinematics.js';
+import { CHALLENGE_LAYOUT } from '../robot/ur10-definition.js';
 
 const clone = (value) => structuredClone(value);
 const PRODUCTION_CAMERA_CONFIGS = Object.freeze({
   tray_camera: Object.freeze({ position: [520, -230, 680], target: [520, -230, 0], halfWidth: 82 }),
   canvas_camera: Object.freeze({ position: [655, 220, 680], target: [655, 220, 0], halfWidth: 92 })
 });
+
 const STABLE_ERROR_MAP = Object.freeze({
   no_ik_solution: 'ik_failed',
-  joint_limit: 'ik_failed',
-  no_snap_target: 'target_occupied'
+  joint_limit: 'ik_failed'
 });
 
 function normalizeReason(reason) {
-  return STABLE_ERROR_MAP[reason] ?? reason ?? 'invalid_input';
+  return STABLE_ERROR_MAP[reason] ?? reason ?? 'internal_error';
 }
 
 function brickObject(brick) {
@@ -33,177 +35,153 @@ function brickObject(brick) {
   };
 }
 
-function targetObject(target, brick = null, claimOwner = null) {
+function targetObject(target) {
   const position = clone(target.position);
-  const status = brick?.snapped ? 'filled' : 'unfilled';
   return {
     id: target.id,
     targetId: target.id,
     type: 'target',
     colour: target.colour ?? null,
     position,
-    worldXmm: position.xMm,
-    worldYmm: position.yMm,
-    worldZmm: position.zMm,
     bounds: { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
-    yawDeg: Number(target.yawRad ?? 0) * 180 / Math.PI,
-    status,
-    state: status,
-    claimOwner: claimOwner ?? 'none',
-    placedBrickId: brick?.id ?? target.placedBrickId ?? null,
+    yawDeg: target.yawDeg ?? 0,
+    status: target.status,
+    state: target.status,
+    claimOwner: target.claimOwner ?? 'none',
+    placedBrickId: target.placedBrickId ?? null,
     visible: true,
     occluder: false
   };
 }
 
-export function createLogoRoboRuntime({ controller, board }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
-  const claims = new Map();
-  let coordinationRevision = controller.getState().worldRevision;
 
-  function worldRevision() {
-    return Math.max(coordinationRevision, controller.getState().worldRevision);
+  function worldRevision() { return controller.getState().worldRevision; }
+
+  function structureObjects() {
+    const tray = CHALLENGE_LAYOUT.tray;
+    const boardLayout = CHALLENGE_LAYOUT.board;
+    const wall = 6;
+    const structures = [
+      { id: 'structure-board', type: 'structure', position: { xMm: (boardLayout.minX + boardLayout.maxX) / 2, yMm: (boardLayout.minY + boardLayout.maxY) / 2, zMm: boardLayout.surfaceZ / 2 }, bounds: { xMm: boardLayout.maxX - boardLayout.minX, yMm: boardLayout.maxY - boardLayout.minY, zMm: boardLayout.surfaceZ }, visible: true, occluder: true },
+      { id: 'structure-tray-left', type: 'structure', position: { xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, visible: true, occluder: true },
+      { id: 'structure-tray-right', type: 'structure', position: { xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, visible: true, occluder: true },
+      { id: 'structure-tray-front', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true },
+      { id: 'structure-tray-back', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true }
+    ];
+    const fk = forwardKinematics(controller.getState().jointsRad);
+    if (fk.ok) {
+      const points = [...fk.jointPositions, fk.tcp];
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const a = points[i], b = points[i + 1];
+        structures.push({
+          id: `robot-link-${i}`,
+          type: 'robot-link',
+          position: { xMm: (a.xMm + b.xMm) / 2, yMm: (a.yMm + b.yMm) / 2, zMm: (a.zMm + b.zMm) / 2 },
+          bounds: { xMm: Math.abs(a.xMm - b.xMm) + 20, yMm: Math.abs(a.yMm - b.yMm) + 20, zMm: Math.abs(a.zMm - b.zMm) + 20 },
+          visible: true,
+          occluder: true
+        });
+      }
+    }
+    return structures;
   }
 
-  function bumpCoordinationRevision() {
-    coordinationRevision = Math.max(coordinationRevision + 1, controller.getState().worldRevision);
-    return coordinationRevision;
-  }
-
-  function currentTargets() {
-    const bricks = controller.getBricks();
-    return board.getTargets().map((target) => {
-      const brick = bricks.find((candidate) => candidate.placedTargetId === target.id && candidate.snapped) ?? null;
-      return targetObject(target, brick, claims.get(target.id));
-    });
-  }
-
-  function currentObjects() {
-    return [...controller.getBricks().map(brickObject), ...currentTargets()];
-  }
-
-  function robotState() {
-    return {
-      ok: true,
-      ...controller.getState(),
-      coordinateFrame: 'machine-mm-rad'
-    };
-  }
-
-  function resultWithState(result) {
-    return { ...result, state: robotState(), worldRevision: worldRevision() };
-  }
-
-  const unsubscribe = controller.subscribe((event) => {
-    coordinationRevision = Math.max(coordinationRevision, event.worldRevision ?? 0);
-    if (event.type === 'reset' || event.type === 'world_reset') claims.clear();
-  });
+  function currentObjects() { return [...controller.getBricks().map(brickObject), ...board.getTargets().map(targetObject), ...structureObjects()]; }
+  function robotState() { return { ok: true, ...controller.getState(), coordinateFrame: 'machine-mm-rad' }; }
+  function resultWithState(result) { return { ...result, state: robotState(), worldRevision: worldRevision() }; }
 
   const runtime = {
     getWorldRevision: worldRevision,
     robot: {
       getState: robotState,
-      async moveTool(request = {}) {
+      getWorkspace() {
+        return {
+          ok: true,
+          ...controller.getWorkspace(),
+          speedLimitMmS: controller.speedLimitMmS,
+          accelerationLimitMmS2: controller.accelerationLimitMmS2,
+          jointSpeedLimitRadS: controller.jointSpeedLimitRadS,
+          jointAccelerationLimitRadS2: controller.jointAccelerationLimitRadS2,
+          coordinateFrame: 'machine-mm-rad',
+          toolOrientation: 'fixed-down',
+          graspTcpOffsetMm: BRICK_SPEC.capture.tcpAboveCentreMm,
+          recommendedClearanceZMm: 400,
+          recommendedTransferTcp: { xMm: 600, yMm: 0, zMm: 450 }
+        };
+      },
+      async moveTool(request = {}, options = {}) {
         try {
-          const result = await controller.moveTool(request);
+          const result = await controller.moveTool({ ...request, signal: options.signal });
           return resultWithState({
             ok: true,
             accepted: result.accepted,
             finalTcp: result.accepted.tcp,
             diagnostics: result.diagnostics,
-            appliedSpeedMmS: request.speedMmS,
-            durationMs: result.diagnostics?.durationMs ?? null
+            appliedSpeedMmS: result.appliedSpeedMmS,
+            durationMs: result.durationMs
           });
         } catch (error) {
           return resultWithState({
             ok: false,
             reason: normalizeReason(error.code),
-            details: error.details ?? { message: String(error.message ?? error) },
+            details: error.details ?? {},
             finalTcp: controller.getState().tcp
           });
         }
       },
-      latch() {
-        const result = controller.latch();
+      async latch(request = {}) {
+        const result = await controller.latch(request);
         if (!result.success) return resultWithState({ ok: false, reason: normalizeReason(result.reason), ...result });
         const brick = controller.getBricks().find((candidate) => candidate.id === result.brickId) ?? null;
-        return resultWithState({
-          ok: true,
-          ...result,
-          brick: brick ? brickObject(brick) : null,
-          heldBrickId: result.brickId
-        });
+        return resultWithState({ ok: true, ...result, brick: brick ? brickObject(brick) : null, heldBrickId: result.brickId });
       },
-      unlatch() {
-        const result = controller.unlatch();
+      async unlatch(request = {}) {
+        const result = await controller.unlatch(request);
         if (!result.success) return resultWithState({ ok: false, reason: normalizeReason(result.reason), ...result });
         const brick = controller.getBricks().find((candidate) => candidate.id === result.brickId) ?? null;
-        const target = result.targetId ? board.getTargets().find((candidate) => candidate.id === result.targetId) : null;
-        const targetSnap = result.snapped && target ? {
-          targetId: target.id,
-          position: clone(target.position),
-          yawRad: target.yawRad ?? BRICK_SPEC.canonicalYawRad
-        } : null;
+        const target = result.targetId ? board.getTarget(result.targetId) : null;
         return resultWithState({
           ok: true,
           ...result,
           brick: brick ? brickObject(brick) : null,
           finalPose: clone(result.finalPosition),
-          targetSnap,
-          correctness: Boolean(result.snapped && brick && target && brick.colour === target.colour),
-          correct: Boolean(result.snapped && brick && target && brick.colour === target.colour)
+          targetSnap: result.snapped && target ? { targetId: target.id, position: clone(target.position), yawRad: target.yawRad } : null,
+          correctness: Boolean(result.correctness),
+          correct: Boolean(result.correctness)
         });
+      },
+      async reset(request = {}) {
+        const state = await controller.reset({ bricks: resetBricks ? resetBricks() : controller.getBricks() });
+        return { ok: true, state, worldRevision: state.worldRevision, expectedWorldRevision: request.expectedWorldRevision };
+      }
+    },
+    human: {
+      moveLooseBrick(brickId, position) {
+        return controller.moveLooseBrick(brickId, position, { actor: 'human' });
       }
     },
     game: {
       async getBuildState(filters = {}) {
-        let targets = currentTargets();
-        if (filters.status) targets = targets.filter((target) => target.status === filters.status);
-        if (filters.colour) targets = targets.filter((target) => target.colour === filters.colour);
-        if (filters.claimOwner) targets = targets.filter((target) => target.claimOwner === filters.claimOwner);
-        const allTargets = currentTargets();
-        const filled = allTargets.filter((target) => target.status === 'filled').length;
-        const correctTargets = allTargets.filter((target) => {
-          const brick = controller.getBricks().find((candidate) => candidate.id === target.placedBrickId);
-          return target.status === 'filled' && brick?.colour === target.colour;
-        }).length;
-        const total = allTargets.length;
-        const boundedLimit = Number.isInteger(filters.limit) ? Math.max(1, Math.min(50, filters.limit)) : 20;
         return {
-          ok: true,
-          mode: 'co-build',
-          worldRevision: worldRevision(),
-          blueprintId: 'logo-robo-challenge-vertical-slice',
-          progress: {
-            filled,
-            correctTargets,
-            total,
-            percent: total ? correctTargets / total * 100 : 100,
-            fraction: total ? correctTargets / total : 1
-          },
-          targets: clone(targets.slice(0, boundedLimit)),
-          contributionSummary: { agent: correctTargets, human: Math.max(0, filled - correctTargets) },
+          ...board.getBuildState(filters),
           heldBrickId: controller.getState().heldBrickId,
           robotSpeedCapMmS: controller.speedLimitMmS
         };
       },
-      async claimTarget(targetId, owner = 'agent') {
-        const target = board.getTargets().find((candidate) => candidate.id === targetId);
-        if (!target) return { ok: false, reason: 'unknown_target' };
-        const current = currentTargets().find((candidate) => candidate.id === targetId);
-        if (current?.status === 'filled') return { ok: false, reason: 'target_occupied', targetId };
-        const existingOwner = claims.get(targetId);
-        if (existingOwner && existingOwner !== owner) return { ok: false, reason: 'target_occupied', targetId };
-        claims.set(targetId, owner);
-        const revision = bumpCoordinationRevision();
-        return { ok: true, targetId, claimOwner: owner, worldRevision: revision };
+      async claimTarget(targetId, owner = 'agent', expectedWorldRevision = undefined) {
+        if (expectedWorldRevision !== undefined && expectedWorldRevision !== worldRevision()) {
+          return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: worldRevision() };
+        }
+        return board.claimTarget(targetId, owner);
       }
     },
     world: {
-      async getVisibleObjects() {
-        return currentObjects();
+      getSnapshotData() {
+        return { worldRevision: worldRevision(), objects: currentObjects() };
       },
-      async getObjectById(id) {
+      getObjectById(id) {
         return currentObjects().find((object) => object.id === id) ?? null;
       },
       getCamera(cameraId, size = { widthPx: 640, heightPx: 360 }) {
@@ -213,12 +191,8 @@ export function createLogoRoboRuntime({ controller, board }) {
         const rig = createCameraRig({ widthPx, heightPx, cameraConfigs: PRODUCTION_CAMERA_CONFIGS });
         return rig.getCamera(cameraId, worldRevision());
       }
-    },
-    dispose() {
-      unsubscribe();
     }
   };
-
   return Object.freeze(runtime);
 }
 

@@ -210,6 +210,34 @@ export class RobotRenderer {
     this.lastFrame = 0;
     this.fps = 0;
     this.frameTimes = [];
+    this.drag = null;
+    this.installCameraControls();
+  }
+
+  installCameraControls() {
+    this.canvas.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      this.drag = { x: event.clientX, y: event.clientY, yaw: this.camera.yaw, pitch: this.camera.pitch };
+      this.canvas.setPointerCapture?.(event.pointerId);
+    });
+    this.canvas.addEventListener('pointermove', (event) => {
+      if (!this.drag) return;
+      this.camera.yaw = this.drag.yaw + (event.clientX - this.drag.x) * 0.006;
+      this.camera.pitch = Math.max(0.18, Math.min(1.35, this.drag.pitch + (event.clientY - this.drag.y) * 0.004));
+      this.render();
+    });
+    const end = (event) => {
+      if (!this.drag) return;
+      this.drag = null;
+      this.canvas.releasePointerCapture?.(event.pointerId);
+    };
+    this.canvas.addEventListener('pointerup', end);
+    this.canvas.addEventListener('pointercancel', end);
+    this.canvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      this.camera.scale = Math.max(0.45, Math.min(2.2, this.camera.scale * (event.deltaY > 0 ? 0.92 : 1.08)));
+      this.render();
+    }, { passive: false });
   }
 
   setView(view) {
@@ -287,10 +315,9 @@ export class RobotRenderer {
       yMm: (board.minY + board.maxY) / 2,
       zMm: board.surfaceZ / 2
     }, { xMm: board.maxX - board.minX, yMm: board.maxY - board.minY, zMm: board.surfaceZ }, '#c8d1d8');
-    drawBrick(ctx, camera, width, height, {
-      colour: 'white',
-      position: { xMm: CHALLENGE_LAYOUT.targetTcp.xMm, yMm: CHALLENGE_LAYOUT.targetTcp.yMm, zMm: board.surfaceZ + BRICK_SPEC.bodyHeightMm / 2 }
-    }, true);
+    for (const target of this.board?.getTargets?.() ?? []) {
+      if (!target.occupiedBy) drawBrick(ctx, camera, width, height, { colour: target.colour ?? 'white', position: target.position }, true);
+    }
 
     for (const brick of this.controller.getBricks()) drawBrick(ctx, camera, width, height, brick, false);
   }

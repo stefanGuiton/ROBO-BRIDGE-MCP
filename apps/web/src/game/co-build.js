@@ -3,7 +3,7 @@ import { BuildBoard } from '../bricks/build-board.js';
 export class CoBuildGame {
   constructor(blueprint, options = {}) {
     this.mode = 'co-build';
-    this.board = new BuildBoard(blueprint, { ...options, mode: this.mode });
+    this.board = options.board ?? new BuildBoard(blueprint, { ...options, mode: this.mode });
     this.startedAtMs = null;
     this.endedAtMs = null;
     this.replans = 0;
@@ -14,7 +14,7 @@ export class CoBuildGame {
   releaseClaim(targetId, owner) { return this.board.releaseClaim(targetId, owner); }
   place(input) {
     const result = this.board.trySnapBrick(input);
-    if (result.accepted && this.board.isComplete() && this.endedAtMs === null && Number.isFinite(input.nowMs)) this.endedAtMs = input.nowMs;
+    if (result.ok && this.board.isComplete() && this.endedAtMs === null && Number.isFinite(input.nowMs)) this.endedAtMs = input.nowMs;
     return result;
   }
   remove(brickId, actor = null) { return this.board.removeBrick(brickId, actor); }
@@ -30,7 +30,5 @@ export class CoBuildGame {
       heldBrickId: runtime.heldBrickId ?? null
     };
   }
-  getState(nowMs = this.startedAtMs ?? 0) {
-    return this.getBuildState({}, { nowMs });
-  }
+  getState(nowMs = this.startedAtMs ?? 0) { return this.getBuildState({}, { nowMs }); }
 }

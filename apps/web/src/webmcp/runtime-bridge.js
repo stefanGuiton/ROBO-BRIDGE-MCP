@@ -1,13 +1,13 @@
-const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+const clone = (value) => value === undefined ? undefined : structuredClone(value);
 
 export const STABLE_ERRORS = Object.freeze([
-  'runtime_unavailable','outside_workspace','speed_limit','ik_failed','collision','cancelled',
-  'no_brick_in_capture','already_holding','not_holding','target_occupied','unknown_target',
-  'wrong_mode','stale_state','invalid_input'
+  'runtime_unavailable','internal_error','outside_workspace','speed_limit','ik_failed','collision','cancelled',
+  'no_brick_in_capture','already_holding','not_holding','target_occupied','wrong_colour','no_snap_target',
+  'unknown_target','claim_conflict','wrong_mode','stale_state','operation_in_progress','invalid_input'
 ]);
 
 export function machineError(reason, message, extra = {}) {
-  const code = STABLE_ERRORS.includes(reason) ? reason : 'invalid_input';
+  const code = STABLE_ERRORS.includes(reason) ? reason : 'internal_error';
   return { ok: false, reason: code, message: message || code.replaceAll('_', ' '), ...clone(extra) };
 }
 
@@ -19,27 +19,27 @@ function hasFunction(value, path) {
 
 export function runtimeAvailability(runtime) {
   const required = [
-    ['getWorldRevision'], ['game','getBuildState'], ['game','claimTarget'], ['robot','getState'],
-    ['robot','moveTool'], ['robot','latch'], ['robot','unlatch'], ['world','getVisibleObjects'], ['world','getObjectById']
+    ['getWorldRevision'], ['game','getBuildState'], ['game','claimTarget'], ['robot','getState'], ['robot','getWorkspace'],
+    ['robot','moveTool'], ['robot','latch'], ['robot','unlatch'], ['robot','reset'], ['world','getSnapshotData'], ['world','getObjectById']
   ];
   const missing = required.filter((path) => !hasFunction(runtime, path)).map((path) => path.join('.'));
   return { ok: missing.length === 0, missing };
 }
 
-function normalizeResult(result, fallbackReason = 'runtime_unavailable') {
-  if (result?.ok === false) return machineError(result.reason || fallbackReason, result.message, result);
+function normalizeResult(result) {
+  if (result?.ok === false) return machineError(result.reason, result.message, result);
   return result;
 }
 
 export function createRuntimeBridge(runtime = null) {
   const availability = runtimeAvailability(runtime);
-  const unavailable = () => machineError('runtime_unavailable', 'LOGO ROBO production runtime is not connected.', { missing: availability.missing });
+  const unavailable = () => machineError('runtime_unavailable', 'LOGO ROBO runtime is not connected.', { missing: availability.missing });
   const call = async (fn, ...args) => {
     if (!availability.ok || typeof fn !== 'function') return unavailable();
     try { return normalizeResult(await fn(...args)); }
-    catch (error) { return machineError('runtime_unavailable', error instanceof Error ? error.message : String(error)); }
+    catch { return machineError('internal_error', 'The runtime failed while executing the request.'); }
   };
-  const bridge = {
+  return Object.freeze({
     availability,
     getWorldRevision() {
       if (!availability.ok) return -1;
@@ -48,26 +48,30 @@ export function createRuntimeBridge(runtime = null) {
     },
     getCamera(cameraId, size) {
       if (!availability.ok || typeof runtime.world?.getCamera !== 'function') return null;
-      return runtime.world.getCamera(cameraId, size) ?? null;
-    },
-    game: {
-      getBuildState: (filters) => call(runtime?.game?.getBuildState?.bind(runtime.game), filters),
-      claimTarget: (targetId) => call(runtime?.game?.claimTarget?.bind(runtime.game), targetId, 'agent')
+      try { return runtime.world.getCamera(cameraId, size) ?? null; } catch { return null; }
     },
     robot: {
       getState: () => availability.ok ? clone(runtime.robot.getState()) : unavailable(),
-      moveTool: (request) => call(runtime?.robot?.moveTool?.bind(runtime.robot), request),
-      latch: () => call(runtime?.robot?.latch?.bind(runtime.robot)),
-      unlatch: () => call(runtime?.robot?.unlatch?.bind(runtime.robot))
+      getWorkspace: () => availability.ok ? clone(runtime.robot.getWorkspace()) : unavailable(),
+      moveTool: (request, options) => call(runtime?.robot?.moveTool?.bind(runtime.robot), request, options),
+      latch: (request) => call(runtime?.robot?.latch?.bind(runtime.robot), request),
+      unlatch: (request) => call(runtime?.robot?.unlatch?.bind(runtime.robot), request),
+      reset: (request) => call(runtime?.robot?.reset?.bind(runtime.robot), request)
+    },
+    game: {
+      getBuildState: (filters) => call(runtime?.game?.getBuildState?.bind(runtime.game), filters),
+      claimTarget: (targetId, owner, expectedWorldRevision) => call(runtime?.game?.claimTarget?.bind(runtime.game), targetId, owner, expectedWorldRevision)
     },
     world: {
-      getVisibleObjects: async () => {
-        if (!availability.ok) return [];
-        const result = await runtime.world.getVisibleObjects();
-        return Array.isArray(result) ? clone(result) : [];
+      getSnapshotData: async () => {
+        if (!availability.ok) return unavailable();
+        try {
+          const result = await runtime.world.getSnapshotData();
+          if (!result || !Number.isSafeInteger(result.worldRevision) || !Array.isArray(result.objects)) return machineError('internal_error', 'Runtime returned an invalid world snapshot.');
+          return clone(result);
+        } catch { return machineError('internal_error', 'The runtime failed while reading the world snapshot.'); }
       },
       getObjectById: async (id) => availability.ok ? clone(await runtime.world.getObjectById(id)) : null
     }
-  };
-  return Object.freeze(bridge);
+  });
 }

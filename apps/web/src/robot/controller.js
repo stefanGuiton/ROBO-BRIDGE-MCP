@@ -5,8 +5,10 @@ import { forwardKinematics, inverseKinematics } from './kinematics.js';
 import { angleDistance, distance3, isFiniteNumber } from './math.js';
 import { CHALLENGE_LAYOUT, CHALLENGE_WORKSPACE, UR10_DEFINITION } from './ur10-definition.js';
 import { validateWorkspacePoint } from './workspace.js';
+import { RevisionClock } from '../state/revision-clock.js';
 
 const clone = (value) => structuredClone(value);
+const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export class RobotError extends Error {
   constructor(code, details = {}) {
@@ -17,16 +19,41 @@ export class RobotError extends Error {
   }
 }
 
-function smoothstep(t) {
-  return t * t * (3 - 2 * t);
+function profile(distanceMm, speedMmS, accelerationMmS2) {
+  if (distanceMm <= 1e-9) return { distanceMm: 0, peakSpeedMmS: 0, accelerationMmS2, accelTimeS: 0, cruiseTimeS: 0, accelDistanceMm: 0, durationMs: 0 };
+  const accelDistance = speedMmS ** 2 / (2 * accelerationMmS2);
+  if (2 * accelDistance >= distanceMm) {
+    const peak = Math.sqrt(distanceMm * accelerationMmS2);
+    const accelTime = peak / accelerationMmS2;
+    return { distanceMm, peakSpeedMmS: peak, accelerationMmS2, accelTimeS: accelTime, cruiseTimeS: 0, accelDistanceMm: distanceMm / 2, durationMs: accelTime * 2 * 1000 };
+  }
+  const accelTime = speedMmS / accelerationMmS2;
+  const cruiseDistance = distanceMm - 2 * accelDistance;
+  const cruiseTime = cruiseDistance / speedMmS;
+  return { distanceMm, peakSpeedMmS: speedMmS, accelerationMmS2, accelTimeS: accelTime, cruiseTimeS: cruiseTime, accelDistanceMm: accelDistance, durationMs: (2 * accelTime + cruiseTime) * 1000 };
 }
 
-function approachForPoint(point, layout) {
-  const nearPickup = Math.hypot(point.xMm - layout.pickupTcp.xMm, point.yMm - layout.pickupTcp.yMm) < 20;
-  if (nearPickup) return 'pickup';
-  const nearTarget = Math.hypot(point.xMm - layout.targetTcp.xMm, point.yMm - layout.targetTcp.yMm) < 24;
-  if (nearTarget) return 'target';
-  return null;
+function timeAtDistanceMs(distanceAlongMm, p) {
+  if (p.distanceMm <= 1e-9) return 0;
+  const s = Math.max(0, Math.min(p.distanceMm, distanceAlongMm));
+  const cruiseStart = p.accelDistanceMm;
+  const cruiseEnd = p.distanceMm - p.accelDistanceMm;
+  if (s <= cruiseStart) return Math.sqrt(2 * s / p.accelerationMmS2) * 1000;
+  if (s <= cruiseEnd && p.cruiseTimeS > 0) return (p.accelTimeS + (s - cruiseStart) / p.peakSpeedMmS) * 1000;
+  const remaining = p.distanceMm - s;
+  return (p.accelTimeS + p.cruiseTimeS + (p.accelTimeS - Math.sqrt(Math.max(0, 2 * remaining / p.accelerationMmS2)))) * 1000;
+}
+
+function combineSignals(external, internal) {
+  if (!external) return internal;
+  if (!internal) return external;
+  const controller = new AbortController();
+  const abort = (signal) => { if (!controller.signal.aborted) controller.abort(signal.reason); };
+  if (external.aborted) abort(external);
+  if (internal.aborted) abort(internal);
+  external.addEventListener('abort', () => abort(external), { once: true });
+  internal.addEventListener('abort', () => abort(internal), { once: true });
+  return controller.signal;
 }
 
 export class RobotController {
@@ -35,32 +62,46 @@ export class RobotController {
     workspace = CHALLENGE_WORKSPACE,
     layout = CHALLENGE_LAYOUT,
     speedLimitMmS = 650,
+    accelerationLimitMmS2 = 1200,
+    jointSpeedLimitRadS = 1.6,
+    jointAccelerationLimitRadS2 = 4.0,
     timeScale = 1,
     board = null,
-    bricks = []
+    bricks = [],
+    revisionClock = board?.revisionClock ?? new RevisionClock()
   } = {}) {
     this.definition = definition;
     this.workspace = workspace;
     this.layout = layout;
     this.speedLimitMmS = speedLimitMmS;
+    this.accelerationLimitMmS2 = accelerationLimitMmS2;
+    this.jointSpeedLimitRadS = jointSpeedLimitRadS;
+    this.jointAccelerationLimitRadS2 = jointAccelerationLimitRadS2;
     this.timeScale = timeScale;
     this.board = board;
-    this.bricks = bricks;
+    this.bricks = clone(bricks);
+    this.revisionClock = revisionClock;
     this.listeners = new Set();
-    this.worldRevision = 0;
     this.robotRevision = 0;
     this.jointsRad = Array.from(definition.homeJointsRad);
     const fk = forwardKinematics(this.jointsRad, definition);
     if (!fk.ok) throw new Error('Invalid configured home joints');
     this.tcp = { ...fk.tcp };
     this.moving = false;
+    this.operationState = 'idle';
     this.heldBrickId = null;
     this.operation = Promise.resolve();
+    this.activeAbortController = null;
+    this.operationEpoch = 0;
+    this.pendingMoveCount = 0;
+    this.releaseClearanceBrickId = null;
   }
+
+  get worldRevision() { return this.revisionClock.value; }
 
   subscribe(listener) {
     this.listeners.add(listener);
-    listener({ type: 'initial', state: this.getState() });
+    listener({ type: 'initial', state: this.getState(), worldRevision: this.worldRevision });
     return () => this.listeners.delete(listener);
   }
 
@@ -69,71 +110,80 @@ export class RobotController {
     for (const listener of this.listeners) listener(event);
   }
 
+  #bumpRobot(type, details = {}) {
+    this.robotRevision += 1;
+    this.revisionClock.bump();
+    this.emit(type, details);
+  }
+
   getState() {
     return {
       tcp: { ...this.tcp },
       toolOrientation: 'fixed-down',
       jointsRad: Array.from(this.jointsRad),
       speedLimitMmS: this.speedLimitMmS,
+      accelerationLimitMmS2: this.accelerationLimitMmS2,
+      jointSpeedLimitRadS: this.jointSpeedLimitRadS,
+      jointAccelerationLimitRadS2: this.jointAccelerationLimitRadS2,
       moving: this.moving,
+      operationState: this.operationState,
       heldBrickId: this.heldBrickId,
       robotRevision: this.robotRevision,
       worldRevision: this.worldRevision
     };
   }
 
-  getWorkspace() {
-    return clone(this.workspace);
-  }
-
-  getBricks() {
-    return clone(this.bricks);
-  }
+  getWorkspace() { return clone(this.workspace); }
+  getBricks() { return clone(this.bricks); }
 
   setBricks(bricks) {
-    this.bricks = bricks;
+    if (this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    this.bricks = clone(bricks);
     this.heldBrickId = null;
-    this.worldRevision += 1;
-    this.emit('world_reset');
+    this.#bumpRobot('world_reset');
+    return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
   }
 
-  placedBricks() {
-    return this.bricks.filter((brick) => brick.snapped || brick.placedTargetId);
-  }
+  heldBrick() { return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null; }
 
-  heldBrick() {
-    return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null;
+  moveLooseBrick(brickId, position, { actor = 'human' } = {}) {
+    if (typeof brickId !== 'string' || !position || ![position.xMm, position.yMm, position.zMm].every(isFiniteNumber)) {
+      return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    const brick = this.bricks.find((candidate) => candidate.id === brickId);
+    if (!brick) return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    if (brick.heldBy || brick.snapped || brick.placedTargetId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    brick.position = { ...position };
+    this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position } });
+    return { ok: true, brick: clone(brick), actor, worldRevision: this.worldRevision };
   }
 
   updateHeldBrickPose() {
     const brick = this.heldBrick();
     if (!brick) return;
-    brick.position = {
-      xMm: this.tcp.xMm,
-      yMm: this.tcp.yMm,
-      zMm: this.tcp.zMm - BRICK_SPEC.capture.tcpAboveCentreMm
-    };
+    brick.position = { xMm: this.tcp.xMm, yMm: this.tcp.yMm, zMm: this.tcp.zMm - BRICK_SPEC.capture.tcpAboveCentreMm };
   }
 
-  validateMoveRequest({ xMm, yMm, zMm, speedMmS }) {
-    if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) {
-      return { ok: false, reason: 'invalid_input' };
-    }
-    if (speedMmS > this.speedLimitMmS) {
-      return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
-    }
+  validateMoveRequest({ xMm, yMm, zMm, speedMmS, expectedWorldRevision }) {
+    if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) return { ok: false, reason: 'invalid_input' };
+    if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
+    if (speedMmS > this.speedLimitMmS) return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
     const target = { xMm, yMm, zMm };
     const workspace = validateWorkspacePoint(target, this.workspace);
     if (!workspace.ok) return workspace;
     return { ok: true, target };
   }
 
-  *planMoveSteps({ xMm, yMm, zMm, speedMmS }) {
-    const request = this.validateMoveRequest({ xMm, yMm, zMm, speedMmS });
-    if (!request.ok) return request;
-    const target = request.target;
-    const distanceMm = distance3(this.tcp, target);
-    const sampleSpacingMm = 12;
+  *planMoveSteps(request) {
+    const validation = this.validateMoveRequest(request);
+    if (!validation.ok) return validation;
+    const startTcp = { ...this.tcp };
+    const target = validation.target;
+    const distanceMm = distance3(startTcp, target);
+    const releasedBrick = this.releaseClearanceBrickId ? this.bricks.find((brick) => brick.id === this.releaseClearanceBrickId) : null;
+    const releaseClearanceMove = Boolean(releasedBrick && target.zMm > startTcp.zMm && Math.hypot(target.xMm - startTcp.xMm, target.yMm - startTcp.yMm) <= 2);
+    const ignoreBrickIds = releaseClearanceMove ? [releasedBrick.id] : [];
+    const sampleSpacingMm = 6;
     const samples = Math.max(2, Math.ceil(distanceMm / sampleSpacingMm));
     const points = [];
     let priorJoints = Array.from(this.jointsRad);
@@ -143,11 +193,7 @@ export class RobotController {
 
     for (let i = 1; i <= samples; i += 1) {
       const t = i / samples;
-      const point = {
-        xMm: this.tcp.xMm + (target.xMm - this.tcp.xMm) * t,
-        yMm: this.tcp.yMm + (target.yMm - this.tcp.yMm) * t,
-        zMm: this.tcp.zMm + (target.zMm - this.tcp.zMm) * t
-      };
+      const point = { xMm: startTcp.xMm + (target.xMm - startTcp.xMm) * t, yMm: startTcp.yMm + (target.yMm - startTcp.yMm) * t, zMm: startTcp.zMm + (target.zMm - startTcp.zMm) * t };
       const workspaceCheck = validateWorkspacePoint(point, this.workspace);
       if (!workspaceCheck.ok) return workspaceCheck;
       const ik = inverseKinematics(point, priorJoints, this.definition, { maxBranchJumpRad: 0.55 });
@@ -155,26 +201,59 @@ export class RobotController {
       const jointStep = Math.max(...ik.jointsRad.map((value, index) => angleDistance(value, priorJoints[index])));
       maxJointStepRad = Math.max(maxJointStepRad, jointStep);
       if (jointStep > 0.55) return { ok: false, reason: 'joint_limit', diagnostics: { cause: 'continuity', jointStepRad: jointStep } };
-      const collision = validateCollision({
-        tcp: point,
-        heldBrick: this.heldBrick(),
-        placedBricks: this.placedBricks(),
-        approach: approachForPoint(point, this.layout)
-      }, this.layout);
+      const fk = forwardKinematics(ik.jointsRad, this.definition);
+      const collision = validateCollision({ tcp: point, jointPositions: [...fk.jointPositions, fk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds }, this.layout);
       if (!collision.ok) return collision;
-      points.push({ t, tcp: point, jointsRad: ik.jointsRad });
+      points.push({ t, tcp: point, jointsRad: ik.jointsRad, jointPositions: [...fk.jointPositions, fk.tcp] });
       priorJoints = ik.jointsRad;
       maxPositionErrorMm = Math.max(maxPositionErrorMm, ik.positionErrorMm);
       maxOrientationErrorRad = Math.max(maxOrientationErrorRad, ik.orientationErrorRad);
       yield i;
     }
+
+    let motionProfile = profile(distanceMm, request.speedMmS, this.accelerationLimitMmS2);
+    let timesMs = points.map((point) => timeAtDistanceMs(point.t * distanceMm, motionProfile));
+    let scaleFactor = 1;
+    let maxJointSpeedRadS = 0;
+    let maxJointAccelerationRadS2 = 0;
+    let previousJoints = Array.from(this.jointsRad);
+    let previousTime = 0;
+    let previousVelocities = new Array(6).fill(0);
+    for (let i = 0; i < points.length; i += 1) {
+      const dt = Math.max(1e-6, (timesMs[i] - previousTime) / 1000);
+      const velocities = points[i].jointsRad.map((value, joint) => angleDistance(value, previousJoints[joint]) / dt);
+      maxJointSpeedRadS = Math.max(maxJointSpeedRadS, ...velocities);
+      if (i > 0) {
+        const accelerations = velocities.map((value, joint) => Math.abs(value - previousVelocities[joint]) / dt);
+        maxJointAccelerationRadS2 = Math.max(maxJointAccelerationRadS2, ...accelerations);
+      }
+      previousJoints = points[i].jointsRad;
+      previousVelocities = velocities;
+      previousTime = timesMs[i];
+    }
+    if (maxJointSpeedRadS > this.jointSpeedLimitRadS) scaleFactor = Math.max(scaleFactor, maxJointSpeedRadS / this.jointSpeedLimitRadS);
+    if (maxJointAccelerationRadS2 > this.jointAccelerationLimitRadS2) scaleFactor = Math.max(scaleFactor, Math.sqrt(maxJointAccelerationRadS2 / this.jointAccelerationLimitRadS2));
+    if (scaleFactor > 1) timesMs = timesMs.map((value) => value * scaleFactor);
+    points.forEach((point, index) => { point.targetElapsedMs = timesMs[index]; });
+
     return {
       ok: true,
       target,
       distanceMm,
-      durationMs: distanceMm / speedMmS * 1000,
+      durationMs: (timesMs.at(-1) ?? 0),
       points,
-      diagnostics: { samples, maxPositionErrorMm, maxOrientationErrorRad, maxJointStepRad }
+      diagnostics: {
+        samples,
+        maxPositionErrorMm,
+        maxOrientationErrorRad,
+        maxJointStepRad,
+        requestedSpeedMmS: request.speedMmS,
+        peakTcpSpeedMmS: motionProfile.peakSpeedMmS / scaleFactor,
+        accelerationMmS2: motionProfile.accelerationMmS2 / (scaleFactor ** 2),
+        estimatedMaxJointSpeedRadS: maxJointSpeedRadS / scaleFactor,
+        estimatedMaxJointAccelerationRadS2: maxJointAccelerationRadS2 / (scaleFactor ** 2),
+        timeScaleFactor: scaleFactor
+      }
     };
   }
 
@@ -185,110 +264,115 @@ export class RobotController {
     return result.value;
   }
 
-  async planMoveResponsive(request) {
+  async planMoveResponsive(request, signal, epoch) {
     const steps = this.planMoveSteps(request);
     let result = steps.next();
-    let processed = 0;
     while (!result.done) {
-      processed += 1;
-      if (processed % 1 === 0) {
-        if (globalThis.scheduler?.yield) {
-          await globalThis.scheduler.yield();
-        } else if (typeof requestAnimationFrame === 'function') {
-          await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-        } else {
-          await Promise.resolve();
-        }
-      }
+      if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled');
+      if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+      else if (typeof requestAnimationFrame === 'function') await new Promise((resolve) => requestAnimationFrame(resolve));
+      else await Promise.resolve();
       result = steps.next();
     }
     return result.value;
   }
 
   moveTool(request = {}) {
+    const queuedEpoch = this.operationEpoch;
+    this.pendingMoveCount += 1;
     const run = async () => {
-      const { signal } = request;
-      const plan = await this.planMoveResponsive(request);
-      if (!plan.ok) throw new RobotError(plan.reason, plan);
-      if (signal?.aborted) throw new RobotError('cancelled');
-      this.moving = true;
-      this.emit('motion_started', { target: plan.target, durationMs: plan.durationMs });
-      const durationMs = plan.durationMs * this.timeScale;
-      const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
-      let acceptedIndex = -1;
-
-      for (let i = 0; i < plan.points.length; i += 1) {
-        if (signal?.aborted) {
-          this.moving = false;
-          this.emit('motion_cancelled', { acceptedIndex });
-          throw new RobotError('cancelled', { acceptedIndex });
-        }
-        const point = plan.points[i];
-        if (durationMs > 0) {
-          const targetElapsed = smoothstep(point.t) * durationMs;
-          while (true) {
-            if (signal?.aborted) {
-              this.moving = false;
-              this.emit('motion_cancelled', { acceptedIndex });
-              throw new RobotError('cancelled', { acceptedIndex });
-            }
-            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-            const wait = targetElapsed - (now - startedAt);
-            if (wait <= 0) break;
-            await new Promise((resolve) => setTimeout(resolve, Math.min(16, wait)));
-          }
-        }
-        this.tcp = { ...point.tcp };
-        this.jointsRad = Array.from(point.jointsRad);
-        this.robotRevision += 1;
-        this.worldRevision += 1;
-        acceptedIndex = i;
-        this.updateHeldBrickPose();
-        this.emit('motion_sample', { sampleIndex: i, sampleCount: plan.points.length });
-        if (durationMs === 0) await Promise.resolve();
+      if (queuedEpoch !== this.operationEpoch) {
+        this.pendingMoveCount = Math.max(0, this.pendingMoveCount - 1);
+        throw new RobotError('cancelled');
       }
-
-      this.moving = false;
-      this.emit('motion_completed', { diagnostics: plan.diagnostics });
-      return { ok: true, accepted: this.getState(), diagnostics: plan.diagnostics };
+      const validation = this.validateMoveRequest(request);
+      if (!validation.ok) throw new RobotError(validation.reason, validation);
+      const epoch = queuedEpoch;
+      const internalAbort = new AbortController();
+      this.activeAbortController = internalAbort;
+      const signal = combineSignals(request.signal, internalAbort.signal);
+      this.operationState = 'planning';
+      this.emit('motion_planning', { target: validation.target });
+      try {
+        const plan = await this.planMoveResponsive(request, signal, epoch);
+        if (!plan.ok) throw new RobotError(plan.reason, plan);
+        if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled');
+        if (request.expectedWorldRevision !== undefined && request.expectedWorldRevision !== this.worldRevision) throw new RobotError('stale_state', { expectedWorldRevision: request.expectedWorldRevision, worldRevision: this.worldRevision });
+        this.moving = true;
+        this.operationState = 'moving';
+        this.emit('motion_started', { target: plan.target, durationMs: plan.durationMs, diagnostics: plan.diagnostics });
+        const startedAt = nowMs();
+        let acceptedIndex = -1;
+        for (let i = 0; i < plan.points.length; i += 1) {
+          if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
+          const point = plan.points[i];
+          if (this.timeScale > 0) {
+            const targetElapsed = point.targetElapsedMs * this.timeScale;
+            while (true) {
+              if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
+              const wait = targetElapsed - (nowMs() - startedAt);
+              if (wait <= 0) break;
+              await new Promise((resolve) => setTimeout(resolve, Math.min(16, wait)));
+            }
+          }
+          const currentFk = forwardKinematics(point.jointsRad, this.definition);
+          const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
+          if (!liveCollision.ok) throw new RobotError(liveCollision.reason, liveCollision);
+          this.tcp = { ...point.tcp };
+          this.jointsRad = Array.from(point.jointsRad);
+          this.updateHeldBrickPose();
+          acceptedIndex = i;
+          this.#bumpRobot('motion_sample', { sampleIndex: i, sampleCount: plan.points.length });
+          if (this.timeScale === 0) await Promise.resolve();
+        }
+        this.moving = false;
+        this.operationState = 'idle';
+        if (this.releaseClearanceBrickId) {
+          const released = this.bricks.find((brick) => brick.id === this.releaseClearanceBrickId);
+          if (!released || this.tcp.zMm >= released.position.zMm + 45) this.releaseClearanceBrickId = null;
+        }
+        this.emit('motion_completed', { diagnostics: plan.diagnostics });
+        return { ok: true, accepted: this.getState(), diagnostics: plan.diagnostics, appliedSpeedMmS: plan.diagnostics.peakTcpSpeedMmS, durationMs: plan.durationMs };
+      } catch (error) {
+        this.moving = false;
+        this.operationState = 'idle';
+        if (error instanceof RobotError && error.code === 'cancelled') this.emit('motion_cancelled', error.details);
+        else this.emit('motion_rejected', { reason: error.code ?? 'internal_error', details: error.details ?? {} });
+        throw error;
+      } finally {
+        this.pendingMoveCount = Math.max(0, this.pendingMoveCount - 1);
+        if (this.activeAbortController === internalAbort) this.activeAbortController = null;
+      }
     };
     this.operation = this.operation.then(run, run);
     return this.operation;
   }
 
-  latch() {
-    if (this.moving) return { success: false, reason: 'invalid_input', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+  async latch({ expectedWorldRevision, actor = 'agent' } = {}) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     const candidate = findLatchCandidate(this.tcp, this.bricks, this.heldBrickId);
-    if (!candidate.ok) return { success: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+    if (!candidate.ok) return { success: false, ok: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = candidate.brick;
-    brick.heldBy = 'robot';
+    brick.heldBy = actor === 'human' ? 'human' : 'robot';
     brick.snapped = false;
     brick.placedTargetId = null;
     this.heldBrickId = brick.id;
-    this.robotRevision += 1;
-    this.worldRevision += 1;
     this.updateHeldBrickPose();
-    this.emit('latched', { brickId: brick.id });
-    return {
-      success: true,
-      brickId: brick.id,
-      captureOffset: candidate.captureOffset,
-      robotRevision: this.robotRevision,
-      worldRevision: this.worldRevision,
-      reason: null
-    };
+    this.#bumpRobot('latched', { brickId: brick.id, actor });
+    return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
   }
 
-  unlatch() {
-    if (!this.heldBrickId) {
-      return { success: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
-    }
+  async unlatch({ expectedWorldRevision, actor = 'agent' } = {}) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
+    if (!this.heldBrickId) return { success: false, ok: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = this.heldBrick();
-    brick.heldBy = null;
     const position = { ...brick.position };
-    let snap = null;
-    if (this.board) snap = this.board.trySnapBrick({ brickId: brick.id, colour: brick.colour, position, yawRad: brick.yawRad });
-    if (snap?.ok) {
+    const snap = this.board?.trySnapBrick({ brickId: brick.id, colour: brick.colour, position, yawRad: brick.yawRad, actor }) ?? { ok: false, reason: 'no_snap_target' };
+    if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) return { success: false, ok: false, reason: snap.reason, targetId: snap.targetId ?? null, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+    brick.heldBy = null;
+    if (snap.ok) {
       brick.position = { ...snap.transform.position };
       brick.yawRad = snap.transform.yawRad;
       brick.placedTargetId = snap.targetId;
@@ -298,37 +382,27 @@ export class RobotController {
       brick.placedTargetId = null;
     }
     this.heldBrickId = null;
-    this.robotRevision += 1;
-    this.worldRevision += 1;
-    this.emit('unlatched', { brickId: brick.id, snap });
-    return {
-      success: true,
-      brickId: brick.id,
-      finalPosition: { ...brick.position },
-      snapped: Boolean(snap?.ok),
-      targetId: snap?.targetId ?? null,
-      reason: snap?.ok ? null : (snap?.reason ?? 'no_snap_target'),
-      robotRevision: this.robotRevision,
-      worldRevision: this.worldRevision
-    };
+    if (snap.ok) this.releaseClearanceBrickId = brick.id;
+    this.#bumpRobot('unlatched', { brickId: brick.id, snap, actor });
+    return { success: true, ok: true, brickId: brick.id, finalPosition: { ...brick.position }, snapped: Boolean(snap.ok), targetId: snap.targetId ?? null, correctness: Boolean(snap.correctness), reason: snap.ok ? null : (snap.reason ?? 'no_snap_target'), robotRevision: this.robotRevision, worldRevision: this.worldRevision };
   }
 
-  reset({ bricks = null } = {}) {
+  async reset({ bricks = null } = {}) {
+    this.operationEpoch += 1;
+    this.activeAbortController?.abort(new DOMException('Reset requested', 'AbortError'));
+    try { await this.operation; } catch { /* cancellation/rejection is expected before reset */ }
+    this.operationState = 'resetting';
+    this.moving = false;
     this.jointsRad = Array.from(this.definition.homeJointsRad);
     const fk = forwardKinematics(this.jointsRad, this.definition);
     this.tcp = { ...fk.tcp };
-    this.moving = false;
     this.heldBrickId = null;
-    this.robotRevision += 1;
-    this.worldRevision += 1;
-    if (bricks) this.bricks = bricks;
-    for (const brick of this.bricks) {
-      brick.heldBy = null;
-      brick.placedTargetId = null;
-      brick.snapped = false;
-    }
+    this.releaseClearanceBrickId = null;
+    if (bricks) this.bricks = clone(bricks);
+    for (const brick of this.bricks) { brick.heldBy = null; brick.placedTargetId = null; brick.snapped = false; }
     this.board?.reset?.();
-    this.emit('reset');
+    this.operationState = 'idle';
+    this.#bumpRobot('reset');
     return this.getState();
   }
 }

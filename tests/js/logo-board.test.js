@@ -1,7 +1,50 @@
-import test from 'node:test';import assert from 'node:assert/strict';import{compileImageData}from'../../apps/web/src/logo/compiler.js';import{makePattern}from'../../apps/web/src/logo/patterns.js';import{BuildBoard}from'../../apps/web/src/bricks/build-board.js';
-function setup(){const bp=compileImageData(makePattern('ring',96),{brickBudget:30}).blueprint;return{bp,board:new BuildBoard(bp)}}
-test('nearest target snaps within tolerance',()=>{const{bp,board}=setup(),t=bp.targets[0],r=board.trySnapBrick({brickId:'b1',colour:t.colour,position:{xMm:t.worldXmm+2,yMm:t.worldYmm-1,zMm:t.worldZmm+1},yawDeg:0,actor:'human'});assert.equal(r.accepted,true);assert.equal(r.targetId,t.targetId);assert.equal(r.correctness,true);assert.equal(board.getBuildState().contributions.human,1)});
-test('outside tolerance fails without revision mutation',()=>{const{bp,board}=setup(),t=bp.targets[0],before=board.worldRevision,r=board.trySnapBrick({brickId:'b1',colour:t.colour,position:{xMm:t.worldXmm+100,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0});assert.equal(r.accepted,false);assert.equal(board.worldRevision,before)});
-test('wrong colour can spatially snap but is incorrect',()=>{const{bp,board}=setup(),t=bp.targets[0],wrong=t.colour==='red'?'blue':'red',r=board.trySnapBrick({brickId:'b1',colour:wrong,position:{xMm:t.worldXmm,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0,actor:'agent'});assert.equal(r.accepted,true);assert.equal(r.correctness,false);assert.equal(r.reason,'wrong_colour');assert.equal(board.progress().correctTargets,0)});
-test('duplicate occupancy and duplicate brick are rejected',()=>{const{bp,board}=setup(),[a,b]=bp.targets,t=a;board.trySnapBrick({brickId:'b1',colour:t.colour,position:{xMm:t.worldXmm,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0});const sameBrick=board.trySnapBrick({brickId:'b1',colour:b.colour,position:{xMm:b.worldXmm,yMm:b.worldYmm,zMm:b.worldZmm},yawDeg:0}),sameTarget=board.trySnapBrick({brickId:'b2',colour:t.colour,position:{xMm:t.worldXmm,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0});assert.equal(sameBrick.reason,'brick_already_placed');assert.equal(sameTarget.accepted,false)});
-test('removal clears occupancy and records correction',()=>{const{bp,board}=setup(),t=bp.targets[0];board.trySnapBrick({brickId:'b1',colour:t.colour,position:{xMm:t.worldXmm,yMm:t.worldYmm,zMm:t.worldZmm},yawDeg:0,actor:'human'});const r=board.removeBrick('b1','human');assert.equal(r.accepted,true);assert.equal(board.getTarget(t.targetId).occupiedBy,null);assert.equal(board.getBuildState().corrections,1);assert.equal(board.getBuildState().contributions.human,0)});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { compileImageData } from '../../apps/web/src/logo/compiler.js';
+import { makePattern } from '../../apps/web/src/logo/patterns.js';
+import { BuildBoard } from '../../apps/web/src/bricks/build-board.js';
+
+function setup() {
+  const blueprint = compileImageData(makePattern('ring', 96), { brickBudget: 30 }).blueprint;
+  return { blueprint, board: new BuildBoard(blueprint) };
+}
+
+test('nearest matching target snaps within tolerance and records actor', () => {
+  const { blueprint, board } = setup();
+  const target = blueprint.targets[0];
+  const result = board.trySnapBrick({ brickId: 'b1', colour: target.colour, position: { xMm: target.worldXmm + 2, yMm: target.worldYmm - 1, zMm: target.worldZmm + 1 }, yawDeg: 0, actor: 'human' });
+  assert.equal(result.ok, true);
+  assert.equal(result.targetId, target.targetId);
+  assert.deepEqual(board.getBuildState().contributions, { human: 1, agent: 0 });
+});
+
+test('outside tolerance and wrong colour fail without occupancy mutation', () => {
+  const { blueprint, board } = setup();
+  const target = blueprint.targets[0];
+  const before = board.worldRevision;
+  const far = board.trySnapBrick({ brickId: 'b1', colour: target.colour, position: { xMm: target.worldXmm + 100, yMm: target.worldYmm, zMm: target.worldZmm }, yawDeg: 0 });
+  assert.equal(far.ok, false);
+  assert.equal(board.worldRevision, before);
+  const wrong = target.colour === 'red' ? 'blue' : 'red';
+  const wrongResult = board.trySnapBrick({ brickId: 'b2', colour: wrong, position: { xMm: target.worldXmm, yMm: target.worldYmm, zMm: target.worldZmm }, yawDeg: 0 });
+  assert.equal(wrongResult.reason, 'wrong_colour');
+  assert.equal(board.getTarget(target.targetId).occupiedBy, null);
+});
+
+test('duplicate occupancy and duplicate brick are rejected', () => {
+  const { blueprint, board } = setup();
+  const [a, b] = blueprint.targets;
+  assert.equal(board.trySnapBrick({ brickId: 'b1', colour: a.colour, position: { xMm: a.worldXmm, yMm: a.worldYmm, zMm: a.worldZmm }, yawDeg: 0 }).ok, true);
+  assert.equal(board.trySnapBrick({ brickId: 'b1', colour: b.colour, position: { xMm: b.worldXmm, yMm: b.worldYmm, zMm: b.worldZmm }, yawDeg: 0 }).reason, 'brick_already_placed');
+  assert.equal(board.trySnapBrick({ brickId: 'b2', colour: a.colour, position: { xMm: a.worldXmm, yMm: a.worldYmm, zMm: a.worldZmm }, yawDeg: 0 }).reason, 'target_occupied');
+});
+
+test('removal clears occupancy, actor contribution, and records correction', () => {
+  const { blueprint, board } = setup();
+  const target = blueprint.targets[0];
+  board.trySnapBrick({ brickId: 'b1', colour: target.colour, position: { xMm: target.worldXmm, yMm: target.worldYmm, zMm: target.worldZmm }, yawDeg: 0, actor: 'human' });
+  assert.equal(board.removeBrick('b1', 'human').ok, true);
+  assert.equal(board.getTarget(target.targetId).occupiedBy, null);
+  assert.equal(board.getBuildState().corrections, 1);
+  assert.deepEqual(board.getBuildState().contributions, { human: 0, agent: 0 });
+});

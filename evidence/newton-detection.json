@@ -1,6 +1,0 @@
-{
-  "available": false,
-  "reason": "ModuleNotFoundError: No module named 'newton'",
-  "newton_version": null,
-  "warp_version": null
-}

@@ -5,7 +5,6 @@ function rayBoxDistance(origin,dir,box){let tmin=0,tmax=Infinity;for(let i=0;i<3
 function samplePoints(object){const p=object.position??{},b=object.bounds??object.size??{},x=Number(p.xMm??0),y=Number(p.yMm??0),z=Number(p.zMm??0),hx=Number(b.xMm??32)*0.36,hy=Number(b.yMm??64)*0.36,hz=Number(b.zMm??20)*0.45;return[[x,y,z],[x-hx,y-hy,z+hz],[x+hx,y-hy,z+hz],[x+hx,y+hy,z+hz],[x-hx,y+hy,z+hz]];}
 export function visibilityForObject(object,objects,camera){
   if(object.visible===false)return{visible:false,visibleFraction:0,reason:'hidden_flag'};
-  if(object.held===true||object.state==='held')return{visible:true,visibleFraction:1,reason:'held_visible'};
   const origin=camera.position;let open=0;
   for(const point of samplePoints(object)){
     const vector=sub3(point,origin),distance=length3(vector),dir=normalize3(vector);let occluded=false;

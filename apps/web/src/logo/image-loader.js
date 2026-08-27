@@ -1,9 +1,10 @@
-import { MAX_SOURCE_DIMENSION, MAX_SOURCE_PIXELS } from './compiler.js';
+import { MAX_SOURCE_DIMENSION, MAX_SOURCE_FILE_BYTES, MAX_SOURCE_PIXELS } from './compiler.js';
 
 export async function decodeImageFile(file) {
   if (!file) throw new Error('missing_file');
   const allowed = new Set(['image/png', 'image/jpeg', 'image/webp']);
   if (file.type && !allowed.has(file.type)) throw new Error('unsupported_image_type');
+  if (Number.isFinite(file.size) && file.size > MAX_SOURCE_FILE_BYTES) throw new Error('image_file_too_large');
   let bitmap;
   try {
     bitmap = await createImageBitmap(file);

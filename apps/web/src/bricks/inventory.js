@@ -33,7 +33,8 @@ export function createInventory(blueprint, options = {}) {
   const seed = Number.isFinite(options.seed) ? Math.trunc(options.seed) : blueprint.settings.seed;
   const rng = mulberry32(seed);
   const required = countRequiredByColour(blueprint);
-  const trayOrigin = options.trayOrigin ?? { xMm: 0, yMm: 0, zMm: BRICK_SPEC.heightMm / 2 };
+  if (!options.trayOrigin || ![options.trayOrigin.xMm, options.trayOrigin.yMm, options.trayOrigin.zMm].every(Number.isFinite)) throw new Error('tray_origin_required');
+  const trayOrigin = options.trayOrigin;
   const spacingX = options.spacingX ?? 38;
   const spacingY = options.spacingY ?? 22;
   const columns = Math.max(1, Math.trunc(options.columns ?? 10));
@@ -62,5 +63,5 @@ export function createInventory(blueprint, options = {}) {
     }
   }
   if (!inventoryHasNoOverlap(items)) throw new Error('inventory_spawn_overlap');
-  return Object.freeze({ seed, items: Object.freeze(items), required: Object.freeze(required), decoyCount: 0 });
+  return Object.freeze({ seed, coordinateFrame: options.coordinateFrame ?? 'caller-supplied-mm', items: Object.freeze(items), required: Object.freeze(required), decoyCount: 0 });
 }

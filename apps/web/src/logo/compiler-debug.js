@@ -3,13 +3,13 @@ import { decodeImageFile } from './image-loader.js';
 import { makePattern, PATTERN_NAMES } from './patterns.js';
 import { DEFAULT_PALETTE } from './palette.js';
 import { validateBlueprint } from './blueprint.js';
-import { createInventory, inventoryHasNoOverlap } from '../bricks/inventory.js';
+import { challengeBoardLimits, challengeInventoryHasNoOverlap, createChallengeInventory, remapBlueprintToChallenge } from './workcell-adapter.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 
 const $ = (id) => document.getElementById(id);
 const paletteById = new Map(DEFAULT_PALETTE.map((item) => [item.id, item]));
 const query = new URLSearchParams(location.search);
-const requestedPattern = PATTERN_NAMES.includes(query.get('pattern')) ? query.get('pattern') : 'ring';
+const requestedPattern = PATTERN_NAMES.includes(query.get('pattern')) ? query.get('pattern') : 'diagonal';
 let currentImage = makePattern(requestedPattern, 320);
 let currentPattern = requestedPattern;
 
@@ -76,8 +76,8 @@ function updateFacts(blueprint, diagnostics) {
   $('board-metric').textContent = `${blueprint.board.widthMm} × ${blueprint.board.heightMm}`; $('id-metric').textContent = blueprint.blueprintId;
   $('compile-time').textContent = `${diagnostics.compileMs.toFixed(1)} ms`;
   $('colour-counts').innerHTML = Object.entries(blueprint.colourCounts).sort().map(([id,count])=>`<span class="swatch"><i style="background:${cssColour(paletteById.get(id))}"></i>${id.toUpperCase()} <strong>${count}</strong></span>`).join('');
-  const validation=validateBlueprint(blueprint); const inventory=createInventory(blueprint,{seed:blueprint.settings.seed});
-  const checks=[['even width',blueprint.grid.cols%2===0],['budget',blueprint.brickCount<=blueprint.settings.brickBudget],['no overlap',validation.ok],['canonical yaw',blueprint.targets.every(t=>t.yawDeg===0)],['inventory complete',inventory.items.length===blueprint.brickCount],['spawn clear',inventoryHasNoOverlap(inventory.items)]];
+  const validation=validateBlueprint(blueprint); const inventory=createChallengeInventory(blueprint);
+  const checks=[['even width',blueprint.grid.cols%2===0],['budget',blueprint.brickCount<=blueprint.settings.brickBudget],['no overlap',validation.ok],['canonical yaw',blueprint.targets.every(t=>t.yawDeg===0)],['inventory complete',inventory.length===blueprint.brickCount],['spawn clear',challengeInventoryHasNoOverlap(inventory)]];
   $('invariants').innerHTML=checks.map(([label,ok])=>`<span class="check ${ok?'':'fail'}">${ok?'PASS':'FAIL'} · ${label}</span>`).join('');
 }
 
@@ -86,9 +86,10 @@ async function compile() {
   await new Promise((resolve)=>requestAnimationFrame(resolve));
   try {
     const budget=Number($('budget').value); const fitMode=$('fit').value;
-    const result=compileImageData(currentImage,{brickBudget:budget,fitMode,seed:173});
-    drawSource(currentImage); drawPreview(result.blueprint); drawBoard(result.blueprint); updateFacts(result.blueprint,result.diagnostics);
-    globalThis.__LOGO_ROBO_LAST__={blueprint:result.blueprint,diagnostics:result.diagnostics,pattern:currentPattern};
+    const result=compileImageData(currentImage,{brickBudget:budget,fitMode,seed:173,boardLimits:challengeBoardLimits()});
+    const blueprint=remapBlueprintToChallenge(result.blueprint);
+    drawSource(currentImage); drawPreview(blueprint); drawBoard(blueprint); updateFacts(blueprint,result.diagnostics);
+    globalThis.__LOGO_ROBO_LAST__={blueprint,diagnostics:result.diagnostics,pattern:currentPattern};
     $('status').textContent='PASS'; document.body.dataset.ready='true';
   } catch(error) { $('status').textContent='ERROR'; $('compile-time').textContent=String(error.message||error); document.body.dataset.ready='error'; console.error(error); }
 }
@@ -98,7 +99,7 @@ for (const name of PATTERN_NAMES) {
   button.classList.toggle('active',name===currentPattern);button.addEventListener('click',()=>{currentPattern=name;currentImage=makePattern(name,320);document.querySelectorAll('[data-pattern]').forEach(el=>el.classList.toggle('active',el.dataset.pattern===name));compile();});$('pattern-buttons').append(button);
 }
 const requestedBudget = Number(query.get('budget'));
-if (Number.isFinite(requestedBudget) && requestedBudget >= 12 && requestedBudget <= 128) { $('budget').value=String(Math.trunc(requestedBudget)); $('budget-value').textContent=$('budget').value; }
+if (Number.isFinite(requestedBudget) && requestedBudget >= 2 && requestedBudget <= 128) { $('budget').value=String(Math.trunc(requestedBudget)); $('budget-value').textContent=$('budget').value; }
 if (query.get('fit') === 'cover') $('fit').value='cover';
 $('budget').addEventListener('input',()=>{$('budget-value').textContent=$('budget').value;compile();});$('fit').addEventListener('change',compile);
 $('file').addEventListener('change',async(event)=>{const file=event.target.files?.[0];if(!file)return;currentImage=await decodeImageFile(file);currentPattern='upload';document.querySelectorAll('[data-pattern]').forEach(el=>el.classList.remove('active'));compile();});

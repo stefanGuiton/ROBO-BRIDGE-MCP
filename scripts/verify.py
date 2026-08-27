@@ -1,17 +1,20 @@
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
-import py_compile
+import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
+EXCLUDED_SOURCE_PARTS = {'.git', '.venv', 'ARCHIVE', 'dist', 'evidence', '__pycache__', '.pytest_cache', '.cache', 'node_modules'}
 
 
-def run(name: str, command: list[str], cwd: Path = ROOT) -> dict[str, object]:
-    result = subprocess.run(command, cwd=cwd, text=True, capture_output=True)
+def run(name: str, command: list[str]) -> dict[str, object]:
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
     print(f'[{name}] exit={result.returncode}')
     if result.stdout:
         print(result.stdout.rstrip())
@@ -20,153 +23,78 @@ def run(name: str, command: list[str], cwd: Path = ROOT) -> dict[str, object]:
     return {'name': name, 'command': command, 'exitCode': result.returncode}
 
 
-def run_javascript_tests() -> dict[str, object]:
-    files = [
-        'tests/js/scara.test.js',
-        'tests/js/controller.test.js',
-        'tests/js/webmcp.test.js',
-        'tests/js/robot-kinematics.test.js',
-        'tests/js/robot-controller.test.js',
-        'tests/js/latch-collision.test.js',
-        'tests/js/reliability.test.js',
-        'tests/js/logo-webmcp.test.js',
-        'tests/js/logo-palette.test.js',
-        'tests/js/logo-compiler.test.js',
-        'tests/js/logo-inventory.test.js',
-        'tests/js/logo-board.test.js',
-        'tests/js/logo-game.test.js',
-        'tests/js/oracle3-perception.test.js',
-        'tests/js/oracle3-runtime-bridge.test.js',
-        'tests/js/oracle3-agent-loop.test.js',
-        'tests/js/oracle3-performance.test.js',
-        'tests/js/oracle3-webmcp.test.js',
-        'tests/js/oracle3-production-runtime.test.js',
-    ]
-    command = ['node', '--test', '--test-concurrency=1', *files]
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
-    if result.returncode == 0:
-        print('[JavaScript tests] exit=0')
-        print(result.stdout.rstrip())
-        return {'name': 'JavaScript tests', 'command': command, 'exitCode': 0, 'mode': 'node-test-runner'}
+def source_fingerprint() -> str:
+    digest = hashlib.sha256()
+    for current, directories, filenames in os.walk(ROOT):
+        directories[:] = sorted(name for name in directories if name not in EXCLUDED_SOURCE_PARTS)
+        current_path = Path(current)
+        for filename in sorted(filenames):
+            path = current_path / filename
+            relative = path.relative_to(ROOT)
+            digest.update(str(relative).replace('\\', '/').encode())
+            digest.update(b'\0')
+            digest.update(path.read_bytes())
+            digest.update(b'\0')
+    return digest.hexdigest()
 
-    combined_output = f'{result.stdout}\n{result.stderr}'
-    if 'spawn EPERM' not in combined_output:
-        print('[JavaScript tests] exit=1')
-        print(combined_output.rstrip())
-        return {'name': 'JavaScript tests', 'command': command, 'exitCode': result.returncode}
 
-    # Some managed Windows environments block node:test worker creation. A
-    # directly executed test module still uses node:test assertions but stays
-    # in one process, so verify each file separately as a fail-closed fallback.
-    fallback_results = []
+def git_head() -> str | None:
+    result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def python_syntax() -> dict[str, object]:
+    failures = []
+    files = sorted((ROOT / 'scripts').glob('*.py'))
     for path in files:
-        fallback = subprocess.run(['node', path], cwd=ROOT, text=True, capture_output=True)
-        fallback_results.append({'file': path, 'exitCode': fallback.returncode})
-        if fallback.stdout:
-            print(fallback.stdout.rstrip())
-        if fallback.stderr:
-            print(fallback.stderr.rstrip())
-    exit_code = 0 if all(item['exitCode'] == 0 for item in fallback_results) else 1
-    print(f'[JavaScript tests] managed-worker fallback exit={exit_code}')
-    return {
-        'name': 'JavaScript tests',
-        'command': command,
-        'exitCode': exit_code,
-        'mode': 'direct-module-fallback-after-spawn-eperm',
-        'files': fallback_results,
-    }
+        try:
+            compile(path.read_text(encoding='utf-8'), str(path), 'exec')
+        except SyntaxError as exc:
+            failures.append({'file': str(path.relative_to(ROOT)), 'error': str(exc)})
+    return {'name': 'Python syntax', 'exitCode': 1 if failures else 0, 'files': len(files), 'failures': failures}
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--write-evidence', action='store_true')
+    args = parser.parse_args()
     checks: list[dict[str, object]] = []
-    checks.append(run_javascript_tests())
-    checks.append(run('Physics tests', [sys.executable, '-m', 'pytest', 'physics/newton-service/tests', '-q']))
-
-    js_files = sorted(str(path.relative_to(ROOT)) for path in (ROOT / 'apps' / 'web' / 'src').rglob('*.js'))
-    syntax_failures = []
-    for relative in js_files:
-        result = subprocess.run(['node', '--check', relative], cwd=ROOT, text=True, capture_output=True)
-        if result.returncode != 0:
-            syntax_failures.append({'file': relative, 'stderr': result.stderr})
-    checks.append({'name': 'JavaScript syntax', 'exitCode': 1 if syntax_failures else 0, 'files': len(js_files), 'failures': syntax_failures})
-
-    compiled = 0
-    for path in (ROOT / 'physics' / 'newton-service').rglob('*.py'):
-        py_compile.compile(str(path), doraise=True)
-        compiled += 1
-    for path in (ROOT / 'scripts').glob('*.py'):
-        py_compile.compile(str(path), doraise=True)
-        compiled += 1
-    checks.append({'name': 'Python compile', 'exitCode': 0, 'files': compiled})
-
+    checks.append(run('JavaScript tests', ['node', '--test', '--test-concurrency=1', *[str(p.relative_to(ROOT)) for p in sorted((ROOT / 'tests' / 'js').glob('*.test.js'))]]))
+    checks.append(run('Reliability', ['node', 'scripts/reliability.mjs']))
+    js_failures = []
+    js_files = sorted((ROOT / 'apps' / 'web' / 'src').rglob('*.js'))
+    for path in js_files:
+        result = subprocess.run(['node', '--check', str(path.relative_to(ROOT))], cwd=ROOT, text=True, capture_output=True)
+        if result.returncode:
+            js_failures.append({'file': str(path.relative_to(ROOT)), 'stderr': result.stderr})
+    checks.append({'name': 'JavaScript syntax', 'exitCode': 1 if js_failures else 0, 'files': len(js_files), 'failures': js_failures})
+    checks.append(python_syntax())
     required = [
-        'MASTER_PLAN.md',
-        'README.md',
-        'PREEXISTING_WORK.md',
-        'apps/web/index.html',
-        'apps/web/src/main.js',
-        'apps/web/src/webmcp/register-tools.js',
-        'apps/web/src/logo/main.js',
-        'apps/web/src/render/robot-renderer.js',
-        'apps/web/src/webmcp/register-logo-tools.js',
-        'apps/web/compiler.html',
-        'apps/web/src/logo/compiler.js',
-        'apps/web/src/logo/compiler-debug.js',
-        'apps/web/src/bricks/inventory.js',
-        'apps/web/src/bricks/build-board.js',
-        'apps/web/src/game/co-build.js',
-        'apps/web/src/game/race.js',
-        'apps/web/src/game/scoring.js',
-        'apps/web/oracle3.html',
-        'apps/web/src/perception/observation-service.js',
-        'apps/web/src/webmcp/register-oracle3-tools.js',
-        'apps/web/src/logo/runtime.js',
-        'tests/fixtures/logo-robo-runtime.js',
-        'physics/newton-service/app/main.py',
-        'physics/newton-service/app/newton_backend.py',
+        'MASTER_PLAN.md', 'README.md', 'FULL_REMEDIATION_PLAN_5_6_PRO.md', 'apps/web/index.html',
+        'apps/web/src/logo/main.js', 'apps/web/src/logo/runtime.js', 'apps/web/src/logo/workcell-adapter.js',
+        'apps/web/src/robot/controller.js', 'apps/web/src/robot/collision.js', 'apps/web/src/bricks/build-board.js',
+        'apps/web/src/perception/observation-service.js', 'apps/web/src/webmcp/register-tools.js'
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     checks.append({'name': 'Required files', 'exitCode': 1 if missing else 0, 'missing': missing})
-
-    browser_results_path = ROOT / 'evidence' / 'oracle1' / 'browser-runtime-results.json'
-    retained_browser_results_path = ROOT / 'evidence' / 'setup' / 'browser' / 'runtime-results.json'
-    newton_results_path = ROOT / 'evidence' / 'setup' / 'newton-runtime-results.json'
-    oracle2_results_path = ROOT / 'evidence' / 'oracle2' / 'verification.json'
-    oracle3_results_path = ROOT / 'evidence' / 'oracle3' / 'verification.json'
-    oracle3_browser_results_path = ROOT / 'evidence' / 'oracle3' / 'browser-acceptance.json'
-    browser_results = json.loads(browser_results_path.read_text(encoding='utf-8')) if browser_results_path.is_file() else None
-    retained_browser_results = json.loads(retained_browser_results_path.read_text(encoding='utf-8')) if retained_browser_results_path.is_file() else None
-    newton_results = json.loads(newton_results_path.read_text(encoding='utf-8')) if newton_results_path.is_file() else None
-    oracle2_results = json.loads(oracle2_results_path.read_text(encoding='utf-8')) if oracle2_results_path.is_file() else None
-    oracle3_results = json.loads(oracle3_results_path.read_text(encoding='utf-8')) if oracle3_results_path.is_file() else None
-    oracle3_browser_results = json.loads(oracle3_browser_results_path.read_text(encoding='utf-8')) if oracle3_browser_results_path.is_file() else None
-
+    removed = ['physics', 'apps/web/src/physics', 'apps/web/src/core', 'apps/web/src/webmcp/register-logo-tools.js']
+    unexpectedly_present = [path for path in removed if (ROOT / path).exists()]
+    checks.append({'name': 'Removed legacy/Newton paths', 'exitCode': 1 if unexpectedly_present else 0, 'unexpectedlyPresent': unexpectedly_present})
     result = {
-        'project': 'LOGO ROBO',
-        'repository': 'stefanGuiton/LOGO-ROBO-MCP',
-        'version': PACKAGE.get('version'),
+        'project': 'LOGO ROBO SIM V2',
+        'version': json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version'],
+        'generatedAtUtc': datetime.now(timezone.utc).isoformat(),
+        'gitHead': git_head(),
+        'sourceFingerprintSha256': source_fingerprint(),
         'checks': checks,
         'ok': all(check['exitCode'] == 0 for check in checks),
-        'browserRuntimeTested': bool(browser_results and browser_results.get('ok')),
-        'browserRuntimeEvidence': str(browser_results_path.relative_to(ROOT)) if browser_results else None,
-        'retainedFoundationBrowserRuntimeTested': bool(retained_browser_results and retained_browser_results.get('ok')),
-        'retainedFoundationBrowserRuntimeEvidence': str(retained_browser_results_path.relative_to(ROOT)) if retained_browser_results else None,
-        'newtonRuntimeTested': bool(newton_results and newton_results.get('ok')),
-        'newtonRuntimeEvidence': str(newton_results_path.relative_to(ROOT)) if newton_results else None,
-        'newtonRuntimeNote': None if newton_results else 'Installed, but runtime qualification is paused by the GPU thermal stop condition.',
-        'oracle2CompilerGameVerified': bool(oracle2_results and oracle2_results.get('ok')),
-        'oracle2CompilerGameEvidence': str(oracle2_results_path.relative_to(ROOT)) if oracle2_results else None,
-        'oracle3PerceptionWebmcpVerified': bool(oracle3_results and oracle3_results.get('ok')),
-        'oracle3PerceptionWebmcpEvidence': str(oracle3_results_path.relative_to(ROOT)) if oracle3_results else None,
-        'oracle3BrowserAcceptanceTested': bool(oracle3_browser_results),
-        'oracle3BrowserAcceptanceEvidence': str(oracle3_browser_results_path.relative_to(ROOT)) if oracle3_browser_results else None,
-        'oracle1WorkspaceEvidence': 'evidence/oracle1/workspace-qualification.json' if (ROOT / 'evidence/oracle1/workspace-qualification.json').is_file() else None,
-        'oracle1ReliabilityEvidence': 'evidence/oracle1/reliability-results.json' if (ROOT / 'evidence/oracle1/reliability-results.json').is_file() else None,
-        'oracle1PerformanceEvidence': 'evidence/oracle1/performance-results.json' if (ROOT / 'evidence/oracle1/performance-results.json').is_file() else None,
+        'notes': ['Verification is read-only unless --write-evidence is supplied.', 'NVIDIA Newton and the duplicate SCARA runtime are not part of this source state.']
     }
-    evidence = ROOT / 'evidence' / 'foundation-verification.json'
-    evidence.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(result, indent=2))
+    if args.write_evidence:
+        out = ROOT / 'evidence' / 'generated' / 'verification.json'
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     return 0 if result['ok'] else 1
 
 

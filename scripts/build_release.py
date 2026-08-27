@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
+import os
 import subprocess
 import sys
 import zipfile
@@ -10,75 +10,67 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT.parent / 'ROBO-SIM-MCP-foundation-v0.1.0.zip'
-EXCLUDED_PARTS = {'.git', '.venv', '__pycache__', '.pytest_cache', 'node_modules'}
-EXCLUDED_SUFFIXES = {'.pyc', '.pyo'}
+OUTPUT = ROOT / 'dist' / 'LOGO_ROBO_MCP_FIXED.zip'
+EXCLUDED_DIRECTORIES = {'.git', '.venv', 'ARCHIVE', 'dist', 'node_modules', '__pycache__', '.pytest_cache', '.cache', 'generated'}
+EXCLUDED_FILES = {'RELEASE_MANIFEST.json'}
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def source_fingerprint(files: list[Path]) -> str:
+    digest = hashlib.sha256()
+    for path in files:
+        rel = str(path.relative_to(ROOT)).replace('\\', '/')
+        digest.update(rel.encode('utf-8'))
+        digest.update(b'\0')
+        digest.update(path.read_bytes())
+        digest.update(b'\0')
+    return digest.hexdigest()
+
+
+def git_head() -> str | None:
+    result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True)
+    return result.stdout.strip() if result.returncode == 0 else None
 
 
 def included_files() -> list[Path]:
-    files: list[Path] = []
-    for path in ROOT.rglob('*'):
-        if not path.is_file():
-            continue
-        relative = path.relative_to(ROOT)
-        if any(part in EXCLUDED_PARTS for part in relative.parts):
-            continue
-        if path.suffix in EXCLUDED_SUFFIXES:
-            continue
-        files.append(path)
-    return sorted(files)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open('rb') as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b''):
-            digest.update(chunk)
-    return digest.hexdigest()
+    result = []
+    for current, directories, filenames in os.walk(ROOT):
+        directories[:] = sorted(name for name in directories if name not in EXCLUDED_DIRECTORIES)
+        current_path = Path(current)
+        for filename in sorted(filenames):
+            if filename in EXCLUDED_FILES:
+                continue
+            result.append(current_path / filename)
+    return sorted(result)
 
 
 def main() -> int:
     verify = subprocess.run([sys.executable, str(ROOT / 'scripts' / 'verify.py')], cwd=ROOT)
-    if verify.returncode != 0:
+    if verify.returncode:
         return verify.returncode
-
-    for cache in list(ROOT.rglob('__pycache__')) + [ROOT / '.pytest_cache']:
-        if cache.exists():
-            shutil.rmtree(cache)
-
     files = included_files()
     manifest = {
-        'project': 'ROBO-SIM-MCP',
-        'version': '0.1.0-foundation',
+        'project': 'LOGO ROBO SIM V2',
+        'version': json.loads((ROOT / 'package.json').read_text())['version'],
         'builtAtUtc': datetime.now(timezone.utc).isoformat(),
-        'fileCount': len(files),
+        'gitHead': git_head(),
+        'sourceFingerprintSha256': source_fingerprint(files),
         'files': [
-            {
-                'path': str(path.relative_to(ROOT)).replace('\\', '/'),
-                'size': path.stat().st_size,
-                'sha256': sha256(path),
-            }
+            {'path': str(path.relative_to(ROOT)).replace('\\', '/'), 'size': path.stat().st_size, 'sha256': sha256_bytes(path.read_bytes())}
             for path in files
-            if path.name != 'release-manifest.json'
-        ],
+        ]
     }
-    manifest_path = ROOT / 'evidence' / 'release-manifest.json'
-    manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-    files = included_files()
-
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     if OUTPUT.exists():
         OUTPUT.unlink()
-    with zipfile.ZipFile(OUTPUT, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+    with zipfile.ZipFile(OUTPUT, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
-            archive.write(path, Path('ROBO-SIM-MCP') / path.relative_to(ROOT))
-
-    release = {
-        'zip': str(OUTPUT),
-        'size': OUTPUT.stat().st_size,
-        'sha256': sha256(OUTPUT),
-        'fileCount': len(files),
-    }
-    (ROOT / 'evidence' / 'release.json').write_text(json.dumps(release, indent=2) + '\n', encoding='utf-8')
+            archive.write(path, Path('LOGO-ROBO-MCP') / path.relative_to(ROOT))
+        archive.writestr('LOGO-ROBO-MCP/RELEASE_MANIFEST.json', json.dumps(manifest, indent=2) + '\n')
+    release = {'zip': str(OUTPUT), 'size': OUTPUT.stat().st_size, 'sha256': sha256_bytes(OUTPUT.read_bytes()), 'fileCount': len(files) + 1}
     print(json.dumps(release, indent=2))
     return 0
 

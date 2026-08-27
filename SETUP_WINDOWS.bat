@@ -1,16 +1,11 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist .venv (
-  py -3.12 -m venv .venv 2>nul || py -3.11 -m venv .venv 2>nul || py -3.10 -m venv .venv
-)
-call .venv\Scripts\activate.bat
-python -m pip install --use-feature=truststore --upgrade pip
-python -m pip install --use-feature=truststore -r physics\newton-service\requirements.txt
-python -m pip install --use-feature=truststore -r physics\newton-service\requirements-dev.txt
-python -m pip check
-python scripts\verify.py
+where node >nul 2>nul || (echo Node.js 20+ is required for verification. & exit /b 1)
+where python >nul 2>nul || where py >nul 2>nul || (echo Python 3.10+ is required for the local web server and verifier. & exit /b 1)
+echo Checking LOGO ROBO...
+python scripts\verify.py 2>nul || py -3 scripts\verify.py
 if errorlevel 1 exit /b 1
 echo.
-echo Foundation setup complete.
-echo Newton is optional and is not installed by this script.
+echo LOGO ROBO setup verification complete.
+echo No package installation is required. NVIDIA Newton has been removed.

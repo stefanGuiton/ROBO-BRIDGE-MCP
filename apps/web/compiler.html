@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>LOGO ROBO — Compiler Lab</title>
+  <title>LOGO ROBO SIM V2 — Compiler Lab</title>
   <link rel="stylesheet" href="compiler.css">
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">ORACLE 2 / LIVE BLUEPRINT TRUTH</p>
-        <h1>LOGO ROBO <span>Compiler Lab</span></h1>
-        <p class="lede">Local image → deterministic 2×4 brick blueprint. The preview and board view both render the immutable Blueprint.</p>
+        <p class="eyebrow">LIVE COMPILER / UR10 MACHINE FRAME</p>
+        <h1>LOGO ROBO SIM V2 <span>Compiler Lab</span></h1>
+        <p class="lede">Local image → deterministic 2×4 brick Blueprint → explicit UR10 challenge-frame mapping.</p>
       </div>
       <div class="status"><span class="dot"></span><strong id="status">READY</strong><small id="compile-time">—</small></div>
     </header>
@@ -23,8 +23,8 @@
         <div id="pattern-buttons" class="segmented"></div>
       </div>
       <div class="control">
-        <label for="budget">Brick budget <strong id="budget-value">48</strong></label>
-        <input id="budget" type="range" min="12" max="128" step="1" value="48">
+        <label for="budget">Brick budget <strong id="budget-value">6</strong></label>
+        <input id="budget" type="range" min="2" max="128" step="1" value="6">
       </div>
       <div class="control">
         <label for="fit">Fit</label>
@@ -43,7 +43,7 @@
         <div class="canvas-stage"><canvas id="preview-canvas" width="640" height="480"></canvas></div>
       </article>
       <article class="card panel">
-        <div class="panel-head"><div><span>03</span><h2>Physical board map</h2></div><small>world-space poses</small></div>
+        <div class="panel-head"><div><span>03</span><h2>Live UR10 board map</h2></div><small>machine-frame poses</small></div>
         <div class="canvas-stage board-stage"><canvas id="board-canvas" width="640" height="480"></canvas></div>
       </article>
     </section>

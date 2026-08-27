@@ -1,135 +1,126 @@
-function compact(value) {
-  const text = JSON.stringify(value);
-  return text.length <= 1450 ? text : `${text.slice(0, 1410)}…"truncated":true}`;
+import { createRuntimeBridge } from './runtime-bridge.js';
+import { createLogoRoboToolHandlers } from './tool-handlers.js';
+
+let activeController = null;
+const PALETTE = ['white','black','red','blue','yellow','green'];
+const LIMIT = { type: 'integer', minimum: 1, maximum: 20, default: 12 };
+const REVISION = { type: 'integer', minimum: 0, description: 'Exact worldRevision from the most recent successful read or tool result.' };
+
+function boundedJson(value, maxChars = 12000) {
+  const candidate = structuredClone(value);
+  let truncated = false;
+  let totalAvailable = null;
+  let returnedCount = null;
+  for (const key of ['targets', 'detections']) {
+    if (!Array.isArray(candidate?.[key])) continue;
+    const originalCount = candidate[key].length;
+    totalAvailable = Math.max(totalAvailable ?? 0, originalCount);
+    if (candidate[key].length > 20) {
+      candidate[key] = candidate[key].slice(0, 20);
+      truncated = true;
+    }
+    while (candidate[key].length > 1 && JSON.stringify(candidate).length > maxChars) {
+      candidate[key].pop();
+      truncated = true;
+    }
+    returnedCount = candidate[key].length;
+  }
+  if (truncated) {
+    candidate.truncated = true;
+    candidate.returnedCount = returnedCount;
+    candidate.totalAvailable = totalAvailable;
+  }
+  const text = JSON.stringify(candidate);
+  if (text.length <= maxChars) return text;
+  return JSON.stringify({
+    ok: candidate?.ok !== false,
+    reason: candidate?.ok === false ? (candidate.reason ?? 'internal_error') : undefined,
+    worldRevision: candidate?.worldRevision ?? candidate?.snapshotRevision ?? null,
+    truncated: true,
+    message: 'Tool result was reduced to the bounded response size.'
+  });
 }
 
-export async function registerWebMcpTools(api, onLifecycle = () => {}) {
-  const modelContext = document.modelContext;
-  if (!modelContext?.registerTool) {
-    return { ok: false, reason: 'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
-  }
-
-  const tools = [
+export function getLogoRoboToolDefinitions(handlers) {
+  return [
     {
-      name: 'get_scene_state',
-      description: 'Return structured workcell objects, bins, obstacles, positions, sizes, colours, and graspability. Use before planning manipulation.',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: async () => compact(api.getSceneState())
+      name:'get_build_state', description:'Read authoritative board occupancy, claims, progress, held brick, contribution counts, and world revision.',
+      inputSchema:{type:'object',properties:{status:{type:'string',enum:['unfilled','filled','correct','incorrect']},colour:{type:'string',enum:PALETTE},claimOwner:{type:'string',enum:['human','agent','none']},limit:LIMIT},additionalProperties:false},
+      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getBuildState(input)
     },
     {
-      name: 'get_robot_state',
-      description: 'Return the SCARA joint state, Cartesian end-effector state, gripper state, workspace, and current operation.',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: async () => compact(api.getRobotState())
+      name:'get_robot_state', description:'Read authoritative TCP, joints, motion state, held brick, limits, and world revision.',
+      inputSchema:{type:'object',properties:{},additionalProperties:false}, annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:()=>handlers.getRobotState()
     },
     {
-      name: 'analyse_reachability',
-      description: 'Check whether one Cartesian target is reachable without changing robot state. Coordinates are millimetres in the robot machine frame.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          xMm: { type: 'number', description: 'Machine X in millimetres.' },
-          yMm: { type: 'number', description: 'Machine Y in millimetres.' },
-          zMm: { type: 'number', description: 'Machine Z in millimetres.' }
-        },
-        required: ['xMm', 'yMm', 'zMm'],
-        additionalProperties: false
-      },
-      annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: async (input) => compact(api.analyseReachability(input))
+      name:'get_workspace', description:'Read exact Cartesian, speed, acceleration, joint-rate, coordinate-frame, and grasp-offset limits.',
+      inputSchema:{type:'object',properties:{},additionalProperties:false}, annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:()=>handlers.getWorkspace()
     },
     {
-      name: 'move_end_effector',
-      description: 'Move the shared SCARA end effector to a reachable Cartesian target. Invalid requests fail closed and preserve the last accepted pose.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          xMm: { type: 'number', description: 'Machine X in millimetres.' },
-          yMm: { type: 'number', description: 'Machine Y in millimetres.' },
-          zMm: { type: 'number', description: 'Machine Z in millimetres.' }
-        },
-        required: ['xMm', 'yMm', 'zMm'],
-        additionalProperties: false
-      },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: async (input) => compact(api.moveEndEffector(input))
+      name:'observe_camera', description:'Observe simulated bricks or targets. Each detection includes centre coordinates and recommendedTcp. Use snapshotRevision as expectedWorldRevision for the next mutation.',
+      inputSchema:{type:'object',properties:{cameraId:{type:'string',enum:['tray_camera','canvas_camera'],default:'tray_camera'},colour:{type:'string',enum:PALETTE},type:{type:'string',enum:['brick','target']},limit:LIMIT},additionalProperties:false},
+      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.observeCamera(input)
     },
     {
-      name: 'set_gripper',
-      description: 'Set the parallel gripper opening. Use 1 for fully open and 0 for fully closed.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          openFraction: { type: 'number', minimum: 0, maximum: 1, description: 'Opening from 0 closed to 1 open.' }
-        },
-        required: ['openFraction'],
-        additionalProperties: false
-      },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: async (input) => compact(api.setGripper(input.openFraction))
+      name:'move_tool', description:'Move the shared fixed-down TCP. The request must include the latest exact world revision. Motion is cancelled if the call aborts and fails closed if the world changes.',
+      inputSchema:{type:'object',properties:{xMm:{type:'number',minimum:470,maximum:710},yMm:{type:'number',minimum:-275,maximum:275},zMm:{type:'number',minimum:40,maximum:470},speedMmS:{type:'number',exclusiveMinimum:0,maximum:650},expectedWorldRevision:REVISION},required:['xMm','yMm','zMm','speedMmS','expectedWorldRevision'],additionalProperties:false},
+      annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input,options)=>handlers.moveTool(input,options)
     },
     {
-      name: 'plan_pick_and_place',
-      description: 'Create and display a fail-closed SCARA pick-and-place plan between one graspable object and one destination bin. This does not execute it.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          objectId: { type: 'string', description: 'ID of a graspable scene object.' },
-          destinationId: { type: 'string', description: 'ID of a destination bin.' }
-        },
-        required: ['objectId', 'destinationId'],
-        additionalProperties: false
-      },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: async (input) => compact(api.planPickAndPlace(input.objectId, input.destinationId))
+      name:'latch', description:'Latch one brick within the capture tolerance. Requires the latest exact world revision.',
+      inputSchema:{type:'object',properties:{expectedWorldRevision:REVISION},required:['expectedWorldRevision'],additionalProperties:false}, annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.latch(input)
     },
     {
-      name: 'simulate_trajectory',
-      description: 'Validate the current plan with the Newton service when available, or the deterministic browser fallback. Returns collisions and grasp status.',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: async (_input, options = {}) => compact(await api.simulateCurrentPlan({ signal: options.signal }))
+      name:'unlatch', description:'Release the held brick. A valid matching unoccupied target snaps the brick; occupied or wrong-colour targets fail while the brick remains held.',
+      inputSchema:{type:'object',properties:{expectedWorldRevision:REVISION},required:['expectedWorldRevision'],additionalProperties:false}, annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.unlatch(input)
     },
     {
-      name: 'execute_trajectory',
-      description: 'Execute the current physics-validated trajectory in the shared workcell. Refuses execution when no successful validation exists.',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: async (_input, options = {}) => compact(await api.executeCurrentPlan({ signal: options.signal }))
+      name:'claim_target', description:'Claim one unfilled target for the agent. Claims live in the same authoritative board state as occupancy.',
+      inputSchema:{type:'object',properties:{targetId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},expectedWorldRevision:REVISION},required:['targetId','expectedWorldRevision'],additionalProperties:false}, annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.claimTarget(input)
     },
     {
-      name: 'reset_workcell',
-      description: 'Reset the robot, gripper, objects, current plan, and physics result to the deterministic starting state.',
-      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: async () => compact(api.resetWorkcell())
+      name:'reset_workcell', description:'Cancel active motion and reset robot, bricks, board occupancy, claims, and revisions to a new deterministic scene state.',
+      inputSchema:{type:'object',properties:{expectedWorldRevision:REVISION},required:['expectedWorldRevision'],additionalProperties:false}, annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.resetWorkcell(input)
     }
   ];
+}
 
-  const controller = new AbortController();
-  for (const tool of tools) {
-    const execute = tool.execute;
-    const registeredTool = {
-      ...tool,
-      async execute(...args) {
-        onLifecycle({ status: 'executing', toolName: tool.name });
-        try {
-          const result = await execute(...args);
-          let parsed = null;
-          try { parsed = typeof result === 'string' ? JSON.parse(result) : result; } catch { /* compact output remains valid tool data */ }
-          const status = parsed?.ok === false ? 'rejected' : 'succeeded';
-          onLifecycle({ status, toolName: tool.name, reason: parsed?.reason ?? null });
-          return result;
-        } catch (error) {
-          onLifecycle({ status: 'rejected', toolName: tool.name, reason: String(error) });
-          throw error;
+export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}) {
+  const modelContext = globalThis.document?.modelContext;
+  if (!modelContext?.registerTool) return { ok:false, reason:'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
+  const bridge = createRuntimeBridge(runtime ?? globalThis.__LOGO_ROBO_RUNTIME__ ?? null);
+  if (!bridge.availability.ok) return { ok:false, reason:'runtime_unavailable', missing:bridge.availability.missing };
+  const handlers = createLogoRoboToolHandlers({ bridge });
+  const tools = getLogoRoboToolDefinitions(handlers);
+  activeController?.abort();
+  activeController = new AbortController();
+  const registeredNames = [];
+  try {
+    for (const tool of tools) {
+      const execute = tool.execute;
+      await modelContext.registerTool({ ...tool, async execute(input = {}, options = {}) {
+        onLifecycle({status:'executing',toolName:tool.name});
+        if (options.signal?.aborted) {
+          const cancelled = { ok:false, reason:'cancelled', message:'Tool call was cancelled.' };
+          onLifecycle({status:'rejected',toolName:tool.name,reason:'cancelled'});
+          return boundedJson(cancelled);
         }
-      }
-    };
-    await modelContext.registerTool(registeredTool, { signal: controller.signal });
-    onLifecycle({ status: 'discovered', toolName: tool.name });
+        try {
+          const result = await execute(input, options);
+          onLifecycle({status:result?.ok===false?'rejected':'succeeded',toolName:tool.name,reason:result?.reason??null});
+          return boundedJson(result);
+        } catch {
+          const result = { ok:false, reason:'internal_error', message:'The tool failed internally.' };
+          onLifecycle({status:'rejected',toolName:tool.name,reason:'internal_error'});
+          return boundedJson(result);
+        }
+      }}, { signal: activeController.signal });
+      registeredNames.push(tool.name);
+      onLifecycle({status:'discovered',toolName:tool.name});
+    }
+  } catch {
+    activeController.abort();
+    return { ok:false, reason:'tool_registration_failed', registeredNames };
   }
-  return { ok: true, toolCount: tools.length, toolNames: tools.map((tool) => tool.name), controller };
+  return { ok:true, toolCount:tools.length, toolNames:tools.map((tool)=>tool.name), controller:activeController, runtimeAvailable:true };
 }

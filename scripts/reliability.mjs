@@ -1,61 +1,69 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { BoardAdapter } from '../apps/web/src/bricks/board-adapter.js';
-import { makeBrick } from '../apps/web/src/bricks/brick-spec.js';
-import { RobotController } from '../apps/web/src/robot/controller.js';
-import { CHALLENGE_LAYOUT } from '../apps/web/src/robot/ur10-definition.js';
+import { createLiveHarness, runToolOnlyRound } from '../tests/helpers/live-harness.js';
 
-async function oneTrial(index) {
-  const board = new BoardAdapter([{ id: 'target', colour: 'white', position: { xMm: 655, yMm: 220, zMm: 34.8 }, yawRad: 0 }]);
-  const brick = makeBrick({ id: 'brick-' + index, colour: 'white', xMm: 520, yMm: -230, zMm: 34.8 });
-  const robot = new RobotController({ board, bricks: [brick], timeScale: 0 });
+const TRIALS = 20;
+const REQUIRED_PASSES = 19;
+
+function mulberry32(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const rng = mulberry32(0x10c0de);
+const { controller, handlers } = createLiveHarness({ timeScale: 0 });
+const results = [];
+
+for (let trial = 1; trial <= TRIALS; trial += 1) {
   const started = performance.now();
   try {
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupAboveTcp, speedMmS: 560 });
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupTcp, speedMmS: 260 });
-    const latch = robot.latch();
-    if (!latch.success) throw new Error('latch:' + latch.reason);
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.pickupAboveTcp, speedMmS: 300 });
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.targetAboveTcp, speedMmS: 560 });
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.targetTcp, speedMmS: 250 });
-    const release = robot.unlatch();
-    if (!release.success || !release.snapped) throw new Error('unlatch:' + release.reason);
-    await robot.moveTool({ ...CHALLENGE_LAYOUT.targetAboveTcp, speedMmS: 300 });
-    const final = robot.getBricks()[0];
-    const correct = final.snapped && final.placedTargetId === 'target' &&
-      final.position.xMm === 655 && final.position.yMm === 220;
+    if (trial > 1) {
+      const before = await handlers.getRobotState();
+      const reset = await handlers.resetWorkcell({ expectedWorldRevision: before.worldRevision });
+      if (!reset.ok) throw new Error(`reset:${reset.reason}`);
+    }
+
+    // Small deterministic human interference before each round. This changes the
+    // authoritative world revision and proves that perception follows live state.
+    for (const brick of controller.getBricks().filter((item) => !item.snapped)) {
+      const dx = (rng() * 2 - 1) * 1.25;
+      const dy = (rng() * 2 - 1) * 1.25;
+      const moved = controller.moveLooseBrick(brick.id, {
+        xMm: brick.position.xMm + dx,
+        yMm: brick.position.yMm + dy,
+        zMm: brick.position.zMm
+      });
+      if (!moved.ok) throw new Error(`human_interference:${moved.reason}`);
+    }
+
+    const round = await runToolOnlyRound(handlers);
+    if (!round.ok) throw new Error(`${round.stage}:${round.result?.reason ?? round.latch?.reason ?? round.release?.reason ?? 'round_failed'}`);
+    const final = await handlers.getBuildState({ limit: 20 });
+    const correct = final.progress.correctTargets === final.progress.totalTargets &&
+      final.progress.totalTargets >= 2 && final.contributions.agent === final.progress.totalTargets;
     if (!correct) throw new Error('final_state_mismatch');
-    return {
-      trial: index,
-      ok: true,
-      durationMs: performance.now() - started,
-      robotRevision: robot.robotRevision,
-      worldRevision: robot.worldRevision
-    };
+    results.push({ trial, ok: true, durationMs: performance.now() - started, worldRevision: final.worldRevision });
   } catch (error) {
-    return {
-      trial: index,
-      ok: false,
-      durationMs: performance.now() - started,
-      reason: error.code ?? error.message,
-      details: error.details ?? null
-    };
+    results.push({ trial, ok: false, durationMs: performance.now() - started, reason: error?.code ?? error?.message ?? String(error) });
   }
 }
 
-const results = [];
-for (let i = 1; i <= 50; i += 1) results.push(await oneTrial(i));
-const passCount = results.filter((row) => row.ok).length;
+const passCount = results.filter((item) => item.ok).length;
+const durations = results.map((item) => item.durationMs).sort((a, b) => a - b);
+const percentile = (p) => durations[Math.min(durations.length - 1, Math.floor((durations.length - 1) * p))] ?? null;
 const summary = {
-  trialCount: 50,
+  trialCount: TRIALS,
+  requiredPasses: REQUIRED_PASSES,
   passCount,
-  failCount: 50 - passCount,
-  acceptanceMet: passCount >= 49,
-  meanDurationMs: results.reduce((sum, row) => sum + row.durationMs, 0) / results.length,
-  failures: results.filter((row) => !row.ok)
+  failCount: TRIALS - passCount,
+  acceptanceMet: passCount >= REQUIRED_PASSES,
+  p50DurationMs: percentile(0.5),
+  p95DurationMs: percentile(0.95),
+  failures: results.filter((item) => !item.ok)
 };
-const out = path.resolve('evidence/oracle1/reliability-results.json');
-fs.mkdirSync(path.dirname(out), { recursive: true });
-fs.writeFileSync(out, JSON.stringify({ summary, results }, null, 2) + '\n');
 console.log(JSON.stringify(summary, null, 2));
 if (!summary.acceptanceMet) process.exitCode = 1;

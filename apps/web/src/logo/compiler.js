@@ -5,8 +5,9 @@ import { DEFAULT_PALETTE, DEFAULT_PALETTE_ID, nearestPaletteColour } from './pal
 export const COMPILER_VERSION = 'logo-compiler-v1';
 export const ALPHA_EMPTY_THRESHOLD = 0.03;
 export const EMPTY_COVERAGE_THRESHOLD = 0.28;
-export const MAX_SOURCE_PIXELS = 16_777_216;
-export const MAX_SOURCE_DIMENSION = 4096;
+export const MAX_SOURCE_PIXELS = 1_048_576;
+export const MAX_SOURCE_DIMENSION = 1024;
+export const MAX_SOURCE_FILE_BYTES = 8 * 1024 * 1024;
 
 function checkImageData(image) {
   if (!image || !Number.isInteger(image.width) || !Number.isInteger(image.height)) throw new Error('invalid_image_dimensions');
