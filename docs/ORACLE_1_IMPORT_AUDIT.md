@@ -54,7 +54,7 @@ The generated qualification evidence reports:
 - p95 position error: 0.0680 mm;
 - maximum position error: 0.0798 mm;
 - reliability: 50/50 complete trials passed;
-- local planning benchmark: maximum segment planning time about 186 ms.
+- local planning benchmark: latest maximum segment planning time about 292 ms; an earlier run measured about 186 ms, so this is not a frame-rate guarantee.
 
 See `evidence/oracle1/workspace-qualification.json` and `evidence/oracle1/reliability-results.json` after the integration verification run. These results do not certify 120 FPS or prove a hosted/live WebMCP browser session.
 

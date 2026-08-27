@@ -21,7 +21,7 @@ No physical robot, Duet, ROS system, or `D:\SCARA-Simulator` checkout was contac
 - Oracle 1 kinematics/controller/latch/reliability/WebMCP focused tests pass.
 - Workspace qualification: 1,000/1,000 samples pass.
 - Reliability qualification: 50/50 complete pick/place trials pass.
-- Maximum local planning segment: approximately 186 ms in the dependency-free benchmark.
+- Maximum local planning segment: approximately 292 ms in the latest dependency-free benchmark (an earlier run measured approximately 186 ms).
 - Full project verification is run through `scripts/verify.py`, including the retained foundation suites.
 
 The managed Windows environment may reject Node’s worker-based test runner with `spawn EPERM`; the verification script records and uses a direct-module fallback so assertions still execute.
