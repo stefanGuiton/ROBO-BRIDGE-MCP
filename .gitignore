@@ -28,3 +28,6 @@ evidence/generated/
 
 # Recoverable pre-V2 working tree retained locally only
 /ARCHIVE/
+
+# Local Oracle/reference downloads retained outside project source
+/downloads from oracle/
