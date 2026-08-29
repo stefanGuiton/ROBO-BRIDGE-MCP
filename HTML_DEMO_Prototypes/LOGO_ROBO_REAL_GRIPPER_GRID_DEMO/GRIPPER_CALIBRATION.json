@@ -1,0 +1,72 @@
+{
+  "source": {
+    "file": "Gripper.glb",
+    "sha256": "e866760a7bd5ee91f4944d073b1d96db315786e51c540a0f97463f79ae62126e",
+    "nodes": 89,
+    "meshes": 33,
+    "animations": 1,
+    "animation_duration_s": 2.5,
+    "animation_frames": 60,
+    "source_frame_rate_fps": 24
+  },
+  "coordinate_mapping": {
+    "world_units": "1 Three.js unit = 1 mm",
+    "world_up": "+Z",
+    "tool_direction": "local -Z",
+    "gltf_to_logo_robo": "glTF +Y -> tool -Z; glTF +Z -> jaw +X; glTF +X -> tool -Y",
+    "base_rule": "Use the Blender export origin/base plane as GRIPPER_ROOT. The exported GLB does not contain a node literally named 000."
+  },
+  "base_scene_mm": {
+    "x": -0.010353959517206412,
+    "y": 0.0,
+    "z": 2.224966180792619
+  },
+  "tcp_local_mm": {
+    "x": -0.4870334067230564,
+    "y": 0.0,
+    "z": -410.1105809169691
+  },
+  "reference_2x4_brick_center_local_mm": {
+    "x": -0.4870334067230564,
+    "y": 0.0,
+    "z": -417.8105809169691
+  },
+  "animation_calibration": {
+    "closed": {
+      "frame": 0,
+      "note": "Mechanical closed endpoint. The inner-pad world-axis AABBs overlap at this pose because the pads are angled/curved, so their AABB gap is not a physical opening measurement here."
+    },
+    "lego_15_8_mm_contact": {
+      "frame": 11.80001406497119,
+      "measured_inner_pad_gap_mm": 15.8
+    },
+    "automatic_latch_contact": {
+      "target_gap_mm": 16.0,
+      "typical_frame": 11.87,
+      "note": "Includes the 0.2 mm contact margin used by the controller."
+    },
+    "work_open": {
+      "frame": 23.025496028308588,
+      "measured_inner_pad_gap_mm": 46.0,
+      "lowest_claw_local_z_mm": -422.1105809169691
+    },
+    "full_open": {
+      "frame": 60,
+      "measured_inner_pad_gap_mm": 118.681799,
+      "note": "Manual/calibration endpoint. Automatic building uses Work Open for collision clearance."
+    }
+  },
+  "table_clearance": {
+    "grasp_tcp_z_mm": 12.5,
+    "work_open_lowest_claw_world_z_mm_approx": 0.4999,
+    "target_clearance_mm": 0.5
+  },
+  "grid": {
+    "pitch_mm": 8.0,
+    "columns": 56,
+    "rows": 40,
+    "build_slot_spacing_cells": 16,
+    "build_slot_center_spacing_mm": 128.0,
+    "allowed_target_yaws_deg": [0, 90]
+  }
+}
