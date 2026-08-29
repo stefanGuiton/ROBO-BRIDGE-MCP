@@ -1,22 +1,42 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOGO ROBO Real Gripper Grid Demo</title></head><body><p id="loading" style="font:14px system-ui;padding:24px">Loading self-contained LOGO ROBO demo…</p>
-<script src="chunks/demo_00.js"></script>
-<script src="chunks/demo_01.js"></script>
-<script src="chunks/demo_02.js"></script>
-<script src="chunks/demo_03.js"></script>
-<script src="chunks/demo_04.js"></script>
-<script src="chunks/demo_05.js"></script>
-<script src="chunks/demo_06.js"></script>
-<script src="chunks/demo_07.js"></script>
-<script src="chunks/demo_08.js"></script>
-<script src="chunks/demo_09.js"></script>
-<script src="chunks/demo_10.js"></script>
-<script src="chunks/demo_11.js"></script>
-<script src="chunks/demo_12.js"></script>
-<script src="chunks/demo_13.js"></script>
-<script src="chunks/demo_14.js"></script>
-<script src="chunks/demo_15.js"></script>
-<script src="chunks/demo_16.js"></script>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOGO ROBO Real Gripper Grid Demo</title></head><body><p id="loading" style="font:14px system-ui;padding:24px">Loading LOGO ROBO demo…</p>
+<script src="chunks/demo_000.js"></script>
+<script src="chunks/demo_001.js"></script>
+<script src="chunks/demo_002.js"></script>
+<script src="chunks/demo_003.js"></script>
+<script src="chunks/demo_004.js"></script>
+<script src="chunks/demo_005.js"></script>
+<script src="chunks/demo_006.js"></script>
+<script src="chunks/demo_007.js"></script>
+<script src="chunks/demo_008.js"></script>
+<script src="chunks/demo_009.js"></script>
+<script src="chunks/demo_010.js"></script>
+<script src="chunks/demo_011.js"></script>
+<script src="chunks/demo_012.js"></script>
+<script src="chunks/demo_013.js"></script>
+<script src="chunks/demo_014.js"></script>
+<script src="chunks/demo_015.js"></script>
+<script src="chunks/demo_016.js"></script>
+<script src="chunks/demo_017.js"></script>
+<script src="chunks/demo_018.js"></script>
+<script src="chunks/demo_019.js"></script>
+<script src="chunks/demo_020.js"></script>
+<script src="chunks/demo_021.js"></script>
+<script src="chunks/demo_022.js"></script>
+<script src="chunks/demo_023.js"></script>
+<script src="chunks/demo_024.js"></script>
+<script src="chunks/demo_025.js"></script>
+<script src="chunks/demo_026.js"></script>
+<script src="chunks/demo_027.js"></script>
+<script src="chunks/demo_028.js"></script>
+<script src="chunks/demo_029.js"></script>
+<script src="chunks/demo_030.js"></script>
+<script src="chunks/demo_031.js"></script>
+<script src="chunks/demo_032.js"></script>
+<script src="chunks/demo_033.js"></script>
+<script src="chunks/demo_034.js"></script>
+<script src="chunks/demo_035.js"></script>
+<script src="chunks/demo_036.js"></script>
 <script>
-(async()=>{try{const s=(window.__LOGO_ROBO_DEMO_CHUNKS||[]).join(''),r=atob(s),u=new Uint8Array(r.length);for(let i=0;i<r.length;i++)u[i]=r.charCodeAt(i);const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip')),html=await new Response(st).text();document.open();document.write(html);document.close();}catch(e){document.getElementById('loading').textContent='Failed to load demo: '+e.message;console.error(e);}})();
+(async()=>{try{const packed=(window.__LOGO_ROBO_DEMO_CHUNKS||[]).join('');const byteLen=1092932;let acc=0,bits=0,o=0;const u=new Uint8Array(byteLen);for(let i=0;i<packed.length&&o<byteLen;i++){acc=acc*32768+(packed.charCodeAt(i)-0x4000);bits+=15;while(bits>=8&&o<byteLen){bits-=8;const div=2**bits;u[o++]=Math.floor(acc/div)&255;acc%=div;}}if(o!==byteLen)throw new Error('payload length mismatch');const st=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));const html=await new Response(st).text();document.open();document.write(html);document.close();}catch(e){document.getElementById('loading').textContent='Failed to load demo: '+e.message;console.error(e);}})();
 </script></body></html>
