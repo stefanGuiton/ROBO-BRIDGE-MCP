@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Start the LOGO ROBO SIM V2 local web app.')
+    parser = argparse.ArgumentParser(description='Start the ROBO BRIDGE MCP V3 local web app.')
     parser.add_argument('--no-browser', action='store_true')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -18,7 +18,7 @@ def main() -> int:
         time.sleep(0.7)
         if not args.no_browser:
             webbrowser.open('http://127.0.0.1:8769')
-        print('LOGO ROBO SIM V2: http://127.0.0.1:8769')
+        print('ROBO BRIDGE MCP V3: http://127.0.0.1:8769')
         print('Press Ctrl+C to stop.')
         return process.wait()
     except KeyboardInterrupt:

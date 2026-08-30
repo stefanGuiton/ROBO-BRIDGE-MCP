@@ -33,7 +33,7 @@ function normalizeResult(result) {
 
 export function createRuntimeBridge(runtime = null) {
   const availability = runtimeAvailability(runtime);
-  const unavailable = () => machineError('runtime_unavailable', 'LOGO ROBO runtime is not connected.', { missing: availability.missing });
+  const unavailable = () => machineError('runtime_unavailable', 'ROBO BRIDGE runtime is not connected.', { missing: availability.missing });
   const call = async (fn, ...args) => {
     if (!availability.ok || typeof fn !== 'function') return unavailable();
     try { return normalizeResult(await fn(...args)); }

@@ -1,10 +1,13 @@
-# LOGO ROBO SIM V2
+# ROBO BRIDGE MCP V3
 
-LOGO ROBO SIM V2 is the post-audit, simulation-only browser robotics demo. A human and a WebMCP agent use the same UR10-class Cartesian controller, brick state, board state, and world revision.
+ROBO BRIDGE MCP V3 is the post-audit, simulation-only browser robotics demo. A human and a WebMCP agent use the same UR10-class Cartesian controller, calibrated real-gripper state, brick state, board state, and world revision.
 
 ## What is included
 
 - six-axis UR10-class FK/IK with fixed-down Cartesian control;
+- automatic internal tool yaw with a calibrated full-pose IK target;
+- the supplied real animated gripper GLB, JSON material overrides, and authoritative jaw/held-brick state;
+- a project-local Three.js r185 light-mode workcell renderer;
 - bounded TCP speed, acceleration, joint speed, and joint acceleration;
 - cancellation, reset epochs, and serialized robot moves;
 - conservative workcell, brick, link, and self-collision checks;
@@ -16,7 +19,7 @@ LOGO ROBO SIM V2 is the post-audit, simulation-only browser robotics demo. A hum
 - one nine-tool primitive WebMCP surface;
 - production red/blue build tests and persistent reliability tests.
 
-NVIDIA Newton and the old duplicate SCARA/physics runtime have been removed. LOGO ROBO does not claim rigid-body contact physics.
+NVIDIA Newton and the old duplicate SCARA/physics runtime have been removed. ROBO BRIDGE does not claim rigid-body contact physics.
 
 ## Start
 
@@ -57,7 +60,7 @@ python scripts\verify.py
 python scripts\build_release.py
 ```
 
-This creates `dist/LOGO_ROBO_MCP_FIXED.zip` with `RELEASE_MANIFEST.json` inside the archive.
+This creates `dist/ROBO_BRIDGE_MCP_V3.zip` with `RELEASE_MANIFEST.json` inside the archive.
 
 ## WebMCP
 
@@ -81,7 +84,7 @@ Page-side registration and the tool contract are tested locally. Native agent to
 
 The controller checks live state before each accepted motion sample. It includes tool/table, brick, board/tray, conservative moving-link/raised-workcell, and self-collision checks.
 
-The project-owned visual robot is not calibrated as an exact collision mesh against the table. Do not claim exact moving-link/table collision fidelity.
+The procedural UR10 arm visual is not calibrated as an exact collision mesh against the table. The real gripper GLB is calibrated to the controller TCP, but do not claim exact moving-link/table collision fidelity.
 
 No physical robot, ROS, Duet, or hardware command path is included.
 

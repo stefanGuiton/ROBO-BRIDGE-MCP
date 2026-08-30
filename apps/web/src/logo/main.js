@@ -41,6 +41,7 @@ const rrevEl = $('[data-rrev]');
 const wrevEl = $('[data-wrev]');
 const progressEl = $('[data-progress]');
 const fpsEl = $('[data-fps]');
+const gripperEl = $('[data-gripper]');
 const logEl = $('[data-log]');
 const toolListEl = $('[data-tool-list]');
 const moveForm = $('[data-move-form]');
@@ -226,7 +227,14 @@ function updateToolDiagnostics(event) {
 }
 
 renderer.start();
-setInterval(() => { const performance = renderer.getPerformance(); if (fpsEl) fpsEl.textContent = performance.fps ? `${performance.fps.toFixed(0)} FPS` : '—'; }, 500);
+setInterval(() => {
+  const performance = renderer.getPerformance();
+  if (fpsEl) fpsEl.textContent = performance.fps ? `${performance.fps.toFixed(0)} FPS` : '—';
+  if (gripperEl) {
+    gripperEl.textContent = performance.gripper.state === 'ready' ? 'REAL GLB READY' : performance.gripper.state.toUpperCase();
+    gripperEl.dataset.kind = performance.gripper.state === 'ready' ? 'ok' : 'warning';
+  }
+}, 500);
 window.addEventListener('resize', () => renderer.render());
 
 try {
@@ -240,7 +248,8 @@ try {
   addLog('WebMCP registration failed', 'bad');
 }
 
-window.__LOGO_ROBO__ = Object.freeze({ version: '1.0.0-state-authority-fix', actions, runtime, robotController: controller, board, blueprint, renderer, getSceneState, getRobotState, getWorkspace, get scene() { return getSceneState(); } });
+window.__LOGO_ROBO__ = Object.freeze({ version: '3.0.0-real-gripper', actions, runtime, robotController: controller, board, blueprint, renderer, getSceneState, getRobotState, getWorkspace, get scene() { return getSceneState(); } });
+window.__ROBO_BRIDGE__ = window.__LOGO_ROBO__;
 window.__LOGO_ROBO_RUNTIME__ = runtime;
 
 if (evidenceMode) {

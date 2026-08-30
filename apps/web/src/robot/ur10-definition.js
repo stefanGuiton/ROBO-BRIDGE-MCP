@@ -1,4 +1,4 @@
-import { degToRad } from './math.js';
+import { UR10_GRIPPER } from './gripper-definition.js';
 
 // Official Universal Robots UR10 DH dimensions, converted from metres to mm.
 // The public visual remains a project-owned generic industrial arm.
@@ -17,7 +17,8 @@ export const UR10_DEFINITION = Object.freeze({
     Object.freeze([-2 * Math.PI, 2 * Math.PI]),
     Object.freeze([-2 * Math.PI, 2 * Math.PI])
   ]),
-  toolLengthMm: 120,
+  toolLengthMm: UR10_GRIPPER.flangeToTcpOffsetMm.zMm,
+  toolOffsetMm: UR10_GRIPPER.flangeToTcpOffsetMm,
   fixedToolOrientation: Object.freeze([
     1, 0, 0,
     0, -1, 0,
@@ -25,8 +26,8 @@ export const UR10_DEFINITION = Object.freeze({
   ]),
   homeTcp: Object.freeze({ xMm: 600, yMm: 0, zMm: 450 }),
   homeJointsRad: Object.freeze([
-    degToRad(15.857), degToRad(-182.954), degToRad(84.749),
-    degToRad(8.206), degToRad(-90), degToRad(105.857)
+    0.2766622403558812, -3.1212750338345145, 1.4081196341271474,
+    0.1423590368307626, -1.5707962335716255, 1.847458612675451
   ])
 });
 

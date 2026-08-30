@@ -105,7 +105,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null })
           jointSpeedLimitRadS: controller.jointSpeedLimitRadS,
           jointAccelerationLimitRadS2: controller.jointAccelerationLimitRadS2,
           coordinateFrame: 'machine-mm-rad',
-          toolOrientation: 'fixed-down',
+          toolOrientation: 'fixed-down-auto-yaw',
           graspTcpOffsetMm: BRICK_SPEC.capture.tcpAboveCentreMm,
           recommendedClearanceZMm: 400,
           recommendedTransferTcp: { xMm: 600, yMm: 0, zMm: 450 }

@@ -9,8 +9,8 @@ const near = (a, b, tolerance, label) => assert.ok(Math.abs(a - b) <= tolerance,
 test('FK known zero-joint point matches locked UR10 DH chain', () => {
   const fk = forwardKinematics([0,0,0,0,0,0]);
   assert.equal(fk.ok, true);
-  near(fk.tcp.xMm, -1184.3, 1e-6, 'x');
-  near(fk.tcp.yMm, -376.141, 1e-6, 'y');
+  near(fk.tcp.xMm, -1184.4948133626892, 1e-6, 'x');
+  near(fk.tcp.yMm, -420.18523236678766, 1e-6, 'y');
   near(fk.tcp.zMm, 11.6, 1e-6, 'z');
 });
 

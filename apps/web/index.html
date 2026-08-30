@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="LOGO ROBO: a shared-state UR10-class multi-brick browser robotics demo with primitive WebMCP control.">
-  <title>LOGO ROBO SIM V2 — UR10 Manipulation Runtime</title>
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="ROBO BRIDGE MCP: a shared-state UR10 browser robotics demo with a calibrated real gripper and primitive WebMCP control.">
+  <title>ROBO BRIDGE MCP V3 — UR10 Real Gripper Runtime</title>
   <link rel="stylesheet" href="./logo.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">LR</span><div><strong>LOGO ROBO SIM V2</strong><small>POST-AUDIT UR10 RUNTIME</small></div></div>
+      <div class="brand"><span class="brand-mark">RB</span><div><strong>ROBO BRIDGE MCP V3</strong><small>UR10 · REAL GRIPPER · SHARED STATE</small></div></div>
       <div class="status"><span class="dot"></span><span data-status>READY</span><span class="divider"></span><span data-webmcp>CHECKING WEBMCP</span></div>
     </header>
 
-    <section class="stage" aria-label="LOGO ROBO six-axis robot workcell">
-      <canvas id="scene" aria-label="LOGO ROBO six-axis robot workcell"></canvas>
+    <section class="stage" aria-label="ROBO BRIDGE MCP UR10 workcell">
+      <canvas id="scene" aria-label="ROBO BRIDGE MCP UR10 workcell"></canvas>
       <div class="hud hud-left">
         <span>TCP</span><strong data-tcp>—</strong>
         <span>JOINTS</span><strong data-joints>—</strong>
@@ -26,6 +27,7 @@
         <span>WORLD REV</span><strong data-wrev>0</strong>
         <span>BUILD</span><strong data-progress>0/0</strong>
         <span>FRAME</span><strong data-fps>—</strong>
+        <span>GRIPPER</span><strong data-gripper>LOADING</strong>
       </div>
       <div class="legend"><span><i class="cyan"></i>accepted TCP</span><span><i class="amber"></i>tool</span><span><i class="ghost"></i>snap target</span></div>
     </section>
@@ -33,7 +35,7 @@
     <aside class="controls">
       <div class="control-head"><span>MANIPULATION</span><strong>Cartesian only</strong></div>
       <div class="metric-grid">
-        <div><span>Tool</span><strong>FIXED DOWN</strong></div>
+        <div><span>Tool</span><strong>REAL GRIPPER · AUTO YAW</strong></div>
         <div><span>Speed cap</span><strong>650 mm/s</strong></div>
         <div><span>Held brick</span><strong data-held>NONE</strong></div>
         <div><span>IK</span><strong>6-AXIS DLS</strong></div>

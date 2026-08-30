@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / 'dist' / 'LOGO_ROBO_MCP_FIXED.zip'
+OUTPUT = ROOT / 'dist' / 'ROBO_BRIDGE_MCP_V3.zip'
 EXCLUDED_DIRECTORIES = {'.git', '.venv', 'ARCHIVE', 'dist', 'node_modules', '__pycache__', '.pytest_cache', '.cache', 'generated'}
 EXCLUDED_FILES = {'RELEASE_MANIFEST.json'}
 
@@ -53,7 +53,7 @@ def main() -> int:
         return verify.returncode
     files = included_files()
     manifest = {
-        'project': 'LOGO ROBO SIM V2',
+        'project': 'ROBO BRIDGE MCP V3',
         'version': json.loads((ROOT / 'package.json').read_text())['version'],
         'builtAtUtc': datetime.now(timezone.utc).isoformat(),
         'gitHead': git_head(),

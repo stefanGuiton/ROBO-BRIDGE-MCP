@@ -1,8 +1,8 @@
-# LOGO ROBO SIM V2 — Codex handoff
+# ROBO BRIDGE MCP V3 — Codex handoff
 
 ## Current state
 
-The repaired source has one live UR10 controller, one live BuildBoard, one revision clock, one runtime adapter, one perception service, and one WebMCP registrar.
+The V3 source has one live UR10 controller, one live BuildBoard, one revision clock, one runtime adapter, one perception service, and one WebMCP registrar. The controller now owns calibrated real-gripper jaw state, automatic tool yaw, and the captured brick-in-TCP transform; the light-mode Three.js renderer consumes that shared state.
 
 NVIDIA Newton, the old physics HTTP service, the duplicate SCARA controller, the duplicate board adapter, and duplicate WebMCP registrars are removed.
 
@@ -11,6 +11,7 @@ NVIDIA Newton, the old physics HTTP service, the duplicate SCARA controller, the
 - `MASTER_PLAN.md`
 - `FULL_REMEDIATION_PLAN_5_6_PRO.md`
 - `README.md`
+- `docs/UR10_GRIPPER_INTEGRATION.md`
 - `apps/web/src/robot/controller.js`
 - `apps/web/src/robot/collision.js`
 - `apps/web/src/bricks/build-board.js`

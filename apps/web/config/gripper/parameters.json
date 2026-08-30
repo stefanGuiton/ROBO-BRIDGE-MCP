@@ -1,0 +1,10 @@
+{
+  "format": "LOGO_ROBO_PARAMETERS",
+  "version": 1,
+  "gripperMount": {
+    "offsetXmm": 0,
+    "offsetYmm": 0,
+    "offsetZmm": 0,
+    "scale": 0.4
+  }
+}

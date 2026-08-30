@@ -124,10 +124,10 @@ function movingBodyAabb(tcp, heldBrick) {
   return aabbFromCenter({ xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm + 16 }, { xMm: 24, yMm: 24, zMm: 36 }, 'tool');
 }
 
-function aabbOverlap(a, b) {
-  return a.min.xMm < b.max.xMm && a.max.xMm > b.min.xMm &&
-    a.min.yMm < b.max.yMm && a.max.yMm > b.min.yMm &&
-    a.min.zMm < b.max.zMm && a.max.zMm > b.min.zMm;
+function aabbOverlap(a, b, contactToleranceMm = 0.1) {
+  return a.min.xMm < b.max.xMm - contactToleranceMm && a.max.xMm > b.min.xMm + contactToleranceMm &&
+    a.min.yMm < b.max.yMm - contactToleranceMm && a.max.yMm > b.min.yMm + contactToleranceMm &&
+    a.min.zMm < b.max.zMm - contactToleranceMm && a.max.zMm > b.min.zMm + contactToleranceMm;
 }
 
 function validateSelfCollision(jointPositions) {
@@ -148,6 +148,8 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
   const ignored = new Set(ignoreBrickIds);
   const targetContext = board?.nearestTarget?.(tcp, 24) ?? null;
   const allowBoardContact = Boolean(targetContext && !targetContext.target.occupiedBy && Math.abs(tcp.xMm - targetContext.target.position.xMm) <= 12 && Math.abs(tcp.yMm - targetContext.target.position.yMm) <= 12);
+  const occupiedTargetDescent = Boolean(heldBrick && targetContext?.target?.occupiedBy && tcp.zMm <= targetContext.target.position.zMm + 20);
+  if (occupiedTargetDescent) return { ok: false, reason: 'collision', obstacle: 'target:' + targetContext.target.id + ':occupied' };
   const pickup = !heldBrick
     ? bricks.filter((brick) => !brick.heldBy && !brick.snapped).map((brick) => ({ brick, distance: Math.hypot(tcp.xMm - brick.position.xMm, tcp.yMm - brick.position.yMm) })).sort((a, b) => a.distance - b.distance)[0]
     : null;

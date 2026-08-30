@@ -1,8 +1,16 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { findLatchCandidate } from '../bricks/latch.js';
 import { validateCollision } from './collision.js';
-import { forwardKinematics, inverseKinematics } from './kinematics.js';
-import { angleDistance, distance3, isFiniteNumber } from './math.js';
+import {
+  captureBrickInTcp,
+  heldBrickWorldPose,
+  selectAutomaticYaw,
+  shortestHalfTurnDelta,
+  toolOrientationForYaw,
+  UR10_GRIPPER
+} from './gripper-definition.js';
+import { forwardKinematics, inverseKinematicsPose } from './kinematics.js';
+import { angleDistance, distance3, isFiniteNumber, wrapPi } from './math.js';
 import { CHALLENGE_LAYOUT, CHALLENGE_WORKSPACE, UR10_DEFINITION } from './ur10-definition.js';
 import { validateWorkspacePoint } from './workspace.js';
 import { RevisionClock } from '../state/revision-clock.js';
@@ -90,6 +98,11 @@ export class RobotController {
     this.moving = false;
     this.operationState = 'idle';
     this.heldBrickId = null;
+    this.toolYawRad = 0;
+    this.jawGapMm = UR10_GRIPPER.openGapMm;
+    this.jawState = 'open';
+    this.brickInTcp = null;
+    this.brickYawInTcpRad = 0;
     this.operation = Promise.resolve();
     this.activeAbortController = null;
     this.operationEpoch = 0;
@@ -119,7 +132,17 @@ export class RobotController {
   getState() {
     return {
       tcp: { ...this.tcp },
-      toolOrientation: 'fixed-down',
+      toolOrientation: 'fixed-down-auto-yaw',
+      toolYawRad: this.toolYawRad,
+      gripper: {
+        id: UR10_GRIPPER.id,
+        sourceGlbSha256: UR10_GRIPPER.sourceGlbSha256,
+        jawGapMm: this.jawGapMm,
+        jawState: this.jawState,
+        uniformScale: UR10_GRIPPER.uniformScale,
+        gripperRootToTcpMm: { ...UR10_GRIPPER.gripperRootToTcpMm },
+        brickInTcp: this.brickInTcp ? { ...this.brickInTcp } : null
+      },
       jointsRad: Array.from(this.jointsRad),
       speedLimitMmS: this.speedLimitMmS,
       accelerationLimitMmS2: this.accelerationLimitMmS2,
@@ -140,6 +163,10 @@ export class RobotController {
     if (this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     this.bricks = clone(bricks);
     this.heldBrickId = null;
+    this.jawGapMm = UR10_GRIPPER.openGapMm;
+    this.jawState = 'open';
+    this.brickInTcp = null;
+    this.brickYawInTcpRad = 0;
     this.#bumpRobot('world_reset');
     return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
   }
@@ -160,8 +187,10 @@ export class RobotController {
 
   updateHeldBrickPose() {
     const brick = this.heldBrick();
-    if (!brick) return;
-    brick.position = { xMm: this.tcp.xMm, yMm: this.tcp.yMm, zMm: this.tcp.zMm - BRICK_SPEC.capture.tcpAboveCentreMm };
+    if (!brick || !this.brickInTcp) return;
+    const pose = heldBrickWorldPose(this.tcp, this.toolYawRad, this.brickInTcp, this.brickYawInTcpRad);
+    brick.position = pose.position;
+    brick.yawRad = pose.yawRad;
   }
 
   validateMoveRequest({ xMm, yMm, zMm, speedMmS, expectedWorldRevision }) {
@@ -179,6 +208,15 @@ export class RobotController {
     if (!validation.ok) return validation;
     const startTcp = { ...this.tcp };
     const target = validation.target;
+    const startYawRad = this.toolYawRad;
+    const targetYawRad = selectAutomaticYaw({
+      currentYawRad: startYawRad,
+      target,
+      heldBrick: this.heldBrick(),
+      bricks: this.bricks,
+      targets: this.board?.getTargets?.() ?? []
+    });
+    const yawDeltaRad = shortestHalfTurnDelta(startYawRad, targetYawRad);
     const distanceMm = distance3(startTcp, target);
     const releasedBrick = this.releaseClearanceBrickId ? this.bricks.find((brick) => brick.id === this.releaseClearanceBrickId) : null;
     const releaseClearanceMove = Boolean(releasedBrick && target.zMm > startTcp.zMm && Math.hypot(target.xMm - startTcp.xMm, target.yMm - startTcp.yMm) <= 2);
@@ -194,9 +232,13 @@ export class RobotController {
     for (let i = 1; i <= samples; i += 1) {
       const t = i / samples;
       const point = { xMm: startTcp.xMm + (target.xMm - startTcp.xMm) * t, yMm: startTcp.yMm + (target.yMm - startTcp.yMm) * t, zMm: startTcp.zMm + (target.zMm - startTcp.zMm) * t };
+      const yawRad = wrapPi(startYawRad + yawDeltaRad * t);
       const workspaceCheck = validateWorkspacePoint(point, this.workspace);
       if (!workspaceCheck.ok) return workspaceCheck;
-      const ik = inverseKinematics(point, priorJoints, this.definition, { maxBranchJumpRad: 0.55 });
+      const ik = inverseKinematicsPose({
+        ...point,
+        rotation: toolOrientationForYaw(yawRad, this.definition.fixedToolOrientation)
+      }, priorJoints, this.definition, { maxBranchJumpRad: 0.55 });
       if (!ik.ok) return { ok: false, reason: ik.reason, diagnostics: { point, ...ik.diagnostics } };
       const jointStep = Math.max(...ik.jointsRad.map((value, index) => angleDistance(value, priorJoints[index])));
       maxJointStepRad = Math.max(maxJointStepRad, jointStep);
@@ -204,7 +246,7 @@ export class RobotController {
       const fk = forwardKinematics(ik.jointsRad, this.definition);
       const collision = validateCollision({ tcp: point, jointPositions: [...fk.jointPositions, fk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds }, this.layout);
       if (!collision.ok) return collision;
-      points.push({ t, tcp: point, jointsRad: ik.jointsRad, jointPositions: [...fk.jointPositions, fk.tcp] });
+      points.push({ t, tcp: { ...fk.tcp }, yawRad, jointsRad: ik.jointsRad, jointPositions: [...fk.jointPositions, fk.tcp] });
       priorJoints = ik.jointsRad;
       maxPositionErrorMm = Math.max(maxPositionErrorMm, ik.positionErrorMm);
       maxOrientationErrorRad = Math.max(maxOrientationErrorRad, ik.orientationErrorRad);
@@ -252,7 +294,9 @@ export class RobotController {
         accelerationMmS2: motionProfile.accelerationMmS2 / (scaleFactor ** 2),
         estimatedMaxJointSpeedRadS: maxJointSpeedRadS / scaleFactor,
         estimatedMaxJointAccelerationRadS2: maxJointAccelerationRadS2 / (scaleFactor ** 2),
-        timeScaleFactor: scaleFactor
+        timeScaleFactor: scaleFactor,
+        startYawRad,
+        targetYawRad
       }
     };
   }
@@ -319,6 +363,7 @@ export class RobotController {
           const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
           if (!liveCollision.ok) throw new RobotError(liveCollision.reason, liveCollision);
           this.tcp = { ...point.tcp };
+          this.toolYawRad = point.yawRad;
           this.jointsRad = Array.from(point.jointsRad);
           this.updateHeldBrickPose();
           acceptedIndex = i;
@@ -354,10 +399,14 @@ export class RobotController {
     const candidate = findLatchCandidate(this.tcp, this.bricks, this.heldBrickId);
     if (!candidate.ok) return { success: false, ok: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = candidate.brick;
+    this.brickInTcp = captureBrickInTcp(this.tcp, this.toolYawRad, brick.position);
+    this.brickYawInTcpRad = wrapPi(brick.yawRad - this.toolYawRad);
     brick.heldBy = actor === 'human' ? 'human' : 'robot';
     brick.snapped = false;
     brick.placedTargetId = null;
     this.heldBrickId = brick.id;
+    this.jawGapMm = UR10_GRIPPER.contactGapMm;
+    this.jawState = 'holding';
     this.updateHeldBrickPose();
     this.#bumpRobot('latched', { brickId: brick.id, actor });
     return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
@@ -382,6 +431,10 @@ export class RobotController {
       brick.placedTargetId = null;
     }
     this.heldBrickId = null;
+    this.jawGapMm = UR10_GRIPPER.openGapMm;
+    this.jawState = 'open';
+    this.brickInTcp = null;
+    this.brickYawInTcpRad = 0;
     if (snap.ok) this.releaseClearanceBrickId = brick.id;
     this.#bumpRobot('unlatched', { brickId: brick.id, snap, actor });
     return { success: true, ok: true, brickId: brick.id, finalPosition: { ...brick.position }, snapped: Boolean(snap.ok), targetId: snap.targetId ?? null, correctness: Boolean(snap.correctness), reason: snap.ok ? null : (snap.reason ?? 'no_snap_target'), robotRevision: this.robotRevision, worldRevision: this.worldRevision };
@@ -397,6 +450,11 @@ export class RobotController {
     const fk = forwardKinematics(this.jointsRad, this.definition);
     this.tcp = { ...fk.tcp };
     this.heldBrickId = null;
+    this.toolYawRad = 0;
+    this.jawGapMm = UR10_GRIPPER.openGapMm;
+    this.jawState = 'open';
+    this.brickInTcp = null;
+    this.brickYawInTcpRad = 0;
     this.releaseClearanceBrickId = null;
     if (bricks) this.bricks = clone(bricks);
     for (const brick of this.bricks) { brick.heldBy = null; brick.placedTargetId = null; brick.snapped = false; }

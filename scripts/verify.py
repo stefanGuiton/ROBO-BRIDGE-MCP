@@ -81,7 +81,7 @@ def main() -> int:
     unexpectedly_present = [path for path in removed if (ROOT / path).exists()]
     checks.append({'name': 'Removed legacy/Newton paths', 'exitCode': 1 if unexpectedly_present else 0, 'unexpectedlyPresent': unexpectedly_present})
     result = {
-        'project': 'LOGO ROBO SIM V2',
+        'project': 'ROBO BRIDGE MCP V3',
         'version': json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version'],
         'generatedAtUtc': datetime.now(timezone.utc).isoformat(),
         'gitHead': git_head(),

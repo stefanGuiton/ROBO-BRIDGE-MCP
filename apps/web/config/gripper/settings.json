@@ -1,0 +1,120 @@
+{
+  "format": "LOGO_ROBO_SETTINGS",
+  "version": 1,
+  "parameters": {
+    "format": "LOGO_ROBO_PARAMETERS",
+    "version": 1,
+    "gripperMount": {
+      "offsetXmm": 0,
+      "offsetYmm": 0,
+      "offsetZmm": 0,
+      "scale": 0.4
+    }
+  },
+  "materials": {
+    "format": "LOGO_ROBO_MATERIALS",
+    "version": 1,
+    "ur10": [
+      {
+        "key": "ur_blue",
+        "name": "Blue polymer / coating",
+        "color": "#a8c3d1",
+        "metalness": 0,
+        "roughness": 0.34,
+        "clearcoat": 0.18,
+        "clearcoatRoughness": 0.28
+      },
+      {
+        "key": "hub_caps",
+        "name": "Hub-cap cover discs (7)",
+        "color": "#a8c3d1",
+        "metalness": 0,
+        "roughness": 0.34,
+        "clearcoat": 0.18,
+        "clearcoatRoughness": 0.28
+      },
+      {
+        "key": "powder_dark",
+        "name": "Dark powder-coated housing",
+        "color": "#828282",
+        "metalness": 0,
+        "roughness": 0.46,
+        "clearcoat": 0.08,
+        "clearcoatRoughness": 0.32
+      },
+      {
+        "key": "anodized_aluminium",
+        "name": "Anodized aluminium",
+        "color": "#b5b5b5",
+        "metalness": 0.82,
+        "roughness": 0.34,
+        "clearcoat": 0,
+        "clearcoatRoughness": 0.25
+      },
+      {
+        "key": "pcasa_light",
+        "name": "Light PC/ASA endcap",
+        "color": "#d4d4d4",
+        "metalness": 0,
+        "roughness": 0.38,
+        "clearcoat": 0.16,
+        "clearcoatRoughness": 0.3
+      },
+      {
+        "key": "rubber_black",
+        "name": "AEM rubber / black seal",
+        "color": "#505050",
+        "metalness": 0,
+        "roughness": 0.82,
+        "clearcoat": 0,
+        "clearcoatRoughness": 0.6
+      }
+    ],
+    "gripper": [
+      {
+        "index": 0,
+        "name": "black",
+        "color": "#111111",
+        "metalness": 0,
+        "roughness": 0.998623788356781,
+        "opacity": 1,
+        "emissive": "#000000",
+        "clearcoat": null,
+        "clearcoatRoughness": null
+      },
+      {
+        "index": 1,
+        "name": "blue",
+        "color": "#5a879a",
+        "metalness": 0.58,
+        "roughness": 0.34,
+        "opacity": 1,
+        "emissive": "#000000",
+        "clearcoat": 0.13330253958702087,
+        "clearcoatRoughness": 0.03999999910593033
+      },
+      {
+        "index": 2,
+        "name": "steel",
+        "color": "#e7e7e7",
+        "metalness": 1,
+        "roughness": 0.9820846319198608,
+        "opacity": 1,
+        "emissive": "#000000",
+        "clearcoat": null,
+        "clearcoatRoughness": null
+      },
+      {
+        "index": 3,
+        "name": "material",
+        "color": "#e7030e",
+        "metalness": 0,
+        "roughness": 0.9617469906806946,
+        "opacity": 1,
+        "emissive": "#000000",
+        "clearcoat": null,
+        "clearcoatRoughness": null
+      }
+    ]
+  }
+}

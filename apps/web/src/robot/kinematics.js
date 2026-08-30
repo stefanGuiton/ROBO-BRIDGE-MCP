@@ -52,7 +52,8 @@ export function forwardKinematics(joints, definition = UR10_DEFINITION) {
     jointPositions.push(transformPoint(transform));
   }
   const flangeTransform = transform;
-  const tcpTransform = mat4Multiply(flangeTransform, translationMatrix(0, 0, definition.toolLengthMm));
+  const toolOffset = definition.toolOffsetMm ?? { xMm: 0, yMm: 0, zMm: definition.toolLengthMm };
+  const tcpTransform = mat4Multiply(flangeTransform, translationMatrix(toolOffset.xMm, toolOffset.yMm, toolOffset.zMm));
   return {
     ok: true,
     jointsRad: cloneJoints(joints),
@@ -68,7 +69,7 @@ export function forwardKinematics(joints, definition = UR10_DEFINITION) {
 function poseError(joints, target, definition) {
   const fk = forwardKinematics(joints, definition);
   if (!fk.ok) return null;
-  const orientationError = rotationVectorError(fk.rotation, definition.fixedToolOrientation);
+  const orientationError = rotationVectorError(fk.rotation, target.rotation ?? definition.fixedToolOrientation);
   return {
     vector: [
       fk.tcp.xMm - target.xMm,
@@ -262,6 +263,12 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
   };
 }
 
+export function inverseKinematicsPose(target, previousJoints = UR10_DEFINITION.homeJointsRad, definition = UR10_DEFINITION, options = {}) {
+  if (!target || !Array.isArray(target.rotation) || target.rotation.length !== 9 || !target.rotation.every(isFiniteNumber)) {
+    return { ok: false, reason: 'invalid_input' };
+  }
+  return inverseKinematics(target, previousJoints, definition, options);
+}
 export function orientationErrorForJoints(joints, definition = UR10_DEFINITION) {
   const fk = forwardKinematics(joints, definition);
   if (!fk.ok) return Infinity;

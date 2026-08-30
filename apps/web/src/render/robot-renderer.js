@@ -1,229 +1,274 @@
+import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { forwardKinematics } from '../robot/kinematics.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
-
-const TAU = Math.PI * 2;
+import { RealGripperVisual, THREE } from './real-gripper-visual.js';
 
 const BRICK_COLOURS = {
-  white: '#f3f5f8',
-  black: '#151b25',
-  red: '#ef4b4f',
-  blue: '#3b78ff',
-  yellow: '#ffd447',
-  green: '#49c47a'
+  white: 0xf3f5f8, black: 0x151b25, red: 0xef4b4f,
+  blue: 0x3b78ff, yellow: 0xffd447, green: 0x49c47a
 };
 
-function hexToRgb(hex) {
-  const value = hex.replace('#', '');
-  const n = Number.parseInt(value, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-
-function rgbStringToRgb(value) {
-  const match = value.match(/rgba?\(([^)]+)\)/i);
-  if (!match) return hexToRgb('#7ed7ff');
-  const channels = match[1].split(',').map((channel) => Number.parseFloat(channel.trim()));
-  return { r: channels[0] || 0, g: channels[1] || 0, b: channels[2] || 0 };
-}
-
-function colourToRgb(value) {
-  return value.startsWith('#') ? hexToRgb(value) : rgbStringToRgb(value);
-}
-
-function shade(hex, amount) {
-  const { r, g, b } = hexToRgb(hex);
-  const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
-  return `rgb(${clamp(r + amount)}, ${clamp(g + amount)}, ${clamp(b + amount)})`;
-}
-
-function rgba(value, alpha) {
-  const { r, g, b } = colourToRgb(value);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-class Camera {
-  constructor() {
-    this.focus = { xMm: 420, yMm: 0, zMm: 170 };
-    this.yaw = -0.78;
-    this.pitch = 0.56;
-    this.scale = 0.82;
-    this.offsetX = 0;
-    this.offsetY = 30;
-  }
-
-  setPreset(name) {
-    const presets = {
-      hero: { focus: { xMm: 390, yMm: 0, zMm: 170 }, yaw: -0.76, pitch: 0.53, scale: 0.82, offsetX: 20, offsetY: 35 },
-      top: { focus: { xMm: 590, yMm: 0, zMm: 100 }, yaw: -0.65, pitch: 1.03, scale: 0.94, offsetX: 0, offsetY: 20 },
-      tray: { focus: { xMm: 535, yMm: -210, zMm: 95 }, yaw: -0.62, pitch: 0.78, scale: 1.24, offsetX: 75, offsetY: 70 },
-      latch: { focus: { xMm: 520, yMm: -230, zMm: 62 }, yaw: -0.72, pitch: 0.52, scale: 1.68, offsetX: 70, offsetY: 80 },
-      target: { focus: { xMm: 630, yMm: 170, zMm: 105 }, yaw: -0.82, pitch: 0.62, scale: 1.10, offsetX: -20, offsetY: 60 }
-    };
-    Object.assign(this, presets[name] ?? presets.hero);
-  }
-
-  project(point, width, height) {
-    const x = point.xMm - this.focus.xMm;
-    const y = point.yMm - this.focus.yMm;
-    const z = point.zMm - this.focus.zMm;
-    const cy = Math.cos(this.yaw);
-    const sy = Math.sin(this.yaw);
-    const x1 = cy * x - sy * y;
-    const y1 = sy * x + cy * y;
-    const cp = Math.cos(this.pitch);
-    const sp = Math.sin(this.pitch);
-    const y2 = cp * y1 + sp * z;
-    const z2 = -sp * y1 + cp * z;
-    return {
-      x: width / 2 + this.offsetX + x1 * this.scale,
-      y: height / 2 + this.offsetY - y2 * this.scale,
-      depth: z2
-    };
-  }
-}
-
-function polygon(ctx, points, fill, stroke = null, width = 1) {
-  if (!points.length) return;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
-  ctx.closePath();
-  if (fill) {
-    ctx.fillStyle = fill;
-    ctx.fill();
-  }
-  if (stroke) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.stroke();
-  }
-}
-
-function draw3dBox(ctx, camera, width, height, center, size, colour, options = {}) {
-  const hx = size.xMm / 2;
-  const hy = size.yMm / 2;
-  const hz = size.zMm / 2;
-  const points = [
-    [-hx, -hy, -hz], [hx, -hy, -hz], [hx, hy, -hz], [-hx, hy, -hz],
-    [-hx, -hy, hz], [hx, -hy, hz], [hx, hy, hz], [-hx, hy, hz]
-  ].map(([x, y, z]) => camera.project({ xMm: center.xMm + x, yMm: center.yMm + y, zMm: center.zMm + z }, width, height));
-  const faces = [
-    { ids: [0, 1, 5, 4], c: shade(colour, -28) },
-    { ids: [1, 2, 6, 5], c: shade(colour, -12) },
-    { ids: [2, 3, 7, 6], c: shade(colour, -20) },
-    { ids: [3, 0, 4, 7], c: shade(colour, -36) },
-    { ids: [4, 5, 6, 7], c: shade(colour, 18) }
-  ].map((face) => ({ ...face, depth: face.ids.reduce((sum, index) => sum + points[index].depth, 0) / face.ids.length }));
-  faces.sort((a, b) => a.depth - b.depth);
-  for (const face of faces) {
-    polygon(ctx, face.ids.map((index) => points[index]), options.alpha ? rgba(face.c, options.alpha) : face.c, options.stroke ?? 'rgba(0,0,0,.35)', 1);
-  }
-}
-
-function drawBrick(ctx, camera, width, height, brick, ghost = false) {
-  const colour = BRICK_COLOURS[brick.colour] ?? BRICK_COLOURS.white;
-  draw3dBox(ctx, camera, width, height, brick.position, {
-    xMm: BRICK_SPEC.lengthMm,
-    yMm: BRICK_SPEC.widthMm,
-    zMm: BRICK_SPEC.bodyHeightMm
-  }, ghost ? '#7ed7ff' : colour, {
-    alpha: ghost ? 0.22 : null,
-    stroke: ghost ? 'rgba(114,221,255,.8)' : 'rgba(0,0,0,.35)'
+function physicalMaterial(options) {
+  return new THREE.MeshPhysicalMaterial({
+    roughness: 0.36,
+    metalness: 0.65,
+    clearcoat: 0.12,
+    clearcoatRoughness: 0.28,
+    ...options
   });
-  if (ghost) return;
-  const topZ = brick.position.zMm + BRICK_SPEC.bodyHeightMm / 2 + BRICK_SPEC.studHeightMm;
-  for (let ix = 0; ix < 4; ix += 1) {
-    for (let iy = 0; iy < 2; iy += 1) {
-      const point = camera.project({
-        xMm: brick.position.xMm + (ix - 1.5) * BRICK_SPEC.studPitchMm,
-        yMm: brick.position.yMm + (iy - 0.5) * BRICK_SPEC.studPitchMm,
-        zMm: topZ
-      }, width, height);
-      const radius = Math.max(1.5, 2.25 * camera.scale);
-      ctx.beginPath();
-      ctx.ellipse(point.x, point.y, radius, radius * 0.55, 0, 0, TAU);
-      ctx.fillStyle = shade(colour, 30);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.25)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-  }
 }
 
-function drawSegment(ctx, p1, p2, widthPx, body, outline = '#1b2532') {
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = outline;
-  ctx.lineWidth = widthPx + 8;
-  ctx.beginPath();
-  ctx.moveTo(p1.x, p1.y);
-  ctx.lineTo(p2.x, p2.y);
-  ctx.stroke();
-  ctx.strokeStyle = body;
-  ctx.lineWidth = widthPx;
-  ctx.beginPath();
-  ctx.moveTo(p1.x, p1.y);
-  ctx.lineTo(p2.x, p2.y);
-  ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,255,255,.22)';
-  ctx.lineWidth = Math.max(2, widthPx * 0.15);
-  ctx.beginPath();
-  ctx.moveTo(p1.x - 2, p1.y - 2);
-  ctx.lineTo(p2.x - 2, p2.y - 2);
-  ctx.stroke();
+function makeBox(size, centre, material) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.xMm, size.yMm, size.zMm), material);
+  mesh.position.set(centre.xMm, centre.yMm, centre.zMm);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
-function drawJoint(ctx, point, radius, accent = true) {
-  ctx.beginPath();
-  ctx.arc(point.x, point.y, radius + 5, 0, TAU);
-  ctx.fillStyle = '#172231';
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(point.x, point.y, radius, 0, TAU);
-  const gradient = ctx.createRadialGradient(point.x - radius * 0.4, point.y - radius * 0.5, 2, point.x, point.y, radius);
-  gradient.addColorStop(0, '#edf4f7');
-  gradient.addColorStop(0.58, '#aebac2');
-  gradient.addColorStop(1, '#5d6b75');
-  ctx.fillStyle = gradient;
-  ctx.fill();
-  if (accent) {
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, radius * 0.46, 0, TAU);
-    ctx.fillStyle = '#39bcd8';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, radius * 0.29, 0, TAU);
-    ctx.fillStyle = '#172231';
-    ctx.fill();
-  }
+function setSegment(mesh, start, end) {
+  const a = new THREE.Vector3(start.xMm, start.yMm, start.zMm);
+  const b = new THREE.Vector3(end.xMm, end.yMm, end.zMm);
+  const direction = b.clone().sub(a);
+  const length = Math.max(0.001, direction.length());
+  mesh.position.copy(a.add(b).multiplyScalar(0.5));
+  mesh.scale.set(1, length, 1);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
 }
 
 export class RobotRenderer {
   constructor(canvas, controller, { board = null } = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
     this.controller = controller;
     this.board = board;
-    this.camera = new Camera();
-    this.camera.setPreset('hero');
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0xe8eef5);
+    this.scene.fog = new THREE.FogExp2(0xe8eef5, 0.00042);
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    this.webgl.outputColorSpace = THREE.SRGBColorSpace;
+    this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
+    this.webgl.toneMappingExposure = 1.08;
+    this.webgl.shadowMap.enabled = true;
+    this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.camera = new THREE.PerspectiveCamera(42, 1, 1, 5000);
+    this.camera.up.set(0, 0, 1);
+    this.focus = new THREE.Vector3(420, 0, 170);
+    this.yaw = -0.82;
+    this.pitch = 0.47;
+    this.radius = 1450;
     this.running = false;
     this.lastFrame = 0;
     this.fps = 0;
     this.frameTimes = [];
     this.drag = null;
+    this.brickMeshes = new Map();
+    this.targetMeshes = new Map();
+    this.buildLighting();
+    this.buildWorkcell();
+    this.buildRobot();
+    this.gripper = new RealGripperVisual(this.scene);
     this.installCameraControls();
+    this.setView('hero');
+  }
+
+  buildLighting() {
+    this.scene.add(new THREE.HemisphereLight(0xb9dcff, 0x071019, 1.55));
+    const key = new THREE.DirectionalLight(0xffffff, 3.4);
+    key.position.set(450, -650, 1100);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -900;
+    key.shadow.camera.right = 900;
+    key.shadow.camera.top = 900;
+    key.shadow.camera.bottom = -900;
+    key.shadow.camera.near = 100;
+    key.shadow.camera.far = 2400;
+    this.scene.add(key);
+    const fill = new THREE.DirectionalLight(0x74d7ff, 1.6);
+    fill.position.set(-350, 700, 550);
+    this.scene.add(fill);
+    const rim = new THREE.PointLight(0xffb34f, 130000, 1700, 2);
+    rim.position.set(800, 300, 650);
+    this.scene.add(rim);
+  }
+
+  buildWorkcell() {
+    const tableMaterial = physicalMaterial({ color: 0xdfe7ef, roughness: 0.72, metalness: 0.08 });
+    this.scene.add(makeBox(
+      { xMm: 1100, yMm: 900, zMm: 50 },
+      { xMm: 380, yMm: 0, zMm: -25 },
+      tableMaterial
+    ));
+    const grid = new THREE.GridHelper(1000, 20, 0xa9bac9, 0xcbd6e0);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.set(380, 0, 0.5);
+    grid.material.opacity = 0.32;
+    grid.material.transparent = true;
+    this.scene.add(grid);
+
+    const tray = CHALLENGE_LAYOUT.tray;
+    const trayMaterial = physicalMaterial({ color: 0x405768, metalness: 0.45, roughness: 0.42 });
+    this.scene.add(makeBox(
+      { xMm: tray.maxX - tray.minX, yMm: tray.maxY - tray.minY, zMm: tray.floorZ },
+      { xMm: (tray.minX + tray.maxX) / 2, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ / 2 },
+      trayMaterial
+    ));
+    const wallThickness = 6;
+    const wallZ = tray.floorZ + tray.wallHeight / 2;
+    for (const spec of [
+      [{ xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, { xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: wallZ }],
+      [{ xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, { xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: wallZ }],
+      [{ xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: tray.wallHeight }, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: wallZ }],
+      [{ xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: tray.wallHeight }, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: wallZ }]
+    ]) this.scene.add(makeBox(spec[0], spec[1], trayMaterial));
+
+    const board = CHALLENGE_LAYOUT.board;
+    this.scene.add(makeBox(
+      { xMm: board.maxX - board.minX, yMm: board.maxY - board.minY, zMm: board.surfaceZ },
+      { xMm: (board.minX + board.maxX) / 2, yMm: (board.minY + board.maxY) / 2, zMm: board.surfaceZ / 2 },
+      physicalMaterial({ color: 0xc8d1d8, metalness: 0.18, roughness: 0.48 })
+    ));
+  }
+
+  buildRobot() {
+    this.robotGroup = new THREE.Group();
+    this.scene.add(this.robotGroup);
+    const aluminium = physicalMaterial({ color: 0xb5b5b5, metalness: 0.82, roughness: 0.34, clearcoat: 0 });
+    const blue = physicalMaterial({ color: 0xa8c3d1, metalness: 0, roughness: 0.34, clearcoat: 0.18 });
+    const dark = physicalMaterial({ color: 0x505050, metalness: 0, roughness: 0.82, clearcoat: 0 });
+    this.robotGroup.add(makeBox({ xMm: 165, yMm: 165, zMm: 90 }, { xMm: 0, yMm: 0, zMm: 45 }, dark));
+    this.linkMeshes = [];
+    const radii = [33, 39, 36, 29, 26, 24];
+    for (let index = 0; index < 6; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radii[index], radii[index], 1, 28), index % 2 ? aluminium : blue);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.robotGroup.add(mesh);
+      this.linkMeshes.push(mesh);
+    }
+    this.jointMeshes = [];
+    for (let index = 0; index < 7; index += 1) {
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(index === 0 ? 42 : 34, 28, 18), index % 2 ? dark : blue);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.robotGroup.add(mesh);
+      this.jointMeshes.push(mesh);
+    }
+    this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+    this.scene.add(this.tcpMarker);
+    this.tcpRing = new THREE.Mesh(new THREE.TorusGeometry(15, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: 0x59e1ff }));
+    this.tcpRing.rotation.x = Math.PI / 2;
+    this.scene.add(this.tcpRing);
+  }
+
+  syncTargets() {
+    const targets = this.board?.getTargets?.() ?? [];
+    const seen = new Set();
+    for (const target of targets) {
+      seen.add(target.id);
+      let mesh = this.targetMeshes.get(target.id);
+      if (!mesh) {
+        const colour = BRICK_COLOURS[target.colour] ?? BRICK_COLOURS.white;
+        mesh = makeBox(
+          { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
+          target.position,
+          new THREE.MeshStandardMaterial({ color: colour, transparent: true, opacity: 0.22, depthWrite: false })
+        );
+        this.scene.add(mesh);
+        this.targetMeshes.set(target.id, mesh);
+      }
+      mesh.visible = !target.occupiedBy;
+      mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
+      mesh.rotation.z = target.yawRad ?? 0;
+    }
+    for (const [id, mesh] of this.targetMeshes) {
+      if (!seen.has(id)) { this.scene.remove(mesh); this.targetMeshes.delete(id); }
+    }
+  }
+
+  syncBricks() {
+    const bricks = this.controller.getBricks();
+    const seen = new Set();
+    for (const brick of bricks) {
+      seen.add(brick.id);
+      let mesh = this.brickMeshes.get(brick.id);
+      if (!mesh) {
+        const body = makeBox(
+          { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
+          brick.position,
+          new THREE.MeshPhysicalMaterial({ color: BRICK_COLOURS[brick.colour] ?? BRICK_COLOURS.white, roughness: 0.38, metalness: 0, clearcoat: 0.25 })
+        );
+        body.name = `BRICK_${brick.id}`;
+        this.scene.add(body);
+        mesh = body;
+        this.brickMeshes.set(brick.id, mesh);
+      }
+      mesh.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
+      mesh.rotation.z = brick.yawRad ?? 0;
+    }
+    for (const [id, mesh] of this.brickMeshes) {
+      if (!seen.has(id)) { this.scene.remove(mesh); this.brickMeshes.delete(id); }
+    }
+  }
+
+  updateRobot() {
+    const state = this.controller.getState();
+    const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
+    if (!fk.ok) return;
+    for (let index = 0; index < this.linkMeshes.length; index += 1) setSegment(this.linkMeshes[index], fk.jointPositions[index], fk.jointPositions[index + 1]);
+    for (let index = 0; index < this.jointMeshes.length; index += 1) this.jointMeshes[index].position.set(fk.jointPositions[index].xMm, fk.jointPositions[index].yMm, fk.jointPositions[index].zMm);
+    this.tcpMarker.position.set(fk.tcp.xMm, fk.tcp.yMm, fk.tcp.zMm);
+    this.tcpRing.position.copy(this.tcpMarker.position);
+    this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
+  }
+
+  setView(view) {
+    const presets = {
+      hero: { focus: [390, 0, 170], yaw: -0.82, pitch: 0.48, radius: 1450 },
+      top: { focus: [590, 0, 90], yaw: -0.72, pitch: 1.25, radius: 1180 },
+      tray: { focus: [535, -220, 95], yaw: -0.82, pitch: 0.58, radius: 760 },
+      latch: { focus: [520, -230, 70], yaw: -0.92, pitch: 0.42, radius: 430 },
+      target: { focus: [635, 205, 90], yaw: -1.02, pitch: 0.52, radius: 720 }
+    };
+    const preset = presets[view] ?? presets.hero;
+    this.focus.set(...preset.focus);
+    this.yaw = preset.yaw;
+    this.pitch = preset.pitch;
+    this.radius = preset.radius;
+    this.updateCamera();
+    this.render();
+  }
+
+  updateCamera() {
+    const horizontal = this.radius * Math.cos(this.pitch);
+    this.camera.position.set(
+      this.focus.x + horizontal * Math.cos(this.yaw),
+      this.focus.y + horizontal * Math.sin(this.yaw),
+      this.focus.z + this.radius * Math.sin(this.pitch)
+    );
+    this.camera.lookAt(this.focus);
   }
 
   installCameraControls() {
+    this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
     this.canvas.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-      this.drag = { x: event.clientX, y: event.clientY, yaw: this.camera.yaw, pitch: this.camera.pitch };
+      this.drag = { x: event.clientX, y: event.clientY, yaw: this.yaw, pitch: this.pitch, focus: this.focus.clone(), mode: event.button === 0 ? 'orbit' : 'pan' };
       this.canvas.setPointerCapture?.(event.pointerId);
     });
     this.canvas.addEventListener('pointermove', (event) => {
       if (!this.drag) return;
-      this.camera.yaw = this.drag.yaw + (event.clientX - this.drag.x) * 0.006;
-      this.camera.pitch = Math.max(0.18, Math.min(1.35, this.drag.pitch + (event.clientY - this.drag.y) * 0.004));
+      const dx = event.clientX - this.drag.x;
+      const dy = event.clientY - this.drag.y;
+      if (this.drag.mode === 'orbit') {
+        this.yaw = this.drag.yaw - dx * 0.006;
+        this.pitch = Math.max(0.12, Math.min(1.42, this.drag.pitch + dy * 0.004));
+      } else {
+        const scale = this.radius / 850;
+        const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+        this.focus.copy(this.drag.focus).addScaledVector(right, -dx * scale).addScaledVector(up, dy * scale);
+      }
+      this.updateCamera();
       this.render();
     });
     const end = (event) => {
@@ -235,151 +280,29 @@ export class RobotRenderer {
     this.canvas.addEventListener('pointercancel', end);
     this.canvas.addEventListener('wheel', (event) => {
       event.preventDefault();
-      this.camera.scale = Math.max(0.45, Math.min(2.2, this.camera.scale * (event.deltaY > 0 ? 0.92 : 1.08)));
+      this.radius = Math.max(250, Math.min(2600, this.radius * (event.deltaY > 0 ? 1.08 : 0.92)));
+      this.updateCamera();
       this.render();
     }, { passive: false });
   }
 
-  setView(view) {
-    this.camera.setPreset(view);
-    this.render();
-  }
-
   resize() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
     const rect = this.canvas.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width * dpr));
-    const height = Math.max(1, Math.round(rect.height * dpr));
-    if (this.canvas.width !== width || this.canvas.height !== height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-    }
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { width: rect.width, height: rect.height };
-  }
-
-  drawGrid(width, height) {
-    const { ctx, camera } = this;
-    ctx.fillStyle = '#071019';
-    ctx.fillRect(0, 0, width, height);
-    const glow = ctx.createRadialGradient(width * 0.52, height * 0.52, 40, width * 0.52, height * 0.52, width * 0.62);
-    glow.addColorStop(0, 'rgba(32,58,76,.55)');
-    glow.addColorStop(1, 'rgba(3,8,13,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, height);
-
-    const table = [
-      { xMm: -120, yMm: -480, zMm: 0 }, { xMm: 860, yMm: -480, zMm: 0 },
-      { xMm: 860, yMm: 480, zMm: 0 }, { xMm: -120, yMm: 480, zMm: 0 }
-    ].map((point) => camera.project(point, width, height));
-    polygon(ctx, table, '#101b25', '#293947', 1.5);
-
-    ctx.strokeStyle = 'rgba(100,160,188,.12)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= 800; x += 80) {
-      const a = camera.project({ xMm: x, yMm: -430, zMm: 1 }, width, height);
-      const b = camera.project({ xMm: x, yMm: 430, zMm: 1 }, width, height);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    }
-    for (let y = -400; y <= 400; y += 80) {
-      const a = camera.project({ xMm: 0, yMm: y, zMm: 1 }, width, height);
-      const b = camera.project({ xMm: 820, yMm: y, zMm: 1 }, width, height);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    }
-  }
-
-  drawWorkcell(width, height) {
-    const { ctx, camera } = this;
-    const tray = CHALLENGE_LAYOUT.tray;
-    draw3dBox(ctx, camera, width, height, {
-      xMm: (tray.minX + tray.maxX) / 2,
-      yMm: (tray.minY + tray.maxY) / 2,
-      zMm: tray.floorZ / 2
-    }, { xMm: tray.maxX - tray.minX, yMm: tray.maxY - tray.minY, zMm: tray.floorZ }, '#374958');
-    const wallHeight = tray.wallHeight;
-    const wallThickness = 6;
-    draw3dBox(ctx, camera, width, height, { xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + wallHeight / 2 }, { xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: wallHeight }, '#486172');
-    draw3dBox(ctx, camera, width, height, { xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + wallHeight / 2 }, { xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: wallHeight }, '#486172');
-    draw3dBox(ctx, camera, width, height, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + wallHeight / 2 }, { xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: wallHeight }, '#486172');
-    draw3dBox(ctx, camera, width, height, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + wallHeight / 2 }, { xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: wallHeight }, '#486172');
-
-    const board = CHALLENGE_LAYOUT.board;
-    draw3dBox(ctx, camera, width, height, {
-      xMm: (board.minX + board.maxX) / 2,
-      yMm: (board.minY + board.maxY) / 2,
-      zMm: board.surfaceZ / 2
-    }, { xMm: board.maxX - board.minX, yMm: board.maxY - board.minY, zMm: board.surfaceZ }, '#c8d1d8');
-    for (const target of this.board?.getTargets?.() ?? []) {
-      if (!target.occupiedBy) drawBrick(ctx, camera, width, height, { colour: target.colour ?? 'white', position: target.position }, true);
-    }
-
-    for (const brick of this.controller.getBricks()) drawBrick(ctx, camera, width, height, brick, false);
-  }
-
-  drawRobot(width, height) {
-    const state = this.controller.getState();
-    const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
-    if (!fk.ok) return;
-    const { ctx, camera } = this;
-    draw3dBox(ctx, camera, width, height, { xMm: 0, yMm: 0, zMm: 45 }, { xMm: 145, yMm: 145, zMm: 90 }, '#73818a');
-    const points = fk.jointPositions.map((point) => camera.project(point, width, height));
-    const flange = camera.project(fk.flange, width, height);
-    const tcp = camera.project(fk.tcp, width, height);
-    const linkPairs = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]];
-    const widths = [42, 50, 47, 38, 34, 31];
-    for (let index = 0; index < linkPairs.length; index += 1) {
-      const [a, b] = linkPairs[index];
-      drawSegment(ctx, points[a], points[b], Math.max(13, widths[index] * camera.scale), '#c8d1d5');
-    }
-    for (let index = 1; index < points.length; index += 1) drawJoint(ctx, points[index], Math.max(8, 16 * camera.scale), index < 6);
-    drawSegment(ctx, flange, tcp, Math.max(8, 14 * camera.scale), '#384957', '#111820');
-    ctx.beginPath();
-    ctx.ellipse(tcp.x, tcp.y, Math.max(6, 11 * camera.scale), Math.max(3, 5 * camera.scale), 0, 0, TAU);
-    ctx.fillStyle = '#efb23d';
-    ctx.fill();
-    ctx.strokeStyle = '#161c22';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(89,225,255,.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(tcp.x, tcp.y, Math.max(8, 12 * camera.scale), 0, TAU);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(tcp.x - 18, tcp.y);
-    ctx.lineTo(tcp.x + 18, tcp.y);
-    ctx.moveTo(tcp.x, tcp.y - 18);
-    ctx.lineTo(tcp.x, tcp.y + 18);
-    ctx.stroke();
-  }
-
-  drawLabels(width, height) {
-    const { ctx, camera } = this;
-    const tray = camera.project({ xMm: 520, yMm: -230, zMm: 52 }, width, height);
-    const target = camera.project({ xMm: 655, yMm: 220, zMm: 45 }, width, height);
-    ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
-    ctx.textAlign = 'center';
-    for (const [point, label] of [[tray, 'PICK TRAY'], [target, 'BUILD TARGET']]) {
-      ctx.fillStyle = 'rgba(6,14,21,.85)';
-      const measurement = ctx.measureText(label).width;
-      ctx.fillRect(point.x - measurement / 2 - 8, point.y - 13, measurement + 16, 20);
-      ctx.fillStyle = '#90dcee';
-      ctx.fillText(label, point.x, point.y + 2);
-    }
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    this.webgl.setPixelRatio(pixelRatio);
+    if (this.canvas.width !== Math.round(width * pixelRatio) || this.canvas.height !== Math.round(height * pixelRatio)) this.webgl.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
   }
 
   render() {
-    const { width, height } = this.resize();
-    this.drawGrid(width, height);
-    this.drawWorkcell(width, height);
-    this.drawRobot(width, height);
-    this.drawLabels(width, height);
+    this.resize();
+    this.syncTargets();
+    this.syncBricks();
+    this.updateRobot();
+    this.webgl.render(this.scene, this.camera);
   }
 
   start() {
@@ -401,9 +324,7 @@ export class RobotRenderer {
     requestAnimationFrame(tick);
   }
 
-  stop() {
-    this.running = false;
-  }
+  stop() { this.running = false; }
 
   getPerformance() {
     const times = [...this.frameTimes].sort((a, b) => a - b);
@@ -411,7 +332,8 @@ export class RobotRenderer {
       fps: this.fps,
       meanFrameMs: times.length ? times.reduce((sum, value) => sum + value, 0) / times.length : 0,
       p95FrameMs: times.length ? times[Math.min(times.length - 1, Math.floor(times.length * 0.95))] : 0,
-      maxFrameMs: times.at(-1) ?? 0
+      maxFrameMs: times.at(-1) ?? 0,
+      gripper: this.gripper.getStatus()
     };
   }
 }
