@@ -33,7 +33,12 @@ def source_fingerprint() -> str:
             relative = path.relative_to(ROOT)
             digest.update(str(relative).replace('\\', '/').encode())
             digest.update(b'\0')
-            digest.update(path.read_bytes())
+            data = path.read_bytes()
+            try:
+                data = data.decode('utf-8').replace('\r\n', '\n').encode('utf-8')
+            except UnicodeDecodeError:
+                pass
+            digest.update(data)
             digest.update(b'\0')
     return digest.hexdigest()
 
