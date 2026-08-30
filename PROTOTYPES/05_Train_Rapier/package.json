@@ -1,0 +1,19 @@
+{
+  "name": "robo-bridge-train-rapier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs dist",
+    "test": "node --test --experimental-test-isolation=none --test-reporter=spec tests/train.test.js",
+    "acceptance": "node scripts/run-acceptance.mjs"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "file:.npm-cache/rapier3d-compat-0.20.0.tgz"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.20.0"
+  }
+}

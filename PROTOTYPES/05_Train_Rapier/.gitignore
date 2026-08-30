@@ -1,0 +1,6 @@
+node_modules/
+.npm-cache/
+.playwright-cli/
+/dist/
+output/playwright/*
+!output/playwright/.gitkeep

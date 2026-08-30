@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f4f6f8" />
+    <title>ROBO BRIDGE MCP V3 · Rapier Train</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="eyebrow">ROBO BRIDGE MCP V3</span>
+          <h1>Rapier train test</h1>
+        </div>
+        <div class="primary-controls" aria-label="Test controls">
+          <label class="compact-field">Fixture
+            <select id="fixture-select" aria-label="Fixture"></select>
+          </label>
+          <label class="compact-field">Mode
+            <select id="mode-select" aria-label="Train physics mode">
+              <option value="dynamic">Dynamic guide</option>
+              <option value="kinematic">Kinematic release</option>
+            </select>
+          </label>
+          <button id="test-button" class="primary" type="button">TEST</button>
+          <button id="reset-button" type="button">RESET</button>
+        </div>
+        <div class="status-cluster">
+          <span id="status-badge" class="status idle">READY</span>
+          <button id="settings-button" class="icon-button" type="button" aria-expanded="false" aria-controls="settings-panel">Settings</button>
+        </div>
+      </header>
+
+      <section class="viewport-shell">
+        <canvas id="scene" aria-label="Three-dimensional train simulation"></canvas>
+        <div class="view-toolbar" aria-label="Camera controls">
+          <button id="side-view-button" type="button">Side view</button>
+          <label class="check"><input id="follow-toggle" type="checkbox" checked /> Follow train</label>
+        </div>
+        <aside class="metrics" aria-label="Simulation metrics">
+          <div><span>FPS</span><strong id="metric-fps">0</strong></div>
+          <div><span>Rapier step</span><strong id="metric-step">0.00 ms</strong></div>
+          <div><span>Bodies</span><strong id="metric-bodies">0</strong></div>
+          <div><span>Sleeping</span><strong id="metric-sleeping">0</strong></div>
+          <div><span>Joints</span><strong id="metric-joints">0</strong></div>
+          <div><span>Train bodies</span><strong id="metric-train">0</strong></div>
+        </aside>
+        <div class="event-card" aria-live="polite">
+          <span id="fixture-description">Fully supported railway.</span>
+          <strong id="event-label">Waiting for TEST</strong>
+          <small id="progress-label">Progress 0%</small>
+        </div>
+      </section>
+
+      <aside id="settings-panel" class="settings-panel" hidden aria-label="Train and support settings">
+        <div class="settings-heading">
+          <div><span class="eyebrow">Advanced</span><h2>Settings</h2></div>
+          <button id="settings-close" class="icon-button" type="button">Close</button>
+        </div>
+
+        <section>
+          <h3>Train</h3>
+          <div id="train-settings" class="settings-grid"></div>
+        </section>
+        <section>
+          <h3>Guidance and couplers</h3>
+          <div id="guide-settings" class="settings-grid"></div>
+        </section>
+        <section>
+          <h3>Rail support</h3>
+          <div class="button-grid">
+            <button id="remove-one-button" type="button">Remove selected</button>
+            <button id="restore-button" type="button">Restore all</button>
+            <button id="remove-centre-button" type="button">Remove centre span</button>
+            <button id="progressive-button" type="button">Progressive failure</button>
+            <button id="random-button" type="button">Random support</button>
+          </div>
+          <label class="full-field">Support segment
+            <select id="support-select"></select>
+          </label>
+        </section>
+        <section>
+          <h3>Debug</h3>
+          <label class="check"><input id="support-debug-toggle" type="checkbox" checked /> Support segments</label>
+          <label class="check"><input id="guide-debug-toggle" type="checkbox" /> Guide points</label>
+          <label class="check"><input id="physics-debug-toggle" type="checkbox" /> Rapier colliders</label>
+        </section>
+      </aside>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
