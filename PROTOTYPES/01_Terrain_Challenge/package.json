@@ -1,0 +1,12 @@
+{
+  "name": "robo-bridge-terrain-challenge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "check": "node --check src/terrain.js && node --check src/app.js && node --check tools/serve.mjs",
+    "evidence": "node tools/generate-evidence.mjs",
+    "test": "node --test"
+  }
+}

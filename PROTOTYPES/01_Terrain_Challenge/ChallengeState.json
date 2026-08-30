@@ -1,0 +1,90 @@
+{
+  "version": 3,
+  "seed": 1001,
+  "mode": "rail",
+  "challengeMode": "gap",
+  "terrain": {
+    "seed": 1001,
+    "width": 140,
+    "depth": 100,
+    "gridX": 129,
+    "gridZ": 97,
+    "heightScale": 0,
+    "smoothing": 1.5,
+    "obstacle": {
+      "type": "gap",
+      "width": 12,
+      "depth": 10,
+      "noiseAmplitude": 0,
+      "noiseFrequency": 48
+    }
+  },
+  "entry": {
+    "position": {
+      "x": 0,
+      "y": 0,
+      "z": -22.5
+    },
+    "forward": {
+      "x": 0,
+      "y": 0,
+      "z": 1
+    },
+    "platformWidth": 14,
+    "platformLength": 15
+  },
+  "exit": {
+    "position": {
+      "x": 0,
+      "y": 0,
+      "z": 22.5
+    },
+    "forward": {
+      "x": 0,
+      "y": 0,
+      "z": 1
+    },
+    "platformWidth": 14,
+    "platformLength": 15
+  },
+  "corridor": {
+    "centreline": [
+      {
+        "x": 0,
+        "y": 0,
+        "z": -22.5
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 22.5
+      }
+    ],
+    "deckWidth": 10,
+    "vehicleClearWidth": 7,
+    "vehicleClearHeight": 8,
+    "mode": "rail-single"
+  },
+  "supportRegions": [
+    {
+      "id": "entry-bank",
+      "bounds": {
+        "minX": -70,
+        "maxX": 70,
+        "minZ": -50,
+        "maxZ": -7.5
+      },
+      "maxSlope": 0.34
+    },
+    {
+      "id": "exit-bank",
+      "bounds": {
+        "minX": -70,
+        "maxX": 70,
+        "minZ": 7.5,
+        "maxZ": 50
+      },
+      "maxSlope": 0.34
+    }
+  ]
+}
