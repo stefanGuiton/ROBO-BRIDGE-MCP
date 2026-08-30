@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-08-30T15:03:34.558Z",
+  "generatorVersion": 2,
+  "challengeVersion": 3,
+  "rows": [
+    {
+      "preset": "V2_FLAT_GAP_SMALL",
+      "seed": 1001,
+      "checksums": {
+        "heightField": "fnv1a32:bb57271a",
+        "supportMask": "fnv1a32:dad0f35f",
+        "mesh": "fnv1a32:dcb113df",
+        "challenge": "fnv1a32:a07ae648"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 6
+    },
+    {
+      "preset": "V2_RAVINE_SIMPLE",
+      "seed": 2201,
+      "checksums": {
+        "heightField": "fnv1a32:9443844f",
+        "supportMask": "fnv1a32:08964cef",
+        "mesh": "fnv1a32:02d82e89",
+        "challenge": "fnv1a32:6bd8fd90"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 12
+    },
+    {
+      "preset": "V2_RIVER_SIMPLE",
+      "seed": 3301,
+      "checksums": {
+        "heightField": "fnv1a32:85bb30d2",
+        "supportMask": "fnv1a32:402975fe",
+        "mesh": "fnv1a32:894af2f5",
+        "challenge": "fnv1a32:00fe5275"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 11
+    },
+    {
+      "preset": "V2_MOUNTAIN_PASS",
+      "seed": 24001,
+      "checksums": {
+        "heightField": "fnv1a32:409b7ba5",
+        "supportMask": "fnv1a32:5e62d789",
+        "mesh": "fnv1a32:c27dbab0",
+        "challenge": "fnv1a32:a8f96611"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 22
+    },
+    {
+      "preset": "V2_ALPINE_RAVINE",
+      "seed": 47001,
+      "checksums": {
+        "heightField": "fnv1a32:e5d48fef",
+        "supportMask": "fnv1a32:5308a746",
+        "mesh": "fnv1a32:4c3c9b6d",
+        "challenge": "fnv1a32:55b79975"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 34
+    },
+    {
+      "preset": "V2_CORRUPTION_STRESS",
+      "seed": 9907,
+      "checksums": {
+        "heightField": "fnv1a32:695d99e4",
+        "supportMask": "fnv1a32:a97e9bb1",
+        "mesh": "fnv1a32:fa992a06",
+        "challenge": "fnv1a32:605c4aaf"
+      },
+      "highGroundComponents": 2,
+      "sharedPlaneY": 26
+    }
+  ]
+}

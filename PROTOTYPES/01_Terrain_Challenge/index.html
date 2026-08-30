@@ -2,59 +2,86 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ROBO BRIDGE MCP V3 — Terrain Challenge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ROBO BRIDGE — V2 Terrain Generator</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <div id="app">
       <aside class="panel">
         <header>
-          <p class="eyebrow">ROBO BRIDGE MCP V3</p>
-          <h1>Terrain Challenge</h1>
-          <p class="lede">Deterministic terrain, route anchors and supportable regions.</p>
+          <p class="eyebrow">ROBO BRIDGE MCP</p>
+          <h1>V2 Terrain Generator</h1>
+          <p class="lede">Two procedural banks, one shared build plane, and one closed terrain volume.</p>
         </header>
 
-        <div class="preset-row" id="preset-row" aria-label="Challenge presets"></div>
+        <div class="preset-row" id="preset-row" aria-label="Terrain presets"></div>
 
-        <section class="controls">
-          <label>Seed <input id="seed" type="number" value="314159" step="1" /></label>
-          <label>Obstacle mode
+        <section class="controls" aria-label="Terrain settings">
+          <label>Seed <input id="seed" type="number" step="1" /></label>
+          <label>Mode
             <select id="mode">
-              <option value="gap">Gap</option>
+              <option value="flat-gap">Flat gap</option>
               <option value="ravine">Ravine</option>
               <option value="river">River</option>
+              <option value="mountain-pass">Mountain pass</option>
+              <option value="alpine-ravine">Alpine ravine</option>
             </select>
           </label>
-          <label>Obstacle width <output id="width-output"></output><input id="obstacleWidth" type="range" min="8" max="38" step="1" /></label>
-          <label>Obstacle depth <output id="depth-output"></output><input id="obstacleDepth" type="range" min="2" max="24" step="1" /></label>
-          <label>Noise amplitude <output id="noise-output"></output><input id="noiseAmplitude" type="range" min="0" max="18" step="0.5" /></label>
-          <label>Noise frequency <output id="frequency-output"></output><input id="noiseFrequency" type="range" min="18" max="80" step="1" /></label>
-          <label>Smoothing <output id="smoothing-output"></output><input id="smoothing" type="range" min="0.5" max="8" step="0.25" /></label>
-          <label>Terrain amplitude <output id="terrain-output"></output><input id="terrainAmplitude" type="range" min="0" max="10" step="0.25" /></label>
+          <label>Obstacle width <output id="floorWidth-output"></output><input id="floorWidth" type="range" min="8" max="28" step="0.5" /></label>
+          <label>Obstacle depth <output id="valleyDepth-output"></output><input id="valleyDepth" type="range" min="8" max="58" step="1" /></label>
+          <label>Shoulder smoothing <output id="shoulderWidth-output"></output><input id="shoulderWidth" type="range" min="3" max="28" step="0.5" /></label>
+          <label>Mountain spread <output id="moundFalloffWidth-output"></output><input id="moundFalloffWidth" type="range" min="8" max="44" step="0.5" /></label>
+          <label>Fall to ground <output id="moundEdgeDrop-output"></output><input id="moundEdgeDrop" type="range" min="0" max="48" step="0.5" /></label>
+          <label>Clipped peak scale <output id="mountainPeakScale-output"></output><input id="mountainPeakScale" type="range" min="0.8" max="1.8" step="0.01" /></label>
+          <label>Mountain ridges <output id="ridgeAmplitude-output"></output><input id="ridgeAmplitude" type="range" min="0" max="16" step="0.1" /></label>
+          <label>Ridge scale <output id="ridgeScale-output"></output><input id="ridgeScale" type="range" min="12" max="60" step="1" /></label>
+          <label>Ridge warp <output id="ridgeWarpAmplitude-output"></output><input id="ridgeWarpAmplitude" type="range" min="0" max="20" step="0.5" /></label>
+          <label>Centre noise <output id="centreNoiseAmplitude-output"></output><input id="centreNoiseAmplitude" type="range" min="0" max="7" step="0.01" /></label>
+          <label>Noise frequency <output id="centreNoiseScale-output"></output><input id="centreNoiseScale" type="range" min="24" max="90" step="1" /></label>
+          <label>Terrain amplitude <output id="macroAmplitude-output"></output><input id="macroAmplitude" type="range" min="0" max="5" step="0.1" /></label>
+          <label>Slope corruption <output id="slopeNoiseAmplitude-output"></output><input id="slopeNoiseAmplitude" type="range" min="0" max="5" step="0.01" /></label>
+          <label>Surface detail <output id="detailAmplitude-output"></output><input id="detailAmplitude" type="range" min="0" max="0.8" step="0.01" /></label>
+          <label>Terracing <output id="terraceStrength-output"></output><input id="terraceStrength" type="range" min="0" max="0.45" step="0.01" /></label>
+          <div class="control-divider">
+            <strong>Secondary model stretch</strong>
+            <span>Applied after terrain generation</span>
+          </div>
+          <label>Stretch X · crossing <output id="stretchX-output"></output><input id="stretchX" type="range" min="0.25" max="3" step="0.05" /></label>
+          <label>Stretch Y · height <output id="stretchY-output"></output><input id="stretchY" type="range" min="0.25" max="3" step="0.05" /></label>
+          <label>Stretch Z · length <output id="stretchZ-output"></output><input id="stretchZ" type="range" min="0.25" max="3" step="0.05" /></label>
         </section>
 
-        <section class="toggles">
+        <section class="toggles" aria-label="Debug layers">
           <label><input id="showAnchors" type="checkbox" checked /> ENTRY / EXIT</label>
-          <label><input id="showSupport" type="checkbox" checked /> Support regions</label>
-          <label><input id="showCorridor" type="checkbox" checked /> Transport corridor</label>
+          <label><input id="showPlatforms" type="checkbox" checked /> Flat platforms</label>
+          <label><input id="showSupport" type="checkbox" /> Support mask</label>
+          <label><input id="showCorridor" type="checkbox" checked /> Corridor</label>
+          <label><input id="showObstacle" type="checkbox" /> Obstacle bounds</label>
         </section>
 
         <div class="actions">
           <button id="regenerate" class="primary">Regenerate</button>
+          <button id="resetCamera">Reset camera</button>
           <button id="export">Export ChallengeState.json</button>
         </div>
 
         <dl class="metrics">
           <div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Mesh build</dt><dd id="mesh-ms">—</dd></div>
+          <div><dt>GPU + frame</dt><dd id="upload-ms">—</dd></div>
+          <div><dt>FPS</dt><dd id="fps">—</dd></div>
           <div><dt>Vertices</dt><dd id="vertex-count">—</dd></div>
           <div><dt>Triangles</dt><dd id="triangle-count">—</dd></div>
-          <div><dt>FPS</dt><dd id="fps">—</dd></div>
-          <div><dt>Scene meshes</dt><dd id="mesh-count">—</dd></div>
+          <div><dt>Support regions</dt><dd id="support-count">—</dd></div>
+          <div><dt>GPU geometries</dt><dd id="geometry-count">—</dd></div>
         </dl>
+        <p class="checksum">Height checksum <code id="height-checksum">—</code></p>
         <p id="status" role="status">Ready.</p>
       </aside>
+
       <main id="viewport" aria-label="Three-dimensional terrain preview">
+        <div class="viewport-note"><strong>Shared plane:</strong> both green pads are exactly level</div>
         <div class="viewport-help">Drag to orbit · wheel to zoom · right-drag to pan</div>
       </main>
     </div>

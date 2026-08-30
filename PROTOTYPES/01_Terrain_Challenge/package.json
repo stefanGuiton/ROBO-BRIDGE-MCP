@@ -1,12 +1,12 @@
 {
-  "name": "robo-bridge-terrain-challenge",
-  "version": "0.1.0",
+  "name": "robo-bridge-terrain-challenge-v2",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node tools/serve.mjs",
-    "check": "node --check src/terrain.js && node --check src/app.js && node --check tools/serve.mjs",
+    "check": "node tools/check-syntax.mjs",
     "evidence": "node tools/generate-evidence.mjs",
-    "test": "node --test"
+    "test": "node --test --test-concurrency=1"
   }
 }

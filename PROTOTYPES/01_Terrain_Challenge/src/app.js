@@ -1,145 +1,193 @@
 import * as THREE from "three";
 import { OrbitControls } from "../vendor/OrbitControls.js";
-import { DEFAULT_SETTINGS, PRESETS, generateChallenge, serialiseChallenge } from "./terrain.js";
+import { PRESETS, generateChallenge, serialiseChallenge } from "./v2/index.js";
+import { createDebugOverlays } from "./render/debug-overlays.js";
+import { disposeObjectTree } from "./render/resource-disposal.js";
+import { createTerrainObject, createWaterObject } from "./render/terrain-renderer.js";
 
 const viewport = document.querySelector("#viewport");
+const ui = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeef3f1);
-const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 600);
-camera.position.set(76, 62, 78);
+scene.background = new THREE.Color(0xf4f6f5);
+const camera = new THREE.PerspectiveCamera(43, 1, 0.1, 600);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 viewport.append(renderer.domElement);
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.target.set(0, -3, 0);
-controls.maxPolarAngle = Math.PI * 0.485;
-controls.minDistance = 24;
-controls.maxDistance = 240;
+controls.dampingFactor = 0.065;
+controls.minDistance = 28;
+controls.maxDistance = 260;
+controls.maxPolarAngle = Math.PI * 0.49;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8da598, 2.4));
-const sun = new THREE.DirectionalLight(0xfff1cf, 3.1);
-sun.position.set(-45, 75, -35); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -90; sun.shadow.camera.right = 90; sun.shadow.camera.top = 90; sun.shadow.camera.bottom = -90;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8b948e, 2.1));
+const sun = new THREE.DirectionalLight(0xfff8ea, 3.25);
+sun.position.set(-65, 92, -46);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -100; sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
 scene.add(sun);
 
-let challenge = null;
-let generatedGroup = null;
-const ui = Object.fromEntries([...document.querySelectorAll("[id]")].map((node) => [node.id, node]));
-const fieldKeys = ["mode", "obstacleWidth", "obstacleDepth", "noiseAmplitude", "noiseFrequency", "smoothing", "terrainAmplitude"];
-const outputs = { obstacleWidth: "width-output", obstacleDepth: "depth-output", noiseAmplitude: "noise-output", noiseFrequency: "frequency-output", smoothing: "smoothing-output", terrainAmplitude: "terrain-output" };
+const diagnostics = { regenerations: 0, disposed: { geometries: 0, materials: 0, textures: 0 }, lastGpuMs: 0 };
+let selectedPreset = { ...PRESETS.V2_MOUNTAIN_PASS };
+let currentResult = null;
+let generatedRoot = null;
+
+const terrainFields = ["floorWidth", "valleyDepth", "shoulderWidth", "moundFalloffWidth", "moundEdgeDrop", "mountainPeakScale", "ridgeAmplitude", "ridgeScale", "ridgeWarpAmplitude", "centreNoiseAmplitude", "centreNoiseScale", "macroAmplitude", "slopeNoiseAmplitude", "detailAmplitude", "terraceStrength"];
+const stretchFields = ["stretchX", "stretchY", "stretchZ"];
+const fields = [...terrainFields, ...stretchFields];
+const visibility = () => ({ anchors: ui.showAnchors.checked, platforms: ui.showPlatforms.checked, support: ui.showSupport.checked, corridor: ui.showCorridor.checked, obstacle: ui.showObstacle.checked });
+
+function resetCamera() {
+  const settings = currentResult?.settings || selectedPreset;
+  const verticalSpan = settings.sharedTopY - settings.valleyFloorY + settings.baseThickness;
+  const framingScale = Math.max(0.72, settings.chunkWidth / 160, settings.chunkDepth / 96, verticalSpan / 68);
+  const cameraScale = framingScale > 1 ? framingScale * 1.1 : framingScale;
+  const targetY = settings.sharedTopY * 0.12;
+  camera.near = 0.1;
+  camera.far = Math.max(600, cameraScale * 900);
+  camera.updateProjectionMatrix();
+  controls.maxDistance = Math.max(260, cameraScale * 360);
+  camera.position.set(112 * cameraScale, targetY + 82 * cameraScale, 118 * cameraScale);
+  controls.target.set(0, targetY, 0);
+  controls.update();
+}
+
+function updateOutputs() {
+  for (const key of fields) {
+    const precision = [...stretchFields, "terraceStrength", "detailAmplitude", "centreNoiseAmplitude", "slopeNoiseAmplitude"].includes(key) ? 2 : ["macroAmplitude", "moundFalloffWidth", "moundEdgeDrop", "mountainPeakScale", "ridgeAmplitude", "ridgeWarpAmplitude"].includes(key) ? 1 : 0;
+    ui[`${key}-output`].value = Number(ui[key].value).toFixed(precision);
+  }
+}
 
 function setInputs(settings) {
+  selectedPreset = { ...settings };
   ui.seed.value = settings.seed;
-  for (const key of fieldKeys) if (ui[key]) ui[key].value = settings[key];
+  ui.mode.value = settings.mode;
+  ui.floorWidth.value = settings.floorWidth;
+  ui.valleyDepth.value = settings.sharedTopY - settings.valleyFloorY;
+  for (const key of ["shoulderWidth", "moundFalloffWidth", "moundEdgeDrop", "mountainPeakScale", "ridgeAmplitude", "ridgeScale", "ridgeWarpAmplitude", "centreNoiseAmplitude", "centreNoiseScale", "macroAmplitude", "slopeNoiseAmplitude", "detailAmplitude", "terraceStrength", ...stretchFields]) ui[key].value = settings[key];
   updateOutputs();
 }
-function readInputs() {
-  return { ...DEFAULT_SETTINGS, seed: Number(ui.seed.value) | 0, mode: ui.mode.value,
-    obstacleWidth: Number(ui.obstacleWidth.value), obstacleDepth: Number(ui.obstacleDepth.value),
-    noiseAmplitude: Number(ui.noiseAmplitude.value), noiseFrequency: Number(ui.noiseFrequency.value),
-    smoothing: Number(ui.smoothing.value), terrainAmplitude: Number(ui.terrainAmplitude.value) };
-}
-function updateOutputs() { for (const [key, id] of Object.entries(outputs)) ui[id].value = ui[key].value; }
 
-for (const [name, preset] of Object.entries(PRESETS)) {
+function readInputs() {
+  const settings = { ...selectedPreset };
+  settings.seed = Number(ui.seed.value) | 0;
+  settings.mode = ui.mode.value;
+  for (const key of ["floorWidth", "shoulderWidth", "moundFalloffWidth", "moundEdgeDrop", "mountainPeakScale", "ridgeAmplitude", "ridgeScale", "ridgeWarpAmplitude", "centreNoiseAmplitude", "centreNoiseScale", "macroAmplitude", "slopeNoiseAmplitude", "detailAmplitude", "terraceStrength", ...stretchFields]) settings[key] = Number(ui[key].value);
+  settings.valleyFloorY = settings.sharedTopY - Number(ui.valleyDepth.value);
+  settings.validateMesh = false;
+  return settings;
+}
+
+function addDisposal(disposed) {
+  for (const key of Object.keys(diagnostics.disposed)) diagnostics.disposed[key] += disposed[key];
+}
+
+function setLayer(name, visible) {
+  const layer = generatedRoot?.getObjectByName(name);
+  if (layer) layer.visible = visible;
+}
+
+function updateMetrics(result, gpuMs) {
+  ui["generation-ms"].textContent = `${result.timings.total.toFixed(2)} ms`;
+  ui["mesh-ms"].textContent = `${result.timings.mesh.toFixed(2)} ms`;
+  ui["upload-ms"].textContent = `${gpuMs.toFixed(2)} ms`;
+  ui["vertex-count"].textContent = result.meshData.vertexCount.toLocaleString();
+  ui["triangle-count"].textContent = result.meshData.triangleCount.toLocaleString();
+  ui["support-count"].textContent = result.supportRegions.length.toLocaleString();
+  ui["geometry-count"].textContent = renderer.info.memory.geometries.toLocaleString();
+  ui["height-checksum"].textContent = result.checksums.heightField;
+}
+
+function regenerate() {
+  ui.status.textContent = "Generating deterministic terrain…";
+  let candidateRoot = null;
+  const previousRoot = generatedRoot;
+  const previousResult = currentResult;
+  try {
+    const settings = readInputs();
+    const candidateResult = generateChallenge(settings.seed, settings);
+    candidateRoot = new THREE.Group();
+    candidateRoot.name = "generated-challenge";
+    candidateRoot.add(createTerrainObject(candidateResult));
+    const water = createWaterObject(candidateResult);
+    if (water) candidateRoot.add(water);
+    candidateRoot.add(createDebugOverlays(candidateResult, visibility()));
+    const uploadStarted = performance.now();
+    scene.add(candidateRoot);
+    renderer.compile(scene, camera);
+    if (previousRoot) previousRoot.visible = false;
+    renderer.render(scene, camera);
+    if (previousRoot) addDisposal(disposeObjectTree(scene, previousRoot));
+    currentResult = candidateResult;
+    generatedRoot = candidateRoot;
+    candidateRoot = null;
+    const stretchChanged = previousResult && stretchFields.some((key) => previousResult.sourceSettings[key] !== currentResult.sourceSettings[key]);
+    if (stretchChanged) resetCamera();
+    diagnostics.lastGpuMs = performance.now() - uploadStarted;
+    diagnostics.regenerations += 1;
+    updateMetrics(currentResult, diagnostics.lastGpuMs);
+    ui.status.textContent = `${currentResult.settings.mode.toUpperCase()} · seed ${currentResult.settings.seed} · two banks · shared plane Y ${currentResult.platforms.sharedPlaneY}`;
+    window.__terrainChallenge = currentResult;
+    window.__lastTerrainError = null;
+    window.__terrainDiagnostics = { ...diagnostics, rendererMemory: { ...renderer.info.memory }, meshChecksum: currentResult.checksums.mesh };
+    return currentResult;
+  } catch (error) {
+    if (previousRoot) previousRoot.visible = true;
+    if (candidateRoot) addDisposal(disposeObjectTree(scene, candidateRoot));
+    console.error(error);
+    window.__lastTerrainError = { code: error.code || "GENERATION_ERROR", message: error.message };
+    const retained = currentResult ? " Last valid terrain retained." : "";
+    ui.status.textContent = `${error.code || "GENERATION_ERROR"}: ${error.message}.${retained}`;
+    return null;
+  }
+}
+
+for (const [name, settings] of Object.entries(PRESETS)) {
   const button = document.createElement("button");
-  button.textContent = name.replaceAll("_", " ");
-  button.addEventListener("click", () => { setInputs({ ...DEFAULT_SETTINGS, ...preset }); regenerate(); });
+  button.textContent = name.replace(/^V2_/, "").replaceAll("_", " ");
+  button.addEventListener("click", () => { setInputs(settings); regenerate(); });
   ui["preset-row"].append(button);
 }
-for (const key of fieldKeys) ui[key].addEventListener("input", updateOutputs);
-
-function disposeObject(object) {
-  object.traverse((child) => {
-    if (child.geometry) child.geometry.dispose();
-    if (child.material) (Array.isArray(child.material) ? child.material : [child.material]).forEach((material) => {
-      if (material.map) material.map.dispose();
-      material.dispose();
-    });
-  });
-  scene.remove(object);
-}
-function terrainGeometry(result) {
-  const { gridX, gridZ, width, depth } = result.settings;
-  const positions = new Float32Array(gridX * gridZ * 3);
-  const colors = new Float32Array(gridX * gridZ * 3);
-  const indices = [];
-  const low = new THREE.Color(0x668f73), high = new THREE.Color(0xaed39b), rock = new THREE.Color(0x846d5e);
-  for (let iz = 0; iz < gridZ; iz++) for (let ix = 0; ix < gridX; ix++) {
-    const i = iz * gridX + ix, p = i * 3, h = result.heights[i];
-    positions[p] = -width / 2 + ix * width / (gridX - 1); positions[p + 1] = h; positions[p + 2] = -depth / 2 + iz * depth / (gridZ - 1);
-    const c = h < -result.settings.obstacleDepth * 0.4 ? rock : low.clone().lerp(high, THREE.MathUtils.clamp((h + 4) / 12, 0, 1));
-    colors.set([c.r, c.g, c.b], p);
-  }
-  for (let iz = 0; iz < gridZ - 1; iz++) for (let ix = 0; ix < gridX - 1; ix++) {
-    const a = iz * gridX + ix, b = a + 1, c = a + gridX, d = c + 1;
-    indices.push(a, c, b, b, c, d);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3)); geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
-  return geometry;
-}
-function marker(label, position, color) {
-  const group = new THREE.Group(); group.name = `debug-${label.toLowerCase()}`;
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(4.8, 0.45, 10, 36), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.45 }));
-  ring.rotation.x = Math.PI / 2; ring.position.y = 0.32; group.add(ring);
-  const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 72;
-  const ctx = canvas.getContext("2d"); ctx.fillStyle = "rgba(255,255,255,.94)"; ctx.fillRect(0, 0, 256, 72); ctx.strokeStyle = `#${new THREE.Color(color).getHexString()}`; ctx.lineWidth = 4; ctx.strokeRect(2, 2, 252, 68); ctx.fillStyle = "#183129"; ctx.font = "800 32px system-ui"; ctx.textAlign = "center"; ctx.fillText(label, 128, 48);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true })); sprite.scale.set(15, 4.2, 1); sprite.position.y = 5; group.add(sprite);
-  group.position.set(position.x, position.y + 0.2, position.z); return group;
-}
-function addDebugLayers(group, result) {
-  const { state, settings, api } = result;
-  const anchors = new THREE.Group(); anchors.name = "debug-anchors";
-  anchors.add(marker("ENTRY", state.entry.position, 0x4de1ff), marker("EXIT", state.exit.position, 0xffcf5a)); anchors.visible = ui.showAnchors.checked; group.add(anchors);
-  const support = new THREE.Group(); support.name = "debug-support";
-  for (const region of state.supportRegions) {
-    const b = region.bounds, geometry = new THREE.PlaneGeometry(b.maxX - b.minX, b.maxZ - b.minZ);
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x68e5a5, transparent: true, opacity: 0.13, depthWrite: false, side: THREE.DoubleSide }));
-    mesh.rotation.x = -Math.PI / 2; mesh.position.set((b.minX + b.maxX) / 2, api.getHeightAt(0, (b.minZ + b.maxZ) / 2) + 0.15, (b.minZ + b.maxZ) / 2); support.add(mesh);
-  }
-  support.visible = ui.showSupport.checked; group.add(support);
-  const a = state.entry.position, b = state.exit.position, length = Math.hypot(b.x - a.x, b.z - a.z);
-  const corridor = new THREE.Mesh(new THREE.BoxGeometry(state.corridor.deckWidth, 0.32, length), new THREE.MeshStandardMaterial({ color: 0x65a9ff, transparent: true, opacity: 0.38, emissive: 0x173c66, depthWrite: false }));
-  corridor.name = "debug-corridor"; corridor.position.set((a.x + b.x) / 2, Math.max(a.y, b.y) + 0.75, (a.z + b.z) / 2); corridor.visible = ui.showCorridor.checked; group.add(corridor);
-  if (settings.mode === "river") {
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(settings.width, settings.obstacleWidth * 0.82, 64, 1), new THREE.MeshPhysicalMaterial({ color: 0x1d91c0, transparent: true, opacity: 0.72, roughness: 0.18, metalness: 0.05, side: THREE.DoubleSide }));
-    water.name = "river-water"; water.rotation.x = -Math.PI / 2; water.position.y = -settings.obstacleDepth * 0.34; group.add(water);
-  }
-}
-function regenerate() {
-  ui.status.textContent = "Generating…";
-  if (generatedGroup) disposeObject(generatedGroup);
-  challenge = generateChallenge(Number(ui.seed.value), readInputs());
-  generatedGroup = new THREE.Group(); generatedGroup.name = "generated-challenge";
-  const geometry = terrainGeometry(challenge);
-  const terrain = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.02, side: THREE.DoubleSide }));
-  terrain.name = "terrain-mesh"; terrain.receiveShadow = true; generatedGroup.add(terrain);
-  addDebugLayers(generatedGroup, challenge); scene.add(generatedGroup);
-  ui["generation-ms"].textContent = `${challenge.generationMs.toFixed(2)} ms`;
-  ui["vertex-count"].textContent = challenge.heights.length.toLocaleString();
-  ui["triangle-count"].textContent = ((challenge.settings.gridX - 1) * (challenge.settings.gridZ - 1) * 2).toLocaleString();
-  ui["mesh-count"].textContent = generatedGroup.children.length;
-  ui.status.textContent = `${challenge.settings.mode.toUpperCase()} · seed ${challenge.settings.seed} · deterministic state ready`;
-  window.__terrainChallenge = challenge;
-}
-function toggle(name, checked) { const object = generatedGroup?.getObjectByName(name); if (object) object.visible = checked; }
-ui.showAnchors.addEventListener("change", () => toggle("debug-anchors", ui.showAnchors.checked));
-ui.showSupport.addEventListener("change", () => toggle("debug-support", ui.showSupport.checked));
-ui.showCorridor.addEventListener("change", () => toggle("debug-corridor", ui.showCorridor.checked));
+for (const key of fields) ui[key].addEventListener("input", updateOutputs);
 ui.regenerate.addEventListener("click", regenerate);
+ui.resetCamera.addEventListener("click", resetCamera);
+ui.showAnchors.addEventListener("change", () => setLayer("debug-anchors", ui.showAnchors.checked));
+ui.showPlatforms.addEventListener("change", () => setLayer("debug-platforms", ui.showPlatforms.checked));
+ui.showSupport.addEventListener("change", () => setLayer("debug-support", ui.showSupport.checked));
+ui.showCorridor.addEventListener("change", () => setLayer("debug-corridor", ui.showCorridor.checked));
+ui.showObstacle.addEventListener("change", () => setLayer("debug-obstacle", ui.showObstacle.checked));
 ui.export.addEventListener("click", () => {
-  const blob = new Blob([serialiseChallenge(challenge.state)], { type: "application/json" });
-  const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "ChallengeState.json"; link.click(); URL.revokeObjectURL(link.href);
+  if (!currentResult) return;
+  const blob = new Blob([serialiseChallenge(currentResult.state)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob); link.download = "ChallengeState.json"; link.click();
+  URL.revokeObjectURL(link.href);
   ui.status.textContent = "ChallengeState.json exported.";
 });
-function resize() { const { clientWidth, clientHeight } = viewport; camera.aspect = clientWidth / clientHeight; camera.updateProjectionMatrix(); renderer.setSize(clientWidth, clientHeight, false); }
-window.addEventListener("resize", resize); resize(); setInputs(DEFAULT_SETTINGS); regenerate();
-let frames = 0, fpsStarted = performance.now();
+
+function resize() {
+  const { clientWidth, clientHeight } = viewport;
+  camera.aspect = clientWidth / clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(clientWidth, clientHeight, false);
+}
+window.addEventListener("resize", resize);
+window.__regenerateTerrainForTest = regenerate;
+resize(); setInputs(PRESETS.V2_MOUNTAIN_PASS); resetCamera(); regenerate();
+
+let frameCount = 0, fpsStarted = performance.now();
 renderer.setAnimationLoop(() => {
-  controls.update(); renderer.render(scene, camera); frames++;
-  const now = performance.now(); if (now - fpsStarted >= 500) { ui.fps.textContent = Math.round(frames * 1000 / (now - fpsStarted)); frames = 0; fpsStarted = now; }
+  controls.update(); renderer.render(scene, camera); frameCount += 1;
+  const time = performance.now();
+  if (time - fpsStarted >= 750) {
+    ui.fps.textContent = Math.round(frameCount * 1000 / (time - fpsStarted));
+    frameCount = 0; fpsStarted = time;
+  }
 });
