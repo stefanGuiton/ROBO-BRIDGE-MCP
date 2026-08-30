@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -90,78 +98,109 @@
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 9,
-      "memberClass": "tied-arch-rib",
-      "nodeA": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 9,
       "nodeB": 10,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 10,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 10,
       "nodeB": 11,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 11,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 11,
       "nodeB": 12,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 12,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 12,
       "nodeB": 13,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 13,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 13,
       "nodeB": 14,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 14,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 14,
       "nodeB": 15,
-      "rasterMode": "technic-member",
-      "role": "arch",
+      "rasterMode": "horizontal-course",
+      "role": "deck",
       "sectionStuds": 3
     },
     {
-      "buildClass": "technic-frame",
+      "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 15,
-      "memberClass": "tied-arch-rib",
+      "memberClass": "bonded-deck",
       "nodeA": 15,
       "nodeB": 16,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
+      "id": 16,
+      "memberClass": "bonded-deck",
+      "nodeA": 16,
+      "nodeB": 17,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 17,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 1,
+      "nodeB": 18,
       "rasterMode": "technic-member",
       "role": "arch",
       "sectionStuds": 3
@@ -169,10 +208,179 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
-      "id": 16,
+      "connectionIntent": "technic-pin",
+      "id": 18,
       "memberClass": "tied-arch-rib",
-      "nodeA": 16,
-      "nodeB": 9,
+      "nodeA": 18,
+      "nodeB": 19,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 19,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 19,
+      "nodeB": 20,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 20,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 20,
+      "nodeB": 21,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 21,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 21,
+      "nodeB": 22,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 22,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 22,
+      "nodeB": 23,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 23,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 23,
+      "nodeB": 24,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 24,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 24,
+      "nodeB": 25,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 25,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 25,
+      "nodeB": 26,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 26,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 26,
+      "nodeB": 27,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 27,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 27,
+      "nodeB": 28,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 28,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 28,
+      "nodeB": 29,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 29,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 29,
+      "nodeB": 30,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 30,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 30,
+      "nodeB": 31,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 31,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 31,
+      "nodeB": 32,
+      "rasterMode": "technic-member",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "connectionIntent": "technic-pin",
+      "id": 32,
+      "memberClass": "tied-arch-rib",
+      "nodeA": 32,
+      "nodeB": 17,
       "rasterMode": "technic-member",
       "role": "arch",
       "sectionStuds": 3
@@ -180,10 +388,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
-      "id": 17,
+      "connectionIntent": "technic-pin",
+      "id": 33,
       "memberClass": "tied-arch-hanger",
       "nodeA": 2,
-      "nodeB": 10,
+      "nodeB": 18,
       "rasterMode": "technic-member",
       "role": "vertical",
       "sectionStuds": 3
@@ -191,21 +400,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
-      "id": 18,
-      "memberClass": "tied-arch-hanger",
-      "nodeA": 3,
-      "nodeB": 11,
-      "rasterMode": "technic-member",
-      "role": "vertical",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "technic-frame",
-      "capacityClass": 3,
-      "id": 19,
+      "connectionIntent": "technic-pin",
+      "id": 34,
       "memberClass": "tied-arch-hanger",
       "nodeA": 4,
-      "nodeB": 12,
+      "nodeB": 20,
       "rasterMode": "technic-member",
       "role": "vertical",
       "sectionStuds": 3
@@ -213,10 +412,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
-      "id": 20,
+      "connectionIntent": "technic-pin",
+      "id": 35,
       "memberClass": "tied-arch-hanger",
       "nodeA": 5,
-      "nodeB": 13,
+      "nodeB": 21,
       "rasterMode": "technic-member",
       "role": "vertical",
       "sectionStuds": 3
@@ -224,10 +424,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
-      "id": 21,
+      "connectionIntent": "technic-pin",
+      "id": 36,
       "memberClass": "tied-arch-hanger",
       "nodeA": 6,
-      "nodeB": 14,
+      "nodeB": 22,
       "rasterMode": "technic-member",
       "role": "vertical",
       "sectionStuds": 3
@@ -235,23 +436,253 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
-      "id": 22,
-      "memberClass": "tied-arch-hanger",
-      "nodeA": 7,
-      "nodeB": 15,
-      "rasterMode": "technic-member",
-      "role": "vertical",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "technic-frame",
-      "capacityClass": 3,
-      "id": 23,
+      "connectionIntent": "technic-pin",
+      "id": 37,
       "memberClass": "tied-arch-hanger",
       "nodeA": 8,
-      "nodeB": 16,
+      "nodeB": 24,
       "rasterMode": "technic-member",
       "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 38,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 9,
+      "nodeB": 25,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 39,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 10,
+      "nodeB": 26,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 40,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 12,
+      "nodeB": 28,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 41,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 13,
+      "nodeB": 29,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 42,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 14,
+      "nodeB": 30,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 43,
+      "memberClass": "tied-arch-hanger",
+      "nodeA": 16,
+      "nodeB": 32,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 44,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 2,
+      "nodeB": 19,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 45,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 18,
+      "nodeB": 3,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 46,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 4,
+      "nodeB": 21,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 47,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 20,
+      "nodeB": 5,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 48,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 6,
+      "nodeB": 23,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 49,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 22,
+      "nodeB": 7,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 50,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 8,
+      "nodeB": 25,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 51,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 24,
+      "nodeB": 9,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 52,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 10,
+      "nodeB": 27,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 53,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 26,
+      "nodeB": 11,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 54,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 12,
+      "nodeB": 29,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 55,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 28,
+      "nodeB": 13,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 56,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 14,
+      "nodeB": 31,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 57,
+      "memberClass": "tied-arch-cross-brace",
+      "nodeA": 30,
+      "nodeB": 15,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
       "sectionStuds": 3
     }
   ],
@@ -310,11 +741,54 @@
       "sideThicknessStuds": 2,
       "system": "hybrid"
     },
-    "designRevision": 3821328900,
-    "deterministicChecksum": "F930B995",
+    "designRevision": 3539062105,
+    "deterministicChecksum": "8479EBAD",
     "family": "tiedArch",
     "familyLabel": "Tied through-arch",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        8,
+        12,
+        16,
+        24,
+        32,
+        36,
+        40,
+        48,
+        56,
+        60,
+        64,
+        72,
+        80,
+        84,
+        88,
+        96
+      ],
+      "hangerStations": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88
+      ],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 2,
     "span": 96,
@@ -333,106 +807,218 @@
       "id": 2,
       "role": "deck",
       "supportType": "none",
-      "x": 12,
+      "x": 8,
       "y": 34
     },
     {
       "id": 3,
       "role": "deck",
       "supportType": "none",
-      "x": 24,
+      "x": 12,
       "y": 34
     },
     {
       "id": 4,
       "role": "deck",
       "supportType": "none",
-      "x": 36,
+      "x": 16,
       "y": 34
     },
     {
       "id": 5,
       "role": "deck",
       "supportType": "none",
-      "x": 48,
+      "x": 24,
       "y": 34
     },
     {
       "id": 6,
       "role": "deck",
       "supportType": "none",
-      "x": 60,
+      "x": 32,
       "y": 34
     },
     {
       "id": 7,
       "role": "deck",
       "supportType": "none",
-      "x": 72,
+      "x": 36,
       "y": 34
     },
     {
       "id": 8,
       "role": "deck",
       "supportType": "none",
-      "x": 84,
+      "x": 40,
       "y": 34
     },
     {
       "id": 9,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "deck",
+      "supportType": "none",
+      "x": 56,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "deck",
+      "supportType": "none",
+      "x": 64,
+      "y": 34
+    },
+    {
+      "id": 13,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 14,
+      "role": "deck",
+      "supportType": "none",
+      "x": 80,
+      "y": 34
+    },
+    {
+      "id": 15,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 16,
+      "role": "deck",
+      "supportType": "none",
+      "x": 88,
+      "y": 34
+    },
+    {
+      "id": 17,
       "role": "support",
       "supportType": "fixed",
       "x": 96,
       "y": 34
     },
     {
-      "id": 10,
+      "id": 18,
+      "role": "joint",
+      "supportType": "none",
+      "x": 8,
+      "y": 39
+    },
+    {
+      "id": 19,
       "role": "joint",
       "supportType": "none",
       "x": 12,
       "y": 43
     },
     {
-      "id": 11,
+      "id": 20,
+      "role": "joint",
+      "supportType": "none",
+      "x": 16,
+      "y": 46
+    },
+    {
+      "id": 21,
       "role": "joint",
       "supportType": "none",
       "x": 24,
       "y": 49
     },
     {
-      "id": 12,
+      "id": 22,
+      "role": "joint",
+      "supportType": "none",
+      "x": 32,
+      "y": 51
+    },
+    {
+      "id": 23,
       "role": "joint",
       "supportType": "none",
       "x": 36,
       "y": 53
     },
     {
-      "id": 13,
+      "id": 24,
+      "role": "joint",
+      "supportType": "none",
+      "x": 40,
+      "y": 54
+    },
+    {
+      "id": 25,
       "role": "joint",
       "supportType": "none",
       "x": 48,
       "y": 54
     },
     {
-      "id": 14,
+      "id": 26,
+      "role": "joint",
+      "supportType": "none",
+      "x": 56,
+      "y": 54
+    },
+    {
+      "id": 27,
       "role": "joint",
       "supportType": "none",
       "x": 60,
       "y": 53
     },
     {
-      "id": 15,
+      "id": 28,
+      "role": "joint",
+      "supportType": "none",
+      "x": 64,
+      "y": 51
+    },
+    {
+      "id": 29,
       "role": "joint",
       "supportType": "none",
       "x": 72,
       "y": 49
     },
     {
-      "id": 16,
+      "id": 30,
+      "role": "joint",
+      "supportType": "none",
+      "x": 80,
+      "y": 46
+    },
+    {
+      "id": 31,
       "role": "joint",
       "supportType": "none",
       "x": 84,
       "y": 43
+    },
+    {
+      "id": 32,
+      "role": "joint",
+      "supportType": "none",
+      "x": 88,
+      "y": 39
     }
   ]
 }

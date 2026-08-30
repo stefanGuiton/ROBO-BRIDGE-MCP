@@ -92,7 +92,7 @@ function brickSettings(family) {
 function familyParameters(family, span) {
   const commonPanels = Math.max(4, Math.min(12, Math.round(span / 12)));
   switch (family) {
-    case "beam": return { panelCount: commonPanels, pierCount: 0, pierSpacing: 16 };
+    case "beam": return { panelCount: commonPanels };
     case "pier": return { panelCount: commonPanels, pierCount: 4, pierSpacing: 16 };
     case "trestle": return { panelCount: commonPanels, pierCount: 5, pierSpacing: 14, crossBracing: true };
     case "warren":

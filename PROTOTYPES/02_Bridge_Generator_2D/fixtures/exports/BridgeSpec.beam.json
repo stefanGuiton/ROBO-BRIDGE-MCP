@@ -19,8 +19,6 @@
   "deckHeight": 34,
   "family": "beam",
   "panelCount": 8,
-  "pierCount": 0,
-  "pierSpacing": 16,
   "seed": 17,
   "span": 96,
   "structuralDensity": 0.68,

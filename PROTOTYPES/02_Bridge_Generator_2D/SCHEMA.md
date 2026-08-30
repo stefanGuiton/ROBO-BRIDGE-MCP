@@ -42,6 +42,11 @@ Every member adds:
 - `buildClass`: brick course, brick stack, masonry arch, brick beam or Technic frame;
 - `rasterMode`: how a downstream compiler should convert its centreline;
 - `sectionStuds`: minimum conceptual member section.
+- `connectionIntent`: overlapping stud bond, masonry bond, Technic pin or hinge pin.
+
+Every cable adds `connectionIntent` for an anchored eyelet or hanger clamp. Bascule nodes and members add explicit articulation and leaf-side fields. The two centre leaf tips are separate coincident nodes joined only by a named `coincidentGroup`; they are not falsely merged into one structural joint.
+
+`metadata.resolvedGeometry` records the exact snapped stations accepted by the generator. It makes grid resolution observable instead of silently replacing requested pier, hanger or articulation positions.
 
 `metadata.brickZones` contains course-fill polygons. A zone has a stable `Znnn` ID, outer polygon, zero or more opening holes, bond pattern and minimum thickness. These polygons describe filled masonry bodies such as abutments, spandrels, piers, towers, decks and culvert walls.
 
@@ -62,6 +67,10 @@ Required baseline codes remain supported:
 
 Brick-readiness adds:
 
-`BRICK_GRID_MISMATCH`, `BRICK_INTENT_MISSING`, `CONSTRUCTION_SYSTEM_MISMATCH`, `HYBRID_PARTS_REQUIRED`.
+`FOUNDATION_NOT_FOUND`, `BRICK_GRID_MISMATCH`, `BRICK_INTENT_MISSING`, `CONSTRUCTION_SYSTEM_MISMATCH`, `DEGENERATE_GEOMETRY`, `INVALID_BRICK_ZONE`, `HYBRID_PARTS_REQUIRED`.
 
 Human-readable messages supplement, but never replace, these codes.
+
+## Executable schema gate
+
+The Draft 2020-12 schemas are compiled with pinned Ajv 8.20.0 during `npm test`. Every committed challenge, specification and graph fixture must validate. Negative fixtures prove that wrong-family parameters, malformed terrain and missing graph intent are rejected. `npm run fixtures:check` independently regenerates every expected JSON document in memory and byte-compares it with the committed export without modifying the checkout.

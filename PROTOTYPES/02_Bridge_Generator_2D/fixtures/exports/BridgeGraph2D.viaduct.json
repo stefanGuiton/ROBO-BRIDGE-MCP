@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -92,6 +100,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 9,
       "memberClass": "viaduct-pier",
       "nodeA": 10,
@@ -103,6 +112,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 10,
       "memberClass": "viaduct-pier",
       "nodeA": 11,
@@ -114,6 +124,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 11,
       "memberClass": "viaduct-pier",
       "nodeA": 12,
@@ -125,6 +136,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 12,
       "memberClass": "viaduct-pier",
       "nodeA": 13,
@@ -136,6 +148,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 13,
       "memberClass": "viaduct-pier",
       "nodeA": 14,
@@ -147,20 +160,10 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 14,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 15,
-      "nodeB": 16,
-      "rasterMode": "stepped-arch-ring",
-      "role": "arch",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "masonry-arch",
-      "capacityClass": 4,
-      "id": 15,
-      "memberClass": "viaduct-masonry-arch",
-      "nodeA": 16,
       "nodeB": 17,
       "rasterMode": "stepped-arch-ring",
       "role": "arch",
@@ -169,7 +172,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 16,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 15,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 17,
       "nodeB": 18,
@@ -180,7 +184,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 17,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 16,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 18,
       "nodeB": 19,
@@ -191,7 +196,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 18,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 17,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 19,
       "nodeB": 20,
@@ -202,7 +208,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 19,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 18,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 20,
       "nodeB": 21,
@@ -213,7 +220,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 20,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 19,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 21,
       "nodeB": 22,
@@ -224,7 +232,8 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
-      "id": 21,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 20,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 22,
       "nodeB": 23,
@@ -233,8 +242,21 @@
       "sectionStuds": 3
     },
     {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 21,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 23,
+      "nodeB": 16,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 22,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 15,
@@ -246,9 +268,10 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 23,
       "memberClass": "masonry-spandrel-tie",
-      "nodeA": 23,
+      "nodeA": 16,
       "nodeB": 3,
       "rasterMode": "line-raster",
       "role": "vertical",
@@ -257,9 +280,10 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 24,
       "memberClass": "viaduct-masonry-arch",
-      "nodeA": 24,
+      "nodeA": 16,
       "nodeB": 25,
       "rasterMode": "stepped-arch-ring",
       "role": "arch",
@@ -268,6 +292,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 25,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 25,
@@ -279,6 +304,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 26,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 26,
@@ -290,6 +316,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 27,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 27,
@@ -301,6 +328,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 28,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 28,
@@ -312,6 +340,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 29,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 29,
@@ -323,6 +352,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 30,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 30,
@@ -334,10 +364,11 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 31,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 31,
-      "nodeB": 32,
+      "nodeB": 24,
       "rasterMode": "stepped-arch-ring",
       "role": "arch",
       "sectionStuds": 3
@@ -345,20 +376,10 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 32,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 24,
-      "nodeB": 3,
-      "rasterMode": "line-raster",
-      "role": "vertical",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "brick-beam",
-      "capacityClass": 3,
-      "id": 33,
-      "memberClass": "masonry-spandrel-tie",
-      "nodeA": 32,
       "nodeB": 5,
       "rasterMode": "line-raster",
       "role": "vertical",
@@ -367,6 +388,19 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 33,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 24,
+      "nodeB": 33,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 34,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 33,
@@ -378,6 +412,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 35,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 34,
@@ -389,6 +424,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 36,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 35,
@@ -400,6 +436,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 37,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 36,
@@ -411,6 +448,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 38,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 37,
@@ -422,6 +460,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 39,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 38,
@@ -433,42 +472,22 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 40,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 39,
-      "nodeB": 40,
+      "nodeB": 32,
       "rasterMode": "stepped-arch-ring",
       "role": "arch",
       "sectionStuds": 3
     },
     {
-      "buildClass": "masonry-arch",
-      "capacityClass": 4,
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 41,
-      "memberClass": "viaduct-masonry-arch",
-      "nodeA": 40,
-      "nodeB": 41,
-      "rasterMode": "stepped-arch-ring",
-      "role": "arch",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "brick-beam",
-      "capacityClass": 3,
-      "id": 42,
       "memberClass": "masonry-spandrel-tie",
-      "nodeA": 33,
-      "nodeB": 5,
-      "rasterMode": "line-raster",
-      "role": "vertical",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "brick-beam",
-      "capacityClass": 3,
-      "id": 43,
-      "memberClass": "masonry-spandrel-tie",
-      "nodeA": 41,
+      "nodeA": 32,
       "nodeB": 7,
       "rasterMode": "line-raster",
       "role": "vertical",
@@ -477,6 +496,31 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 42,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 32,
+      "nodeB": 41,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
+      "id": 43,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 41,
+      "nodeB": 42,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 44,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 42,
@@ -488,6 +532,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 45,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 43,
@@ -499,6 +544,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 46,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 44,
@@ -510,6 +556,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 47,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 45,
@@ -521,6 +568,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 48,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 46,
@@ -532,53 +580,22 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 49,
       "memberClass": "viaduct-masonry-arch",
       "nodeA": 47,
-      "nodeB": 48,
+      "nodeB": 40,
       "rasterMode": "stepped-arch-ring",
       "role": "arch",
       "sectionStuds": 3
     },
     {
-      "buildClass": "masonry-arch",
-      "capacityClass": 4,
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 50,
-      "memberClass": "viaduct-masonry-arch",
-      "nodeA": 48,
-      "nodeB": 49,
-      "rasterMode": "stepped-arch-ring",
-      "role": "arch",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "masonry-arch",
-      "capacityClass": 4,
-      "id": 51,
-      "memberClass": "viaduct-masonry-arch",
-      "nodeA": 49,
-      "nodeB": 50,
-      "rasterMode": "stepped-arch-ring",
-      "role": "arch",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "brick-beam",
-      "capacityClass": 3,
-      "id": 52,
       "memberClass": "masonry-spandrel-tie",
-      "nodeA": 42,
-      "nodeB": 7,
-      "rasterMode": "line-raster",
-      "role": "vertical",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "brick-beam",
-      "capacityClass": 3,
-      "id": 53,
-      "memberClass": "masonry-spandrel-tie",
-      "nodeA": 50,
+      "nodeA": 40,
       "nodeB": 9,
       "rasterMode": "line-raster",
       "role": "vertical",
@@ -788,10 +805,6 @@
             {
               "x": 24,
               "y": 22
-            },
-            {
-              "x": 0,
-              "y": 22
             }
           ]
         ],
@@ -857,10 +870,6 @@
             },
             {
               "x": 48,
-              "y": 22
-            },
-            {
-              "x": 24,
               "y": 22
             }
           ]
@@ -928,10 +937,6 @@
             {
               "x": 72,
               "y": 22
-            },
-            {
-              "x": 48,
-              "y": 22
             }
           ]
         ],
@@ -998,10 +1003,6 @@
             {
               "x": 96,
               "y": 22
-            },
-            {
-              "x": 72,
-              "y": 22
             }
           ]
         ],
@@ -1053,11 +1054,34 @@
       "sideThicknessStuds": 2,
       "system": "system-brick"
     },
-    "designRevision": 870902323,
-    "deterministicChecksum": "187D16F8",
+    "designRevision": 2732175814,
+    "deterministicChecksum": "51F69882",
     "family": "viaduct",
     "familyLabel": "Multi-arch viaduct",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "hangerStations": [],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 1,
     "span": 96,
@@ -1174,63 +1198,63 @@
       "id": 16,
       "role": "joint",
       "supportType": "none",
+      "x": 24,
+      "y": 22
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
       "x": 3,
       "y": 28
     },
     {
-      "id": 17,
+      "id": 18,
       "role": "joint",
       "supportType": "none",
       "x": 6,
       "y": 30
     },
     {
-      "id": 18,
+      "id": 19,
       "role": "joint",
       "supportType": "none",
       "x": 9,
       "y": 32
     },
     {
-      "id": 19,
+      "id": 20,
       "role": "joint",
       "supportType": "none",
       "x": 12,
       "y": 32
     },
     {
-      "id": 20,
+      "id": 21,
       "role": "joint",
       "supportType": "none",
       "x": 15,
       "y": 32
     },
     {
-      "id": 21,
+      "id": 22,
       "role": "joint",
       "supportType": "none",
       "x": 18,
       "y": 30
     },
     {
-      "id": 22,
+      "id": 23,
       "role": "joint",
       "supportType": "none",
       "x": 21,
       "y": 28
     },
     {
-      "id": 23,
-      "role": "joint",
-      "supportType": "none",
-      "x": 24,
-      "y": 22
-    },
-    {
       "id": 24,
       "role": "joint",
       "supportType": "none",
-      "x": 24,
+      "x": 48,
       "y": 22
     },
     {
@@ -1286,134 +1310,113 @@
       "id": 32,
       "role": "joint",
       "supportType": "none",
-      "x": 48,
+      "x": 72,
       "y": 22
     },
     {
       "id": 33,
       "role": "joint",
       "supportType": "none",
-      "x": 48,
-      "y": 22
-    },
-    {
-      "id": 34,
-      "role": "joint",
-      "supportType": "none",
       "x": 51,
       "y": 28
     },
     {
-      "id": 35,
+      "id": 34,
       "role": "joint",
       "supportType": "none",
       "x": 54,
       "y": 30
     },
     {
-      "id": 36,
+      "id": 35,
       "role": "joint",
       "supportType": "none",
       "x": 57,
       "y": 32
     },
     {
-      "id": 37,
+      "id": 36,
       "role": "joint",
       "supportType": "none",
       "x": 60,
       "y": 32
     },
     {
-      "id": 38,
+      "id": 37,
       "role": "joint",
       "supportType": "none",
       "x": 63,
       "y": 32
     },
     {
-      "id": 39,
+      "id": 38,
       "role": "joint",
       "supportType": "none",
       "x": 66,
       "y": 30
     },
     {
-      "id": 40,
+      "id": 39,
       "role": "joint",
       "supportType": "none",
       "x": 69,
       "y": 28
     },
     {
+      "id": 40,
+      "role": "joint",
+      "supportType": "none",
+      "x": 96,
+      "y": 22
+    },
+    {
       "id": 41,
-      "role": "joint",
-      "supportType": "none",
-      "x": 72,
-      "y": 22
-    },
-    {
-      "id": 42,
-      "role": "joint",
-      "supportType": "none",
-      "x": 72,
-      "y": 22
-    },
-    {
-      "id": 43,
       "role": "joint",
       "supportType": "none",
       "x": 75,
       "y": 28
     },
     {
-      "id": 44,
+      "id": 42,
       "role": "joint",
       "supportType": "none",
       "x": 78,
       "y": 30
     },
     {
-      "id": 45,
+      "id": 43,
       "role": "joint",
       "supportType": "none",
       "x": 81,
       "y": 32
     },
     {
-      "id": 46,
+      "id": 44,
       "role": "joint",
       "supportType": "none",
       "x": 84,
       "y": 32
     },
     {
-      "id": 47,
+      "id": 45,
       "role": "joint",
       "supportType": "none",
       "x": 87,
       "y": 32
     },
     {
-      "id": 48,
+      "id": 46,
       "role": "joint",
       "supportType": "none",
       "x": 90,
       "y": 30
     },
     {
-      "id": 49,
+      "id": 47,
       "role": "joint",
       "supportType": "none",
       "x": 93,
       "y": 28
-    },
-    {
-      "id": 50,
-      "role": "joint",
-      "supportType": "none",
-      "x": 96,
-      "y": 22
     }
   ]
 }

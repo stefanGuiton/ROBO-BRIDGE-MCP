@@ -1,13 +1,26 @@
 import { familyProfile } from "./catalogue.js";
 import { checksum, fnv1a, stableStringify } from "./stable-json.js";
-import { foundationAt, report, validateBridgeSpec, validateGraph } from "./validation.js";
+import {
+  plannedBasculeLayout,
+  plannedBoxWallXs,
+  plannedHangerXs,
+  plannedPierXs,
+  plannedSuspensionLayout,
+  plannedViaductBoundaries,
+  resolveFoundation,
+  snapToGrid,
+  validateBridgeSpec,
+  validateGraph,
+} from "./validation.js";
 
 const round = (value) => Math.round(value * 1e6) / 1e6;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const uniqueSorted = (values) => [...new Set(values.map(round))].sort((a, b) => a - b);
 
 function snap(value, step = 1) {
-  return round(Math.round(value / step) * step);
+  const snapped = snapToGrid(value, step);
+  if (!Number.isFinite(snapped)) throw new TypeError(`Cannot snap non-finite geometry value: ${value}.`);
+  return snapped;
 }
 
 function pointKey(point) {
@@ -15,7 +28,9 @@ function pointKey(point) {
 }
 
 function dedupePoints(points) {
-  return points.filter((point, index) => index === 0 || pointKey(point) !== pointKey(points[index - 1]));
+  const output = points.filter((point, index) => index === 0 || pointKey(point) !== pointKey(points[index - 1]));
+  if (output.length > 1 && pointKey(output[0]) === pointKey(output.at(-1))) output.pop();
+  return output;
 }
 
 function buildIntent(profile, role, memberClass, sectionStuds) {
@@ -29,6 +44,14 @@ function buildIntent(profile, role, memberClass, sectionStuds) {
   return { buildClass: "brick-beam", rasterMode: "line-raster", sectionStuds };
 }
 
+function connectionIntent(buildClass, rasterMode) {
+  if (rasterMode === "hinged-deck") return "hinge-pin";
+  if (buildClass === "technic-frame") return "technic-pin";
+  if (buildClass === "masonry-arch") return "staggered-masonry-bond";
+  if (buildClass === "brick-stack") return "overlapping-stud-stack";
+  return "overlapping-stud-bond";
+}
+
 function createBuilder(challenge, spec) {
   const nodes = [];
   const members = [];
@@ -36,13 +59,23 @@ function createBuilder(challenge, spec) {
   const brickZones = [];
   const profile = familyProfile(spec.family);
   const startX = challenge.entry.position.x;
+  const resolvedGeometry = {
+    deckStations: [],
+    supportStations: [startX, startX + spec.span],
+    pierStations: [],
+    towerStations: [],
+    anchorStations: [],
+    hangerStations: [],
+    hingeStations: [],
+    leafTipStations: [],
+  };
   const capacity = clamp(Math.round(spec.targetLoadClass + spec.structuralDensity - 0.5), 1, 5);
   const sectionStuds = clamp(Math.round(1 + spec.structuralDensity * 3), 2, 4);
   const stud = spec.brick.studSize;
   const layer = spec.brick.layerHeight;
   return {
     challenge, spec, profile, startX, endX: startX + spec.span, capacity, sectionStuds,
-    nodes, members, cables, brickZones,
+    nodes, members, cables, brickZones, resolvedGeometry,
     x(value) { return snap(value, stud); },
     y(value) { return snap(value, layer); },
     node(x, y, role = "joint", supportType = "none", extra = {}) {
@@ -52,7 +85,17 @@ function createBuilder(challenge, spec) {
     },
     member(nodeA, nodeB, role, memberClass, capacityClass = capacity, extra = {}) {
       const intent = buildIntent(profile, role, memberClass, extra.sectionStuds ?? sectionStuds);
-      const member = { id: members.length + 1, nodeA, nodeB, role, memberClass, capacityClass, ...intent, ...extra };
+      const mergedIntent = { ...intent, ...extra };
+      const member = {
+        id: members.length + 1,
+        nodeA,
+        nodeB,
+        role,
+        memberClass,
+        capacityClass,
+        ...mergedIntent,
+        connectionIntent: extra.connectionIntent ?? connectionIntent(mergedIntent.buildClass, mergedIntent.rasterMode),
+      };
       members.push(member);
       return member.id;
     },
@@ -63,6 +106,7 @@ function createBuilder(challenge, spec) {
         anchorNodeB,
         structuralRole,
         breakable: false,
+        connectionIntent: structuralRole === "hanger" ? "cable-clamp" : "anchored-cable-eyelet",
         samples: dedupePoints(samples.map((point) => ({ x: snap(point.x, stud), y: snap(point.y, layer) }))),
         hangerTargets: hangerTargets.map((point) => ({ x: snap(point.x, stud), y: snap(point.y, layer) })),
         ...extra,
@@ -96,24 +140,21 @@ function stationXs(builder, includePiers = false, extras = []) {
 }
 
 function pierXs(builder) {
-  const count = builder.spec.pierCount ?? 0;
-  if (!count) return [];
-  const center = builder.startX + builder.spec.span / 2;
-  const desired = Array.from({ length: count }, (_, index) => builder.x(center + (index - (count - 1) / 2) * builder.spec.pierSpacing))
-    .filter((x) => x > builder.startX && x < builder.endX);
-  if (new Set(desired).size === count) return desired;
-  return Array.from({ length: count }, (_, index) => builder.x(builder.startX + (builder.spec.span * (index + 1)) / (count + 1)));
+  const xs = plannedPierXs(builder.challenge, builder.spec);
+  builder.resolvedGeometry.pierStations = [...xs];
+  return xs;
 }
 
-function addDeckZone(builder) {
+function addDeckZone(builder, startX = builder.startX, endX = builder.endX, role = "deck") {
   const bottom = builder.y(builder.spec.deckHeight - builder.spec.brick.deckThicknessLayers + 1);
-  builder.zone("deck", [
-    { x: builder.startX, y: bottom }, { x: builder.startX, y: builder.spec.deckHeight },
-    { x: builder.endX, y: builder.spec.deckHeight }, { x: builder.endX, y: bottom },
+  builder.zone(role, [
+    { x: startX, y: bottom }, { x: startX, y: builder.spec.deckHeight },
+    { x: endX, y: builder.spec.deckHeight }, { x: endX, y: bottom },
   ], [], { memberClass: "bonded-deck", minThicknessStuds: builder.spec.brick.sideThicknessStuds });
 }
 
 function deck(builder, xs = stationXs(builder), extra = {}) {
+  builder.resolvedGeometry.deckStations = [...xs];
   const ids = xs.map((x, index) => builder.node(
     x,
     builder.spec.deckHeight,
@@ -131,10 +172,10 @@ function deckNodeAt(deckData, x) {
   return index >= 0 ? deckData.ids[index] : null;
 }
 
-function foundationFor(builder, x, preferred = "pier") {
-  return foundationAt(builder.challenge, x, preferred)
-    ?? foundationAt(builder.challenge, x, "fixed")
-    ?? foundationAt(builder.challenge, x, "pier");
+function foundationFor(builder, x, kinds) {
+  const foundation = resolveFoundation(builder.challenge, x, kinds);
+  if (!foundation) throw new Error(`Foundation preflight invariant failed at x=${x} for ${kinds.join("/")}.`);
+  return foundation.y;
 }
 
 function addPierZone(builder, x, foundationY, topY, role = "pier") {
@@ -147,11 +188,10 @@ function addPierZone(builder, x, foundationY, topY, role = "pier") {
   ], [], { memberClass: role === "tower" ? "masonry-tower" : "bonded-pier", minThicknessStuds: width });
 }
 
-function addPiers(builder, deckData, withBracing = false, technic = false) {
+function addPiers(builder, deckData, withBracing = false, technic = false, positions = pierXs(builder)) {
   const piers = [];
-  for (const x of pierXs(builder)) {
-    const foundationY = foundationFor(builder, x, "pier");
-    if (foundationY == null) continue;
+  for (const x of positions) {
+    const foundationY = foundationFor(builder, x, ["pier", "fixed"]);
     const topId = deckNodeAt(deckData, x) ?? builder.node(x, builder.spec.deckHeight, "deck", "none");
     const baseId = builder.node(x, foundationY, "pier", "terrain");
     builder.member(baseId, topId, "pier", technic ? "trestle-column" : "bonded-pier", builder.capacity + 1);
@@ -168,18 +208,19 @@ function addPiers(builder, deckData, withBracing = false, technic = false) {
 }
 
 function beam(builder) {
-  const deckData = deck(builder, stationXs(builder, true));
-  addPiers(builder, deckData, false, false);
+  deck(builder);
 }
 
 function pier(builder) {
-  const deckData = deck(builder, stationXs(builder, true));
-  addPiers(builder, deckData, false, false);
+  const positions = pierXs(builder);
+  const deckData = deck(builder, stationXs(builder, false, positions));
+  addPiers(builder, deckData, false, false, positions);
 }
 
 function trestle(builder) {
-  const deckData = deck(builder, stationXs(builder, true));
-  addPiers(builder, deckData, builder.spec.crossBracing, true);
+  const positions = pierXs(builder);
+  const deckData = deck(builder, stationXs(builder, false, positions));
+  addPiers(builder, deckData, builder.spec.crossBracing, true, positions);
 }
 
 function warren(builder) {
@@ -192,8 +233,11 @@ function warren(builder) {
     builder.member(topIds[index], deckData.ids[index + 1], "diagonal", "warren-diagonal");
     if (index > 0) builder.member(topIds[index - 1], topIds[index], "chord", "upper-chord", builder.capacity + 1);
   }
-  if (builder.spec.crossBracing && builder.spec.structuralDensity > 0.72) {
-    for (let index = 1; index < topIds.length; index += 2) builder.member(topIds[index], deckData.ids[index], "vertical", "warren-secondary", Math.max(1, builder.capacity - 1));
+  if (builder.spec.crossBracing) {
+    for (let index = 1; index < topIds.length; index += 2) {
+      builder.member(topIds[index], deckData.ids[index - 1], "diagonal", "warren-secondary-cross-brace", Math.max(1, builder.capacity - 1));
+      builder.member(topIds[index - 1], deckData.ids[index + 1], "diagonal", "warren-secondary-cross-brace", Math.max(1, builder.capacity - 1));
+    }
   }
 }
 
@@ -204,7 +248,8 @@ function prattHowe(builder, mode) {
   for (let index = 0; index < topIds.length; index += 1) builder.member(deckData.ids[index], topIds[index], "vertical", "truss-vertical");
   const midpoint = builder.spec.panelCount / 2;
   for (let index = 0; index < builder.spec.panelCount; index += 1) {
-    const forward = mode === "pratt" ? index < midpoint : index >= midpoint;
+    // Pratt diagonals descend towards the centre; Howe is the exact reverse.
+    const forward = mode === "pratt" ? index >= midpoint : index < midpoint;
     builder.member(
       forward ? deckData.ids[index] : topIds[index],
       forward ? topIds[index + 1] : deckData.ids[index + 1],
@@ -258,11 +303,10 @@ function addAbutment(builder, x, foundationY, springY, fixed = false) {
 }
 
 function masonryBodyZone(builder, startX, endX, deckY, leftFoundation, rightFoundation, openingCurve, role = "masonry-body") {
-  const bottom = Math.min(leftFoundation, rightFoundation);
   builder.zone(role, [
     { x: startX, y: leftFoundation }, { x: startX, y: deckY },
     { x: endX, y: deckY }, { x: endX, y: rightFoundation },
-  ], [[...openingCurve, { x: endX, y: bottom }, { x: startX, y: bottom }]], {
+  ], [[...openingCurve, { x: endX, y: rightFoundation }, { x: startX, y: leftFoundation }]], {
     memberClass: "closed-spandrel-masonry",
     minThicknessStuds: builder.sectionStuds,
   });
@@ -272,8 +316,8 @@ function arch(builder) {
   const deckData = deck(builder);
   const deckUnderside = builder.y(builder.spec.deckHeight - builder.spec.brick.deckThicknessLayers + 1);
   const springY = builder.y(builder.spec.deckHeight - builder.spec.archRise);
-  const leftFoundation = foundationFor(builder, builder.startX, "fixed");
-  const rightFoundation = foundationFor(builder, builder.endX, "fixed");
+  const leftFoundation = foundationFor(builder, builder.startX, ["fixed", "arch"]);
+  const rightFoundation = foundationFor(builder, builder.endX, ["fixed", "arch"]);
   const leftSpring = addAbutment(builder, builder.startX, leftFoundation, springY, true);
   const rightSpring = addAbutment(builder, builder.endX, rightFoundation, springY, true);
   const curve = archCurvePoints(builder, builder.startX, builder.spec.span, springY, deckUnderside, Math.max(8, builder.spec.panelCount));
@@ -288,26 +332,28 @@ function arch(builder) {
 
 function viaduct(builder) {
   const count = builder.spec.archCount;
-  const moduleSpan = builder.spec.span / count;
-  const boundaries = Array.from({ length: count + 1 }, (_, index) => builder.x(builder.startX + moduleSpan * index));
+  const boundaries = plannedViaductBoundaries(builder.challenge, builder.spec);
   const deckData = deck(builder, uniqueSorted([...stationXs(builder), ...boundaries]));
   const deckUnderside = builder.y(builder.spec.deckHeight - builder.spec.brick.deckThicknessLayers + 1);
   const pierData = boundaries.map((x, index) => {
-    const foundationY = foundationFor(builder, x, index === 0 || index === count ? "fixed" : "pier");
+    const foundationY = foundationFor(builder, x, index === 0 || index === count ? ["fixed", "arch"] : ["pier", "arch"]);
     const topId = deckNodeAt(deckData, x) ?? builder.node(x, builder.spec.deckHeight, "deck", "none");
     const baseId = builder.node(x, foundationY, "pier", index === 0 || index === count ? "fixed" : "terrain");
     builder.member(baseId, topId, "pier", "viaduct-pier", builder.capacity + 1, { sectionStuds: builder.sectionStuds * 2 });
     addPierZone(builder, x, foundationY, deckUnderside, "viaduct-pier");
     return { x, foundationY, topId };
   });
+  const springIds = new Map();
   for (let module = 0; module < count; module += 1) {
     const startX = boundaries[module];
     const endX = boundaries[module + 1];
     const span = endX - startX;
-    const springY = builder.y(deckUnderside - Math.min(builder.spec.archRise, span * 0.45));
+    const springY = builder.y(deckUnderside - builder.spec.archRise);
     const curve = archCurvePoints(builder, startX, span, springY, deckUnderside, 8);
-    const ids = addArchMembers(builder, curve, "viaduct-masonry-arch");
-    builder.member(ids[0], pierData[module].topId, "vertical", "masonry-spandrel-tie", builder.capacity);
+    if (!springIds.has(startX)) springIds.set(startX, builder.node(startX, springY, "joint", "none"));
+    if (!springIds.has(endX)) springIds.set(endX, builder.node(endX, springY, "joint", "none"));
+    const ids = addArchMembers(builder, curve, "viaduct-masonry-arch", { 0: springIds.get(startX), [curve.length - 1]: springIds.get(endX) });
+    if (module === 0) builder.member(ids[0], pierData[module].topId, "vertical", "masonry-spandrel-tie", builder.capacity);
     builder.member(ids.at(-1), pierData[module + 1].topId, "vertical", "masonry-spandrel-tie", builder.capacity);
     masonryBodyZone(builder, startX, endX, builder.spec.deckHeight, springY, springY, curve, "viaduct-bay");
   }
@@ -334,10 +380,13 @@ function corbelled(builder) {
     return { x: builder.x(builder.startX + (centerX - builder.startX) * Math.pow(progress, 0.82)), y: builder.y(springY + (deckUnderside - springY) * progress) };
   });
   const left = orthogonalise(leftRaw);
-  const right = left.slice(0, -1).reverse().map((point) => ({ x: builder.x(builder.endX - (point.x - builder.startX)), y: point.y }));
-  const curve = dedupePoints([...left, ...right]);
-  const leftFoundation = foundationFor(builder, builder.startX, "fixed");
-  const rightFoundation = foundationFor(builder, builder.endX, "fixed");
+  const right = left
+    .filter((point) => point.x < centerX)
+    .reverse()
+    .map((point) => ({ x: builder.x(builder.endX - (point.x - builder.startX)), y: point.y }));
+  const curve = orthogonalise(dedupePoints([...left, ...right]));
+  const leftFoundation = foundationFor(builder, builder.startX, ["fixed", "arch"]);
+  const rightFoundation = foundationFor(builder, builder.endX, ["fixed", "arch"]);
   const leftSpring = addAbutment(builder, builder.startX, leftFoundation, springY, true);
   const rightSpring = addAbutment(builder, builder.endX, rightFoundation, springY, true);
   addArchMembers(builder, curve, "corbelled-masonry", { 0: leftSpring, [curve.length - 1]: rightSpring });
@@ -345,13 +394,11 @@ function corbelled(builder) {
 }
 
 function boxCulvert(builder) {
-  const wall = Math.max(4, builder.x(builder.spec.span * 0.12));
-  const left = builder.x(builder.startX + wall);
-  const right = builder.x(builder.endX - wall);
+  const [left, right] = plannedBoxWallXs(builder.challenge, builder.spec);
   const deckData = deck(builder, stationXs(builder, false, [left, right]));
   const topY = builder.y(builder.spec.deckHeight - builder.spec.brick.deckThicknessLayers + 1);
-  const leftFoundation = foundationFor(builder, left, "pier");
-  const rightFoundation = foundationFor(builder, right, "pier");
+  const leftFoundation = foundationFor(builder, left, ["pier", "arch", "fixed"]);
+  const rightFoundation = foundationFor(builder, right, ["pier", "arch", "fixed"]);
   const leftBase = builder.node(left, leftFoundation, "support", "terrain");
   const rightBase = builder.node(right, rightFoundation, "support", "terrain");
   const leftTop = builder.node(left, topY, "joint", "none");
@@ -361,30 +408,48 @@ function boxCulvert(builder) {
   builder.member(leftTop, rightTop, "beam", "culvert-lintel", builder.capacity + 1, { sectionStuds: builder.spec.brick.deckThicknessLayers });
   builder.member(leftTop, deckNodeAt(deckData, left), "vertical", "culvert-lintel-bearing", builder.capacity);
   builder.member(rightTop, deckNodeAt(deckData, right), "vertical", "culvert-lintel-bearing", builder.capacity);
-  const bottom = Math.min(leftFoundation, rightFoundation);
   builder.zone("box-culvert", [
-    { x: builder.startX, y: bottom }, { x: builder.startX, y: builder.spec.deckHeight },
-    { x: builder.endX, y: builder.spec.deckHeight }, { x: builder.endX, y: bottom },
-  ], [[{ x: left, y: bottom }, { x: left, y: topY }, { x: right, y: topY }, { x: right, y: bottom }]], {
+    { x: builder.startX, y: leftFoundation }, { x: builder.startX, y: builder.spec.deckHeight },
+    { x: builder.endX, y: builder.spec.deckHeight }, { x: builder.endX, y: rightFoundation },
+  ], [[{ x: left, y: leftFoundation }, { x: left, y: topY }, { x: right, y: topY }, { x: right, y: rightFoundation }]], {
     memberClass: "bonded-box-culvert",
     minThicknessStuds: builder.sectionStuds * 2,
   });
 }
 
 function tiedArch(builder) {
-  const deckData = deck(builder);
+  const hangerXs = plannedHangerXs(
+    builder.startX,
+    builder.endX,
+    builder.spec.hangerSpacing,
+    builder.spec.brick.studSize,
+  );
+  builder.resolvedGeometry.hangerStations = [...hangerXs];
+  const deckData = deck(builder, stationXs(builder, false, hangerXs));
   const archIds = [deckData.ids[0]];
-  const archPoints = [{ x: deckData.xs[0], y: builder.spec.deckHeight }];
   for (let index = 1; index < deckData.xs.length - 1; index += 1) {
     const t = index / (deckData.xs.length - 1);
-    const point = { x: deckData.xs[index], y: builder.y(builder.spec.deckHeight + 4 * builder.spec.trussHeight * t * (1 - t)) };
-    archPoints.push(point);
+    const point = {
+      x: deckData.xs[index],
+      y: Math.max(
+        builder.y(builder.spec.deckHeight + builder.spec.brick.layerHeight),
+        builder.y(builder.spec.deckHeight + 4 * builder.spec.trussHeight * t * (1 - t)),
+      ),
+    };
     archIds.push(builder.node(point.x, point.y, "joint", "none"));
   }
-  archPoints.push({ x: deckData.xs.at(-1), y: builder.spec.deckHeight });
   archIds.push(deckData.ids.at(-1));
   for (let index = 1; index < archIds.length; index += 1) builder.member(archIds[index - 1], archIds[index], "arch", "tied-arch-rib", builder.capacity + 1);
-  for (let index = 1; index < archIds.length - 1; index += 1) builder.member(deckData.ids[index], archIds[index], "vertical", "tied-arch-hanger", builder.capacity);
+  for (const x of hangerXs) {
+    const index = deckData.xs.indexOf(x);
+    builder.member(deckData.ids[index], archIds[index], "vertical", "tied-arch-hanger", builder.capacity, { connectionIntent: "technic-pin" });
+  }
+  if (builder.spec.crossBracing) {
+    for (let index = 1; index < archIds.length - 2; index += 2) {
+      builder.member(deckData.ids[index], archIds[index + 1], "diagonal", "tied-arch-cross-brace", Math.max(1, builder.capacity - 1));
+      builder.member(archIds[index], deckData.ids[index + 1], "diagonal", "tied-arch-cross-brace", Math.max(1, builder.capacity - 1));
+    }
+  }
 }
 
 function cablePointOnCentralSpan(x, leftX, rightX, topY, sag) {
@@ -392,18 +457,19 @@ function cablePointOnCentralSpan(x, leftX, rightX, topY, sag) {
   return topY - 4 * sag * t * (1 - t);
 }
 
-function towerFoundation(builder, x) {
-  return foundationAt(builder.challenge, x, "tower") ?? foundationAt(builder.challenge, x, "pier");
-}
-
 function suspension(builder) {
-  const leftTowerX = builder.x(builder.startX + builder.spec.span * 0.2);
-  const rightTowerX = builder.x(builder.startX + builder.spec.span * 0.8);
-  const deckData = deck(builder, stationXs(builder, false, [leftTowerX, rightTowerX]));
+  const layout = plannedSuspensionLayout(builder.challenge, builder.spec);
+  const [leftTowerX, rightTowerX] = layout.towers;
+  const [leftAnchorX, rightAnchorX] = layout.anchors;
+  const hangerXs = plannedHangerXs(leftTowerX, rightTowerX, builder.spec.hangerSpacing, builder.spec.brick.studSize);
+  builder.resolvedGeometry.towerStations = [...layout.towers];
+  builder.resolvedGeometry.anchorStations = [...layout.anchors];
+  builder.resolvedGeometry.hangerStations = [...hangerXs];
+  const deckData = deck(builder, stationXs(builder, false, [...layout.towers, ...hangerXs]));
   const towerTopY = builder.y(builder.spec.deckHeight + builder.spec.towerHeight);
   const towerTops = [];
   for (const x of [leftTowerX, rightTowerX]) {
-    const foundationY = towerFoundation(builder, x);
+    const foundationY = foundationFor(builder, x, ["tower", "pier"]);
     const base = builder.node(x, foundationY, "tower", "terrain");
     const deckId = deckNodeAt(deckData, x);
     const top = builder.node(x, towerTopY, "tower", "none");
@@ -412,10 +478,8 @@ function suspension(builder) {
     addPierZone(builder, x, foundationY, towerTopY, "tower");
     towerTops.push(top);
   }
-  const leftAnchorX = builder.x(builder.startX - builder.spec.span * 0.08);
-  const rightAnchorX = builder.x(builder.endX + builder.spec.span * 0.08);
-  const leftAnchorY = foundationAt(builder.challenge, leftAnchorX, "anchor");
-  const rightAnchorY = foundationAt(builder.challenge, rightAnchorX, "anchor");
+  const leftAnchorY = foundationFor(builder, leftAnchorX, ["anchor"]);
+  const rightAnchorY = foundationFor(builder, rightAnchorX, ["anchor"]);
   const leftAnchor = builder.node(leftAnchorX, leftAnchorY, "anchor", "terrain");
   const rightAnchor = builder.node(rightAnchorX, rightAnchorY, "anchor", "terrain");
   const samples = [];
@@ -427,31 +491,73 @@ function suspension(builder) {
     else y = cablePointOnCentralSpan(x, leftTowerX, rightTowerX, towerTopY, builder.spec.cableSag);
     samples.push({ x, y });
   }
-  const hangerTargets = [];
-  for (let x = leftTowerX + builder.spec.hangerSpacing; x < rightTowerX; x += builder.spec.hangerSpacing) hangerTargets.push({ x: builder.x(x), y: builder.spec.deckHeight });
+  const hangerTargets = hangerXs.map((x) => ({ x, y: builder.spec.deckHeight }));
   builder.cable(leftAnchor, rightAnchor, "main", samples, hangerTargets, { sag: builder.spec.cableSag, towerNodeIds: towerTops });
   for (const target of hangerTargets) {
     const cableY = builder.y(cablePointOnCentralSpan(target.x, leftTowerX, rightTowerX, towerTopY, builder.spec.cableSag));
     const cableNode = builder.node(target.x, cableY, "anchor", "none", { cableAttachment: true });
-    const deckNode = builder.node(target.x, target.y, "deck", "none", { cableAttachment: true });
+    const deckNode = deckNodeAt(deckData, target.x);
+    builder.nodes[deckNode - 1].cableAttachment = true;
     builder.cable(cableNode, deckNode, "hanger", [{ x: target.x, y: cableY }, target], [], { parentCableId: 1 });
   }
 }
 
 function bascule(builder) {
-  const leftTowerX = builder.x(builder.startX + builder.spec.span * 0.28);
-  const rightTowerX = builder.x(builder.startX + builder.spec.span * 0.72);
-  const centerX = builder.x(builder.startX + builder.spec.span / 2);
-  const xs = uniqueSorted([builder.startX, leftTowerX, centerX, rightTowerX, builder.endX]);
-  const ids = xs.map((x, index) => builder.node(x, builder.spec.deckHeight, index === 0 || index === xs.length - 1 ? "support" : "deck", index === 0 || index === xs.length - 1 ? "fixed" : "none", { hinge: x === leftTowerX || x === rightTowerX }));
-  const classes = ["bascule-approach", "bascule-leaf-left", "bascule-leaf-right", "bascule-approach"];
-  for (let index = 0; index < ids.length - 1; index += 1) builder.member(ids[index], ids[index + 1], "deck", classes[index], builder.capacity + 1, { buildClass: index === 1 || index === 2 ? "technic-frame" : "brick-course", rasterMode: index === 1 || index === 2 ? "hinged-deck" : "horizontal-course" });
-  addDeckZone(builder);
+  const layout = plannedBasculeLayout(builder.challenge, builder.spec);
+  const [leftTowerX, rightTowerX] = layout.hinges;
+  const centerX = layout.center;
+  const panels = stationXs(builder);
+  builder.resolvedGeometry.hingeStations = [...layout.hinges];
+  builder.resolvedGeometry.towerStations = [...layout.hinges];
+  builder.resolvedGeometry.leafTipStations = [centerX, centerX];
+
+  const makeSequence = (xs, memberClass, moving = false, leafSide = null, sharedIds = new Map()) => {
+    const ids = xs.map((x, index) => {
+      if (sharedIds.has(x)) return sharedIds.get(x);
+      const endpoint = x === builder.startX || x === builder.endX;
+      const hinge = x === leftTowerX || x === rightTowerX;
+      const tip = x === centerX;
+      return builder.node(
+        x,
+        builder.spec.deckHeight,
+        endpoint ? "support" : "deck",
+        endpoint ? "fixed" : "none",
+        {
+          ...(hinge ? { hinge: true, articulation: "hinge", leafSide } : {}),
+          ...(tip ? { articulation: "leaf-tip", leafSide, coincidentGroup: "bascule-centre-tips" } : {}),
+        },
+      );
+    });
+    for (let index = 0; index < ids.length - 1; index += 1) builder.member(
+      ids[index],
+      ids[index + 1],
+      "deck",
+      memberClass,
+      builder.capacity + 1,
+      moving
+        ? { buildClass: "technic-frame", rasterMode: "hinged-deck", connectionIntent: "hinge-pin", articulation: "movable-leaf", leafSide }
+        : { buildClass: "brick-course", rasterMode: "horizontal-course", connectionIntent: "overlapping-stud-bond" },
+    );
+    return { xs, ids };
+  };
+
+  const leftApproachXs = uniqueSorted([builder.startX, ...panels.filter((x) => x > builder.startX && x < leftTowerX), leftTowerX]);
+  const leftLeafXs = uniqueSorted([leftTowerX, ...panels.filter((x) => x > leftTowerX && x < centerX), centerX]);
+  const rightLeafXs = uniqueSorted([centerX, ...panels.filter((x) => x > centerX && x < rightTowerX), rightTowerX]);
+  const rightApproachXs = uniqueSorted([rightTowerX, ...panels.filter((x) => x > rightTowerX && x < builder.endX), builder.endX]);
+  const leftApproach = makeSequence(leftApproachXs, "bascule-approach-left", false, "left");
+  const leftLeaf = makeSequence(leftLeafXs, "bascule-leaf-left", true, "left", new Map([[leftTowerX, leftApproach.ids.at(-1)]]));
+  const rightLeaf = makeSequence(rightLeafXs, "bascule-leaf-right", true, "right");
+  const rightApproach = makeSequence(rightApproachXs, "bascule-approach-right", false, "right", new Map([[rightTowerX, rightLeaf.ids.at(-1)]]));
+  builder.resolvedGeometry.deckStations = uniqueSorted([...leftApproachXs, ...leftLeafXs, ...rightLeafXs, ...rightApproachXs]);
+  addDeckZone(builder, builder.startX, leftTowerX, "bascule-approach-left");
+  addDeckZone(builder, rightTowerX, builder.endX, "bascule-approach-right");
+
   const tops = [];
-  for (const x of [leftTowerX, rightTowerX]) {
-    const foundationY = towerFoundation(builder, x);
+  for (const [index, x] of [leftTowerX, rightTowerX].entries()) {
+    const foundationY = foundationFor(builder, x, ["tower", "pier"]);
     const base = builder.node(x, foundationY, "tower", "terrain");
-    const deckId = ids[xs.indexOf(x)];
+    const deckId = index === 0 ? leftLeaf.ids[0] : rightLeaf.ids.at(-1);
     const top = builder.node(x, builder.spec.deckHeight + builder.spec.towerHeight, "tower", "none");
     builder.member(base, deckId, "tower", "masonry-bascule-tower", builder.capacity + 1, { sectionStuds: builder.sectionStuds * 2 });
     builder.member(deckId, top, "tower", "masonry-bascule-tower", builder.capacity + 1, { sectionStuds: builder.sectionStuds * 2 });
@@ -461,7 +567,7 @@ function bascule(builder) {
   builder.member(tops[0], tops[1], "chord", "upper-walkway", builder.capacity, { buildClass: "technic-frame", rasterMode: "technic-member" });
 }
 
-const GENERATORS = {
+const GENERATORS = Object.freeze({
   beam,
   pier,
   trestle,
@@ -475,31 +581,22 @@ const GENERATORS = {
   tiedArch,
   suspension,
   bascule,
-};
-
-function missingFoundationIssues(builder) {
-  if (!["beam", "pier", "trestle"].includes(builder.spec.family)) return [];
-  return pierXs(builder)
-    .filter((x) => foundationFor(builder, x, "pier") == null)
-    .map((x) => ({ code: "PIER_NO_FOUNDATION", path: "pierCount", message: `No pier foundation is available at x=${x}.`, severity: "error" }));
-}
+});
 
 export function generateBridgeGraph2D(challenge, spec, clock = () => globalThis.performance?.now?.() ?? Date.now()) {
   const started = clock();
   const inputValidation = validateBridgeSpec(challenge, spec);
   if (!inputValidation.valid) return { graph: null, validation: inputValidation, generationTimeMs: round(clock() - started) };
   const builder = createBuilder(challenge, spec);
-  const supportIssues = missingFoundationIssues(builder);
-  if (supportIssues.length) return { graph: null, validation: report(supportIssues), generationTimeMs: round(clock() - started) };
   GENERATORS[spec.family](builder);
-  const designRevision = fnv1a({ challenge, spec, generatorVersion: 2 });
+  const designRevision = fnv1a({ challenge, spec, generatorVersion: 3 });
   const graph = {
     nodes: builder.nodes,
     members: builder.members,
     cables: builder.cables,
     metadata: {
       version: 3,
-      generatorVersion: 2,
+      generatorVersion: 3,
       family: spec.family,
       familyLabel: builder.profile.label,
       span: spec.span,
@@ -519,6 +616,7 @@ export function generateBridgeGraph2D(challenge, spec, clock = () => globalThis.
         bondPattern: spec.brick.bondPattern,
         compilerReady: true,
       },
+      resolvedGeometry: builder.resolvedGeometry,
       brickZones: builder.brickZones,
       designRevision,
       deterministicChecksum: "",

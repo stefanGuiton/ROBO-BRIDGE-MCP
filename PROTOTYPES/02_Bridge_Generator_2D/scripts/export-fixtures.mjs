@@ -1,36 +1,13 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FLAT_GAP, RAVINE, specForChallenge } from "../src/engine/fixtures.js";
-import { generateBridgeGraph2D } from "../src/engine/generator.js";
-import { stableStringify } from "../src/engine/stable-json.js";
-import { FAMILY_IDS } from "../src/engine/catalogue.js";
+import { createFixtureFiles } from "./fixture-data.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const output = join(root, "fixtures", "exports");
+const files = createFixtureFiles();
+
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
-await writeFile(join(output, "ChallengeState.flat-gap.json"), `${stableStringify(FLAT_GAP, 2)}\n`);
-await writeFile(join(output, "ChallengeState.ravine.json"), `${stableStringify(RAVINE, 2)}\n`);
-
-const manifest = { version: 2, generatorVersion: 2, families: {} };
-for (const family of FAMILY_IDS) {
-  const spec = specForChallenge(RAVINE, family);
-  const result = generateBridgeGraph2D(RAVINE, spec);
-  await writeFile(join(output, `BridgeSpec.${family}.json`), `${stableStringify(spec, 2)}\n`);
-  await writeFile(join(output, `BridgeGraph2D.${family}.json`), `${stableStringify(result.graph, 2)}\n`);
-  manifest.families[family] = {
-    valid: result.validation.valid,
-    nodes: result.graph.nodes.length,
-    members: result.graph.members.length,
-    cables: result.graph.cables.length,
-    brickZones: result.graph.metadata.brickZones.length,
-    constructionSystem: result.graph.metadata.construction.system,
-    compatibility: result.graph.metadata.construction.compatibility,
-    warnings: result.validation.warnings.map((entry) => entry.code),
-    designRevision: result.graph.metadata.designRevision,
-    checksum: result.graph.metadata.deterministicChecksum,
-  };
-}
-await writeFile(join(output, "validation-report.json"), `${stableStringify(manifest, 2)}\n`);
-console.log(`Exported deterministic fixtures to ${output}`);
+await Promise.all([...files].map(([name, content]) => writeFile(join(output, name), content)));
+console.log(`Exported ${files.size} deterministic fixtures to ${output}`);

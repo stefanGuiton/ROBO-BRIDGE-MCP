@@ -1,6 +1,6 @@
 # Generator critique and brick-readiness response
 
-## Outcome
+## Original outcome
 
 Version 1 was a sound deterministic **bridge sketcher**, but it was not a sufficient contract for deterministic brick compilation. Version 2 keeps its useful common graph while adding the missing construction intent.
 
@@ -66,3 +66,35 @@ This version does not claim that every brick has been selected or that a physica
 - BuildPlan adaptation and robot reachability.
 
 That separation preserves the master-plan boundary: Codex edits BridgeSpec, deterministic geometry creates the graph, and deterministic compiler code chooses exact parts.
+
+## Oracle HOLD remediation — generator version 3
+
+The review of checkpoint `d54fe50` correctly found contract gaps that the original tests did not cover. Version 3 resolves them without crossing into brick placement or robot control.
+
+### Foundations now fail closed
+
+Every family preflights its required ENTRY/EXIT, pier, abutment, tower and anchor foundations. Foundation resolution returns a finite value or a machine-readable error. Generation stops with `graph: null`; `null` can no longer reach coordinate snapping and become a false zero-height terrain support.
+
+### Pratt, Howe and Warren semantics are asserted
+
+Pratt diagonals now descend towards the centre and Howe produces the exact reverse orientation. Coordinate-level slope tests verify the convention rather than merely checking that the two JSON documents differ. Warren secondary bracing uses distinct two-panel paths and can no longer duplicate its primary triangles.
+
+### Bascule articulation is compiler-safe
+
+The two leaves have separate coincident centre-tip nodes, explicit hinge/leaf intent and panel-count-driven subdivisions. Only the fixed approaches create bonded masonry deck zones. No course-fill polygon crosses the moving span or centre seam.
+
+### Exposed family controls are real inputs
+
+`tiedArch.hangerSpacing` controls hanger targets, `tiedArch.crossBracing` controls distinct braces, and `bascule.panelCount` controls leaf/approach subdivisions. A regression matrix changes every family-specific parameter and proves that resolved geometry or build intent changes. Beam is now an enforced clear span; pier is the distinct intermediate-support family. Invalid pier spacing fails instead of being silently replaced.
+
+### Degenerate geometry is rejected
+
+Snapped panel and viaduct boundaries must remain unique. Members must have finite, non-zero, non-duplicate paths. Coincident nodes require an explicit group. Masonry polygons must have positive area, avoid self-intersection and contain their openings. Asymmetric arch openings close against the actual left and right foundation boundary.
+
+### Schemas are executable contracts
+
+Family schemas use Draft 2020-12 `unevaluatedProperties: false`, so a Pratt spec containing `archRise` is invalid. Challenge terrain and obstacle fields are fully typed. Ajv validates every exported challenge, spec and graph plus malformed negative cases. Schema testing no longer stops at `JSON.parse`.
+
+### Downstream evidence is now provenance-bound
+
+Compatibility results name the exact compiler commit used. The generator no longer claims 13/13 acceptance from an unavailable tree. The current committed compiler checkpoint has a separate negative-elevation foundation limitation; `VALIDATION_REPORT.md` records that result as PARTIAL instead of converting it into a generator success claim.

@@ -3,25 +3,123 @@
   "$id": "https://robo-bridge.local/schemas/ChallengeState.schema.json",
   "title": "ChallengeState 2D prototype input",
   "type": "object",
+  "additionalProperties": false,
   "required": ["version", "seed", "mode", "terrain", "entry", "exit", "corridor", "supportRegions"],
   "properties": {
-    "version": { "const": 3 }, "seed": { "type": "integer" }, "mode": { "enum": ["rail", "road"] }, "name": { "type": "string" },
-    "terrain": {
-      "type": "object", "required": ["seed", "width", "depth", "gridX", "gridZ", "heightScale", "obstacle", "profile"],
-      "properties": { "profile": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/point2" } } }, "additionalProperties": true
-    },
-    "entry": { "$ref": "#/$defs/routeAnchor" }, "exit": { "$ref": "#/$defs/routeAnchor" },
-    "corridor": {
-      "type": "object", "required": ["centreline", "deckWidth", "vehicleClearWidth", "vehicleClearHeight", "deckElevationRange", "mode"],
-      "properties": { "centreline": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/point3" } }, "deckWidth": { "type": "number" }, "vehicleClearWidth": { "type": "number" }, "vehicleClearHeight": { "type": "number" }, "deckElevationRange": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }, "mode": { "enum": ["rail-single", "rail-double", "road"] } },
-      "additionalProperties": false
-    },
-    "supportRegions": { "type": "array", "items": { "type": "object", "required": ["id", "xMin", "xMax", "foundationY", "allowed"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "xMin": { "type": "number" }, "xMax": { "type": "number" }, "foundationY": { "type": "number" }, "allowed": { "type": "array", "items": { "enum": ["fixed", "anchor", "tower", "pier", "arch"] } } } } }
+    "version": { "const": 3 },
+    "seed": { "type": "integer" },
+    "mode": { "enum": ["rail", "road"] },
+    "name": { "type": "string", "minLength": 1 },
+    "terrain": { "$ref": "#/$defs/terrain" },
+    "entry": { "$ref": "#/$defs/routeAnchor" },
+    "exit": { "$ref": "#/$defs/routeAnchor" },
+    "corridor": { "$ref": "#/$defs/corridor" },
+    "supportRegions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/supportRegion" }
+    }
   },
-  "additionalProperties": false,
   "$defs": {
-    "point2": { "type": "object", "required": ["x", "y"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" } } },
-    "point3": { "type": "object", "required": ["x", "y", "z"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } } },
-    "routeAnchor": { "type": "object", "required": ["position", "forward", "platformWidth", "platformLength"], "additionalProperties": false, "properties": { "position": { "$ref": "#/$defs/point3" }, "forward": { "$ref": "#/$defs/point3" }, "platformWidth": { "type": "number" }, "platformLength": { "type": "number" } } }
+    "point2": {
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "point3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "obstacle": {
+      "type": "object",
+      "required": ["type", "width", "depth", "noiseAmplitude", "noiseFrequency"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["river", "ravine", "gap"] },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "depth": { "type": "number", "minimum": 0 },
+        "noiseAmplitude": { "type": "number", "minimum": 0 },
+        "noiseFrequency": { "type": "number", "minimum": 0 }
+      }
+    },
+    "terrain": {
+      "type": "object",
+      "required": ["seed", "width", "depth", "gridX", "gridZ", "heightScale", "obstacle", "profile"],
+      "additionalProperties": false,
+      "properties": {
+        "seed": { "type": "integer" },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "depth": { "type": "number", "exclusiveMinimum": 0 },
+        "gridX": { "type": "integer", "minimum": 1 },
+        "gridZ": { "type": "integer", "minimum": 1 },
+        "heightScale": { "type": "number", "exclusiveMinimum": 0 },
+        "obstacle": { "$ref": "#/$defs/obstacle" },
+        "profile": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/point2" }
+        }
+      }
+    },
+    "routeAnchor": {
+      "type": "object",
+      "required": ["position", "forward", "platformWidth", "platformLength"],
+      "additionalProperties": false,
+      "properties": {
+        "position": { "$ref": "#/$defs/point3" },
+        "forward": { "$ref": "#/$defs/point3" },
+        "platformWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "platformLength": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "corridor": {
+      "type": "object",
+      "required": ["centreline", "deckWidth", "vehicleClearWidth", "vehicleClearHeight", "deckElevationRange", "mode"],
+      "additionalProperties": false,
+      "properties": {
+        "centreline": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/point3" }
+        },
+        "deckWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "vehicleClearWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "vehicleClearHeight": { "type": "number", "exclusiveMinimum": 0 },
+        "deckElevationRange": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" }
+        },
+        "mode": { "enum": ["rail-single", "rail-double", "road"] }
+      }
+    },
+    "supportRegion": {
+      "type": "object",
+      "required": ["id", "xMin", "xMax", "foundationY", "allowed"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "xMin": { "type": "number" },
+        "xMax": { "type": "number" },
+        "foundationY": { "type": "number" },
+        "allowed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["fixed", "anchor", "tower", "pier", "arch"] }
+        }
+      }
+    }
   }
 }

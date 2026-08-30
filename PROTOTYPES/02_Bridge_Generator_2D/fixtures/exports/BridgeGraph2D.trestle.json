@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -92,6 +100,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 9,
       "memberClass": "bonded-deck",
       "nodeA": 9,
@@ -103,6 +112,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 10,
       "memberClass": "bonded-deck",
       "nodeA": 10,
@@ -114,6 +124,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 11,
       "memberClass": "bonded-deck",
       "nodeA": 11,
@@ -125,6 +136,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 12,
       "memberClass": "bonded-deck",
       "nodeA": 12,
@@ -136,6 +148,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 13,
       "memberClass": "trestle-column",
       "nodeA": 14,
@@ -147,6 +160,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 14,
       "memberClass": "trestle-column",
       "nodeA": 15,
@@ -158,6 +172,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 15,
       "memberClass": "trestle-column",
       "nodeA": 16,
@@ -169,6 +184,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 16,
       "memberClass": "trestle-column",
       "nodeA": 17,
@@ -180,6 +196,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 17,
       "memberClass": "trestle-column",
       "nodeA": 18,
@@ -191,6 +208,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 18,
       "memberClass": "trestle-x-brace",
       "nodeA": 14,
@@ -202,6 +220,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 19,
       "memberClass": "trestle-x-brace",
       "nodeA": 3,
@@ -213,6 +232,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 20,
       "memberClass": "trestle-x-brace",
       "nodeA": 15,
@@ -224,6 +244,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 21,
       "memberClass": "trestle-x-brace",
       "nodeA": 5,
@@ -235,6 +256,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 22,
       "memberClass": "trestle-x-brace",
       "nodeA": 16,
@@ -246,6 +268,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 23,
       "memberClass": "trestle-x-brace",
       "nodeA": 7,
@@ -257,6 +280,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 24,
       "memberClass": "trestle-x-brace",
       "nodeA": 17,
@@ -268,6 +292,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 25,
       "memberClass": "trestle-x-brace",
       "nodeA": 9,
@@ -332,11 +357,44 @@
       "sideThicknessStuds": 2,
       "system": "hybrid"
     },
-    "designRevision": 1182601051,
-    "deterministicChecksum": "89BC86E9",
+    "designRevision": 1309491468,
+    "deterministicChecksum": "E52A2162",
     "family": "trestle",
     "familyLabel": "Braced trestle",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        12,
+        20,
+        24,
+        34,
+        36,
+        48,
+        60,
+        62,
+        72,
+        76,
+        84,
+        96
+      ],
+      "hangerStations": [],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [
+        20,
+        34,
+        48,
+        62,
+        76
+      ],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 1,
     "span": 96,

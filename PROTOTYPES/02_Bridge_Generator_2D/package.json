@@ -1,12 +1,16 @@
 {
   "name": "robo-bridge-generator-2d",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "test": "node --test --experimental-test-isolation=none",
     "build": "node scripts/build.mjs",
-    "fixtures": "node scripts/export-fixtures.mjs"
+    "fixtures": "node scripts/export-fixtures.mjs",
+    "fixtures:check": "node scripts/check-fixtures.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0"
   }
 }

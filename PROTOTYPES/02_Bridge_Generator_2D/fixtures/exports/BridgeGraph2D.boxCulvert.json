@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -92,6 +100,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 9,
       "memberClass": "culvert-sidewall",
       "nodeA": 10,
@@ -103,6 +112,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 10,
       "memberClass": "culvert-sidewall",
       "nodeA": 11,
@@ -114,6 +124,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 11,
       "memberClass": "culvert-lintel",
       "nodeA": 12,
@@ -125,6 +136,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 12,
       "memberClass": "culvert-lintel-bearing",
       "nodeA": 12,
@@ -136,6 +148,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 13,
       "memberClass": "culvert-lintel-bearing",
       "nodeA": 13,
@@ -244,11 +257,34 @@
       "sideThicknessStuds": 2,
       "system": "system-brick"
     },
-    "designRevision": 1349227858,
-    "deterministicChecksum": "10B1FFEF",
+    "designRevision": 188770631,
+    "deterministicChecksum": "7AD1A04C",
     "family": "boxCulvert",
     "familyLabel": "Brick box culvert",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "hangerStations": [],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 1,
     "span": 96,

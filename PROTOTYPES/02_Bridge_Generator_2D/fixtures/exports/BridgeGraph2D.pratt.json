@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -92,6 +100,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 9,
       "memberClass": "upper-chord",
       "nodeA": 10,
@@ -103,6 +112,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 10,
       "memberClass": "upper-chord",
       "nodeA": 11,
@@ -114,6 +124,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 11,
       "memberClass": "upper-chord",
       "nodeA": 12,
@@ -125,6 +136,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 12,
       "memberClass": "upper-chord",
       "nodeA": 13,
@@ -136,6 +148,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 13,
       "memberClass": "upper-chord",
       "nodeA": 14,
@@ -147,6 +160,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 14,
       "memberClass": "upper-chord",
       "nodeA": 15,
@@ -158,6 +172,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 15,
       "memberClass": "upper-chord",
       "nodeA": 16,
@@ -169,6 +184,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 4,
+      "connectionIntent": "technic-pin",
       "id": 16,
       "memberClass": "upper-chord",
       "nodeA": 17,
@@ -180,6 +196,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 17,
       "memberClass": "truss-vertical",
       "nodeA": 1,
@@ -191,6 +208,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 18,
       "memberClass": "truss-vertical",
       "nodeA": 2,
@@ -202,6 +220,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 19,
       "memberClass": "truss-vertical",
       "nodeA": 3,
@@ -213,6 +232,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 20,
       "memberClass": "truss-vertical",
       "nodeA": 4,
@@ -224,6 +244,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 21,
       "memberClass": "truss-vertical",
       "nodeA": 5,
@@ -235,6 +256,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 22,
       "memberClass": "truss-vertical",
       "nodeA": 6,
@@ -246,6 +268,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 23,
       "memberClass": "truss-vertical",
       "nodeA": 7,
@@ -257,6 +280,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 24,
       "memberClass": "truss-vertical",
       "nodeA": 8,
@@ -268,6 +292,7 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 25,
       "memberClass": "truss-vertical",
       "nodeA": 9,
@@ -279,10 +304,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 26,
       "memberClass": "pratt-diagonal",
-      "nodeA": 1,
-      "nodeB": 11,
+      "nodeA": 10,
+      "nodeB": 2,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -290,10 +316,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 27,
       "memberClass": "pratt-diagonal",
-      "nodeA": 2,
-      "nodeB": 12,
+      "nodeA": 11,
+      "nodeB": 3,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -301,10 +328,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 28,
       "memberClass": "pratt-diagonal",
-      "nodeA": 3,
-      "nodeB": 13,
+      "nodeA": 12,
+      "nodeB": 4,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -312,19 +340,9 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 29,
       "memberClass": "pratt-diagonal",
-      "nodeA": 4,
-      "nodeB": 14,
-      "rasterMode": "technic-member",
-      "role": "diagonal",
-      "sectionStuds": 3
-    },
-    {
-      "buildClass": "technic-frame",
-      "capacityClass": 2,
-      "id": 30,
-      "memberClass": "pratt-counter-brace",
       "nodeA": 13,
       "nodeB": 5,
       "rasterMode": "technic-member",
@@ -333,20 +351,22 @@
     },
     {
       "buildClass": "technic-frame",
-      "capacityClass": 3,
-      "id": 31,
-      "memberClass": "pratt-diagonal",
-      "nodeA": 14,
-      "nodeB": 6,
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 30,
+      "memberClass": "pratt-counter-brace",
+      "nodeA": 4,
+      "nodeB": 14,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
     },
     {
       "buildClass": "technic-frame",
-      "capacityClass": 2,
-      "id": 32,
-      "memberClass": "pratt-counter-brace",
+      "capacityClass": 3,
+      "connectionIntent": "technic-pin",
+      "id": 31,
+      "memberClass": "pratt-diagonal",
       "nodeA": 5,
       "nodeB": 15,
       "rasterMode": "technic-member",
@@ -355,11 +375,24 @@
     },
     {
       "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "connectionIntent": "technic-pin",
+      "id": 32,
+      "memberClass": "pratt-counter-brace",
+      "nodeA": 14,
+      "nodeB": 6,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 33,
       "memberClass": "pratt-diagonal",
-      "nodeA": 15,
-      "nodeB": 7,
+      "nodeA": 6,
+      "nodeB": 16,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -367,10 +400,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 34,
       "memberClass": "pratt-diagonal",
-      "nodeA": 16,
-      "nodeB": 8,
+      "nodeA": 7,
+      "nodeB": 17,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -378,10 +412,11 @@
     {
       "buildClass": "technic-frame",
       "capacityClass": 3,
+      "connectionIntent": "technic-pin",
       "id": 35,
       "memberClass": "pratt-diagonal",
-      "nodeA": 17,
-      "nodeB": 9,
+      "nodeA": 8,
+      "nodeB": 18,
       "rasterMode": "technic-member",
       "role": "diagonal",
       "sectionStuds": 3
@@ -442,11 +477,34 @@
       "sideThicknessStuds": 2,
       "system": "technic"
     },
-    "designRevision": 3279110120,
-    "deterministicChecksum": "20CB5C70",
+    "designRevision": 3340085399,
+    "deterministicChecksum": "04CD280B",
     "family": "pratt",
     "familyLabel": "Pratt truss",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        12,
+        24,
+        36,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "hangerStations": [],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 2,
     "span": 96,

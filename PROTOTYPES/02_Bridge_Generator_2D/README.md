@@ -1,6 +1,6 @@
 # ROBO BRIDGE MCP V3 — Brick-ready 2D Bridge Generator
 
-Standalone, dependency-free prototype for the deterministic V3 design stage:
+Standalone prototype for the deterministic V3 design stage:
 
 ```text
 ChallengeState + BridgeSpec -> BridgeGraph2D
@@ -13,6 +13,7 @@ The generator does **not** place individual bricks. It emits the grid-aligned st
 Requires Node.js 20 or newer.
 
 ```powershell
+npm install
 npm run dev
 ```
 
@@ -24,17 +25,18 @@ The light-mode interface includes ravine and flat-gap fixtures, `ChallengeState.
 
 ```powershell
 npm test
+npm run fixtures:check
 npm run fixtures
 npm run build
 ```
 
-Normal tests are read-only. `npm run fixtures` explicitly replaces the generated family exports. `npm run build` explicitly replaces the ignored local `dist/` folder.
+Normal tests and `npm run fixtures:check` are read-only. Schema tests use the pinned Ajv Draft 2020-12 validator. `npm run fixtures` explicitly replaces the generated family exports. `npm run build` explicitly replaces the ignored local `dist/` folder.
 
 ## Family catalogue
 
 Brick-native families:
 
-- brick beam;
+- clear-span brick beam;
 - pier and beam;
 - closed-spandrel masonry arch, segmental or semi-elliptical;
 - repeated multi-arch viaduct;
@@ -62,10 +64,14 @@ Every valid graph now declares:
 - maximum structural beam length;
 - running or stack bond;
 - `buildClass`, `rasterMode` and `sectionStuds` on every member;
+- explicit member/cable `connectionIntent` for bonds, pins, hinges and cable clamps;
+- `metadata.resolvedGeometry`, recording the exact snapped deck, pier, tower, anchor, hanger, hinge and leaf-tip stations;
 - course-fill polygons and openings in `metadata.brickZones` for brick-native masonry;
 - connected paths from every structural member to fixed or terrain support.
 
 Brick-native graphs reject Technic frame members. Hybrid graphs remain valid but return the machine-readable `HYBRID_PARTS_REQUIRED` warning.
+
+All required foundations are resolved before generation. A missing abutment, pier, tower or cable anchor returns a coded validation error and `graph: null`; a missing value can never be numerically coerced into a false `y=0` support. Graph validation also rejects duplicate or zero-length member paths, unintended coincident nodes, invalid cable anchors, zero-area/self-intersecting masonry polygons and openings outside their masonry body.
 
 ## Architecture
 
@@ -79,7 +85,7 @@ Brick-native graphs reject Technic frame members. Hybrid graphs remain valid but
 - `fixtures/exports/` — reproducible example inputs and outputs;
 - `tests/` — deterministic acceptance suite.
 
-See `CRITIQUE.md` for the audit that drove version 2 of the generator.
+See `CRITIQUE.md` for the original brick-readiness audit and the Oracle HOLD remediation that produced generator version 3.
 
 ## Determinism
 

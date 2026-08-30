@@ -4,8 +4,8 @@ export const FAMILY_CATALOGUE = Object.freeze({
     group: "brick",
     constructionSystem: "system-brick",
     compatibility: "brick-native",
-    description: "Layered deck spanning between end supports, with optional intermediate piers.",
-    parameters: ["panelCount", "pierCount", "pierSpacing"],
+    description: "Clear-span layered deck supported only at its two end abutments.",
+    parameters: ["panelCount"],
   },
   pier: {
     label: "Pier and beam",

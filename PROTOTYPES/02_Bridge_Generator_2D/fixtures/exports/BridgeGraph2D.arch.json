@@ -4,6 +4,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 1,
       "memberClass": "bonded-deck",
       "nodeA": 1,
@@ -15,6 +16,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 2,
       "memberClass": "bonded-deck",
       "nodeA": 2,
@@ -26,6 +28,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 3,
       "memberClass": "bonded-deck",
       "nodeA": 3,
@@ -37,6 +40,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 4,
       "memberClass": "bonded-deck",
       "nodeA": 4,
@@ -48,6 +52,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 5,
       "memberClass": "bonded-deck",
       "nodeA": 5,
@@ -59,6 +64,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 6,
       "memberClass": "bonded-deck",
       "nodeA": 6,
@@ -70,6 +76,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 7,
       "memberClass": "bonded-deck",
       "nodeA": 7,
@@ -81,6 +88,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 8,
       "memberClass": "bonded-deck",
       "nodeA": 8,
@@ -92,6 +100,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 9,
       "memberClass": "bonded-deck",
       "nodeA": 9,
@@ -103,6 +112,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 10,
       "memberClass": "bonded-deck",
       "nodeA": 10,
@@ -114,6 +124,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 11,
       "memberClass": "bonded-deck",
       "nodeA": 11,
@@ -125,6 +136,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 12,
       "memberClass": "bonded-deck",
       "nodeA": 12,
@@ -136,6 +148,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 13,
       "memberClass": "bonded-deck",
       "nodeA": 13,
@@ -147,6 +160,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 14,
       "memberClass": "bonded-deck",
       "nodeA": 14,
@@ -158,6 +172,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 15,
       "memberClass": "bonded-deck",
       "nodeA": 15,
@@ -169,6 +184,7 @@
     {
       "buildClass": "brick-course",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 16,
       "memberClass": "bonded-deck",
       "nodeA": 16,
@@ -180,6 +196,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 17,
       "memberClass": "masonry-abutment",
       "nodeA": 18,
@@ -191,6 +208,7 @@
     {
       "buildClass": "brick-stack",
       "capacityClass": 4,
+      "connectionIntent": "overlapping-stud-stack",
       "id": 18,
       "memberClass": "masonry-abutment",
       "nodeA": 20,
@@ -202,6 +220,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 19,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 19,
@@ -213,6 +232,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 20,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 22,
@@ -224,6 +244,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 21,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 23,
@@ -235,6 +256,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 22,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 24,
@@ -246,6 +268,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 23,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 25,
@@ -257,6 +280,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 24,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 26,
@@ -268,6 +292,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 25,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 27,
@@ -279,6 +304,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 26,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 28,
@@ -290,6 +316,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 27,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 29,
@@ -301,6 +328,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 28,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 30,
@@ -312,6 +340,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 29,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 31,
@@ -323,6 +352,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 30,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 32,
@@ -334,6 +364,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 31,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 33,
@@ -345,6 +376,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 32,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 34,
@@ -356,6 +388,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 33,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 35,
@@ -367,6 +400,7 @@
     {
       "buildClass": "masonry-arch",
       "capacityClass": 4,
+      "connectionIntent": "staggered-masonry-bond",
       "id": 34,
       "memberClass": "segmental-masonry-arch",
       "nodeA": 36,
@@ -378,6 +412,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 35,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 22,
@@ -389,6 +424,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 36,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 23,
@@ -400,6 +436,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 37,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 24,
@@ -411,6 +448,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 38,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 25,
@@ -422,6 +460,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 39,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 26,
@@ -433,6 +472,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 40,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 27,
@@ -444,6 +484,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 41,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 28,
@@ -455,6 +496,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 42,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 29,
@@ -466,6 +508,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 43,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 30,
@@ -477,6 +520,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 44,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 31,
@@ -488,6 +532,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 45,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 32,
@@ -499,6 +544,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 46,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 33,
@@ -510,6 +556,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 47,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 34,
@@ -521,6 +568,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 48,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 35,
@@ -532,6 +580,7 @@
     {
       "buildClass": "brick-beam",
       "capacityClass": 3,
+      "connectionIntent": "overlapping-stud-bond",
       "id": 49,
       "memberClass": "masonry-spandrel-tie",
       "nodeA": 36,
@@ -700,11 +749,42 @@
       "sideThicknessStuds": 2,
       "system": "system-brick"
     },
-    "designRevision": 1041649563,
-    "deterministicChecksum": "59D3BE70",
+    "designRevision": 3666481380,
+    "deterministicChecksum": "C5EDCAE8",
     "family": "arch",
     "familyLabel": "Masonry arch",
-    "generatorVersion": 2,
+    "generatorVersion": 3,
+    "resolvedGeometry": {
+      "anchorStations": [],
+      "deckStations": [
+        0,
+        6,
+        12,
+        18,
+        24,
+        30,
+        36,
+        42,
+        48,
+        54,
+        60,
+        66,
+        72,
+        78,
+        84,
+        90,
+        96
+      ],
+      "hangerStations": [],
+      "hingeStations": [],
+      "leafTipStations": [],
+      "pierStations": [],
+      "supportStations": [
+        0,
+        96
+      ],
+      "towerStations": []
+    },
     "sharedDeck": true,
     "sideStructures": 1,
     "span": 96,

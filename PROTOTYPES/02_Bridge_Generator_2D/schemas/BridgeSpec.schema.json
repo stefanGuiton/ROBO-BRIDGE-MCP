@@ -3,38 +3,22 @@
   "$id": "https://robo-bridge.local/schemas/BridgeSpec.schema.json",
   "title": "Brick-ready BridgeSpec",
   "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "version", "family", "seed", "span", "deckHeight", "bridgeWidth", "vehicleClearance",
-    "symmetry", "structuralDensity", "targetLoadClass", "brick"
+  "oneOf": [
+    { "$ref": "#/$defs/beam" },
+    { "$ref": "#/$defs/pier" },
+    { "$ref": "#/$defs/arch" },
+    { "$ref": "#/$defs/viaduct" },
+    { "$ref": "#/$defs/corbelled" },
+    { "$ref": "#/$defs/boxCulvert" },
+    { "$ref": "#/$defs/trestle" },
+    { "$ref": "#/$defs/warren" },
+    { "$ref": "#/$defs/pratt" },
+    { "$ref": "#/$defs/howe" },
+    { "$ref": "#/$defs/tiedArch" },
+    { "$ref": "#/$defs/suspension" },
+    { "$ref": "#/$defs/bascule" }
   ],
-  "properties": {
-    "version": { "const": 3 },
-    "family": {
-      "enum": [
-        "beam", "pier", "arch", "viaduct", "corbelled", "boxCulvert",
-        "trestle", "warren", "pratt", "howe", "tiedArch", "suspension", "bascule"
-      ]
-    },
-    "seed": { "type": "integer" },
-    "span": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 },
-    "deckHeight": { "type": "number", "minimum": -10, "maximum": 80 },
-    "bridgeWidth": { "type": "number", "minimum": 4, "maximum": 30 },
-    "vehicleClearance": { "type": "number", "minimum": 2, "maximum": 20 },
-    "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
-    "trussHeight": { "type": "number", "minimum": 4, "maximum": 50 },
-    "pierCount": { "type": "integer", "minimum": 0, "maximum": 12 },
-    "pierSpacing": { "type": "number", "minimum": 4, "maximum": 40 },
-    "archCount": { "type": "integer", "minimum": 1, "maximum": 12 },
-    "archShape": { "enum": ["segmental", "elliptical"] },
-    "archRise": { "type": "number", "minimum": 4, "maximum": 48 },
-    "towerHeight": { "type": "number", "minimum": 8, "maximum": 50 },
-    "cableSag": { "type": "number", "minimum": 2, "maximum": 30 },
-    "hangerSpacing": { "type": "number", "minimum": 2, "maximum": 24 },
-    "symmetry": { "type": "boolean" },
-    "crossBracing": { "type": "boolean" },
-    "structuralDensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
-    "targetLoadClass": { "type": "integer", "minimum": 1, "maximum": 5 },
+  "$defs": {
     "brick": {
       "type": "object",
       "additionalProperties": false,
@@ -61,18 +45,233 @@
         "studSize": { "enum": [0.5, 1, 2] },
         "layerHeight": { "enum": [0.5, 1, 2] }
       }
+    },
+    "common": {
+      "type": "object",
+      "required": [
+        "version", "family", "seed", "span", "deckHeight", "bridgeWidth", "vehicleClearance",
+        "symmetry", "structuralDensity", "targetLoadClass", "brick"
+      ],
+      "properties": {
+        "version": { "const": 3 },
+        "family": {
+          "enum": [
+            "beam", "pier", "arch", "viaduct", "corbelled", "boxCulvert",
+            "trestle", "warren", "pratt", "howe", "tiedArch", "suspension", "bascule"
+          ]
+        },
+        "seed": { "type": "integer" },
+        "span": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 },
+        "deckHeight": { "type": "number", "minimum": -10, "maximum": 80 },
+        "bridgeWidth": { "type": "number", "minimum": 4, "maximum": 30 },
+        "vehicleClearance": { "type": "number", "minimum": 2, "maximum": 20 },
+        "symmetry": { "type": "boolean" },
+        "structuralDensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
+        "targetLoadClass": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "brick": { "$ref": "#/$defs/brick" }
+      }
+    },
+    "beam": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount"],
+          "properties": {
+            "family": { "const": "beam" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "pier": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "pierCount", "pierSpacing"],
+          "properties": {
+            "family": { "const": "pier" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+            "pierCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+            "pierSpacing": { "type": "number", "minimum": 4, "maximum": 40 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "trestle": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "pierCount", "pierSpacing", "crossBracing"],
+          "properties": {
+            "family": { "const": "trestle" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+            "pierCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+            "pierSpacing": { "type": "number", "minimum": 4, "maximum": 40 },
+            "crossBracing": { "type": "boolean" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "truss": {
+      "type": "object",
+      "required": ["panelCount", "trussHeight", "crossBracing"],
+      "properties": {
+        "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+        "trussHeight": { "type": "number", "minimum": 4, "maximum": 50 },
+        "crossBracing": { "type": "boolean" }
+      }
+    },
+    "warren": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        { "$ref": "#/$defs/truss" },
+        { "type": "object", "properties": { "family": { "const": "warren" } } }
+      ],
+      "unevaluatedProperties": false
+    },
+    "pratt": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        { "$ref": "#/$defs/truss" },
+        { "type": "object", "properties": { "family": { "const": "pratt" } } }
+      ],
+      "unevaluatedProperties": false
+    },
+    "howe": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        { "$ref": "#/$defs/truss" },
+        { "type": "object", "properties": { "family": { "const": "howe" } } }
+      ],
+      "unevaluatedProperties": false
+    },
+    "arch": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "archShape", "archRise"],
+          "properties": {
+            "family": { "const": "arch" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+            "archShape": { "enum": ["segmental", "elliptical"] },
+            "archRise": { "type": "number", "minimum": 4, "maximum": 48 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "viaduct": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["archCount", "archShape", "archRise"],
+          "properties": {
+            "family": { "const": "viaduct" },
+            "archCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+            "archShape": { "enum": ["segmental", "elliptical"] },
+            "archRise": { "type": "number", "minimum": 4, "maximum": 48 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "corbelled": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["archRise"],
+          "properties": {
+            "family": { "const": "corbelled" },
+            "archRise": { "type": "number", "minimum": 4, "maximum": 48 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "boxCulvert": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount"],
+          "properties": {
+            "family": { "const": "boxCulvert" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "tiedArch": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "trussHeight", "hangerSpacing", "crossBracing"],
+          "properties": {
+            "family": { "const": "tiedArch" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+            "trussHeight": { "type": "number", "minimum": 4, "maximum": 50 },
+            "hangerSpacing": { "type": "number", "minimum": 2, "maximum": 24 },
+            "crossBracing": { "type": "boolean" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "suspension": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "towerHeight", "cableSag", "hangerSpacing"],
+          "properties": {
+            "family": { "const": "suspension" },
+            "panelCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+            "towerHeight": { "type": "number", "minimum": 8, "maximum": 50 },
+            "cableSag": { "type": "number", "minimum": 2, "maximum": 30 },
+            "hangerSpacing": { "type": "number", "minimum": 2, "maximum": 24 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "bascule": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "required": ["panelCount", "towerHeight"],
+          "properties": {
+            "family": { "const": "bascule" },
+            "panelCount": { "type": "integer", "minimum": 4, "maximum": 32 },
+            "towerHeight": { "type": "number", "minimum": 8, "maximum": 50 }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
     }
-  },
-  "allOf": [
-    { "if": { "properties": { "family": { "enum": ["beam", "pier"] } } }, "then": { "required": ["panelCount", "pierCount", "pierSpacing"] } },
-    { "if": { "properties": { "family": { "const": "trestle" } } }, "then": { "required": ["panelCount", "pierCount", "pierSpacing", "crossBracing"] } },
-    { "if": { "properties": { "family": { "enum": ["warren", "pratt", "howe"] } } }, "then": { "required": ["panelCount", "trussHeight", "crossBracing"] } },
-    { "if": { "properties": { "family": { "const": "arch" } } }, "then": { "required": ["panelCount", "archShape", "archRise"] } },
-    { "if": { "properties": { "family": { "const": "viaduct" } } }, "then": { "required": ["archCount", "archShape", "archRise"] } },
-    { "if": { "properties": { "family": { "const": "corbelled" } } }, "then": { "required": ["archRise"] } },
-    { "if": { "properties": { "family": { "const": "boxCulvert" } } }, "then": { "required": ["panelCount"] } },
-    { "if": { "properties": { "family": { "const": "tiedArch" } } }, "then": { "required": ["panelCount", "trussHeight", "hangerSpacing", "crossBracing"] } },
-    { "if": { "properties": { "family": { "const": "suspension" } } }, "then": { "required": ["panelCount", "towerHeight", "cableSag", "hangerSpacing"] } },
-    { "if": { "properties": { "family": { "const": "bascule" } } }, "then": { "required": ["panelCount", "towerHeight"] } }
-  ]
+  }
 }
