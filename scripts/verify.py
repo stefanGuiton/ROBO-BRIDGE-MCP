@@ -30,6 +30,8 @@ def source_fingerprint() -> str:
         directories[:] = sorted(name for name in directories if name not in EXCLUDED_SOURCE_PARTS)
         current_path = Path(current)
         for filename in filenames:
+            if filename in EXCLUDED_SOURCE_PARTS:
+                continue
             path = current_path / filename
             relative = str(path.relative_to(ROOT)).replace('\\', '/')
             entries.append((relative, path))
