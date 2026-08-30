@@ -15,7 +15,7 @@ if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
 
 const mismatches = [];
 await Promise.all(expectedNames.map(async (name) => {
-  const actual = await readFile(join(output, name), "utf8");
+  const actual = (await readFile(join(output, name), "utf8")).replace(/\r\n/g, "\n");
   if (actual !== expected.get(name)) mismatches.push(name);
 }));
 

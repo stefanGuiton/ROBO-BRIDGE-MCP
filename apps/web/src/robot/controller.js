@@ -179,10 +179,134 @@ export class RobotController {
     }
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick) return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
-    if (brick.heldBy || brick.snapped || brick.placedTargetId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (brick.heldBy || brick.snapped || brick.placedTargetId || brick.placementType) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
     brick.position = { ...position };
     this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position } });
     return { ok: true, brick: clone(brick), actor, worldRevision: this.worldRevision };
+  }
+
+  beginHumanCarry(brickId) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    if (this.heldBrickId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    const brick = this.bricks.find((candidate) => candidate.id === brickId);
+    if (!brick) return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    if (brick.heldBy) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (brick.snapped || brick.placedTargetId || brick.placementType || this.board?.getPlacements?.().some((entry) => entry.brickId === brickId)) {
+      const removed = this.board?.removeBrick?.(brickId, 'human');
+      if (removed && !removed.ok) return removed;
+    }
+    brick.heldBy = 'human';
+    brick.ownership = 'human';
+    brick.snapped = false;
+    brick.placedTargetId = null;
+    brick.placementType = null;
+    brick.connection = null;
+    brick.placementType = null;
+    brick.connection = null;
+    this.#bumpRobot('human_pickup', { brickId, actor: 'human' });
+    return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
+  }
+
+  commitHumanPlacement({ brickId, position, yawRad = 0, connection = null, placementType = 'free-build' } = {}) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
+      return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    const brick = this.bricks.find((candidate) => candidate.id === brickId);
+    if (!brick || brick.heldBy !== 'human') {
+      return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
+    }
+    const snap = this.board?.trySnapBrick({
+      brickId,
+      colour: brick.colour,
+      position,
+      yawRad,
+      actor: 'human'
+    }) ?? { ok: false, reason: 'no_snap_target' };
+    if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) {
+      return { ok: false, reason: snap.reason, targetId: snap.targetId ?? null, worldRevision: this.worldRevision };
+    }
+    let accepted = snap;
+    if (!snap.ok) {
+      accepted = this.board?.acceptPlacement?.({
+        brickId,
+        colour: brick.colour,
+        position,
+        yawRad,
+        actor: 'human',
+        connection,
+        placementType
+      }) ?? { ok: false, reason: 'no_snap_target' };
+      if (!accepted.ok) return accepted;
+    }
+    const finalPosition = snap.ok ? snap.transform.position : position;
+    const finalYawRad = snap.ok ? snap.transform.yawRad : yawRad;
+    brick.position = { ...finalPosition };
+    brick.yawRad = finalYawRad;
+    brick.heldBy = null;
+    brick.ownership = null;
+    brick.snapped = Boolean(snap.ok);
+    brick.placedTargetId = snap.targetId ?? null;
+    brick.placementType = snap.ok ? 'blueprint-target' : placementType;
+    brick.connection = connection ? clone(connection) : null;
+    this.#bumpRobot('human_placement', {
+      brickId,
+      actor: 'human',
+      placementType: snap.ok ? 'blueprint-target' : placementType,
+      targetId: snap.targetId ?? null,
+      connection
+    });
+    return {
+      ok: true,
+      accepted: true,
+      brick: clone(brick),
+      snapped: Boolean(snap.ok),
+      targetId: snap.targetId ?? null,
+      placement: snap.ok ? null : accepted.placement,
+      worldRevision: this.worldRevision
+    };
+  }
+
+  commitHumanDrop({ brickId, position, yawRad = 0 } = {}) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
+      return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    const brick = this.bricks.find((candidate) => candidate.id === brickId);
+    if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
+    brick.position = { ...position };
+    brick.yawRad = yawRad;
+    brick.heldBy = null;
+    brick.ownership = null;
+    brick.snapped = false;
+    brick.placedTargetId = null;
+    brick.placementType = null;
+    brick.connection = null;
+    this.#bumpRobot('human_drop', { brickId, actor: 'human' });
+    return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
+  }
+
+  cancelHumanCarry(brickId, original) {
+    const brick = this.bricks.find((candidate) => candidate.id === brickId);
+    if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
+    brick.position = { ...original.position };
+    brick.yawRad = original.yawRad;
+    brick.heldBy = null;
+    brick.ownership = null;
+    brick.snapped = false;
+    brick.placedTargetId = null;
+    brick.placementType = original.placement?.placementType ?? null;
+    brick.connection = original.placement?.connection ? clone(original.placement.connection) : null;
+    this.#bumpRobot('human_carry_cancelled', { brickId, actor: 'human' });
+    return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 
   updateHeldBrickPose() {
@@ -418,6 +542,7 @@ export class RobotController {
     this.brickInTcp = captureBrickInTcp(this.tcp, this.toolYawRad, brick.position);
     this.brickYawInTcpRad = wrapPi(brick.yawRad - this.toolYawRad);
     brick.heldBy = actor === 'human' ? 'human' : 'robot';
+    brick.ownership = brick.heldBy;
     brick.snapped = false;
     brick.placedTargetId = null;
     this.heldBrickId = brick.id;
@@ -437,14 +562,19 @@ export class RobotController {
     const snap = this.board?.trySnapBrick({ brickId: brick.id, colour: brick.colour, position, yawRad: brick.yawRad, actor }) ?? { ok: false, reason: 'no_snap_target' };
     if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) return { success: false, ok: false, reason: snap.reason, targetId: snap.targetId ?? null, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     brick.heldBy = null;
+    brick.ownership = null;
     if (snap.ok) {
       brick.position = { ...snap.transform.position };
       brick.yawRad = snap.transform.yawRad;
       brick.placedTargetId = snap.targetId;
+      brick.placementType = 'blueprint-target';
+      brick.connection = null;
       brick.snapped = true;
     } else {
       brick.snapped = false;
       brick.placedTargetId = null;
+      brick.placementType = null;
+      brick.connection = null;
     }
     this.heldBrickId = null;
     this.jawGapMm = UR10_GRIPPER.openGapMm;
@@ -473,7 +603,14 @@ export class RobotController {
     this.brickYawInTcpRad = 0;
     this.releaseClearanceBrickId = null;
     if (bricks) this.bricks = clone(bricks);
-    for (const brick of this.bricks) { brick.heldBy = null; brick.placedTargetId = null; brick.snapped = false; }
+    for (const brick of this.bricks) {
+      brick.heldBy = null;
+      brick.ownership = null;
+      brick.placedTargetId = null;
+      brick.placementType = null;
+      brick.connection = null;
+      brick.snapped = false;
+    }
     this.board?.reset?.();
     this.operationState = 'idle';
     this.#bumpRobot('reset');

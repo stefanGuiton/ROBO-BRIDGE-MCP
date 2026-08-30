@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / 'dist' / 'ROBO_BRIDGE_MCP_V3.zip'
-EXCLUDED_DIRECTORIES = {'.git', '.venv', 'ARCHIVE', 'dist', 'node_modules', '__pycache__', '.pytest_cache', '.cache', 'generated'}
+OUTPUT = ROOT / 'dist' / 'ROBO_BRIDGE_MCP_MAIN_DEMO.zip'
+EXCLUDED_DIRECTORIES = {'.git', '.venv', '.playwright-cli', '.test-dist', 'ARCHIVE', 'dist', 'downloads from oracle', 'evidence', 'node_modules', 'output', '__pycache__', '.pytest_cache', '.cache', 'generated'}
 EXCLUDED_FILES = {'RELEASE_MANIFEST.json'}
 
 
@@ -53,7 +53,7 @@ def main() -> int:
         return verify.returncode
     files = included_files()
     manifest = {
-        'project': 'ROBO BRIDGE MCP V3',
+        'project': 'ROBO BRIDGE MCP MAIN_DEMO',
         'version': json.loads((ROOT / 'package.json').read_text())['version'],
         'builtAtUtc': datetime.now(timezone.utc).isoformat(),
         'gitHead': git_head(),
@@ -68,8 +68,8 @@ def main() -> int:
         OUTPUT.unlink()
     with zipfile.ZipFile(OUTPUT, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
-            archive.write(path, Path('LOGO-ROBO-MCP') / path.relative_to(ROOT))
-        archive.writestr('LOGO-ROBO-MCP/RELEASE_MANIFEST.json', json.dumps(manifest, indent=2) + '\n')
+            archive.write(path, Path('ROBO-BRIDGE-MCP') / path.relative_to(ROOT))
+        archive.writestr('ROBO-BRIDGE-MCP/RELEASE_MANIFEST.json', json.dumps(manifest, indent=2) + '\n')
     release = {'zip': str(OUTPUT), 'size': OUTPUT.stat().st_size, 'sha256': sha256_bytes(OUTPUT.read_bytes()), 'fileCount': len(files) + 1}
     print(json.dumps(release, indent=2))
     return 0

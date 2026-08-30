@@ -32,7 +32,10 @@ export function makeBrick({ id, colour = 'white', xMm, yMm, zMm, yawRad = 0 }) {
     position: { xMm, yMm, zMm },
     yawRad,
     heldBy: null,
+    ownership: null,
     placedTargetId: null,
+    placementType: null,
+    connection: null,
     snapped: false,
     graspable: true
   };

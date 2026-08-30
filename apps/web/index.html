@@ -6,18 +6,20 @@
   <meta name="color-scheme" content="light">
   <link rel="icon" href="data:,">
   <meta name="description" content="ROBO BRIDGE MCP: a shared-state UR10 browser robotics demo with a calibrated real gripper and primitive WebMCP control.">
-  <title>ROBO BRIDGE MCP V3 — UR10 Real Gripper Runtime</title>
+  <title>ROBO BRIDGE MCP — MAIN_DEMO Player V8</title>
   <link rel="stylesheet" href="./logo.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">RB</span><div><strong>ROBO BRIDGE MCP V3</strong><small>UR10 · REAL GRIPPER · SHARED STATE</small></div></div>
+      <div class="brand"><span class="brand-mark">RB</span><div><strong>ROBO BRIDGE MCP · MAIN_DEMO</strong><small>PLAYER V8 · UR10 · REAL GRIPPER · SHARED STATE</small></div></div>
       <div class="status"><span class="dot"></span><span data-status>READY</span><span class="divider"></span><span data-webmcp>CHECKING WEBMCP</span></div>
     </header>
 
     <section class="stage" aria-label="ROBO BRIDGE MCP UR10 workcell">
       <canvas id="scene" aria-label="ROBO BRIDGE MCP UR10 workcell"></canvas>
+      <div class="player-reticle" aria-hidden="true"><span></span></div>
+      <div class="player-help"><strong data-player-state>PLAYER · CLICK TO LOOK</strong><span>WASD move · Shift sprint · Space/Ctrl vertical · Click pick/place · R rotate · wheel zoom</span></div>
       <div class="hud hud-left">
         <span>TCP</span><strong data-tcp>—</strong>
         <span>JOINTS</span><strong data-joints>—</strong>
@@ -30,9 +32,33 @@
         <span>GRIPPER</span><strong data-gripper>LOADING</strong>
       </div>
       <div class="legend"><span><i class="cyan"></i>accepted TCP</span><span><i class="amber"></i>tool</span><span><i class="ghost"></i>snap target</span></div>
+      <div class="mobile-player-controls" aria-label="Mobile player controls">
+        <button type="button" data-mobile-move="KeyW">▲</button>
+        <button type="button" data-mobile-move="KeyA">◀</button>
+        <button type="button" data-mobile-move="KeyS">▼</button>
+        <button type="button" data-mobile-move="KeyD">▶</button>
+        <button type="button" data-player-action="rotate">R</button>
+        <button type="button" data-player-action="primary">PICK / PLACE</button>
+      </div>
     </section>
 
     <aside class="controls">
+      <div class="control-head"><span>MAIN_DEMO PLAYER</span><strong data-player-held>NONE</strong></div>
+      <div class="player-actions">
+        <button type="button" class="primary" data-player-mode="player">PLAYER</button>
+        <button type="button" data-player-mode="orbit">ORBIT</button>
+        <button type="button" data-build-mode="BUILD">BUILD</button>
+        <button type="button" data-build-mode="TEST">TEST LOCK</button>
+      </div>
+      <details class="player-settings">
+        <summary>PLAYER SETTINGS · ACES / LUT</summary>
+        <label><input type="checkbox" data-color-grading> Enable colour grading</label>
+        <label class="file-label">Local .cube LUT (17 / 33 / 65)<input type="file" accept=".cube,text/plain" data-lut-file></label>
+        <div class="player-actions">
+          <button type="button" data-clear-lut>CLEAR LUT</button>
+          <button type="button" data-export-player-settings>EXPORT JSON</button>
+        </div>
+      </details>
       <div class="control-head"><span>MANIPULATION</span><strong>Cartesian only</strong></div>
       <div class="metric-grid">
         <div><span>Tool</span><strong>REAL GRIPPER · AUTO YAW</strong></div>

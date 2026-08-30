@@ -34,6 +34,7 @@ export class BuildBoard {
   #blueprintId;
   #targets;
   #brickToTarget = new Map();
+  #placements = new Map();
   #clock;
   #contributions = { human: 0, agent: 0 };
   #corrections = 0;
@@ -70,7 +71,7 @@ export class BuildBoard {
   }
 
   reset() {
-    let changed = false;
+    let changed = this.#placements.size > 0;
     for (const target of this.#targets.values()) {
       if (target.occupiedBy || target.claimOwner !== 'none' || target.correctness || target.completedBy) changed = true;
       target.occupiedBy = null;
@@ -80,6 +81,7 @@ export class BuildBoard {
       target.completedBy = null;
     }
     this.#brickToTarget.clear();
+    this.#placements.clear();
     this.#contributions = { human: 0, agent: 0 };
     this.#corrections = 0;
     this.#events = [];
@@ -189,9 +191,45 @@ export class BuildBoard {
     };
   }
 
+  acceptPlacement({ brickId, colour, position, yawRad = 0, actor = null, connection = null, placementType = 'free-build' }) {
+    if (!brickId || !position || ![position.xMm, position.yMm, position.zMm, yawRad].every(Number.isFinite)) {
+      return { ok: false, accepted: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    if (this.#brickToTarget.has(brickId) || this.#placements.has(brickId)) {
+      return { ok: false, accepted: false, reason: 'brick_already_placed', worldRevision: this.worldRevision };
+    }
+    const owner = ['human', 'agent'].includes(actor) ? actor : null;
+    const record = {
+      brickId,
+      colour: colour ?? null,
+      position: clone(position),
+      yawRad,
+      yawDeg: yawRad * 180 / Math.PI,
+      actor: owner,
+      placementType,
+      connection: connection ? clone(connection) : null
+    };
+    this.#placements.set(brickId, record);
+    if (owner) this.#contributions[owner] += 1;
+    this.#record('placement', record);
+    return { ok: true, accepted: true, placement: clone(record), worldRevision: this.worldRevision };
+  }
+
+  getPlacements() {
+    return Array.from(this.#placements.values(), clone);
+  }
+
   removeBrick(brickId, actor = null) {
     const targetId = this.#brickToTarget.get(brickId);
-    if (!targetId) return { ok: false, accepted: false, reason: 'brick_not_placed', worldRevision: this.worldRevision };
+    if (!targetId) {
+      const placement = this.#placements.get(brickId);
+      if (!placement) return { ok: false, accepted: false, reason: 'brick_not_placed', worldRevision: this.worldRevision };
+      if (placement.actor) this.#contributions[placement.actor] = Math.max(0, this.#contributions[placement.actor] - 1);
+      this.#placements.delete(brickId);
+      this.#corrections += 1;
+      this.#record('placement_removed', { brickId, actor });
+      return { ok: true, accepted: true, placementType: placement.placementType, worldRevision: this.worldRevision };
+    }
     const target = this.#targets.get(targetId);
     if (target.completedBy) this.#contributions[target.completedBy] = Math.max(0, this.#contributions[target.completedBy] - 1);
     target.occupiedBy = null;
@@ -229,6 +267,7 @@ export class BuildBoard {
       blueprintId: this.#blueprintId,
       progress: this.progress(),
       targets: targets.slice(0, limit),
+      freePlacements: this.getPlacements().slice(0, limit),
       contributions: clone(this.#contributions),
       contributionSummary: clone(this.#contributions),
       corrections: this.#corrections,

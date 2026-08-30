@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_SOURCE_PARTS = {'.git', '.venv', 'ARCHIVE', 'dist', 'evidence', '__pycache__', '.pytest_cache', '.cache', 'node_modules'}
+EXCLUDED_SOURCE_PARTS = {'.git', '.venv', '.playwright-cli', '.test-dist', 'ARCHIVE', 'dist', 'downloads from oracle', 'evidence', 'output', '__pycache__', '.pytest_cache', '.cache', 'node_modules'}
 
 
 def run(name: str, command: list[str]) -> dict[str, object]:
@@ -73,7 +73,9 @@ def main() -> int:
         'MASTER_PLAN.md', 'README.md', 'FULL_REMEDIATION_PLAN_5_6_PRO.md', 'apps/web/index.html',
         'apps/web/src/logo/main.js', 'apps/web/src/logo/runtime.js', 'apps/web/src/logo/workcell-adapter.js',
         'apps/web/src/robot/controller.js', 'apps/web/src/robot/collision.js', 'apps/web/src/bricks/build-board.js',
-        'apps/web/src/perception/observation-service.js', 'apps/web/src/webmcp/register-tools.js'
+        'apps/web/src/perception/observation-service.js', 'apps/web/src/webmcp/register-tools.js',
+        'apps/web/src/player/player-controller.js', 'apps/web/src/player/human-build-adapter.js',
+        'apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', 'docs/MAIN_DEMO_V8_INTEGRATION.md'
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     checks.append({'name': 'Required files', 'exitCode': 1 if missing else 0, 'missing': missing})
@@ -81,14 +83,14 @@ def main() -> int:
     unexpectedly_present = [path for path in removed if (ROOT / path).exists()]
     checks.append({'name': 'Removed legacy/Newton paths', 'exitCode': 1 if unexpectedly_present else 0, 'unexpectedlyPresent': unexpectedly_present})
     result = {
-        'project': 'ROBO BRIDGE MCP V3',
+        'project': 'ROBO BRIDGE MCP MAIN_DEMO',
         'version': json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version'],
         'generatedAtUtc': datetime.now(timezone.utc).isoformat(),
         'gitHead': git_head(),
         'sourceFingerprintSha256': source_fingerprint(),
         'checks': checks,
         'ok': all(check['exitCode'] == 0 for check in checks),
-        'notes': ['Verification is read-only unless --write-evidence is supplied.', 'NVIDIA Newton and the duplicate SCARA runtime are not part of this source state.']
+        'notes': ['Verification is read-only unless --write-evidence is supplied.', 'MAIN_DEMO adapts Player V8 into the one authoritative UR10/BuildBoard runtime.', 'NVIDIA Newton and the duplicate SCARA runtime are not part of this source state.']
     }
     print(json.dumps(result, indent=2))
     if args.write_evidence:

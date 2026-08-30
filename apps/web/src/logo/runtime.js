@@ -19,7 +19,7 @@ function normalizeReason(reason) {
 }
 
 function brickObject(brick) {
-  const state = brick.heldBy ? 'held' : brick.snapped ? 'snapped' : 'free';
+  const state = brick.heldBy ? 'held' : brick.snapped ? 'snapped' : brick.placementType ? 'placed' : 'free';
   return {
     id: brick.id,
     type: 'brick',
@@ -29,9 +29,12 @@ function brickObject(brick) {
     yawDeg: Number(brick.yawRad ?? 0) * 180 / Math.PI,
     state,
     held: Boolean(brick.heldBy),
+    ownership: brick.ownership ?? brick.heldBy ?? null,
     visible: true,
     occluder: true,
-    placedTargetId: brick.placedTargetId ?? null
+    placedTargetId: brick.placedTargetId ?? null,
+    placementType: brick.placementType ?? null,
+    connection: brick.connection ? clone(brick.connection) : null
   };
 }
 
@@ -54,7 +57,7 @@ function targetObject(target) {
   };
 }
 
-export function createLogoRoboRuntime({ controller, board, resetBricks = null }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
 
   function worldRevision() { return controller.getState().worldRevision; }
@@ -160,7 +163,13 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null })
     human: {
       moveLooseBrick(brickId, position) {
         return controller.moveLooseBrick(brickId, position, { actor: 'human' });
-      }
+      },
+      pickup(brickId) { return humanBuildAdapter?.pickup(brickId) ?? { ok: false, reason: 'player_unavailable' }; },
+      rotate(direction = 1) { return humanBuildAdapter?.rotate(direction) ?? { ok: false, reason: 'player_unavailable' }; },
+      release() { return humanBuildAdapter?.release() ?? { ok: false, reason: 'player_unavailable' }; },
+      drop(position = null) { return humanBuildAdapter?.drop(position) ?? { ok: false, reason: 'player_unavailable' }; },
+      cancel() { return humanBuildAdapter?.cancel() ?? { ok: false, reason: 'player_unavailable' }; },
+      getState() { return humanBuildAdapter?.getState() ?? { mode: 'UNAVAILABLE', locked: true, heldBrickId: null }; }
     },
     game: {
       async getBuildState(filters = {}) {

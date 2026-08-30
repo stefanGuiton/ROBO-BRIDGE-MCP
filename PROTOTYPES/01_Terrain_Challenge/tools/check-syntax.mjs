@@ -1,8 +1,9 @@
 import { readdirSync } from "node:fs";
 import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("../", import.meta.url).pathname.replace(/^\/(?:([A-Za-z]:))/, "$1");
+const root = fileURLToPath(new URL("../", import.meta.url));
 const files = [];
 function visit(path) {
   for (const entry of readdirSync(path, { withFileTypes: true })) {

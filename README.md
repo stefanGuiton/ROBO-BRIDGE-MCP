@@ -1,6 +1,6 @@
-# ROBO BRIDGE MCP V3
+# ROBO BRIDGE MCP · MAIN_DEMO Player V8
 
-ROBO BRIDGE MCP V3 is the post-audit, simulation-only browser robotics demo. A human and a WebMCP agent use the same UR10-class Cartesian controller, calibrated real-gripper state, brick state, board state, and world revision.
+`MAIN_DEMO` is the root player runtime for ROBO BRIDGE MCP V3. It integrates the supplied LOGO ROBO Player V8 controls and settings into the post-audit shared-state browser simulator. A human and a WebMCP agent use the same UR10-class Cartesian controller, calibrated real-gripper state, brick state, `BuildBoard`, and monotonic world revision.
 
 ## What is included
 
@@ -8,6 +8,11 @@ ROBO BRIDGE MCP V3 is the post-audit, simulation-only browser robotics demo. A h
 - automatic internal tool yaw with a calibrated full-pose IK target;
 - the supplied real animated gripper GLB, JSON material overrides, and authoritative jaw/held-brick state;
 - a project-local Three.js r185 light-mode workcell renderer;
+- desktop and mobile first-person player controls with capsule/workcell collision;
+- held-brick spring/pendulum presentation, L/M/R brick connectors, 8 mm mat snapping, target snapping, and collision-blocked previews;
+- explicit BUILD and TEST-lock modes, with production structural collapse disabled;
+- 240 Hz fixed-step player/held-brick updates independent of render cadence;
+- ACES rendering, optional local 17/33/65 `.cube` LUT grading, and placed-brick batching;
 - bounded TCP speed, acceleration, joint speed, and joint acceleration;
 - cancellation, reset epochs, and serialized robot moves;
 - conservative workcell, brick, link, and self-collision checks;
@@ -20,6 +25,17 @@ ROBO BRIDGE MCP V3 is the post-audit, simulation-only browser robotics demo. A h
 - production red/blue build tests and persistent reliability tests.
 
 NVIDIA Newton and the old duplicate SCARA/physics runtime have been removed. ROBO BRIDGE does not claim rigid-body contact physics.
+
+## MAIN_DEMO controls
+
+- `WASD`: move; `Shift`: sprint; `Space` / `Ctrl`: vertical movement.
+- Mouse: look while pointer-locked; wheel: zoom.
+- Centre click: pick or place; `R`: rotate the held brick by 90 degrees.
+- `PLAYER` / `ORBIT`: switch between player navigation and inspection camera.
+- `BUILD` / `TEST LOCK`: allow or reject player construction edits.
+- Mobile: on-screen movement, rotate, and pick/place controls when coarse-pointer mode is active.
+
+The Oracle HTML is provenance reference material, not a second embedded runtime. `MAIN_DEMO` adapts its controls, deterministic fixed-step model, placement semantics, supplied settings, and grading features to the existing canonical UR10 machine frame and shared authority. It does not load the reference page in an iframe or create a duplicate world.
 
 ## Start
 
@@ -48,6 +64,7 @@ npm run test:js
 npm run test:robot
 npm run test:webmcp
 npm run test:compiler
+npm run test:player
 npm run test:reliability
 python scripts\verify.py
 ```
@@ -60,7 +77,7 @@ python scripts\verify.py
 python scripts\build_release.py
 ```
 
-This creates `dist/ROBO_BRIDGE_MCP_V3.zip` with `RELEASE_MANIFEST.json` inside the archive.
+This creates `dist/ROBO_BRIDGE_MCP_MAIN_DEMO.zip` with `RELEASE_MANIFEST.json` inside the archive.
 
 ## WebMCP
 
@@ -88,4 +105,4 @@ The high-detail UR10 V2 visual is articulated from the authoritative controller 
 
 No physical robot, ROS, Duet, or hardware command path is included.
 
-See `FULL_REMEDIATION_PLAN_5_6_PRO.md` and `MASTER_PLAN.md`.
+See `docs/MAIN_DEMO_V8_INTEGRATION.md`, `FULL_REMEDIATION_PLAN_5_6_PRO.md`, and `MASTER_PLAN.md`.

@@ -8,6 +8,16 @@
 
 ---
 
+# Current foundation checkpoint — MAIN_DEMO Player V8
+
+`MAIN_DEMO` is now the canonical root browser/player runtime. The supplied Player V8 behavior is integrated through adapters into the existing authoritative `RevisionClock -> BuildBoard + RobotController -> Runtime` chain; it is not an iframe or a second world.
+
+This checkpoint supplies desktop/mobile navigation, held-brick interaction, L/M/R connectors, BUILD/TEST locking, fixed-step updates, batching, ACES/LUT support, the exact supplied settings artifact, and the existing UR10/real-gripper/WebMCP surface. Bridge terrain, generator, brick compiler, structural solver, and train remain separate verified prototypes until their contracts are deliberately connected to this root runtime.
+
+See `docs/MAIN_DEMO_V8_INTEGRATION.md` for the implementation and acceptance boundary.
+
+---
+
 # 0. V3 north star
 
 ROBO BRIDGE MCP is a browser-based bridge-building game where the **human, Codex and a simulated UR10 robot design and build a bridge together**.

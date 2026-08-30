@@ -3,7 +3,7 @@ import { BRICK_SPEC } from './brick-spec.js';
 export function findLatchCandidate(tcp, bricks, heldBrickId = null) {
   if (heldBrickId) return { ok: false, reason: 'already_holding' };
   const candidates = bricks.filter((brick) => {
-    if (!brick.graspable || brick.heldBy || brick.placedTargetId) return false;
+    if (!brick.graspable || brick.heldBy || brick.placedTargetId || brick.placementType) return false;
     const xy = Math.hypot(tcp.xMm - brick.position.xMm, tcp.yMm - brick.position.yMm);
     const expectedTcpZ = brick.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm;
     return xy <= BRICK_SPEC.capture.xyToleranceMm &&

@@ -9,6 +9,10 @@ import { makePattern } from './patterns.js';
 import { challengeBoardLimits, createChallengeInventory, remapBlueprintToChallenge } from './workcell-adapter.js';
 import { createLogoRoboRuntime } from './runtime.js';
 import { registerWebMcpTools } from '../webmcp/register-tools.js';
+import { ConnectionGraph } from '../player/connection-graph.js';
+import { HumanBuildAdapter } from '../player/human-build-adapter.js';
+import { PlacementIntentEngine } from '../player/placement-intent.js';
+import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } from '../player/player-settings.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -28,8 +32,17 @@ const makeRoundBricks = () => createChallengeInventory(blueprint);
 const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
 const controller = new RobotController({ board, bricks: makeRoundBricks(), revisionClock, timeScale: evidenceMode ? 0 : 0.35 });
-const renderer = new RobotRenderer(document.querySelector('#scene'), controller, { board });
-const runtime = createLogoRoboRuntime({ controller, board, resetBricks: makeRoundBricks });
+const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
+const playerSettings = playerSettingsStore.get();
+const connectionGraph = new ConnectionGraph();
+const placementEngine = new PlacementIntentEngine(playerSettings, board, connectionGraph);
+const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
+const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
+  board,
+  playerSettings,
+  humanBuildAdapter
+});
+const runtime = createLogoRoboRuntime({ controller, board, resetBricks: makeRoundBricks, humanBuildAdapter });
 
 const $ = (selector) => document.querySelector(selector);
 const statusEl = $('[data-status]');
@@ -48,6 +61,8 @@ const logEl = $('[data-log]');
 const toolListEl = $('[data-tool-list]');
 const moveForm = $('[data-move-form]');
 const moveButton = moveForm?.querySelector('button[type="submit"]');
+const playerStateEl = $('[data-player-state]');
+const playerHeldEl = $('[data-player-held]');
 
 function nowLabel() { return new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
 function addLog(message, kind = '') {
@@ -179,6 +194,17 @@ controller.subscribe((event) => {
   if (event.type === 'motion_cancelled') addLog('Motion cancelled safely', 'bad');
   if (event.type === 'latched') addLog(`Latch accepted: ${event.brickId}`, 'ok');
   if (event.type === 'unlatched') addLog(event.snap?.ok ? `Board snap accepted: ${event.snap.targetId}` : 'Released without snap', event.snap?.ok ? 'ok' : 'bad');
+  if (event.type === 'unlatched' && event.snap?.ok) {
+    connectionGraph.registerPlacement(event.brickId, { placementType: 'blueprint-target' });
+  }
+  if (event.type === 'reset' || event.type === 'world_reset') connectionGraph.clear();
+});
+
+humanBuildAdapter.subscribe((event) => {
+  if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId}`, 'ok');
+  if (event.type === 'released') addLog(`Player placed ${event.brickId}`, 'ok');
+  if (event.type === 'dropped') addLog(`Player dropped ${event.brickId}`);
+  if (event.type === 'mode_changed') addLog(`Player mode: ${event.mode}`);
 });
 
 async function handleAction(button, action, successMessage) {
@@ -218,6 +244,44 @@ $('[data-action="reset"]')?.addEventListener('click', (event) => handleAction(ev
 $('[data-action="latch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => latch({ actor: 'human' }), 'Latch accepted'));
 $('[data-action="unlatch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => unlatch({ actor: 'human' }), 'Unlatch accepted'));
 for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => renderer.setView(button.dataset.view));
+for (const button of document.querySelectorAll('[data-player-mode]')) {
+  button.addEventListener('click', () => {
+    const playerMode = button.dataset.playerMode === 'player';
+    renderer.setPlayerMode(playerMode);
+    addLog(playerMode ? 'MAIN_DEMO player controls active' : 'Orbit camera active', 'ok');
+  });
+}
+$('[data-build-mode="BUILD"]')?.addEventListener('click', () => humanBuildAdapter.setMode('BUILD'));
+$('[data-build-mode="TEST"]')?.addEventListener('click', () => humanBuildAdapter.setMode('TEST'));
+$('[data-export-player-settings]')?.addEventListener('click', () => {
+  const blob = new Blob([playerSettingsStore.exportJSON()], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'ROBO_BRIDGE_MAIN_DEMO_PLAYER_SETTINGS.json';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$('[data-color-grading]')?.addEventListener('change', (event) => {
+  playerSettingsStore.set('colorGradingEnabled', event.currentTarget.checked);
+});
+$('[data-lut-file]')?.addEventListener('change', async (event) => {
+  const file = event.currentTarget.files?.[0];
+  if (!file) return;
+  try {
+    const diagnostics = renderer.colorGrader.loadCubeText(await file.text(), file.name);
+    playerSettingsStore.set('colorGradingEnabled', true);
+    const toggle = $('[data-color-grading]');
+    if (toggle) toggle.checked = true;
+    addLog(`LUT ready: ${diagnostics.lutName} (${diagnostics.lutSize}³)`, 'ok');
+  } catch (error) {
+    addLog(`LUT rejected: ${error.message}`, 'bad');
+  }
+});
+$('[data-clear-lut]')?.addEventListener('click', () => {
+  renderer.colorGrader.clearLut();
+  addLog('LUT cleared');
+});
 
 function updateToolDiagnostics(event) {
   if (!toolListEl) return;
@@ -238,6 +302,12 @@ setInterval(() => {
     gripperEl.textContent = performance.gripper.state === 'ready' ? 'REAL GLB READY' : performance.gripper.state.toUpperCase();
     gripperEl.dataset.kind = performance.gripper.state === 'ready' ? 'ok' : 'warning';
   }
+  if (playerStateEl) {
+    playerStateEl.textContent = performance.player?.enabled
+      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED' : 'PLAYER · CLICK TO LOOK')
+      : 'ORBIT CAMERA';
+  }
+  if (playerHeldEl) playerHeldEl.textContent = performance.heldBrick?.brickId ?? 'NONE';
 }, 500);
 window.addEventListener('resize', () => renderer.render());
 
@@ -252,7 +322,24 @@ try {
   addLog('WebMCP registration failed', 'bad');
 }
 
-window.__LOGO_ROBO__ = Object.freeze({ version: '3.0.0-real-gripper', actions, runtime, robotController: controller, board, blueprint, renderer, getSceneState, getRobotState, getWorkspace, get scene() { return getSceneState(); } });
+window.__LOGO_ROBO__ = Object.freeze({
+  version: '3.1.0-main-demo-player-v8',
+  product: 'ROBO BRIDGE MCP MAIN_DEMO',
+  actions,
+  runtime,
+  robotController: controller,
+  humanBuildAdapter,
+  connectionGraph,
+  playerSettingsStore,
+  playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,
+  board,
+  blueprint,
+  renderer,
+  getSceneState,
+  getRobotState,
+  getWorkspace,
+  get scene() { return getSceneState(); }
+});
 window.__ROBO_BRIDGE__ = window.__LOGO_ROBO__;
 window.__LOGO_ROBO_RUNTIME__ = runtime;
 
