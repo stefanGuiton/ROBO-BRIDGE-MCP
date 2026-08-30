@@ -1,0 +1,475 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      },
+      {
+        "id": 2,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 3,
+        "position": {
+          "x": 6,
+          "y": 0
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 4,
+        "position": {
+          "x": 9,
+          "y": 0
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 5,
+        "position": {
+          "x": 12,
+          "y": 0
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      },
+      {
+        "id": 11,
+        "position": {
+          "x": 0,
+          "y": 3
+        },
+        "supportType": "none",
+        "appliedLoad": 0
+      },
+      {
+        "id": 12,
+        "position": {
+          "x": 3,
+          "y": 3
+        },
+        "supportType": "none",
+        "appliedLoad": 0
+      },
+      {
+        "id": 13,
+        "position": {
+          "x": 6,
+          "y": 3
+        },
+        "supportType": "none",
+        "appliedLoad": 0
+      },
+      {
+        "id": 14,
+        "position": {
+          "x": 9,
+          "y": 3
+        },
+        "supportType": "none",
+        "appliedLoad": 0
+      },
+      {
+        "id": 15,
+        "position": {
+          "x": 12,
+          "y": 3
+        },
+        "supportType": "none",
+        "appliedLoad": 0
+      }
+    ],
+    "members": [
+      {
+        "id": 101,
+        "nodeA": 1,
+        "nodeB": 2,
+        "type": "deck",
+        "baseCapacity": 400,
+        "capacity": 400,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10101,
+          10102,
+          10103,
+          10104,
+          10105,
+          10106
+        ]
+      },
+      {
+        "id": 102,
+        "nodeA": 2,
+        "nodeB": 3,
+        "type": "deck",
+        "baseCapacity": 400,
+        "capacity": 400,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10201,
+          10202,
+          10203,
+          10204,
+          10205,
+          10206
+        ]
+      },
+      {
+        "id": 103,
+        "nodeA": 3,
+        "nodeB": 4,
+        "type": "deck",
+        "baseCapacity": 400,
+        "capacity": 400,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10301,
+          10302,
+          10303,
+          10304,
+          10305,
+          10306
+        ]
+      },
+      {
+        "id": 104,
+        "nodeA": 4,
+        "nodeB": 5,
+        "type": "deck",
+        "baseCapacity": 400,
+        "capacity": 400,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10401,
+          10402,
+          10403,
+          10404,
+          10405,
+          10406
+        ]
+      },
+      {
+        "id": 201,
+        "nodeA": 11,
+        "nodeB": 12,
+        "type": "truss",
+        "baseCapacity": 300,
+        "capacity": 300,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          20101,
+          20102,
+          20103,
+          20104,
+          20105,
+          20106
+        ]
+      },
+      {
+        "id": 202,
+        "nodeA": 12,
+        "nodeB": 13,
+        "type": "truss",
+        "baseCapacity": 300,
+        "capacity": 300,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          20201,
+          20202,
+          20203,
+          20204,
+          20205,
+          20206
+        ]
+      },
+      {
+        "id": 203,
+        "nodeA": 13,
+        "nodeB": 14,
+        "type": "truss",
+        "baseCapacity": 300,
+        "capacity": 300,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          20301,
+          20302,
+          20303,
+          20304,
+          20305,
+          20306
+        ]
+      },
+      {
+        "id": 204,
+        "nodeA": 14,
+        "nodeB": 15,
+        "type": "truss",
+        "baseCapacity": 300,
+        "capacity": 300,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          20401,
+          20402,
+          20403,
+          20404,
+          20405,
+          20406
+        ]
+      },
+      {
+        "id": 301,
+        "nodeA": 1,
+        "nodeB": 11,
+        "type": "truss",
+        "baseCapacity": 270,
+        "capacity": 270,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          30101,
+          30102,
+          30103,
+          30104,
+          30105,
+          30106
+        ]
+      },
+      {
+        "id": 302,
+        "nodeA": 2,
+        "nodeB": 12,
+        "type": "truss",
+        "baseCapacity": 270,
+        "capacity": 270,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          30201,
+          30202,
+          30203,
+          30204,
+          30205,
+          30206
+        ]
+      },
+      {
+        "id": 303,
+        "nodeA": 3,
+        "nodeB": 13,
+        "type": "truss",
+        "baseCapacity": 270,
+        "capacity": 270,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          30301,
+          30302,
+          30303,
+          30304,
+          30305,
+          30306
+        ]
+      },
+      {
+        "id": 304,
+        "nodeA": 4,
+        "nodeB": 14,
+        "type": "truss",
+        "baseCapacity": 270,
+        "capacity": 270,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          30401,
+          30402,
+          30403,
+          30404,
+          30405,
+          30406
+        ]
+      },
+      {
+        "id": 305,
+        "nodeA": 5,
+        "nodeB": 15,
+        "type": "truss",
+        "baseCapacity": 270,
+        "capacity": 270,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          30501,
+          30502,
+          30503,
+          30504,
+          30505,
+          30506
+        ]
+      },
+      {
+        "id": 401,
+        "nodeA": 1,
+        "nodeB": 12,
+        "type": "truss",
+        "baseCapacity": 250,
+        "capacity": 250,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          40101,
+          40102,
+          40103,
+          40104,
+          40105,
+          40106
+        ]
+      },
+      {
+        "id": 402,
+        "nodeA": 2,
+        "nodeB": 13,
+        "type": "truss",
+        "baseCapacity": 250,
+        "capacity": 250,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          40201,
+          40202,
+          40203,
+          40204,
+          40205,
+          40206
+        ]
+      },
+      {
+        "id": 403,
+        "nodeA": 5,
+        "nodeB": 14,
+        "type": "truss",
+        "baseCapacity": 250,
+        "capacity": 250,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          40301,
+          40302,
+          40303,
+          40304,
+          40305,
+          40306
+        ]
+      },
+      {
+        "id": 404,
+        "nodeA": 4,
+        "nodeB": 13,
+        "type": "truss",
+        "baseCapacity": 250,
+        "capacity": 250,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          40401,
+          40402,
+          40403,
+          40404,
+          40405,
+          40406
+        ]
+      }
+    ]
+  },
+  "route": {
+    "nodeIds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "regionCount": 20,
+    "pointLoads": [
+      {
+        "offset": -0.025,
+        "massFraction": 0.5
+      },
+      {
+        "offset": 0.025,
+        "massFraction": 0.5
+      }
+    ]
+  }
+}

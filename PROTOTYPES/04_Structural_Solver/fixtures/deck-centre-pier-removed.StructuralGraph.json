@@ -1,0 +1,195 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "position": {
+          "x": 0,
+          "y": 4
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      },
+      {
+        "id": 2,
+        "position": {
+          "x": 4,
+          "y": 4
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 3,
+        "position": {
+          "x": 8,
+          "y": 4
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 4,
+        "position": {
+          "x": 12,
+          "y": 4
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 5,
+        "position": {
+          "x": 16,
+          "y": 4
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      },
+      {
+        "id": 20,
+        "position": {
+          "x": 8,
+          "y": 0
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0
+      }
+    ],
+    "members": [
+      {
+        "id": 101,
+        "nodeA": 1,
+        "nodeB": 2,
+        "type": "deck",
+        "baseCapacity": 325,
+        "capacity": 325,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10101,
+          10102,
+          10103,
+          10104,
+          10105,
+          10106
+        ]
+      },
+      {
+        "id": 102,
+        "nodeA": 2,
+        "nodeB": 3,
+        "type": "deck",
+        "baseCapacity": 325,
+        "capacity": 325,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10201,
+          10202,
+          10203,
+          10204,
+          10205,
+          10206
+        ]
+      },
+      {
+        "id": 103,
+        "nodeA": 3,
+        "nodeB": 4,
+        "type": "deck",
+        "baseCapacity": 325,
+        "capacity": 325,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10301,
+          10302,
+          10303,
+          10304,
+          10305,
+          10306
+        ]
+      },
+      {
+        "id": 104,
+        "nodeA": 4,
+        "nodeB": 5,
+        "type": "deck",
+        "baseCapacity": 325,
+        "capacity": 325,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10401,
+          10402,
+          10403,
+          10404,
+          10405,
+          10406
+        ]
+      },
+      {
+        "id": 200,
+        "nodeA": 20,
+        "nodeB": 3,
+        "type": "pier",
+        "baseCapacity": 700,
+        "capacity": 0,
+        "completionFactor": 0,
+        "connected": false,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          20001,
+          20002,
+          20003,
+          20004,
+          20005,
+          20006,
+          20007,
+          20008,
+          20009,
+          20010,
+          20011,
+          20012,
+          20013,
+          20014
+        ]
+      }
+    ]
+  },
+  "route": {
+    "nodeIds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "regionCount": 20,
+    "pointLoads": [
+      {
+        "offset": -0.025,
+        "massFraction": 0.5
+      },
+      {
+        "offset": 0.025,
+        "massFraction": 0.5
+      }
+    ]
+  }
+}

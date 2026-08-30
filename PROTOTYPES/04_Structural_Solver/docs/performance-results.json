@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-08-30T13:46:56.529Z",
+  "runtime": "v22.19.0",
+  "platform": "win32-x64",
+  "fixtureCount": 11,
+  "sampleCount": 1100,
+  "iterationsPerFixture": 100,
+  "solveMilliseconds": {
+    "mean": 1.0972433636363619,
+    "median": 0.2746999999999389,
+    "p95": 3.3617000000000417,
+    "p99": 32.10349999999994,
+    "maximum": 58.669399999999996
+  },
+  "loadRegionCache": {
+    "calls": 2000,
+    "skippedSolves": 2000,
+    "elapsedMilliseconds": 19.580999999999904,
+    "meanCallMicroseconds": 9.790499999999954
+  },
+  "note": "Game-prototype timing only. These figures are not engineering accuracy evidence or integrated-application frame timings."
+}

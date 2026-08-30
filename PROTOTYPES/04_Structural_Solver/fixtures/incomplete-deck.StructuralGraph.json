@@ -1,0 +1,126 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      },
+      {
+        "id": 2,
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 3,
+        "position": {
+          "x": 8,
+          "y": 0
+        },
+        "supportType": "none",
+        "appliedLoad": 1.5
+      },
+      {
+        "id": 4,
+        "position": {
+          "x": 12,
+          "y": 0
+        },
+        "supportType": "terrain",
+        "appliedLoad": 0.5
+      }
+    ],
+    "members": [
+      {
+        "id": 101,
+        "nodeA": 1,
+        "nodeB": 2,
+        "type": "deck",
+        "baseCapacity": 330,
+        "capacity": 330,
+        "completionFactor": 1,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10101,
+          10102,
+          10103,
+          10104,
+          10105,
+          10106
+        ]
+      },
+      {
+        "id": 102,
+        "nodeA": 2,
+        "nodeB": 3,
+        "type": "deck",
+        "baseCapacity": 330,
+        "capacity": 138.6,
+        "completionFactor": 0.42,
+        "connected": true,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10201,
+          10202,
+          10203,
+          10204,
+          10205,
+          10206
+        ]
+      },
+      {
+        "id": 103,
+        "nodeA": 3,
+        "nodeB": 4,
+        "type": "deck",
+        "baseCapacity": 330,
+        "capacity": 0,
+        "completionFactor": 0,
+        "connected": false,
+        "demand": 0,
+        "utilisation": 0,
+        "failed": false,
+        "brickIds": [
+          10301,
+          10302,
+          10303,
+          10304,
+          10305,
+          10306
+        ]
+      }
+    ]
+  },
+  "route": {
+    "nodeIds": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "regionCount": 12,
+    "pointLoads": [
+      {
+        "offset": -0.025,
+        "massFraction": 0.5
+      },
+      {
+        "offset": 0.025,
+        "massFraction": 0.5
+      }
+    ]
+  }
+}

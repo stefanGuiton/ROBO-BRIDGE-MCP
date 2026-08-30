@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/StructuralGraph.schema.json",
+  "title": "ROBO BRIDGE MCP V3 StructuralGraph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nodes", "members"],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "position", "supportType", "appliedLoad"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "position": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x", "y"],
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+          },
+          "supportType": { "enum": ["fixed", "terrain", "none"] },
+          "appliedLoad": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "nodeA", "nodeB", "type", "baseCapacity", "capacity", "completionFactor", "connected", "demand", "utilisation", "failed", "brickIds"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 0 },
+          "nodeA": { "type": "integer", "minimum": 0 },
+          "nodeB": { "type": "integer", "minimum": 0 },
+          "type": { "enum": ["truss", "beam", "pier", "arch", "deck", "cable"] },
+          "baseCapacity": { "type": "number", "exclusiveMinimum": 0 },
+          "capacity": { "type": "number", "minimum": 0 },
+          "completionFactor": { "type": "number", "minimum": 0, "maximum": 1 },
+          "connected": { "type": "boolean" },
+          "demand": { "type": "number", "minimum": 0 },
+          "utilisation": { "type": "number", "minimum": 0 },
+          "failed": { "type": "boolean" },
+          "brickIds": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "uniqueItems": true },
+          "failureDemand": { "type": "number", "minimum": 0 },
+          "failureUtilisation": { "type": "number", "minimum": 0 }
+        }
+      }
+    }
+  }
+}
