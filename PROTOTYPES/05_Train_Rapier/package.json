@@ -11,9 +11,6 @@
     "acceptance": "node scripts/run-acceptance.mjs"
   },
   "dependencies": {
-    "@dimforge/rapier3d-compat": "file:.npm-cache/rapier3d-compat-0.20.0.tgz"
-  },
-  "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0"
   }
 }
