@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/BridgeSpec.schema.json",
+  "title": "BridgeSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "family", "seed", "span", "deckHeight", "bridgeWidth", "vehicleClearance", "panelCount",
+    "trussHeight", "pierCount", "pierSpacing", "archCount", "archShape", "archRise", "towerHeight",
+    "cableSag", "hangerSpacing", "symmetry", "crossBracing", "structuralDensity", "targetLoadClass"
+  ],
+  "properties": {
+    "version": { "const": 3 },
+    "family": { "enum": ["beam", "trestle", "warren", "pratt", "howe", "arch", "aqueduct", "box", "suspension"] },
+    "seed": { "type": "integer" },
+    "span": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 },
+    "deckHeight": { "type": "number", "minimum": -10, "maximum": 80 },
+    "bridgeWidth": { "type": "number", "minimum": 4, "maximum": 30 },
+    "vehicleClearance": { "type": "number", "minimum": 2, "maximum": 20 },
+    "panelCount": { "type": "integer", "minimum": 2, "maximum": 24 },
+    "trussHeight": { "type": "number", "minimum": 4, "maximum": 40 },
+    "pierCount": { "type": "integer", "minimum": 0, "maximum": 12 },
+    "pierSpacing": { "type": "number", "minimum": 4, "maximum": 40 },
+    "archCount": { "type": "integer", "minimum": 1, "maximum": 12 },
+    "archShape": { "enum": ["circular", "parabolic"] },
+    "archRise": { "type": "number", "minimum": 4, "maximum": 42 },
+    "towerHeight": { "type": "number", "minimum": 8, "maximum": 50 },
+    "cableSag": { "type": "number", "minimum": 2, "maximum": 30 },
+    "hangerSpacing": { "type": "number", "minimum": 2, "maximum": 24 },
+    "symmetry": { "type": "boolean" },
+    "crossBracing": { "type": "boolean" },
+    "structuralDensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
+    "targetLoadClass": { "type": "integer", "minimum": 1, "maximum": 5 }
+  }
+}

@@ -1,0 +1,386 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "deck-primary",
+      "nodeA": 1,
+      "nodeB": 2,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "deck-primary",
+      "nodeA": 2,
+      "nodeB": 3,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "deck-primary",
+      "nodeA": 3,
+      "nodeB": 4,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "deck-primary",
+      "nodeA": 4,
+      "nodeB": 5,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "deck-primary",
+      "nodeA": 5,
+      "nodeB": 6,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "deck-primary",
+      "nodeA": 6,
+      "nodeB": 7,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "deck-primary",
+      "nodeA": 7,
+      "nodeB": 8,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "deck-primary",
+      "nodeA": 8,
+      "nodeB": 9,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 3,
+      "id": 9,
+      "memberClass": "warren-diagonal",
+      "nodeA": 1,
+      "nodeB": 10,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 10,
+      "memberClass": "warren-diagonal",
+      "nodeA": 10,
+      "nodeB": 2,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 11,
+      "memberClass": "warren-diagonal",
+      "nodeA": 2,
+      "nodeB": 11,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 12,
+      "memberClass": "warren-diagonal",
+      "nodeA": 11,
+      "nodeB": 3,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "upper-chord",
+      "nodeA": 10,
+      "nodeB": 11,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 14,
+      "memberClass": "warren-diagonal",
+      "nodeA": 3,
+      "nodeB": 12,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 15,
+      "memberClass": "warren-diagonal",
+      "nodeA": 12,
+      "nodeB": 4,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 16,
+      "memberClass": "upper-chord",
+      "nodeA": 11,
+      "nodeB": 12,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 17,
+      "memberClass": "warren-diagonal",
+      "nodeA": 4,
+      "nodeB": 13,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "warren-diagonal",
+      "nodeA": 13,
+      "nodeB": 5,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 19,
+      "memberClass": "upper-chord",
+      "nodeA": 12,
+      "nodeB": 13,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 20,
+      "memberClass": "warren-diagonal",
+      "nodeA": 5,
+      "nodeB": 14,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 21,
+      "memberClass": "warren-diagonal",
+      "nodeA": 14,
+      "nodeB": 6,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 22,
+      "memberClass": "upper-chord",
+      "nodeA": 13,
+      "nodeB": 14,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 23,
+      "memberClass": "warren-diagonal",
+      "nodeA": 6,
+      "nodeB": 15,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 24,
+      "memberClass": "warren-diagonal",
+      "nodeA": 15,
+      "nodeB": 7,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 25,
+      "memberClass": "upper-chord",
+      "nodeA": 14,
+      "nodeB": 15,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 26,
+      "memberClass": "warren-diagonal",
+      "nodeA": 7,
+      "nodeB": 16,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 27,
+      "memberClass": "warren-diagonal",
+      "nodeA": 16,
+      "nodeB": 8,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 28,
+      "memberClass": "upper-chord",
+      "nodeA": 15,
+      "nodeB": 16,
+      "role": "chord"
+    },
+    {
+      "capacityClass": 3,
+      "id": 29,
+      "memberClass": "warren-diagonal",
+      "nodeA": 8,
+      "nodeB": 17,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 30,
+      "memberClass": "warren-diagonal",
+      "nodeA": 17,
+      "nodeB": 9,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 4,
+      "id": 31,
+      "memberClass": "upper-chord",
+      "nodeA": 16,
+      "nodeB": 17,
+      "role": "chord"
+    }
+  ],
+  "metadata": {
+    "bridgeWidth": 13,
+    "designRevision": 47000524,
+    "deterministicChecksum": "465CC943",
+    "family": "warren",
+    "generatorVersion": 1,
+    "sharedDeck": false,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "joint",
+      "supportType": "none",
+      "x": 6,
+      "y": 50
+    },
+    {
+      "id": 11,
+      "role": "joint",
+      "supportType": "none",
+      "x": 18,
+      "y": 50
+    },
+    {
+      "id": 12,
+      "role": "joint",
+      "supportType": "none",
+      "x": 30,
+      "y": 50
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "supportType": "none",
+      "x": 42,
+      "y": 50
+    },
+    {
+      "id": 14,
+      "role": "joint",
+      "supportType": "none",
+      "x": 54,
+      "y": 50
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "supportType": "none",
+      "x": 66,
+      "y": 50
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "supportType": "none",
+      "x": 78,
+      "y": 50
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
+      "x": 90,
+      "y": 50
+    }
+  ]
+}

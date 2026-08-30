@@ -1,0 +1,901 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "deck-primary",
+      "nodeA": 1,
+      "nodeB": 2,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "deck-primary",
+      "nodeA": 2,
+      "nodeB": 3,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "deck-primary",
+      "nodeA": 3,
+      "nodeB": 4,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "deck-primary",
+      "nodeA": 4,
+      "nodeB": 5,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "deck-primary",
+      "nodeA": 5,
+      "nodeB": 6,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "deck-primary",
+      "nodeA": 6,
+      "nodeB": 7,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "deck-primary",
+      "nodeA": 7,
+      "nodeB": 8,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "deck-primary",
+      "nodeA": 8,
+      "nodeB": 9,
+      "role": "deck",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 9,
+      "memberClass": "box-vertical",
+      "nodeA": 1,
+      "nodeB": 10,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 10,
+      "memberClass": "box-vertical",
+      "nodeA": 2,
+      "nodeB": 11,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "box-upper-chord",
+      "nodeA": 10,
+      "nodeB": 11,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 12,
+      "memberClass": "box-side-brace",
+      "nodeA": 10,
+      "nodeB": 2,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 13,
+      "memberClass": "box-vertical",
+      "nodeA": 3,
+      "nodeB": 12,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "box-upper-chord",
+      "nodeA": 11,
+      "nodeB": 12,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 15,
+      "memberClass": "box-side-brace",
+      "nodeA": 2,
+      "nodeB": 12,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 16,
+      "memberClass": "box-vertical",
+      "nodeA": 4,
+      "nodeB": 13,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 17,
+      "memberClass": "box-upper-chord",
+      "nodeA": 12,
+      "nodeB": 13,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "box-side-brace",
+      "nodeA": 12,
+      "nodeB": 4,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 19,
+      "memberClass": "box-vertical",
+      "nodeA": 5,
+      "nodeB": 14,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 20,
+      "memberClass": "box-upper-chord",
+      "nodeA": 13,
+      "nodeB": 14,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 21,
+      "memberClass": "box-side-brace",
+      "nodeA": 4,
+      "nodeB": 14,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 22,
+      "memberClass": "box-vertical",
+      "nodeA": 6,
+      "nodeB": 15,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 23,
+      "memberClass": "box-upper-chord",
+      "nodeA": 14,
+      "nodeB": 15,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 24,
+      "memberClass": "box-side-brace",
+      "nodeA": 14,
+      "nodeB": 6,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 25,
+      "memberClass": "box-vertical",
+      "nodeA": 7,
+      "nodeB": 16,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 26,
+      "memberClass": "box-upper-chord",
+      "nodeA": 15,
+      "nodeB": 16,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 27,
+      "memberClass": "box-side-brace",
+      "nodeA": 6,
+      "nodeB": 16,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 28,
+      "memberClass": "box-vertical",
+      "nodeA": 8,
+      "nodeB": 17,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 29,
+      "memberClass": "box-upper-chord",
+      "nodeA": 16,
+      "nodeB": 17,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 30,
+      "memberClass": "box-side-brace",
+      "nodeA": 16,
+      "nodeB": 8,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 31,
+      "memberClass": "box-vertical",
+      "nodeA": 9,
+      "nodeB": 18,
+      "role": "vertical",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 32,
+      "memberClass": "box-upper-chord",
+      "nodeA": 17,
+      "nodeB": 18,
+      "role": "chord",
+      "side": "near"
+    },
+    {
+      "capacityClass": 3,
+      "id": 33,
+      "memberClass": "box-side-brace",
+      "nodeA": 8,
+      "nodeB": 18,
+      "role": "diagonal",
+      "side": "near"
+    },
+    {
+      "capacityClass": 4,
+      "id": 34,
+      "memberClass": "deck-primary",
+      "nodeA": 19,
+      "nodeB": 20,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 35,
+      "memberClass": "deck-primary",
+      "nodeA": 20,
+      "nodeB": 21,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 36,
+      "memberClass": "deck-primary",
+      "nodeA": 21,
+      "nodeB": 22,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 37,
+      "memberClass": "deck-primary",
+      "nodeA": 22,
+      "nodeB": 23,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 38,
+      "memberClass": "deck-primary",
+      "nodeA": 23,
+      "nodeB": 24,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 39,
+      "memberClass": "deck-primary",
+      "nodeA": 24,
+      "nodeB": 25,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 40,
+      "memberClass": "deck-primary",
+      "nodeA": 25,
+      "nodeB": 26,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 41,
+      "memberClass": "deck-primary",
+      "nodeA": 26,
+      "nodeB": 27,
+      "role": "deck",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 42,
+      "memberClass": "box-vertical",
+      "nodeA": 19,
+      "nodeB": 28,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 43,
+      "memberClass": "box-vertical",
+      "nodeA": 20,
+      "nodeB": 29,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 44,
+      "memberClass": "box-upper-chord",
+      "nodeA": 28,
+      "nodeB": 29,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 45,
+      "memberClass": "box-side-brace",
+      "nodeA": 28,
+      "nodeB": 20,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 46,
+      "memberClass": "box-vertical",
+      "nodeA": 21,
+      "nodeB": 30,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 47,
+      "memberClass": "box-upper-chord",
+      "nodeA": 29,
+      "nodeB": 30,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 48,
+      "memberClass": "box-side-brace",
+      "nodeA": 20,
+      "nodeB": 30,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 49,
+      "memberClass": "box-vertical",
+      "nodeA": 22,
+      "nodeB": 31,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 50,
+      "memberClass": "box-upper-chord",
+      "nodeA": 30,
+      "nodeB": 31,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 51,
+      "memberClass": "box-side-brace",
+      "nodeA": 30,
+      "nodeB": 22,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 52,
+      "memberClass": "box-vertical",
+      "nodeA": 23,
+      "nodeB": 32,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 53,
+      "memberClass": "box-upper-chord",
+      "nodeA": 31,
+      "nodeB": 32,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 54,
+      "memberClass": "box-side-brace",
+      "nodeA": 22,
+      "nodeB": 32,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 55,
+      "memberClass": "box-vertical",
+      "nodeA": 24,
+      "nodeB": 33,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 56,
+      "memberClass": "box-upper-chord",
+      "nodeA": 32,
+      "nodeB": 33,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 57,
+      "memberClass": "box-side-brace",
+      "nodeA": 32,
+      "nodeB": 24,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 58,
+      "memberClass": "box-vertical",
+      "nodeA": 25,
+      "nodeB": 34,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 59,
+      "memberClass": "box-upper-chord",
+      "nodeA": 33,
+      "nodeB": 34,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 60,
+      "memberClass": "box-side-brace",
+      "nodeA": 24,
+      "nodeB": 34,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 61,
+      "memberClass": "box-vertical",
+      "nodeA": 26,
+      "nodeB": 35,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 62,
+      "memberClass": "box-upper-chord",
+      "nodeA": 34,
+      "nodeB": 35,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 63,
+      "memberClass": "box-side-brace",
+      "nodeA": 34,
+      "nodeB": 26,
+      "role": "diagonal",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 64,
+      "memberClass": "box-vertical",
+      "nodeA": 27,
+      "nodeB": 36,
+      "role": "vertical",
+      "side": "far"
+    },
+    {
+      "capacityClass": 4,
+      "id": 65,
+      "memberClass": "box-upper-chord",
+      "nodeA": 35,
+      "nodeB": 36,
+      "role": "chord",
+      "side": "far"
+    },
+    {
+      "capacityClass": 3,
+      "id": 66,
+      "memberClass": "box-side-brace",
+      "nodeA": 26,
+      "nodeB": 36,
+      "role": "diagonal",
+      "side": "far"
+    }
+  ],
+  "metadata": {
+    "bridgeWidth": 13,
+    "designRevision": 376769842,
+    "deterministicChecksum": "C0E98F23",
+    "family": "box",
+    "generatorVersion": 1,
+    "sharedDeck": true,
+    "sideStructures": 2,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "side": "near",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "side": "near",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "side": "near",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 0,
+      "y": 50
+    },
+    {
+      "id": 11,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 12,
+      "y": 50
+    },
+    {
+      "id": 12,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 24,
+      "y": 50
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 36,
+      "y": 50
+    },
+    {
+      "id": 14,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 48,
+      "y": 50
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 60,
+      "y": 50
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 72,
+      "y": 50
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 84,
+      "y": 50
+    },
+    {
+      "id": 18,
+      "role": "joint",
+      "side": "near",
+      "supportType": "none",
+      "x": 96,
+      "y": 50
+    },
+    {
+      "id": 19,
+      "role": "support",
+      "side": "far",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 20,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 21,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 22,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 23,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 24,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 25,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 26,
+      "role": "deck",
+      "side": "far",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 27,
+      "role": "support",
+      "side": "far",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 28,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 0,
+      "y": 50
+    },
+    {
+      "id": 29,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 12,
+      "y": 50
+    },
+    {
+      "id": 30,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 24,
+      "y": 50
+    },
+    {
+      "id": 31,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 36,
+      "y": 50
+    },
+    {
+      "id": 32,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 48,
+      "y": 50
+    },
+    {
+      "id": 33,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 60,
+      "y": 50
+    },
+    {
+      "id": 34,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 72,
+      "y": 50
+    },
+    {
+      "id": 35,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 84,
+      "y": 50
+    },
+    {
+      "id": 36,
+      "role": "joint",
+      "side": "far",
+      "supportType": "none",
+      "x": 96,
+      "y": 50
+    }
+  ]
+}

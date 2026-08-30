@@ -1,0 +1,329 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "deck-primary",
+      "nodeA": 1,
+      "nodeB": 2,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "deck-primary",
+      "nodeA": 2,
+      "nodeB": 3,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "deck-primary",
+      "nodeA": 3,
+      "nodeB": 4,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "deck-primary",
+      "nodeA": 4,
+      "nodeB": 5,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "deck-primary",
+      "nodeA": 5,
+      "nodeB": 6,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "deck-primary",
+      "nodeA": 6,
+      "nodeB": 7,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "deck-primary",
+      "nodeA": 7,
+      "nodeB": 8,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "deck-primary",
+      "nodeA": 8,
+      "nodeB": 9,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "parabolic-arch",
+      "nodeA": 10,
+      "nodeB": 11,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 10,
+      "memberClass": "arch-spandrel",
+      "nodeA": 11,
+      "nodeB": 2,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "parabolic-arch",
+      "nodeA": 11,
+      "nodeB": 12,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 12,
+      "memberClass": "arch-spandrel",
+      "nodeA": 12,
+      "nodeB": 3,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "parabolic-arch",
+      "nodeA": 12,
+      "nodeB": 13,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 14,
+      "memberClass": "arch-spandrel",
+      "nodeA": 13,
+      "nodeB": 4,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 15,
+      "memberClass": "parabolic-arch",
+      "nodeA": 13,
+      "nodeB": 14,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 16,
+      "memberClass": "arch-spandrel",
+      "nodeA": 14,
+      "nodeB": 5,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 17,
+      "memberClass": "parabolic-arch",
+      "nodeA": 14,
+      "nodeB": 15,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "arch-spandrel",
+      "nodeA": 15,
+      "nodeB": 6,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 19,
+      "memberClass": "parabolic-arch",
+      "nodeA": 15,
+      "nodeB": 16,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 20,
+      "memberClass": "arch-spandrel",
+      "nodeA": 16,
+      "nodeB": 7,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 21,
+      "memberClass": "parabolic-arch",
+      "nodeA": 16,
+      "nodeB": 17,
+      "role": "arch"
+    },
+    {
+      "capacityClass": 3,
+      "id": 22,
+      "memberClass": "arch-spandrel",
+      "nodeA": 17,
+      "nodeB": 8,
+      "role": "vertical"
+    },
+    {
+      "capacityClass": 4,
+      "id": 23,
+      "memberClass": "parabolic-arch",
+      "nodeA": 17,
+      "nodeB": 18,
+      "role": "arch"
+    }
+  ],
+  "metadata": {
+    "bridgeWidth": 13,
+    "designRevision": 2911047645,
+    "deterministicChecksum": "A428D774",
+    "family": "arch",
+    "generatorVersion": 1,
+    "sharedDeck": false,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "support",
+      "supportType": "terrain",
+      "x": 0,
+      "y": 12
+    },
+    {
+      "id": 11,
+      "role": "joint",
+      "supportType": "none",
+      "x": 12,
+      "y": 21.625
+    },
+    {
+      "id": 12,
+      "role": "joint",
+      "supportType": "none",
+      "x": 24,
+      "y": 28.5
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "supportType": "none",
+      "x": 36,
+      "y": 32.625
+    },
+    {
+      "id": 14,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "supportType": "none",
+      "x": 60,
+      "y": 32.625
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "supportType": "none",
+      "x": 72,
+      "y": 28.5
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
+      "x": 84,
+      "y": 21.625
+    },
+    {
+      "id": 18,
+      "role": "support",
+      "supportType": "terrain",
+      "x": 96,
+      "y": 12
+    }
+  ]
+}

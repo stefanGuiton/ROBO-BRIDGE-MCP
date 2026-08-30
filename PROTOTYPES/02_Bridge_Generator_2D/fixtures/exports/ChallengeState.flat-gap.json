@@ -1,0 +1,131 @@
+{
+  "corridor": {
+    "centreline": [
+      {
+        "x": 0,
+        "y": 28,
+        "z": 0
+      },
+      {
+        "x": 80,
+        "y": 28,
+        "z": 0
+      }
+    ],
+    "deckElevationRange": [
+      22,
+      36
+    ],
+    "deckWidth": 12,
+    "mode": "rail-single",
+    "vehicleClearHeight": 6,
+    "vehicleClearWidth": 7
+  },
+  "entry": {
+    "forward": {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    "platformLength": 16,
+    "platformWidth": 12,
+    "position": {
+      "x": 0,
+      "y": 28,
+      "z": 0
+    }
+  },
+  "exit": {
+    "forward": {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    "platformLength": 16,
+    "platformWidth": 12,
+    "position": {
+      "x": 80,
+      "y": 28,
+      "z": 0
+    }
+  },
+  "mode": "rail",
+  "name": "Flat gap",
+  "seed": 101,
+  "supportRegions": [
+    {
+      "allowed": [
+        "fixed",
+        "anchor",
+        "tower"
+      ],
+      "foundationY": 0,
+      "id": "left-bank",
+      "xMax": 0,
+      "xMin": -16
+    },
+    {
+      "allowed": [
+        "pier",
+        "arch"
+      ],
+      "foundationY": -18,
+      "id": "gap-floor",
+      "xMax": 79.99,
+      "xMin": 0.01
+    },
+    {
+      "allowed": [
+        "fixed",
+        "anchor",
+        "tower"
+      ],
+      "foundationY": 0,
+      "id": "right-bank",
+      "xMax": 96,
+      "xMin": 80
+    }
+  ],
+  "terrain": {
+    "depth": 40,
+    "gridX": 16,
+    "gridZ": 4,
+    "heightScale": 1,
+    "obstacle": {
+      "depth": 18,
+      "noiseAmplitude": 0,
+      "noiseFrequency": 0,
+      "type": "gap",
+      "width": 80
+    },
+    "profile": [
+      {
+        "x": -16,
+        "y": 0
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 0.01,
+        "y": -18
+      },
+      {
+        "x": 79.99,
+        "y": -18
+      },
+      {
+        "x": 80,
+        "y": 0
+      },
+      {
+        "x": 96,
+        "y": 0
+      }
+    ],
+    "seed": 101,
+    "width": 112
+  },
+  "version": 3
+}

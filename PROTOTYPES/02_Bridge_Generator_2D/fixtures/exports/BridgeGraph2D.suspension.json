@@ -1,0 +1,686 @@
+{
+  "cables": [
+    {
+      "anchorNodeA": 14,
+      "anchorNodeB": 15,
+      "breakable": false,
+      "hangerTargets": [
+        {
+          "x": 27.2,
+          "y": 34
+        },
+        {
+          "x": 35.2,
+          "y": 34
+        },
+        {
+          "x": 43.2,
+          "y": 34
+        },
+        {
+          "x": 51.2,
+          "y": 34
+        },
+        {
+          "x": 59.2,
+          "y": 34
+        },
+        {
+          "x": 67.2,
+          "y": 34
+        },
+        {
+          "x": 75.2,
+          "y": 34
+        }
+      ],
+      "id": 1,
+      "sag": 11,
+      "samples": [
+        {
+          "x": -7.68,
+          "y": 2
+        },
+        {
+          "x": -5.36,
+          "y": 6.919643
+        },
+        {
+          "x": -3.04,
+          "y": 11.839286
+        },
+        {
+          "x": -0.72,
+          "y": 16.758929
+        },
+        {
+          "x": 1.6,
+          "y": 21.678571
+        },
+        {
+          "x": 3.92,
+          "y": 26.598214
+        },
+        {
+          "x": 6.24,
+          "y": 31.517857
+        },
+        {
+          "x": 8.56,
+          "y": 36.4375
+        },
+        {
+          "x": 10.88,
+          "y": 41.357143
+        },
+        {
+          "x": 13.2,
+          "y": 46.276786
+        },
+        {
+          "x": 15.52,
+          "y": 51.196429
+        },
+        {
+          "x": 17.84,
+          "y": 56.116071
+        },
+        {
+          "x": 20.16,
+          "y": 58.278889
+        },
+        {
+          "x": 22.48,
+          "y": 56.637122
+        },
+        {
+          "x": 24.8,
+          "y": 55.138117
+        },
+        {
+          "x": 27.12,
+          "y": 53.781875
+        },
+        {
+          "x": 29.44,
+          "y": 52.568395
+        },
+        {
+          "x": 31.76,
+          "y": 51.497677
+        },
+        {
+          "x": 34.08,
+          "y": 50.569722
+        },
+        {
+          "x": 36.4,
+          "y": 49.784529
+        },
+        {
+          "x": 38.72,
+          "y": 49.142099
+        },
+        {
+          "x": 41.04,
+          "y": 48.642431
+        },
+        {
+          "x": 43.36,
+          "y": 48.285525
+        },
+        {
+          "x": 45.68,
+          "y": 48.071381
+        },
+        {
+          "x": 48,
+          "y": 48
+        },
+        {
+          "x": 50.32,
+          "y": 48.071381
+        },
+        {
+          "x": 52.64,
+          "y": 48.285525
+        },
+        {
+          "x": 54.96,
+          "y": 48.642431
+        },
+        {
+          "x": 57.28,
+          "y": 49.142099
+        },
+        {
+          "x": 59.6,
+          "y": 49.784529
+        },
+        {
+          "x": 61.92,
+          "y": 50.569722
+        },
+        {
+          "x": 64.24,
+          "y": 51.497677
+        },
+        {
+          "x": 66.56,
+          "y": 52.568395
+        },
+        {
+          "x": 68.88,
+          "y": 53.781875
+        },
+        {
+          "x": 71.2,
+          "y": 55.138117
+        },
+        {
+          "x": 73.52,
+          "y": 56.637122
+        },
+        {
+          "x": 75.84,
+          "y": 58.278889
+        },
+        {
+          "x": 78.16,
+          "y": 56.116071
+        },
+        {
+          "x": 80.48,
+          "y": 51.196429
+        },
+        {
+          "x": 82.8,
+          "y": 46.276786
+        },
+        {
+          "x": 85.12,
+          "y": 41.357143
+        },
+        {
+          "x": 87.44,
+          "y": 36.4375
+        },
+        {
+          "x": 89.76,
+          "y": 31.517857
+        },
+        {
+          "x": 92.08,
+          "y": 26.598214
+        },
+        {
+          "x": 94.4,
+          "y": 21.678571
+        },
+        {
+          "x": 96.72,
+          "y": 16.758929
+        },
+        {
+          "x": 99.04,
+          "y": 11.839286
+        },
+        {
+          "x": 101.36,
+          "y": 6.919643
+        },
+        {
+          "x": 103.68,
+          "y": 2
+        }
+      ],
+      "structuralRole": "main"
+    },
+    {
+      "anchorNodeA": 16,
+      "anchorNodeB": 17,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 2,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 27.2,
+          "y": 53.737654
+        },
+        {
+          "x": 27.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 18,
+      "anchorNodeB": 19,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 3,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 35.2,
+          "y": 50.17284
+        },
+        {
+          "x": 35.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 20,
+      "anchorNodeB": 21,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 4,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 43.2,
+          "y": 48.305556
+        },
+        {
+          "x": 43.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 22,
+      "anchorNodeB": 23,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 5,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 51.2,
+          "y": 48.135802
+        },
+        {
+          "x": 51.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 24,
+      "anchorNodeB": 25,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 6,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 59.2,
+          "y": 49.66358
+        },
+        {
+          "x": 59.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 26,
+      "anchorNodeB": 27,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 7,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 67.2,
+          "y": 52.888889
+        },
+        {
+          "x": 67.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 28,
+      "anchorNodeB": 29,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 8,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 75.2,
+          "y": 57.811728
+        },
+        {
+          "x": 75.2,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    }
+  ],
+  "members": [
+    {
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "deck-primary",
+      "nodeA": 1,
+      "nodeB": 2,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "deck-primary",
+      "nodeA": 2,
+      "nodeB": 3,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "deck-primary",
+      "nodeA": 3,
+      "nodeB": 4,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "deck-primary",
+      "nodeA": 4,
+      "nodeB": 5,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "deck-primary",
+      "nodeA": 5,
+      "nodeB": 6,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "deck-primary",
+      "nodeA": 6,
+      "nodeB": 7,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "deck-primary",
+      "nodeA": 7,
+      "nodeB": 8,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "deck-primary",
+      "nodeA": 8,
+      "nodeB": 9,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "suspension-tower",
+      "nodeA": 10,
+      "nodeB": 12,
+      "role": "tower"
+    },
+    {
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "suspension-tower",
+      "nodeA": 11,
+      "nodeB": 13,
+      "role": "tower"
+    }
+  ],
+  "metadata": {
+    "bridgeWidth": 13,
+    "designRevision": 3397807410,
+    "deterministicChecksum": "834B71A5",
+    "family": "suspension",
+    "generatorVersion": 1,
+    "sharedDeck": false,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 19.2,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 76.8,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "tower",
+      "supportType": "none",
+      "x": 19.2,
+      "y": 59
+    },
+    {
+      "id": 13,
+      "role": "tower",
+      "supportType": "none",
+      "x": 76.8,
+      "y": 59
+    },
+    {
+      "id": 14,
+      "role": "anchor",
+      "supportType": "terrain",
+      "x": -7.68,
+      "y": 2
+    },
+    {
+      "id": 15,
+      "role": "anchor",
+      "supportType": "terrain",
+      "x": 103.68,
+      "y": 2
+    },
+    {
+      "cableAttachment": true,
+      "id": 16,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 27.2,
+      "y": 53.737654
+    },
+    {
+      "cableAttachment": true,
+      "id": 17,
+      "role": "deck",
+      "supportType": "none",
+      "x": 27.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 18,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 35.2,
+      "y": 50.17284
+    },
+    {
+      "cableAttachment": true,
+      "id": 19,
+      "role": "deck",
+      "supportType": "none",
+      "x": 35.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 20,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 43.2,
+      "y": 48.305556
+    },
+    {
+      "cableAttachment": true,
+      "id": 21,
+      "role": "deck",
+      "supportType": "none",
+      "x": 43.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 22,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 51.2,
+      "y": 48.135802
+    },
+    {
+      "cableAttachment": true,
+      "id": 23,
+      "role": "deck",
+      "supportType": "none",
+      "x": 51.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 24,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 59.2,
+      "y": 49.66358
+    },
+    {
+      "cableAttachment": true,
+      "id": 25,
+      "role": "deck",
+      "supportType": "none",
+      "x": 59.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 26,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 67.2,
+      "y": 52.888889
+    },
+    {
+      "cableAttachment": true,
+      "id": 27,
+      "role": "deck",
+      "supportType": "none",
+      "x": 67.2,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 28,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 75.2,
+      "y": 57.811728
+    },
+    {
+      "cableAttachment": true,
+      "id": 29,
+      "role": "deck",
+      "supportType": "none",
+      "x": 75.2,
+      "y": 34
+    }
+  ]
+}

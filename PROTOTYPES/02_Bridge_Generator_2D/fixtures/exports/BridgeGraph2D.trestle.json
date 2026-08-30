@@ -1,0 +1,284 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "deck-primary",
+      "nodeA": 1,
+      "nodeB": 2,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "deck-primary",
+      "nodeA": 2,
+      "nodeB": 3,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "deck-primary",
+      "nodeA": 3,
+      "nodeB": 4,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "deck-primary",
+      "nodeA": 4,
+      "nodeB": 5,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "deck-primary",
+      "nodeA": 5,
+      "nodeB": 6,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "deck-primary",
+      "nodeA": 6,
+      "nodeB": 7,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "deck-primary",
+      "nodeA": 7,
+      "nodeB": 8,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "deck-primary",
+      "nodeA": 8,
+      "nodeB": 9,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "deck-primary",
+      "nodeA": 9,
+      "nodeB": 10,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "deck-primary",
+      "nodeA": 10,
+      "nodeB": 11,
+      "role": "deck"
+    },
+    {
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "pier-column",
+      "nodeA": 12,
+      "nodeB": 3,
+      "role": "pier"
+    },
+    {
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "pier-column",
+      "nodeA": 13,
+      "nodeB": 5,
+      "role": "pier"
+    },
+    {
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "pier-column",
+      "nodeA": 14,
+      "nodeB": 7,
+      "role": "pier"
+    },
+    {
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "pier-column",
+      "nodeA": 15,
+      "nodeB": 9,
+      "role": "pier"
+    },
+    {
+      "capacityClass": 3,
+      "id": 15,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 12,
+      "nodeB": 5,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 16,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 3,
+      "nodeB": 13,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 17,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 13,
+      "nodeB": 7,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 5,
+      "nodeB": 14,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 19,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 14,
+      "nodeB": 9,
+      "role": "diagonal"
+    },
+    {
+      "capacityClass": 3,
+      "id": 20,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 7,
+      "nodeB": 15,
+      "role": "diagonal"
+    }
+  ],
+  "metadata": {
+    "bridgeWidth": 13,
+    "designRevision": 1198636134,
+    "deterministicChecksum": "B75FBD9F",
+    "family": "trestle",
+    "generatorVersion": 1,
+    "sharedDeck": false,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 40,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 56,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 24,
+      "y": -20.285714
+    },
+    {
+      "id": 13,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 40,
+      "y": -27.5
+    },
+    {
+      "id": 14,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 56,
+      "y": -26.5
+    },
+    {
+      "id": 15,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 72,
+      "y": -18.857143
+    }
+  ]
+}

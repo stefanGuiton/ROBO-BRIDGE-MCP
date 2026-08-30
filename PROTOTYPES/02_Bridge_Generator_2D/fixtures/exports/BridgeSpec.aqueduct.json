@@ -1,0 +1,23 @@
+{
+  "archCount": 4,
+  "archRise": 22,
+  "archShape": "parabolic",
+  "bridgeWidth": 13,
+  "cableSag": 11,
+  "crossBracing": true,
+  "deckHeight": 34,
+  "family": "aqueduct",
+  "hangerSpacing": 8,
+  "panelCount": 8,
+  "pierCount": 4,
+  "pierSpacing": 16,
+  "seed": 17,
+  "span": 96,
+  "structuralDensity": 0.68,
+  "symmetry": true,
+  "targetLoadClass": 3,
+  "towerHeight": 25,
+  "trussHeight": 16,
+  "vehicleClearance": 7,
+  "version": 3
+}

@@ -1,0 +1,78 @@
+{
+  "families": {
+    "aqueduct": {
+      "cables": 0,
+      "checksum": "362175E2",
+      "designRevision": 1375025253,
+      "members": 53,
+      "nodes": 58,
+      "valid": true
+    },
+    "arch": {
+      "cables": 0,
+      "checksum": "A428D774",
+      "designRevision": 2911047645,
+      "members": 23,
+      "nodes": 18,
+      "valid": true
+    },
+    "beam": {
+      "cables": 0,
+      "checksum": "4437A245",
+      "designRevision": 3293800200,
+      "members": 14,
+      "nodes": 15,
+      "valid": true
+    },
+    "box": {
+      "cables": 0,
+      "checksum": "C0E98F23",
+      "designRevision": 376769842,
+      "members": 66,
+      "nodes": 36,
+      "valid": true
+    },
+    "howe": {
+      "cables": 0,
+      "checksum": "C3E5545F",
+      "designRevision": 1857223346,
+      "members": 35,
+      "nodes": 18,
+      "valid": true
+    },
+    "pratt": {
+      "cables": 0,
+      "checksum": "C6F6ACA8",
+      "designRevision": 384267910,
+      "members": 35,
+      "nodes": 18,
+      "valid": true
+    },
+    "suspension": {
+      "cables": 8,
+      "checksum": "834B71A5",
+      "designRevision": 3397807410,
+      "members": 10,
+      "nodes": 29,
+      "valid": true
+    },
+    "trestle": {
+      "cables": 0,
+      "checksum": "B75FBD9F",
+      "designRevision": 1198636134,
+      "members": 20,
+      "nodes": 15,
+      "valid": true
+    },
+    "warren": {
+      "cables": 0,
+      "checksum": "465CC943",
+      "designRevision": 47000524,
+      "members": 31,
+      "nodes": 17,
+      "valid": true
+    }
+  },
+  "generatorVersion": 1,
+  "version": 1
+}
