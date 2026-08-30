@@ -29,20 +29,23 @@ npm run preview
 
 ## What it proves
 
-- A locomotive and configurable carriages remain Rapier bodies in dynamic mode.
-- Rapier spring joints form `locomotive → carriage → carriage` couplers.
-- Each body has front/rear guide points against a straight logical centreline.
-- Supported guides apply bounded spring/damper gameplay forces and traction.
+- The default train is three instanced cuboids: locomotive + two carriages.
+- Each coupler exposes two bounded visible freedoms: curve yaw and dip pitch.
+- The logical centreline contains a smooth tight S-curve and vertical dip.
+- Supported travel is analytic and performs zero Rapier world steps.
+- Rapier bodies and spring joints remain ready but dormant until support is lost.
+- Legacy fully dynamic spring/damper guidance remains available in Settings for comparison.
 - Unsupported guides release instantly or with a short fade, preserve velocity, and latch off for the current TEST.
 - Rail support controls only logical guidance and matching deck collision proxies.
 - Gravity and collision remain active after release.
-- Kinematic-until-failure mode converts all cars to dynamic bodies with route velocity at the first support loss.
-- A fixed 60 Hz physics step is independent of rendering and does not run while TEST is inactive.
+- Hybrid mode promotes the connected train island to dynamic bodies with route velocity at first support loss.
+- A fixed 60 Hz logical/dynamic step is interpolated independently from rendering; Rapier does not step while fully supported or while TEST is inactive.
+- Track, sleepers, support overlays, train bodies and couplers use instanced/shared geometry.
 - Reset reconstructs one isolated world, restoring identical transforms and counts without stale bodies or joints.
 
 ## UI
 
-The main surface is intentionally small: fixture, physics mode, TEST, RESET, status, side view, and follow camera. Masses, carriage count, speed, acceleration, guide/coupler tuning, gravity, release mode, support controls, and debug overlays are hidden in **Settings**.
+The main surface is intentionally small: fixture, TEST, RESET, status, side view, and follow camera. Physics mode, masses, carriage count, speed, acceleration, guide/coupler tuning, gravity, release mode, support controls, and debug overlays are hidden in **Settings**.
 
 Fixtures:
 
@@ -57,7 +60,7 @@ Fixtures:
 ## Source map
 
 - `src/core/train-simulation.js` — isolated Rapier world, bodies, couplers, guidance, fallback mode, reset, events, loads.
-- `src/core/track.js` — straight centreline and `RailSupportMap`.
+- `src/core/track.js` — straight/curved dipping centrelines and indexed `RailSupportMap`.
 - `src/core/fixtures.js` — deterministic A–E support schedules.
 - `src/renderer.js` — Three.js railway, primitive train, cameras, support/guide/physics debug.
 - `src/main.js` — simple UI and public browser API.
@@ -67,6 +70,6 @@ See [docs/CONTRACTS.md](docs/CONTRACTS.md), [docs/RAPIER_SETUP.md](docs/RAPIER_S
 
 ## Verification boundary
 
-This is gameplay physics, not a railway engineering model. It deliberately does not simulate flanged wheels, calibrated moving-link/table collision, flexible rails, exact coupler hardware, or bridge structural failure. The centreline is straight but exposes `sample(s)` and `project(point)` so a future piecewise/curved implementation can preserve the train contract.
+This is gameplay physics, not a railway engineering model. It deliberately does not simulate flanged wheels, calibrated moving-link/table collision, flexible rails, exact coupler hardware, or bridge structural failure. The two coupling freedoms are functional pitch/yaw in this Y-up world: pitch around world Z follows dips and yaw around world Y follows corners. Roll around the train's forward X axis is reserved for derail/banking presentation rather than becoming another supported-travel joint degree of freedom.
 
 No native WebMCP acceptance is claimed.

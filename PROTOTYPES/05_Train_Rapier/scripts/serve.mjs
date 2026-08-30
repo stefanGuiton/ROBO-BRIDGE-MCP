@@ -1,8 +1,9 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const prototypeRoot = normalize(new URL("..", import.meta.url).pathname.replace(/^\/(.:)/, "$1"));
+const prototypeRoot = fileURLToPath(new URL("..", import.meta.url));
 const requestedRoot = process.argv[2] === "dist" ? join(prototypeRoot, "dist") : prototypeRoot;
 const root = resolve(requestedRoot);
 const port = Number(process.env.PORT || 4181);

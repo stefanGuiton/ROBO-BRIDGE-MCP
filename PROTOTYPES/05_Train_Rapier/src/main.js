@@ -25,6 +25,11 @@ let accumulator = 0;
 let lastTime = performance.now();
 let fpsSmoothing = 60;
 let progressiveTimers = [];
+let lastMetricsAt = 0;
+const frameHistogram = new Uint32Array(400);
+let frameWindowStartedAt = performance.now();
+let frameWindowCount = 0;
+let frameP95 = 0;
 
 function setStatus(label, kind = "idle") {
   ui.status.textContent = label;
@@ -215,18 +220,41 @@ simulation.onComplete(() => {
 
 function updateMetrics() {
   const counts = simulation.getCounts();
+  const performanceStats = simulation.getPerformanceStats();
+  const renderStats = scene.getRenderStats();
   byId("metric-fps").textContent = fpsSmoothing.toFixed(0);
+  byId("metric-frame-p95").textContent = `${frameP95.toFixed(2)} ms`;
   byId("metric-step").textContent = `${simulation.lastStepMs.toFixed(2)} ms`;
+  byId("metric-draw-calls").textContent = String(renderStats.drawCalls);
   byId("metric-bodies").textContent = String(counts.activeRigidBodies);
   byId("metric-sleeping").textContent = String(counts.sleepingBodies);
   byId("metric-joints").textContent = String(counts.joints);
   byId("metric-train").textContent = String(counts.trainBodies);
+  byId("metric-path").textContent = performanceStats.lastStepKind === "rapier" ? "RAPIER" : "ANALYTIC";
+  byId("metric-rapier-ratio").textContent = `${(performanceStats.rapierStepRatio * 100).toFixed(0)}%`;
   ui.progress.textContent = `Progress ${(simulation.getTrainProgress().normalized * 100).toFixed(0)}% · ${simulation.elapsed.toFixed(1)} s`;
 }
 
 function frame(now) {
-  const frameSeconds = Math.min(0.1, (now - lastTime) / 1000);
+  const frameMilliseconds = Math.min(100, now - lastTime);
+  const frameSeconds = frameMilliseconds / 1000;
   lastTime = now;
+  frameHistogram[Math.min(frameHistogram.length - 1, Math.floor(frameMilliseconds * 4))] += 1;
+  frameWindowCount += 1;
+  if (now - frameWindowStartedAt >= 5000) {
+    const target = Math.ceil(frameWindowCount * 0.95);
+    let cumulative = 0;
+    for (let bucket = 0; bucket < frameHistogram.length; bucket += 1) {
+      cumulative += frameHistogram[bucket];
+      if (cumulative >= target) {
+        frameP95 = (bucket + 1) / 4;
+        break;
+      }
+    }
+    frameHistogram.fill(0);
+    frameWindowCount = 0;
+    frameWindowStartedAt = now;
+  }
   fpsSmoothing = fpsSmoothing * 0.92 + (1 / Math.max(frameSeconds, 0.001)) * 0.08;
   if (simulation.running) {
     accumulator += frameSeconds;
@@ -235,9 +263,13 @@ function frame(now) {
       accumulator -= FIXED_DT;
     }
   } else accumulator = 0;
-  scene.sync();
+  const interpolationAlpha = simulation.running ? accumulator / FIXED_DT : 1;
+  scene.sync(interpolationAlpha);
   scene.render();
-  updateMetrics();
+  if (now - lastMetricsAt >= 100) {
+    updateMetrics();
+    lastMetricsAt = now;
+  }
   requestAnimationFrame(frame);
 }
 

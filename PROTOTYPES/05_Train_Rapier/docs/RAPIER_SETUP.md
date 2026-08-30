@@ -22,18 +22,18 @@ No global packages are installed. No Python is used.
 Default world configuration:
 
 - fixed timestep: `1 / 60` second;
-- solver iterations: 8;
+- solver iterations: 4;
 - gravity: `9.81 m/s²`;
 - sleeping allowed;
-- CCD enabled only on train bodies;
-- static segment cuboids for supported deck collision;
+- CCD disabled by default and optionally enabled only on promoted failure bodies;
+- short static cuboid chunks following the curved supported deck;
 - one bottom collider so fallen cars settle visibly.
 
 ## Bodies and joints
 
-The default train has three dynamic bodies and two `JointData.spring` impulse joints. Locomotive/carriage colliders use explicit masses. Spring couplers permit visible translation and angular articulation without creating an exact railway-hardware model.
+The default train has three kinematic-ready bodies and two `JointData.spring` impulse joints. Locomotive/carriage colliders use explicit masses. While support is intact, an analytic two-DOF chain supplies each cuboid's pitch/yaw pose and Rapier is not stepped. On support loss, the connected three-body island becomes dynamic and the existing joints, gravity and cuboid collision take over.
 
-Guidance forces are cleared and recomputed each fixed step. This is important because Rapier force accumulators persist until reset. Per-guide force is bounded before being summed on the body, and the difference between front/rear lateral guide error supplies a limited yaw moment.
+The legacy dynamic comparison mode clears and recomputes bounded guide forces each fixed step. It projects each guide against the logical centreline frame rather than mesh triangles.
 
 ## Support loss
 

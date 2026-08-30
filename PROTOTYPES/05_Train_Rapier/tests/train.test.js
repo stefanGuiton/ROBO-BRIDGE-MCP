@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { TrainSimulation } from "../src/core/train-simulation.js";
-import { RailSupportMap, StraightCentreline, createRailSupportSegments } from "../src/core/track.js";
+import { CurvedCentreline, RailSupportMap, StraightCentreline, createRailSupportSegments } from "../src/core/track.js";
 
 test("RailSupportSegment is a bridge-generator-independent data contract", async () => {
   const segments = createRailSupportSegments();
@@ -21,6 +21,15 @@ test("straight centreline samples and projects route coordinates", () => {
   assert.equal(centreline.progressForS(60), 1);
 });
 
+test("curved centreline supplies pitch and yaw frames without adding roll", () => {
+  const centreline = new CurvedCentreline();
+  const sample = centreline.sample(-4);
+  assert.notEqual(sample.position.z, 0);
+  assert.notEqual(sample.position.y, 0.42);
+  assert.ok(Math.abs(sample.tangent.y) > 0.001 || Math.abs(sample.tangent.z) > 0.001);
+  assert.ok(Math.abs(sample.tangent.x ** 2 + sample.tangent.y ** 2 + sample.tangent.z ** 2 - 1) < 1e-9);
+});
+
 test("support changes are exact, reversible, and read queries do not mutate", () => {
   const map = new RailSupportMap();
   const before = map.snapshot();
@@ -33,22 +42,25 @@ test("support changes are exact, reversible, and read queries do not mutate", ()
   assert.deepEqual(map.snapshot(), before);
 });
 
-test("fixture A crosses with stable articulated dynamic cars", async () => {
+test("fixture A crosses analytically with zero supported Rapier steps", async () => {
   const simulation = await new TrainSimulation({ fixtureId: "A" }).initialize();
   simulation.startTest();
   simulation.runForSeconds(20);
   assert.equal(simulation.outcome, "CROSSED");
   const transforms = simulation.getBodyTransforms();
   assert.equal(transforms.length, 3);
-  assert.ok(transforms.every((body) => Math.abs(body.translation.z) < 0.2));
+  assert.ok(transforms.every((body) => Math.abs(simulation.centreline.project(body.translation).lateral) < 0.2));
   assert.equal(simulation.getCounts().joints, 2);
+  assert.equal(simulation.getPerformanceStats().rapierSteps, 0);
+  assert.ok(simulation.getPerformanceStats().skippedRapierSteps > 700);
 });
 
-test("fixture A crosses in kinematic-until-failure comparison mode", async () => {
-  const simulation = await new TrainSimulation({ fixtureId: "A", config: { mode: "kinematic" } }).initialize();
+test("legacy dynamic guide remains available as a comparison mode", async () => {
+  const simulation = await new TrainSimulation({ fixtureId: "A", config: { mode: "dynamic", trackProfile: "straight" } }).initialize();
   simulation.startTest();
   simulation.runForSeconds(20);
   assert.equal(simulation.outcome, "CROSSED");
+  assert.ok(simulation.getPerformanceStats().rapierSteps > 0);
 });
 
 test("maximum configurable six-carriage train remains supported and articulated", async () => {
@@ -63,7 +75,20 @@ test("maximum configurable six-carriage train remains supported and articulated"
     joints: 6,
     trainBodies: 7,
   });
-  assert.ok(simulation.getBodyTransforms().every((body) => Math.abs(body.translation.z) < 0.2));
+  assert.ok(simulation.getBodyTransforms().every((body) =>
+    Math.abs(simulation.centreline.project(body.translation).lateral) < 0.2));
+  assert.equal(simulation.getPerformanceStats().rapierSteps, 0);
+});
+
+test("three-link train exposes only yaw and pitch coupling state on a curved dip", async () => {
+  const simulation = await new TrainSimulation({ fixtureId: "A" }).initialize();
+  simulation.startTest();
+  while (simulation.getTrainProgress().routeS < -4) simulation.step();
+  const couplers = simulation.getCouplerStates();
+  assert.equal(couplers.length, 2);
+  assert.ok(couplers.every((coupler) => coupler.degreesOfFreedom === 2));
+  assert.ok(couplers.some((coupler) => Math.abs(coupler.yawRadians) > 0.001));
+  assert.ok(couplers.some((coupler) => Math.abs(coupler.pitchRadians) > 0.001));
 });
 
 test("fixtures B and C lose support and fall under gravity", async () => {
@@ -73,6 +98,8 @@ test("fixtures B and C lose support and fall under gravity", async () => {
     simulation.runForSeconds(20);
     assert.equal(simulation.outcome, "TRAIN_FELL", fixtureId);
     assert.ok(simulation.getBodyTransforms()[0].translation.y < -5.5, fixtureId);
+    assert.ok(simulation.getPerformanceStats().skippedRapierSteps > 0, fixtureId);
+    assert.ok(simulation.getPerformanceStats().rapierSteps > 0, fixtureId);
   }
 });
 

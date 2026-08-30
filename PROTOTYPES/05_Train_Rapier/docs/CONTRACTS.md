@@ -66,4 +66,6 @@ onComplete(listener): () => void
 
 The returned function from each event registration unsubscribes the listener.
 
+`TrainSnapshot.performance` reports logical steps, actual Rapier steps, skipped Rapier steps, step-path kind and Rapier usage ratio. `TrainSnapshot.couplers` reports the two gameplay angles (`yawRadians`, `pitchRadians`) without exposing Rapier handles.
+
 Outcomes are `DERAILED`, `TRAIN_FELL`, `CROSSED`, or `STOPPED`. A derail event may be emitted before the final fall outcome so integrated presentation can show the transition.

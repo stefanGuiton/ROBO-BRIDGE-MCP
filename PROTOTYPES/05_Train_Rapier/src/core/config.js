@@ -13,7 +13,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   gravity: 9.81,
   guideReleaseMode: "fade",
   guideReleaseSeconds: 0.16,
-  mode: "dynamic",
+  mode: "hybrid",
+  trackProfile: "curved",
+  solverIterations: 4,
+  ccdOnFailure: false,
   lateralDerailThreshold: 2.2,
   verticalDerailThreshold: 1.45,
   tiltDerailDegrees: 58,
@@ -28,7 +31,10 @@ export function normalizeConfig(input = {}) {
   config.locomotiveMass = Math.max(1, Number(config.locomotiveMass));
   config.carriageMass = Math.max(1, Number(config.carriageMass));
   config.gravity = Math.max(0, Number(config.gravity));
-  config.mode = config.mode === "kinematic" ? "kinematic" : "dynamic";
+  config.mode = config.mode === "dynamic" ? "dynamic" : "hybrid";
+  config.trackProfile = config.trackProfile === "straight" ? "straight" : "curved";
+  config.solverIterations = Math.max(1, Math.min(8, Math.round(config.solverIterations)));
+  config.ccdOnFailure = Boolean(config.ccdOnFailure);
   config.guideReleaseMode = config.guideReleaseMode === "instant" ? "instant" : "fade";
   return config;
 }
