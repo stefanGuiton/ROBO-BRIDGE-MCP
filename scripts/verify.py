@@ -25,21 +25,25 @@ def run(name: str, command: list[str]) -> dict[str, object]:
 
 def source_fingerprint() -> str:
     digest = hashlib.sha256()
+    entries: list[tuple[str, Path]] = []
     for current, directories, filenames in os.walk(ROOT):
         directories[:] = sorted(name for name in directories if name not in EXCLUDED_SOURCE_PARTS)
         current_path = Path(current)
-        for filename in sorted(filenames):
+        for filename in filenames:
             path = current_path / filename
-            relative = path.relative_to(ROOT)
-            digest.update(str(relative).replace('\\', '/').encode())
-            digest.update(b'\0')
-            data = path.read_bytes()
-            try:
-                data = data.decode('utf-8').replace('\r\n', '\n').encode('utf-8')
-            except UnicodeDecodeError:
-                pass
-            digest.update(data)
-            digest.update(b'\0')
+            relative = str(path.relative_to(ROOT)).replace('\\', '/')
+            entries.append((relative, path))
+
+    for relative, path in sorted(entries, key=lambda entry: entry[0]):
+        digest.update(relative.encode())
+        digest.update(b'\0')
+        data = path.read_bytes()
+        try:
+            data = data.decode('utf-8').replace('\r\n', '\n').encode('utf-8')
+        except UnicodeDecodeError:
+            pass
+        digest.update(data)
+        digest.update(b'\0')
     return digest.hexdigest()
 
 
