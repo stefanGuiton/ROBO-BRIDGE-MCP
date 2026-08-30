@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "codes": [],
+  "graphFamily": "warren",
+  "compilationTimeMs": 89.8681,
+  "placementCount": 294,
+  "occupancyCellCount": 1561,
+  "rejectedClearanceCellCount": 0,
+  "dependencyEdgeCount": 401,
+  "memberCount": 31,
+  "checksum": "301446f2"
+}

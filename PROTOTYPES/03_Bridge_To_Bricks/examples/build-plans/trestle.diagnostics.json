@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "codes": [],
+  "graphFamily": "trestle",
+  "compilationTimeMs": 75.8535,
+  "placementCount": 261,
+  "occupancyCellCount": 1402,
+  "rejectedClearanceCellCount": 0,
+  "dependencyEdgeCount": 276,
+  "memberCount": 26,
+  "checksum": "c497c231"
+}

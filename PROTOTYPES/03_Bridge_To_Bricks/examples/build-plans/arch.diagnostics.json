@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "codes": [],
+  "graphFamily": "arch",
+  "compilationTimeMs": 83.58870000000002,
+  "placementCount": 264,
+  "occupancyCellCount": 1491,
+  "rejectedClearanceCellCount": 0,
+  "dependencyEdgeCount": 369,
+  "memberCount": 37,
+  "checksum": "c3e796e8"
+}

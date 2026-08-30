@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/CompilerExports.schema.json",
+  "title": "Bridge compiler auxiliary exports",
+  "oneOf": [
+    { "$ref": "#/$defs/memberMap" },
+    { "$ref": "#/$defs/dependencyGraph" },
+    { "$ref": "#/$defs/diagnostics" }
+  ],
+  "$defs": {
+    "memberMap": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "uniqueItems": true }
+    },
+    "dependencyGraph": {
+      "type": "object",
+      "required": ["nodes", "edges", "hasCycle"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "type": "object", "required": ["placementId", "phase"] } },
+        "edges": { "type": "array", "items": { "type": "object", "required": ["from", "to"] } },
+        "hasCycle": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": ["valid", "codes", "compilationTimeMs", "placementCount", "occupancyCellCount", "dependencyEdgeCount", "checksum"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "codes": { "type": "array", "items": { "type": "string" } },
+        "graphFamily": { "type": "string" },
+        "compilationTimeMs": { "type": "number", "minimum": 0 },
+        "placementCount": { "type": "integer", "minimum": 0 },
+        "occupancyCellCount": { "type": "integer", "minimum": 0 },
+        "rejectedClearanceCellCount": { "type": "integer", "minimum": 0 },
+        "dependencyEdgeCount": { "type": "integer", "minimum": 0 },
+        "memberCount": { "type": "integer", "minimum": 0 },
+        "checksum": { "type": "string", "pattern": "^[0-9a-f]{8}$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

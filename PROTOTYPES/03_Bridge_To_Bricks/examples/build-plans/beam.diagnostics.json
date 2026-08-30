@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "codes": [],
+  "graphFamily": "beam",
+  "compilationTimeMs": 82.21940000000001,
+  "placementCount": 122,
+  "occupancyCellCount": 1115,
+  "rejectedClearanceCellCount": 0,
+  "dependencyEdgeCount": 141,
+  "memberCount": 10,
+  "checksum": "cfc32777"
+}

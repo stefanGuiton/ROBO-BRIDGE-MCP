@@ -1,0 +1,8785 @@
+{
+  "schemaVersion": "candidate-build-plan/1.0.0",
+  "compilerVersion": "0.1.0",
+  "designRevision": 1,
+  "coordinateSpace": "bridge-local-stud-grid",
+  "grid": {
+    "stud": 1,
+    "layer": 1,
+    "machineTransformRequired": true
+  },
+  "paletteId": "signal-structure",
+  "placements": [
+    {
+      "partType": "brick-2x2",
+      "structuralMemberId": "foundation:0",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": -1,
+        "y": 0,
+        "z": -6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": -1,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": -1,
+          "y": 0,
+          "z": -5
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": -5
+        }
+      ],
+      "dependencies": [],
+      "placementId": 1
+    },
+    {
+      "partType": "brick-2x2",
+      "structuralMemberId": "foundation:0",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": -1,
+        "y": 0,
+        "z": 6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": -1,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": -1,
+          "y": 0,
+          "z": 7
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 7
+        }
+      ],
+      "dependencies": [],
+      "placementId": 2
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "foundation:0",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 1,
+        "y": 0,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "z": -5
+        }
+      ],
+      "dependencies": [],
+      "placementId": 3
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "foundation:0",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 1,
+        "y": 0,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "z": 7
+        }
+      ],
+      "dependencies": [],
+      "placementId": 4
+    },
+    {
+      "partType": "brick-2x2",
+      "structuralMemberId": "foundation:40",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 39,
+        "y": 0,
+        "z": -6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 39,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": 39,
+          "y": 0,
+          "z": -5
+        },
+        {
+          "x": 40,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 0,
+          "z": -5
+        }
+      ],
+      "dependencies": [],
+      "placementId": 5
+    },
+    {
+      "partType": "brick-2x2",
+      "structuralMemberId": "foundation:40",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 39,
+        "y": 0,
+        "z": 6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 39,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": 39,
+          "y": 0,
+          "z": 7
+        },
+        {
+          "x": 40,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 0,
+          "z": 7
+        }
+      ],
+      "dependencies": [],
+      "placementId": 6
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "foundation:40",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 41,
+        "y": 0,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 41,
+          "y": 0,
+          "z": -6
+        },
+        {
+          "x": 41,
+          "y": 0,
+          "z": -5
+        }
+      ],
+      "dependencies": [],
+      "placementId": 7
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "foundation:40",
+      "sourceMemberId": null,
+      "phase": "foundation",
+      "role": "foundation",
+      "gridPosition": {
+        "x": 41,
+        "y": 0,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#475569",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 41,
+          "y": 0,
+          "z": 6
+        },
+        {
+          "x": 41,
+          "y": 0,
+          "z": 7
+        }
+      ],
+      "dependencies": [],
+      "placementId": 8
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 1,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 1,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 9
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 1,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 1,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 10
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 2,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 2,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 11
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 2,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 2,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 12
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 3,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 3,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 3,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 13
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 3,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 3,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 3,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 14
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 4,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 4,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 15
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 4,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 4,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 16
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 5,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 5,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 17
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 5,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 5,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 18
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        1
+      ],
+      "placementId": 19
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:0",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        2
+      ],
+      "placementId": 20
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 1,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 1,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 1,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 21
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 1,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 1,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 1,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 22
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 2,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 2,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 2,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 23
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 2,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 2,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 2,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 24
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 3,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 3,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 3,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 25
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 3,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 3,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 3,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 26
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 4,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 4,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 4,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 27
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 4,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 4,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 4,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 28
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 5,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 5,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 29
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 5,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 5,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 30
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 6,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 6,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 31
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "support:40",
+      "sourceMemberId": null,
+      "phase": "pier",
+      "role": "pier",
+      "gridPosition": {
+        "x": 40,
+        "y": 6,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#d97706",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 6,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 32
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "cross:0",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 0,
+        "y": 5,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 5,
+          "z": -4
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": -3
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": -2
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 33
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "cross:0",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 0,
+        "y": 5,
+        "z": 0
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 5,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": 1
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": 2
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 34
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "cross:0",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 0,
+        "y": 5,
+        "z": 4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 5,
+          "z": 4
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "z": 5
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 35
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "cross:40",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 40,
+        "y": 5,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 5,
+          "z": -4
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": -3
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": -2
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 36
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "cross:40",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 40,
+        "y": 5,
+        "z": 0
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 5,
+          "z": 0
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": 1
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": 2
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 37
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "cross:40",
+      "sourceMemberId": null,
+      "phase": "lower",
+      "role": "cross-member",
+      "gridPosition": {
+        "x": 40,
+        "y": 5,
+        "z": 4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#2563eb",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 5,
+          "z": 4
+        },
+        {
+          "x": 40,
+          "y": 5,
+          "z": 5
+        }
+      ],
+      "dependencies": [
+        9
+      ],
+      "placementId": 38
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 7,
+        "z": -6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        17,
+        19
+      ],
+      "placementId": 39
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 7,
+        "z": 6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        18,
+        20
+      ],
+      "placementId": 40
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 7,
+        "z": -6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": -5
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 41
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 7,
+        "z": 6
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 7
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        6
+      ],
+      "placementId": 42
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 7,
+        "z": -6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 7,
+          "z": -6
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        29,
+        31
+      ],
+      "placementId": 43
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": 1,
+      "sourceMemberId": 1,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 7,
+        "z": 6
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 7,
+          "z": 6
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": 7
+        }
+      ],
+      "dependencies": [
+        30,
+        32
+      ],
+      "placementId": 44
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": -4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": -3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 45
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 46
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": 0
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": 1
+        }
+      ],
+      "dependencies": [
+        34
+      ],
+      "placementId": 47
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        34
+      ],
+      "placementId": 48
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        35
+      ],
+      "placementId": 49
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 1,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 1,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        3
+      ],
+      "placementId": 50
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 4,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 4,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 51
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 5,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 5,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 52
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 8,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 8,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 53
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 9,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 9,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 54
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 12,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 12,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 55
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 13,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 13,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 15,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 16,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 56
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 16,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 16,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 17,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 57
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 17,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 17,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 18,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 19,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 20,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 58
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 20,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 20,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 21,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 59
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 21,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 21,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 22,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 23,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 24,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 60
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 24,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 24,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 25,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 61
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 25,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 25,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 26,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 27,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 28,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 62
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 28,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 28,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 29,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 63
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 29,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 29,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 30,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 31,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 32,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 64
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 6,
+        "z": -4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 32,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": -3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 65
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 6,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 32,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": -1
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 66
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 6,
+        "z": 0
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 32,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": 1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 67
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 6,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 8,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 32,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": 3
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 68
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 32,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 33,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 69
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 33,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 33,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 34,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 35,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 36,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 70
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 36,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 36,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 37,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": 4
+        },
+        {
+          "x": 39,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 71
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 37,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 37,
+          "y": 6,
+          "z": -5
+        },
+        {
+          "x": 38,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 72
+    },
+    {
+      "partType": "brick-1x1",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 39,
+        "y": 6,
+        "z": -5
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 39,
+          "y": 6,
+          "z": -5
+        }
+      ],
+      "dependencies": [
+        5
+      ],
+      "placementId": 73
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 6,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 6,
+          "z": -4
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": -3
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": -2
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        36
+      ],
+      "placementId": 74
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 6,
+        "z": 0
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 6,
+          "z": 0
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": 1
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": 2
+        },
+        {
+          "x": 40,
+          "y": 6,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        37
+      ],
+      "placementId": 75
+    },
+    {
+      "partType": "brick-1x1",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 6,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 6,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        38
+      ],
+      "placementId": 76
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 7,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 8
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        33,
+        34
+      ],
+      "placementId": 77
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 0,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        35
+      ],
+      "placementId": 78
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 2,
+        "y": 7,
+        "z": -4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 2,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 79
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 2,
+        "y": 7,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 2,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 80
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 2,
+        "y": 7,
+        "z": 0
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 2,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 81
+    },
+    {
+      "partType": "beam-2x32",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 2,
+        "y": 7,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 32,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 2,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 6,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 14,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 18,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 22,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 26,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 30,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 82
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 2,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 2,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 3,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 83
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 6,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 6,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 84
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 10,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 10,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 85
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 14,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 14,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 15,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 16,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 17,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 86
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 18,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 18,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 19,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 20,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 21,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 87
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 22,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 22,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 23,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 24,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 25,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 88
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 26,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 26,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 27,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 28,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 29,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 89
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 30,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 30,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 31,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 32,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 33,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 90
+    },
+    {
+      "partType": "brick-2x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 34,
+        "y": 7,
+        "z": -4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 34,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 91
+    },
+    {
+      "partType": "brick-2x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 34,
+        "y": 7,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 34,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 92
+    },
+    {
+      "partType": "brick-2x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 34,
+        "y": 7,
+        "z": 0
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 34,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 1
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 93
+    },
+    {
+      "partType": "brick-2x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 34,
+        "y": 7,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 2
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 34,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 34,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 94
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 34,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 34,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 35,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 36,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 37,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 95
+    },
+    {
+      "partType": "beam-2x8",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 38,
+        "y": 7,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 8
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 38,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 38,
+          "y": 7,
+          "z": 3
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": -1
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 96
+    },
+    {
+      "partType": "brick-1x2",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 38,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 2,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 38,
+          "y": 7,
+          "z": 4
+        },
+        {
+          "x": 39,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        33
+      ],
+      "placementId": 97
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 7,
+        "z": -4
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 7,
+          "z": -4
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": -3
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": -2
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": -1
+        }
+      ],
+      "dependencies": [
+        36
+      ],
+      "placementId": 98
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 7,
+        "z": 0
+      },
+      "orientation": 90,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 4
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 7,
+          "z": 0
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": 1
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": 2
+        },
+        {
+          "x": 40,
+          "y": 7,
+          "z": 3
+        }
+      ],
+      "dependencies": [
+        37
+      ],
+      "placementId": 99
+    },
+    {
+      "partType": "brick-1x1",
+      "structuralMemberId": "deck",
+      "sourceMemberId": null,
+      "phase": "deck",
+      "role": "deck",
+      "gridPosition": {
+        "x": 40,
+        "y": 7,
+        "z": 4
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#64748b",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 7,
+          "z": 4
+        }
+      ],
+      "dependencies": [
+        38
+      ],
+      "placementId": 100
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 0,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 2,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 3,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        77,
+        80
+      ],
+      "placementId": 101
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 4,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 4,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 5,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 102
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 8,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 8,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 9,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 10,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 11,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 103
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 12,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 12,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 13,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 14,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 15,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 104
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 16,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 16,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 17,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 18,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 19,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 105
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 20,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 20,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 21,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 22,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 23,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 106
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 24,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 24,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 25,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 26,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 27,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 107
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 28,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 28,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 29,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 30,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 31,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        46,
+        80
+      ],
+      "placementId": 108
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 32,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 33,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 34,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 35,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        80,
+        92
+      ],
+      "placementId": 109
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 36,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 36,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 37,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 38,
+          "y": 8,
+          "z": -2
+        },
+        {
+          "x": 39,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        92,
+        96
+      ],
+      "placementId": 110
+    },
+    {
+      "partType": "brick-1x1",
+      "structuralMemberId": "rail:-2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 40,
+        "y": 8,
+        "z": -2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 8,
+          "z": -2
+        }
+      ],
+      "dependencies": [
+        74,
+        98
+      ],
+      "placementId": 111
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 0,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 0,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 2,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 3,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        77,
+        82
+      ],
+      "placementId": 112
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 4,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 4,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 5,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 113
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 8,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 8,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 9,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 10,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 11,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 114
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 12,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 12,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 13,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 14,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 15,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 115
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 16,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 16,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 17,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 18,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 19,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 116
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 20,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 20,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 21,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 22,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 23,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 117
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 24,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 24,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 25,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 26,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 27,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 118
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 28,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 28,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 29,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 30,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 31,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        48,
+        82
+      ],
+      "placementId": 119
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 32,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 32,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 33,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 34,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 35,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        82,
+        94
+      ],
+      "placementId": 120
+    },
+    {
+      "partType": "brick-1x4",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 36,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 4,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 36,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 37,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 38,
+          "y": 8,
+          "z": 2
+        },
+        {
+          "x": 39,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        94,
+        96
+      ],
+      "placementId": 121
+    },
+    {
+      "partType": "brick-1x1",
+      "structuralMemberId": "rail:2",
+      "sourceMemberId": null,
+      "phase": "rail",
+      "role": "rail-support",
+      "gridPosition": {
+        "x": 40,
+        "y": 8,
+        "z": 2
+      },
+      "orientation": 0,
+      "dimensions": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "colour": "#dc2626",
+      "material": "ABS-matte",
+      "occupiedCells": [
+        {
+          "x": 40,
+          "y": 8,
+          "z": 2
+        }
+      ],
+      "dependencies": [
+        75,
+        99
+      ],
+      "placementId": 122
+    }
+  ],
+  "checksum": "cfc32777",
+  "diagnostics": {
+    "valid": true,
+    "codes": [],
+    "graphFamily": "beam",
+    "compilationTimeMs": 82.21940000000001,
+    "placementCount": 122,
+    "occupancyCellCount": 1115,
+    "rejectedClearanceCellCount": 0,
+    "dependencyEdgeCount": 141,
+    "memberCount": 10,
+    "checksum": "cfc32777"
+  }
+}
