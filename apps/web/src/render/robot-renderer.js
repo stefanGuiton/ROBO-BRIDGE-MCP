@@ -2,6 +2,7 @@ import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { forwardKinematics } from '../robot/kinematics.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RealGripperVisual, THREE } from './real-gripper-visual.js';
+import { Ur10Visual } from './ur10-visual.js';
 
 const BRICK_COLOURS = {
   white: 0xf3f5f8, black: 0x151b25, red: 0xef4b4f,
@@ -24,16 +25,6 @@ function makeBox(size, centre, material) {
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
-}
-
-function setSegment(mesh, start, end) {
-  const a = new THREE.Vector3(start.xMm, start.yMm, start.zMm);
-  const b = new THREE.Vector3(end.xMm, end.yMm, end.zMm);
-  const direction = b.clone().sub(a);
-  const length = Math.max(0.001, direction.length());
-  mesh.position.copy(a.add(b).multiplyScalar(0.5));
-  mesh.scale.set(1, length, 1);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
 }
 
 export class RobotRenderer {
@@ -131,29 +122,7 @@ export class RobotRenderer {
   }
 
   buildRobot() {
-    this.robotGroup = new THREE.Group();
-    this.scene.add(this.robotGroup);
-    const aluminium = physicalMaterial({ color: 0xb5b5b5, metalness: 0.82, roughness: 0.34, clearcoat: 0 });
-    const blue = physicalMaterial({ color: 0xa8c3d1, metalness: 0, roughness: 0.34, clearcoat: 0.18 });
-    const dark = physicalMaterial({ color: 0x505050, metalness: 0, roughness: 0.82, clearcoat: 0 });
-    this.robotGroup.add(makeBox({ xMm: 165, yMm: 165, zMm: 90 }, { xMm: 0, yMm: 0, zMm: 45 }, dark));
-    this.linkMeshes = [];
-    const radii = [33, 39, 36, 29, 26, 24];
-    for (let index = 0; index < 6; index += 1) {
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radii[index], radii[index], 1, 28), index % 2 ? aluminium : blue);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.robotGroup.add(mesh);
-      this.linkMeshes.push(mesh);
-    }
-    this.jointMeshes = [];
-    for (let index = 0; index < 7; index += 1) {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(index === 0 ? 42 : 34, 28, 18), index % 2 ? dark : blue);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.robotGroup.add(mesh);
-      this.jointMeshes.push(mesh);
-    }
+    this.ur10 = new Ur10Visual(this.scene);
     this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
     this.scene.add(this.tcpMarker);
     this.tcpRing = new THREE.Mesh(new THREE.TorusGeometry(15, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: 0x59e1ff }));
@@ -215,8 +184,7 @@ export class RobotRenderer {
     const state = this.controller.getState();
     const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
     if (!fk.ok) return;
-    for (let index = 0; index < this.linkMeshes.length; index += 1) setSegment(this.linkMeshes[index], fk.jointPositions[index], fk.jointPositions[index + 1]);
-    for (let index = 0; index < this.jointMeshes.length; index += 1) this.jointMeshes[index].position.set(fk.jointPositions[index].xMm, fk.jointPositions[index].yMm, fk.jointPositions[index].zMm);
+    this.ur10.update(state.jointsRad, fk.frames);
     this.tcpMarker.position.set(fk.tcp.xMm, fk.tcp.yMm, fk.tcp.zMm);
     this.tcpRing.position.copy(this.tcpMarker.position);
     this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
@@ -224,8 +192,8 @@ export class RobotRenderer {
 
   setView(view) {
     const presets = {
-      hero: { focus: [390, 0, 170], yaw: -0.82, pitch: 0.48, radius: 1450 },
-      top: { focus: [590, 0, 90], yaw: -0.72, pitch: 1.25, radius: 1180 },
+      hero: { focus: [390, 0, 250], yaw: -0.82, pitch: 0.48, radius: 1850 },
+      top: { focus: [590, 0, 130], yaw: -0.72, pitch: 1.25, radius: 1600 },
       tray: { focus: [535, -220, 95], yaw: -0.82, pitch: 0.58, radius: 760 },
       latch: { focus: [520, -230, 70], yaw: -0.92, pitch: 0.42, radius: 430 },
       target: { focus: [635, 205, 90], yaw: -1.02, pitch: 0.52, radius: 720 }
@@ -333,7 +301,8 @@ export class RobotRenderer {
       meanFrameMs: times.length ? times.reduce((sum, value) => sum + value, 0) / times.length : 0,
       p95FrameMs: times.length ? times[Math.min(times.length - 1, Math.floor(times.length * 0.95))] : 0,
       maxFrameMs: times.at(-1) ?? 0,
-      gripper: this.gripper.getStatus()
+      gripper: this.gripper.getStatus(),
+      ur10: this.ur10.getStatus()
     };
   }
 }

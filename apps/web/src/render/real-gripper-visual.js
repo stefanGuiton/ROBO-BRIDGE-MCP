@@ -8,7 +8,7 @@ const COMPONENTS = {
 };
 const ITEM_SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 };
 
-function parseGlb(buffer) {
+export function parseGlb(buffer) {
   const bytes = new Uint8Array(buffer);
   const view = new DataView(buffer);
   if (view.getUint32(0, true) !== 0x46546c67) throw new Error('invalid_glb_magic');
@@ -29,7 +29,7 @@ function parseGlb(buffer) {
   return { json, bin };
 }
 
-class GlbModel {
+export class GlbModel {
   constructor(json, bin) {
     this.gltf = json;
     this.bin = bin;

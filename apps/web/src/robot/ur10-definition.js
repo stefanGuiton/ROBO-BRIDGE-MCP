@@ -1,7 +1,7 @@
 import { UR10_GRIPPER } from './gripper-definition.js';
 
 // Official Universal Robots UR10 DH dimensions, converted from metres to mm.
-// The public visual remains a project-owned generic industrial arm.
+// The browser visual uses the separately attributed high-detail V2 mesh set.
 export const UR10_DEFINITION = Object.freeze({
   id: 'ur10-class-official-dh',
   source: 'Universal Robots DH Parameters for calculations of kinematics and dynamics',
