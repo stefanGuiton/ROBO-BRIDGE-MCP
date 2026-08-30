@@ -1,0 +1,176 @@
+{
+  "families": {
+    "arch": {
+      "brickZones": 2,
+      "cables": 0,
+      "checksum": "59D3BE70",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 1041649563,
+      "members": 49,
+      "nodes": 36,
+      "valid": true,
+      "warnings": []
+    },
+    "bascule": {
+      "brickZones": 3,
+      "cables": 0,
+      "checksum": "41FA447B",
+      "compatibility": "hybrid",
+      "constructionSystem": "hybrid",
+      "designRevision": 986181244,
+      "members": 9,
+      "nodes": 9,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "beam": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "DC6D4C70",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 4249689572,
+      "members": 8,
+      "nodes": 9,
+      "valid": true,
+      "warnings": []
+    },
+    "boxCulvert": {
+      "brickZones": 2,
+      "cables": 0,
+      "checksum": "10B1FFEF",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 1349227858,
+      "members": 13,
+      "nodes": 13,
+      "valid": true,
+      "warnings": []
+    },
+    "corbelled": {
+      "brickZones": 2,
+      "cables": 0,
+      "checksum": "C706251A",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 470964878,
+      "members": 90,
+      "nodes": 92,
+      "valid": true,
+      "warnings": []
+    },
+    "howe": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "1D9356D8",
+      "compatibility": "hybrid",
+      "constructionSystem": "technic",
+      "designRevision": 2255707916,
+      "members": 35,
+      "nodes": 18,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "pier": {
+      "brickZones": 5,
+      "cables": 0,
+      "checksum": "B131FF3E",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 4144748229,
+      "members": 14,
+      "nodes": 15,
+      "valid": true,
+      "warnings": []
+    },
+    "pratt": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "20CB5C70",
+      "compatibility": "hybrid",
+      "constructionSystem": "technic",
+      "designRevision": 3279110120,
+      "members": 35,
+      "nodes": 18,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "suspension": {
+      "brickZones": 3,
+      "cables": 8,
+      "checksum": "9AC94903",
+      "compatibility": "hybrid",
+      "constructionSystem": "hybrid",
+      "designRevision": 3443178049,
+      "members": 14,
+      "nodes": 31,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "tiedArch": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "F930B995",
+      "compatibility": "hybrid",
+      "constructionSystem": "hybrid",
+      "designRevision": 3821328900,
+      "members": 23,
+      "nodes": 16,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "trestle": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "89BC86E9",
+      "compatibility": "hybrid",
+      "constructionSystem": "hybrid",
+      "designRevision": 1182601051,
+      "members": 25,
+      "nodes": 18,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    },
+    "viaduct": {
+      "brickZones": 10,
+      "cables": 0,
+      "checksum": "187D16F8",
+      "compatibility": "brick-native",
+      "constructionSystem": "system-brick",
+      "designRevision": 870902323,
+      "members": 53,
+      "nodes": 50,
+      "valid": true,
+      "warnings": []
+    },
+    "warren": {
+      "brickZones": 1,
+      "cables": 0,
+      "checksum": "1610EB3F",
+      "compatibility": "hybrid",
+      "constructionSystem": "technic",
+      "designRevision": 43086423,
+      "members": 31,
+      "nodes": 17,
+      "valid": true,
+      "warnings": [
+        "HYBRID_PARTS_REQUIRED"
+      ]
+    }
+  },
+  "generatorVersion": 2,
+  "version": 2
+}

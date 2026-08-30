@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/ChallengeState.schema.json",
+  "title": "ChallengeState 2D prototype input",
+  "type": "object",
+  "required": ["version", "seed", "mode", "terrain", "entry", "exit", "corridor", "supportRegions"],
+  "properties": {
+    "version": { "const": 3 }, "seed": { "type": "integer" }, "mode": { "enum": ["rail", "road"] }, "name": { "type": "string" },
+    "terrain": {
+      "type": "object", "required": ["seed", "width", "depth", "gridX", "gridZ", "heightScale", "obstacle", "profile"],
+      "properties": { "profile": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/point2" } } }, "additionalProperties": true
+    },
+    "entry": { "$ref": "#/$defs/routeAnchor" }, "exit": { "$ref": "#/$defs/routeAnchor" },
+    "corridor": {
+      "type": "object", "required": ["centreline", "deckWidth", "vehicleClearWidth", "vehicleClearHeight", "deckElevationRange", "mode"],
+      "properties": { "centreline": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/point3" } }, "deckWidth": { "type": "number" }, "vehicleClearWidth": { "type": "number" }, "vehicleClearHeight": { "type": "number" }, "deckElevationRange": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }, "mode": { "enum": ["rail-single", "rail-double", "road"] } },
+      "additionalProperties": false
+    },
+    "supportRegions": { "type": "array", "items": { "type": "object", "required": ["id", "xMin", "xMax", "foundationY", "allowed"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "xMin": { "type": "number" }, "xMax": { "type": "number" }, "foundationY": { "type": "number" }, "allowed": { "type": "array", "items": { "enum": ["fixed", "anchor", "tower", "pier", "arch"] } } } } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "point2": { "type": "object", "required": ["x", "y"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" } } },
+    "point3": { "type": "object", "required": ["x", "y", "z"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } } },
+    "routeAnchor": { "type": "object", "required": ["position", "forward", "platformWidth", "platformLength"], "additionalProperties": false, "properties": { "position": { "$ref": "#/$defs/point3" }, "forward": { "$ref": "#/$defs/point3" }, "platformWidth": { "type": "number" }, "platformLength": { "type": "number" } } }
+  }
+}

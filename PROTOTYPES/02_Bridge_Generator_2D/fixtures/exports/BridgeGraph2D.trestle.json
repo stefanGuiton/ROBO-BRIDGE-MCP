@@ -1,0 +1,474 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "bonded-deck",
+      "nodeA": 9,
+      "nodeB": 10,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "bonded-deck",
+      "nodeA": 10,
+      "nodeB": 11,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "bonded-deck",
+      "nodeA": 11,
+      "nodeB": 12,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "bonded-deck",
+      "nodeA": 12,
+      "nodeB": 13,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "trestle-column",
+      "nodeA": 14,
+      "nodeB": 3,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "trestle-column",
+      "nodeA": 15,
+      "nodeB": 5,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 15,
+      "memberClass": "trestle-column",
+      "nodeA": 16,
+      "nodeB": 7,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 16,
+      "memberClass": "trestle-column",
+      "nodeA": 17,
+      "nodeB": 9,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 17,
+      "memberClass": "trestle-column",
+      "nodeA": 18,
+      "nodeB": 11,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 14,
+      "nodeB": 5,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 19,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 3,
+      "nodeB": 15,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 20,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 15,
+      "nodeB": 7,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 21,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 5,
+      "nodeB": 16,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 22,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 16,
+      "nodeB": 9,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 23,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 7,
+      "nodeB": 17,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 24,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 17,
+      "nodeB": 11,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 25,
+      "memberClass": "trestle-x-brace",
+      "nodeA": 9,
+      "nodeB": 18,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge",
+        "technic-beam",
+        "technic-connector"
+      ],
+      "bondPattern": "running",
+      "compatibility": "hybrid",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "hybrid-v1",
+      "sideThicknessStuds": 2,
+      "system": "hybrid"
+    },
+    "designRevision": 1182601051,
+    "deterministicChecksum": "89BC86E9",
+    "family": "trestle",
+    "familyLabel": "Braced trestle",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 20,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 34,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "deck",
+      "supportType": "none",
+      "x": 62,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "deck",
+      "supportType": "none",
+      "x": 76,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 13,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 14,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 20,
+      "y": -17
+    },
+    {
+      "id": 15,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 34,
+      "y": -26
+    },
+    {
+      "id": 16,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 48,
+      "y": -29
+    },
+    {
+      "id": 17,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 62,
+      "y": -25
+    },
+    {
+      "id": 18,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 76,
+      "y": -16
+    }
+  ]
+}

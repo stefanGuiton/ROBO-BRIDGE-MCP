@@ -1,0 +1,1419 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "viaduct-pier",
+      "nodeA": 10,
+      "nodeB": 1,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "viaduct-pier",
+      "nodeA": 11,
+      "nodeB": 3,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "viaduct-pier",
+      "nodeA": 12,
+      "nodeB": 5,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "viaduct-pier",
+      "nodeA": 13,
+      "nodeB": 7,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "viaduct-pier",
+      "nodeA": 14,
+      "nodeB": 9,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 15,
+      "nodeB": 16,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 15,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 16,
+      "nodeB": 17,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 16,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 17,
+      "nodeB": 18,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 17,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 18,
+      "nodeB": 19,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 18,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 19,
+      "nodeB": 20,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 19,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 20,
+      "nodeB": 21,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 20,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 21,
+      "nodeB": 22,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 21,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 22,
+      "nodeB": 23,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 22,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 15,
+      "nodeB": 1,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 23,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 23,
+      "nodeB": 3,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 24,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 24,
+      "nodeB": 25,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 25,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 25,
+      "nodeB": 26,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 26,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 26,
+      "nodeB": 27,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 27,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 27,
+      "nodeB": 28,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 28,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 28,
+      "nodeB": 29,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 29,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 29,
+      "nodeB": 30,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 30,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 30,
+      "nodeB": 31,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 31,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 31,
+      "nodeB": 32,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 32,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 24,
+      "nodeB": 3,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 33,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 32,
+      "nodeB": 5,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 34,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 33,
+      "nodeB": 34,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 35,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 34,
+      "nodeB": 35,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 36,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 35,
+      "nodeB": 36,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 37,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 36,
+      "nodeB": 37,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 38,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 37,
+      "nodeB": 38,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 39,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 38,
+      "nodeB": 39,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 40,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 39,
+      "nodeB": 40,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 41,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 40,
+      "nodeB": 41,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 42,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 33,
+      "nodeB": 5,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 43,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 41,
+      "nodeB": 7,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 44,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 42,
+      "nodeB": 43,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 45,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 43,
+      "nodeB": 44,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 46,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 44,
+      "nodeB": 45,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 47,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 45,
+      "nodeB": 46,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 48,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 46,
+      "nodeB": 47,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 49,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 47,
+      "nodeB": 48,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 50,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 48,
+      "nodeB": 49,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 51,
+      "memberClass": "viaduct-masonry-arch",
+      "nodeA": 49,
+      "nodeB": 50,
+      "rasterMode": "stepped-arch-ring",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 52,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 42,
+      "nodeB": 7,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-beam",
+      "capacityClass": 3,
+      "id": 53,
+      "memberClass": "masonry-spandrel-tie",
+      "nodeA": 50,
+      "nodeB": 9,
+      "rasterMode": "line-raster",
+      "role": "vertical",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z002",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": -3,
+            "y": 2
+          },
+          {
+            "x": -3,
+            "y": 32
+          },
+          {
+            "x": 3,
+            "y": 32
+          },
+          {
+            "x": 3,
+            "y": 2
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z003",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 21,
+            "y": -20
+          },
+          {
+            "x": 21,
+            "y": 32
+          },
+          {
+            "x": 27,
+            "y": 32
+          },
+          {
+            "x": 27,
+            "y": -20
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z004",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 45,
+            "y": -29
+          },
+          {
+            "x": 45,
+            "y": 32
+          },
+          {
+            "x": 51,
+            "y": 32
+          },
+          {
+            "x": 51,
+            "y": -29
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z005",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 69,
+            "y": -19
+          },
+          {
+            "x": 69,
+            "y": 32
+          },
+          {
+            "x": 75,
+            "y": 32
+          },
+          {
+            "x": 75,
+            "y": -19
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z006",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 93,
+            "y": 2
+          },
+          {
+            "x": 93,
+            "y": 32
+          },
+          {
+            "x": 99,
+            "y": 32
+          },
+          {
+            "x": 99,
+            "y": 2
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 0,
+              "y": 22
+            },
+            {
+              "x": 3,
+              "y": 28
+            },
+            {
+              "x": 6,
+              "y": 30
+            },
+            {
+              "x": 9,
+              "y": 32
+            },
+            {
+              "x": 12,
+              "y": 32
+            },
+            {
+              "x": 15,
+              "y": 32
+            },
+            {
+              "x": 18,
+              "y": 30
+            },
+            {
+              "x": 21,
+              "y": 28
+            },
+            {
+              "x": 24,
+              "y": 22
+            },
+            {
+              "x": 0,
+              "y": 22
+            }
+          ]
+        ],
+        "id": "Z007",
+        "memberClass": "closed-spandrel-masonry",
+        "minThicknessStuds": 3,
+        "outer": [
+          {
+            "x": 0,
+            "y": 22
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 24,
+            "y": 34
+          },
+          {
+            "x": 24,
+            "y": 22
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-bay"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 24,
+              "y": 22
+            },
+            {
+              "x": 27,
+              "y": 28
+            },
+            {
+              "x": 30,
+              "y": 30
+            },
+            {
+              "x": 33,
+              "y": 32
+            },
+            {
+              "x": 36,
+              "y": 32
+            },
+            {
+              "x": 39,
+              "y": 32
+            },
+            {
+              "x": 42,
+              "y": 30
+            },
+            {
+              "x": 45,
+              "y": 28
+            },
+            {
+              "x": 48,
+              "y": 22
+            },
+            {
+              "x": 24,
+              "y": 22
+            }
+          ]
+        ],
+        "id": "Z008",
+        "memberClass": "closed-spandrel-masonry",
+        "minThicknessStuds": 3,
+        "outer": [
+          {
+            "x": 24,
+            "y": 22
+          },
+          {
+            "x": 24,
+            "y": 34
+          },
+          {
+            "x": 48,
+            "y": 34
+          },
+          {
+            "x": 48,
+            "y": 22
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-bay"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 48,
+              "y": 22
+            },
+            {
+              "x": 51,
+              "y": 28
+            },
+            {
+              "x": 54,
+              "y": 30
+            },
+            {
+              "x": 57,
+              "y": 32
+            },
+            {
+              "x": 60,
+              "y": 32
+            },
+            {
+              "x": 63,
+              "y": 32
+            },
+            {
+              "x": 66,
+              "y": 30
+            },
+            {
+              "x": 69,
+              "y": 28
+            },
+            {
+              "x": 72,
+              "y": 22
+            },
+            {
+              "x": 48,
+              "y": 22
+            }
+          ]
+        ],
+        "id": "Z009",
+        "memberClass": "closed-spandrel-masonry",
+        "minThicknessStuds": 3,
+        "outer": [
+          {
+            "x": 48,
+            "y": 22
+          },
+          {
+            "x": 48,
+            "y": 34
+          },
+          {
+            "x": 72,
+            "y": 34
+          },
+          {
+            "x": 72,
+            "y": 22
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-bay"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 72,
+              "y": 22
+            },
+            {
+              "x": 75,
+              "y": 28
+            },
+            {
+              "x": 78,
+              "y": 30
+            },
+            {
+              "x": 81,
+              "y": 32
+            },
+            {
+              "x": 84,
+              "y": 32
+            },
+            {
+              "x": 87,
+              "y": 32
+            },
+            {
+              "x": 90,
+              "y": 30
+            },
+            {
+              "x": 93,
+              "y": 28
+            },
+            {
+              "x": 96,
+              "y": 22
+            },
+            {
+              "x": 72,
+              "y": 22
+            }
+          ]
+        ],
+        "id": "Z010",
+        "memberClass": "closed-spandrel-masonry",
+        "minThicknessStuds": 3,
+        "outer": [
+          {
+            "x": 72,
+            "y": 22
+          },
+          {
+            "x": 72,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 22
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "viaduct-bay"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "brick-native",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "system-masonry-v1",
+      "sideThicknessStuds": 2,
+      "system": "system-brick"
+    },
+    "designRevision": 870902323,
+    "deterministicChecksum": "187D16F8",
+    "family": "viaduct",
+    "familyLabel": "Multi-arch viaduct",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "pier",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 2
+    },
+    {
+      "id": 11,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 24,
+      "y": -20
+    },
+    {
+      "id": 12,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 48,
+      "y": -29
+    },
+    {
+      "id": 13,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 72,
+      "y": -19
+    },
+    {
+      "id": 14,
+      "role": "pier",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 2
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "supportType": "none",
+      "x": 0,
+      "y": 22
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "supportType": "none",
+      "x": 3,
+      "y": 28
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
+      "x": 6,
+      "y": 30
+    },
+    {
+      "id": 18,
+      "role": "joint",
+      "supportType": "none",
+      "x": 9,
+      "y": 32
+    },
+    {
+      "id": 19,
+      "role": "joint",
+      "supportType": "none",
+      "x": 12,
+      "y": 32
+    },
+    {
+      "id": 20,
+      "role": "joint",
+      "supportType": "none",
+      "x": 15,
+      "y": 32
+    },
+    {
+      "id": 21,
+      "role": "joint",
+      "supportType": "none",
+      "x": 18,
+      "y": 30
+    },
+    {
+      "id": 22,
+      "role": "joint",
+      "supportType": "none",
+      "x": 21,
+      "y": 28
+    },
+    {
+      "id": 23,
+      "role": "joint",
+      "supportType": "none",
+      "x": 24,
+      "y": 22
+    },
+    {
+      "id": 24,
+      "role": "joint",
+      "supportType": "none",
+      "x": 24,
+      "y": 22
+    },
+    {
+      "id": 25,
+      "role": "joint",
+      "supportType": "none",
+      "x": 27,
+      "y": 28
+    },
+    {
+      "id": 26,
+      "role": "joint",
+      "supportType": "none",
+      "x": 30,
+      "y": 30
+    },
+    {
+      "id": 27,
+      "role": "joint",
+      "supportType": "none",
+      "x": 33,
+      "y": 32
+    },
+    {
+      "id": 28,
+      "role": "joint",
+      "supportType": "none",
+      "x": 36,
+      "y": 32
+    },
+    {
+      "id": 29,
+      "role": "joint",
+      "supportType": "none",
+      "x": 39,
+      "y": 32
+    },
+    {
+      "id": 30,
+      "role": "joint",
+      "supportType": "none",
+      "x": 42,
+      "y": 30
+    },
+    {
+      "id": 31,
+      "role": "joint",
+      "supportType": "none",
+      "x": 45,
+      "y": 28
+    },
+    {
+      "id": 32,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 22
+    },
+    {
+      "id": 33,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 22
+    },
+    {
+      "id": 34,
+      "role": "joint",
+      "supportType": "none",
+      "x": 51,
+      "y": 28
+    },
+    {
+      "id": 35,
+      "role": "joint",
+      "supportType": "none",
+      "x": 54,
+      "y": 30
+    },
+    {
+      "id": 36,
+      "role": "joint",
+      "supportType": "none",
+      "x": 57,
+      "y": 32
+    },
+    {
+      "id": 37,
+      "role": "joint",
+      "supportType": "none",
+      "x": 60,
+      "y": 32
+    },
+    {
+      "id": 38,
+      "role": "joint",
+      "supportType": "none",
+      "x": 63,
+      "y": 32
+    },
+    {
+      "id": 39,
+      "role": "joint",
+      "supportType": "none",
+      "x": 66,
+      "y": 30
+    },
+    {
+      "id": 40,
+      "role": "joint",
+      "supportType": "none",
+      "x": 69,
+      "y": 28
+    },
+    {
+      "id": 41,
+      "role": "joint",
+      "supportType": "none",
+      "x": 72,
+      "y": 22
+    },
+    {
+      "id": 42,
+      "role": "joint",
+      "supportType": "none",
+      "x": 72,
+      "y": 22
+    },
+    {
+      "id": 43,
+      "role": "joint",
+      "supportType": "none",
+      "x": 75,
+      "y": 28
+    },
+    {
+      "id": 44,
+      "role": "joint",
+      "supportType": "none",
+      "x": 78,
+      "y": 30
+    },
+    {
+      "id": 45,
+      "role": "joint",
+      "supportType": "none",
+      "x": 81,
+      "y": 32
+    },
+    {
+      "id": 46,
+      "role": "joint",
+      "supportType": "none",
+      "x": 84,
+      "y": 32
+    },
+    {
+      "id": 47,
+      "role": "joint",
+      "supportType": "none",
+      "x": 87,
+      "y": 32
+    },
+    {
+      "id": 48,
+      "role": "joint",
+      "supportType": "none",
+      "x": 90,
+      "y": 30
+    },
+    {
+      "id": 49,
+      "role": "joint",
+      "supportType": "none",
+      "x": 93,
+      "y": 28
+    },
+    {
+      "id": 50,
+      "role": "joint",
+      "supportType": "none",
+      "x": 96,
+      "y": 22
+    }
+  ]
+}

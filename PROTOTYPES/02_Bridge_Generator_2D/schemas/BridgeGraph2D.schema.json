@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/BridgeGraph2D.schema.json",
+  "title": "Brick-ready BridgeGraph2D",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nodes", "members", "cables", "metadata"],
+  "properties": {
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "members": { "type": "array", "items": { "$ref": "#/$defs/member" } },
+    "cables": { "type": "array", "items": { "$ref": "#/$defs/cable" } },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version", "generatorVersion", "family", "familyLabel", "span", "bridgeWidth", "vehicleClearance",
+        "sideStructures", "sharedDeck", "construction", "brickZones", "designRevision", "deterministicChecksum"
+      ],
+      "properties": {
+        "version": { "const": 3 },
+        "generatorVersion": { "type": "integer", "minimum": 2 },
+        "family": { "type": "string" },
+        "familyLabel": { "type": "string" },
+        "span": { "type": "number" },
+        "bridgeWidth": { "type": "number" },
+        "vehicleClearance": { "type": "number" },
+        "sideStructures": { "type": "integer" },
+        "sharedDeck": { "type": "boolean" },
+        "construction": { "$ref": "#/$defs/construction" },
+        "brickZones": { "type": "array", "items": { "$ref": "#/$defs/brickZone" } },
+        "designRevision": { "type": "integer", "minimum": 0 },
+        "deterministicChecksum": { "type": "string", "pattern": "^[0-9A-F]{8}$" }
+      }
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object", "additionalProperties": false, "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+    },
+    "node": {
+      "type": "object", "additionalProperties": false, "required": ["id", "x", "y", "role", "supportType"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "x": { "type": "number" }, "y": { "type": "number" },
+        "role": { "enum": ["support", "deck", "pier", "tower", "joint", "anchor"] },
+        "supportType": { "enum": ["fixed", "terrain", "none"] },
+        "side": { "enum": ["near", "far"] },
+        "cableAttachment": { "type": "boolean" },
+        "hinge": { "type": "boolean" }
+      }
+    },
+    "member": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "nodeA", "nodeB", "role", "memberClass", "capacityClass", "buildClass", "rasterMode", "sectionStuds"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "nodeA": { "type": "integer", "minimum": 1 }, "nodeB": { "type": "integer", "minimum": 1 },
+        "role": { "enum": ["beam", "chord", "diagonal", "vertical", "pier", "arch", "deck", "tower"] },
+        "memberClass": { "type": "string", "minLength": 1 },
+        "capacityClass": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "buildClass": { "enum": ["brick-course", "brick-stack", "masonry-arch", "technic-frame", "brick-beam"] },
+        "rasterMode": { "enum": ["horizontal-course", "vertical-stack", "stepped-arch-ring", "orthogonal-step", "technic-member", "line-raster", "hinged-deck"] },
+        "sectionStuds": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "side": { "enum": ["near", "far"] }
+      }
+    },
+    "cable": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "anchorNodeA", "anchorNodeB", "structuralRole", "breakable", "samples", "hangerTargets"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "anchorNodeA": { "type": "integer", "minimum": 1 }, "anchorNodeB": { "type": "integer", "minimum": 1 },
+        "structuralRole": { "enum": ["main", "stay", "hanger", "decorative"] },
+        "breakable": { "type": "boolean" },
+        "samples": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/point" } },
+        "hangerTargets": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+        "sag": { "type": "number" },
+        "parentCableId": { "type": "integer", "minimum": 1 },
+        "towerNodeIds": { "type": "array", "items": { "type": "integer", "minimum": 1 } }
+      }
+    },
+    "construction": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "system", "compatibility", "paletteId", "grid", "allowedParts", "maxBeamStuds",
+        "sideThicknessStuds", "deckThicknessLayers", "bondPattern", "compilerReady"
+      ],
+      "properties": {
+        "system": { "enum": ["system-brick", "technic", "hybrid"] },
+        "compatibility": { "enum": ["brick-native", "hybrid"] },
+        "paletteId": { "type": "string" },
+        "grid": {
+          "type": "object", "additionalProperties": false, "required": ["stud", "layer"],
+          "properties": { "stud": { "type": "number", "exclusiveMinimum": 0 }, "layer": { "type": "number", "exclusiveMinimum": 0 } }
+        },
+        "allowedParts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+        "maxBeamStuds": { "type": "integer", "minimum": 4, "maximum": 80 },
+        "sideThicknessStuds": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "deckThicknessLayers": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "bondPattern": { "enum": ["running", "stack"] },
+        "compilerReady": { "const": true }
+      }
+    },
+    "brickZone": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "role", "outer", "holes", "bondPattern", "rasterMode", "memberClass", "minThicknessStuds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^Z[0-9]{3}$" },
+        "role": { "type": "string" },
+        "outer": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/point" } },
+        "holes": { "type": "array", "items": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/point" } } },
+        "bondPattern": { "enum": ["running", "stack"] },
+        "rasterMode": { "const": "course-fill" },
+        "memberClass": { "type": "string" },
+        "minThicknessStuds": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

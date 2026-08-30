@@ -1,0 +1,438 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "bonded-deck",
+      "nodeA": 9,
+      "nodeB": 10,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "bonded-deck",
+      "nodeA": 10,
+      "nodeB": 11,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "bonded-pier",
+      "nodeA": 12,
+      "nodeB": 3,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "bonded-pier",
+      "nodeA": 13,
+      "nodeB": 5,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "bonded-pier",
+      "nodeA": 14,
+      "nodeB": 7,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "bonded-pier",
+      "nodeA": 15,
+      "nodeB": 9,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z002",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 21,
+            "y": -20
+          },
+          {
+            "x": 21,
+            "y": 32
+          },
+          {
+            "x": 27,
+            "y": 32
+          },
+          {
+            "x": 27,
+            "y": -20
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z003",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 37,
+            "y": -27
+          },
+          {
+            "x": 37,
+            "y": 32
+          },
+          {
+            "x": 43,
+            "y": 32
+          },
+          {
+            "x": 43,
+            "y": -27
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z004",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 53,
+            "y": -26
+          },
+          {
+            "x": 53,
+            "y": 32
+          },
+          {
+            "x": 59,
+            "y": 32
+          },
+          {
+            "x": 59,
+            "y": -26
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "pier"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z005",
+        "memberClass": "bonded-pier",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 69,
+            "y": -19
+          },
+          {
+            "x": 69,
+            "y": 32
+          },
+          {
+            "x": 75,
+            "y": 32
+          },
+          {
+            "x": 75,
+            "y": -19
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "pier"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "brick-native",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "system-masonry-v1",
+      "sideThicknessStuds": 2,
+      "system": "system-brick"
+    },
+    "designRevision": 4144748229,
+    "deterministicChecksum": "B131FF3E",
+    "family": "pier",
+    "familyLabel": "Pier and beam",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 40,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 56,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 24,
+      "y": -20
+    },
+    {
+      "id": 13,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 40,
+      "y": -27
+    },
+    {
+      "id": 14,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 56,
+      "y": -26
+    },
+    {
+      "id": 15,
+      "role": "pier",
+      "supportType": "terrain",
+      "x": 72,
+      "y": -19
+    }
+  ]
+}

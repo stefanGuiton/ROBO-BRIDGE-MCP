@@ -1,0 +1,155 @@
+{
+  "corridor": {
+    "centreline": [
+      {
+        "x": 0,
+        "y": 34,
+        "z": 0
+      },
+      {
+        "x": 96,
+        "y": 34,
+        "z": 0
+      }
+    ],
+    "deckElevationRange": [
+      27,
+      42
+    ],
+    "deckWidth": 13,
+    "mode": "rail-single",
+    "vehicleClearHeight": 6,
+    "vehicleClearWidth": 7
+  },
+  "entry": {
+    "forward": {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    "platformLength": 18,
+    "platformWidth": 12,
+    "position": {
+      "x": 0,
+      "y": 34,
+      "z": 0
+    }
+  },
+  "exit": {
+    "forward": {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    "platformLength": 18,
+    "platformWidth": 12,
+    "position": {
+      "x": 96,
+      "y": 34,
+      "z": 0
+    }
+  },
+  "mode": "rail",
+  "name": "Ravine",
+  "seed": 407,
+  "supportRegions": [
+    {
+      "allowed": [
+        "fixed",
+        "anchor",
+        "tower",
+        "pier",
+        "arch"
+      ],
+      "foundationY": 2,
+      "id": "left-bank",
+      "xMax": 7.5,
+      "xMin": -18
+    },
+    {
+      "allowed": [
+        "pier",
+        "arch"
+      ],
+      "foundationY": -28,
+      "id": "ravine-bed",
+      "xMax": 90.5,
+      "xMin": 7.5
+    },
+    {
+      "allowed": [
+        "fixed",
+        "anchor",
+        "tower",
+        "pier",
+        "arch"
+      ],
+      "foundationY": 2,
+      "id": "right-bank",
+      "xMax": 114,
+      "xMin": 90.5
+    }
+  ],
+  "terrain": {
+    "depth": 52,
+    "gridX": 24,
+    "gridZ": 6,
+    "heightScale": 1,
+    "obstacle": {
+      "depth": 30,
+      "noiseAmplitude": 1.5,
+      "noiseFrequency": 0.08,
+      "type": "ravine",
+      "width": 96
+    },
+    "profile": [
+      {
+        "x": -18,
+        "y": 4
+      },
+      {
+        "x": 0,
+        "y": 2
+      },
+      {
+        "x": 8,
+        "y": -5
+      },
+      {
+        "x": 18,
+        "y": -16
+      },
+      {
+        "x": 32,
+        "y": -26
+      },
+      {
+        "x": 48,
+        "y": -29
+      },
+      {
+        "x": 64,
+        "y": -24
+      },
+      {
+        "x": 78,
+        "y": -15
+      },
+      {
+        "x": 90,
+        "y": -4
+      },
+      {
+        "x": 96,
+        "y": 2
+      },
+      {
+        "x": 114,
+        "y": 5
+      }
+    ],
+    "seed": 407,
+    "width": 132
+  },
+  "version": 3
+}

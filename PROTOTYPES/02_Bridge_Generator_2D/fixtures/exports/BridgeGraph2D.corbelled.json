@@ -1,0 +1,2067 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "masonry-abutment",
+      "nodeA": 10,
+      "nodeB": 11,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "masonry-abutment",
+      "nodeA": 12,
+      "nodeB": 13,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 11,
+      "nodeB": 14,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 14,
+      "nodeB": 15,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 15,
+      "nodeB": 16,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 16,
+      "nodeB": 17,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 15,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 17,
+      "nodeB": 18,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 16,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 18,
+      "nodeB": 19,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 17,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 19,
+      "nodeB": 20,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 18,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 20,
+      "nodeB": 21,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 19,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 21,
+      "nodeB": 22,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 20,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 22,
+      "nodeB": 23,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 21,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 23,
+      "nodeB": 24,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 22,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 24,
+      "nodeB": 25,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 23,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 25,
+      "nodeB": 26,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 24,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 26,
+      "nodeB": 27,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 25,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 27,
+      "nodeB": 28,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 26,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 28,
+      "nodeB": 29,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 27,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 29,
+      "nodeB": 30,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 28,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 30,
+      "nodeB": 31,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 29,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 31,
+      "nodeB": 32,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 30,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 32,
+      "nodeB": 33,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 31,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 33,
+      "nodeB": 34,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 32,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 34,
+      "nodeB": 35,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 33,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 35,
+      "nodeB": 36,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 34,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 36,
+      "nodeB": 37,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 35,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 37,
+      "nodeB": 38,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 36,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 38,
+      "nodeB": 39,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 37,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 39,
+      "nodeB": 40,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 38,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 40,
+      "nodeB": 41,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 39,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 41,
+      "nodeB": 42,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 40,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 42,
+      "nodeB": 43,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 41,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 43,
+      "nodeB": 44,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 42,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 44,
+      "nodeB": 45,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 43,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 45,
+      "nodeB": 46,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 44,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 46,
+      "nodeB": 47,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 45,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 47,
+      "nodeB": 48,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 46,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 48,
+      "nodeB": 49,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 47,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 49,
+      "nodeB": 50,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 48,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 50,
+      "nodeB": 51,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 49,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 51,
+      "nodeB": 52,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 50,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 52,
+      "nodeB": 53,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 51,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 53,
+      "nodeB": 54,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 52,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 54,
+      "nodeB": 55,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 53,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 55,
+      "nodeB": 56,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 54,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 56,
+      "nodeB": 57,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 55,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 57,
+      "nodeB": 58,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 56,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 58,
+      "nodeB": 59,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 57,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 59,
+      "nodeB": 60,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 58,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 60,
+      "nodeB": 61,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 59,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 61,
+      "nodeB": 62,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 60,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 62,
+      "nodeB": 63,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 61,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 63,
+      "nodeB": 64,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 62,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 64,
+      "nodeB": 65,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 63,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 65,
+      "nodeB": 66,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 64,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 66,
+      "nodeB": 67,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 65,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 67,
+      "nodeB": 68,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 66,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 68,
+      "nodeB": 69,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 67,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 69,
+      "nodeB": 70,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 68,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 70,
+      "nodeB": 71,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 69,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 71,
+      "nodeB": 72,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 70,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 72,
+      "nodeB": 73,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 71,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 73,
+      "nodeB": 74,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 72,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 74,
+      "nodeB": 75,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 73,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 75,
+      "nodeB": 76,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 74,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 76,
+      "nodeB": 77,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 75,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 77,
+      "nodeB": 78,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 76,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 78,
+      "nodeB": 79,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 77,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 79,
+      "nodeB": 80,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 78,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 80,
+      "nodeB": 81,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 79,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 81,
+      "nodeB": 82,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 80,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 82,
+      "nodeB": 83,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 81,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 83,
+      "nodeB": 84,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 82,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 84,
+      "nodeB": 85,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 83,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 85,
+      "nodeB": 86,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 84,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 86,
+      "nodeB": 87,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 85,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 87,
+      "nodeB": 88,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 86,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 88,
+      "nodeB": 89,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 87,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 89,
+      "nodeB": 90,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 88,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 90,
+      "nodeB": 91,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 89,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 91,
+      "nodeB": 92,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "masonry-arch",
+      "capacityClass": 4,
+      "id": 90,
+      "memberClass": "corbelled-masonry",
+      "nodeA": 92,
+      "nodeB": 13,
+      "rasterMode": "orthogonal-step",
+      "role": "arch",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 0,
+              "y": 12
+            },
+            {
+              "x": 4,
+              "y": 12
+            },
+            {
+              "x": 4,
+              "y": 13
+            },
+            {
+              "x": 7,
+              "y": 13
+            },
+            {
+              "x": 7,
+              "y": 14
+            },
+            {
+              "x": 10,
+              "y": 14
+            },
+            {
+              "x": 10,
+              "y": 15
+            },
+            {
+              "x": 13,
+              "y": 15
+            },
+            {
+              "x": 13,
+              "y": 16
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 15,
+              "y": 17
+            },
+            {
+              "x": 18,
+              "y": 17
+            },
+            {
+              "x": 18,
+              "y": 18
+            },
+            {
+              "x": 20,
+              "y": 18
+            },
+            {
+              "x": 20,
+              "y": 19
+            },
+            {
+              "x": 23,
+              "y": 19
+            },
+            {
+              "x": 23,
+              "y": 20
+            },
+            {
+              "x": 25,
+              "y": 20
+            },
+            {
+              "x": 25,
+              "y": 21
+            },
+            {
+              "x": 27,
+              "y": 21
+            },
+            {
+              "x": 27,
+              "y": 22
+            },
+            {
+              "x": 29,
+              "y": 22
+            },
+            {
+              "x": 29,
+              "y": 23
+            },
+            {
+              "x": 32,
+              "y": 23
+            },
+            {
+              "x": 32,
+              "y": 24
+            },
+            {
+              "x": 34,
+              "y": 24
+            },
+            {
+              "x": 34,
+              "y": 25
+            },
+            {
+              "x": 36,
+              "y": 25
+            },
+            {
+              "x": 36,
+              "y": 26
+            },
+            {
+              "x": 38,
+              "y": 26
+            },
+            {
+              "x": 38,
+              "y": 27
+            },
+            {
+              "x": 40,
+              "y": 27
+            },
+            {
+              "x": 40,
+              "y": 28
+            },
+            {
+              "x": 42,
+              "y": 28
+            },
+            {
+              "x": 42,
+              "y": 29
+            },
+            {
+              "x": 44,
+              "y": 29
+            },
+            {
+              "x": 44,
+              "y": 30
+            },
+            {
+              "x": 46,
+              "y": 30
+            },
+            {
+              "x": 46,
+              "y": 31
+            },
+            {
+              "x": 48,
+              "y": 31
+            },
+            {
+              "x": 48,
+              "y": 32
+            },
+            {
+              "x": 48,
+              "y": 31
+            },
+            {
+              "x": 50,
+              "y": 31
+            },
+            {
+              "x": 50,
+              "y": 30
+            },
+            {
+              "x": 52,
+              "y": 30
+            },
+            {
+              "x": 52,
+              "y": 29
+            },
+            {
+              "x": 54,
+              "y": 29
+            },
+            {
+              "x": 54,
+              "y": 28
+            },
+            {
+              "x": 56,
+              "y": 28
+            },
+            {
+              "x": 56,
+              "y": 27
+            },
+            {
+              "x": 58,
+              "y": 27
+            },
+            {
+              "x": 58,
+              "y": 26
+            },
+            {
+              "x": 60,
+              "y": 26
+            },
+            {
+              "x": 60,
+              "y": 25
+            },
+            {
+              "x": 62,
+              "y": 25
+            },
+            {
+              "x": 62,
+              "y": 24
+            },
+            {
+              "x": 64,
+              "y": 24
+            },
+            {
+              "x": 64,
+              "y": 23
+            },
+            {
+              "x": 67,
+              "y": 23
+            },
+            {
+              "x": 67,
+              "y": 22
+            },
+            {
+              "x": 69,
+              "y": 22
+            },
+            {
+              "x": 69,
+              "y": 21
+            },
+            {
+              "x": 71,
+              "y": 21
+            },
+            {
+              "x": 71,
+              "y": 20
+            },
+            {
+              "x": 73,
+              "y": 20
+            },
+            {
+              "x": 73,
+              "y": 19
+            },
+            {
+              "x": 76,
+              "y": 19
+            },
+            {
+              "x": 76,
+              "y": 18
+            },
+            {
+              "x": 78,
+              "y": 18
+            },
+            {
+              "x": 78,
+              "y": 17
+            },
+            {
+              "x": 81,
+              "y": 17
+            },
+            {
+              "x": 81,
+              "y": 16
+            },
+            {
+              "x": 83,
+              "y": 16
+            },
+            {
+              "x": 83,
+              "y": 15
+            },
+            {
+              "x": 86,
+              "y": 15
+            },
+            {
+              "x": 86,
+              "y": 14
+            },
+            {
+              "x": 89,
+              "y": 14
+            },
+            {
+              "x": 89,
+              "y": 13
+            },
+            {
+              "x": 92,
+              "y": 13
+            },
+            {
+              "x": 92,
+              "y": 12
+            },
+            {
+              "x": 96,
+              "y": 12
+            },
+            {
+              "x": 96,
+              "y": 2
+            },
+            {
+              "x": 0,
+              "y": 2
+            }
+          ]
+        ],
+        "id": "Z002",
+        "memberClass": "closed-spandrel-masonry",
+        "minThicknessStuds": 3,
+        "outer": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 2
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "corbelled-body"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "brick-native",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "system-masonry-v1",
+      "sideThicknessStuds": 2,
+      "system": "system-brick"
+    },
+    "designRevision": 470964878,
+    "deterministicChecksum": "C706251A",
+    "family": "corbelled",
+    "familyLabel": "Corbelled bridge",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 2
+    },
+    {
+      "id": 11,
+      "role": "joint",
+      "supportType": "none",
+      "x": 0,
+      "y": 12
+    },
+    {
+      "id": 12,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 2
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "supportType": "none",
+      "x": 96,
+      "y": 12
+    },
+    {
+      "id": 14,
+      "role": "joint",
+      "supportType": "none",
+      "x": 4,
+      "y": 12
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "supportType": "none",
+      "x": 4,
+      "y": 13
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "supportType": "none",
+      "x": 7,
+      "y": 13
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
+      "x": 7,
+      "y": 14
+    },
+    {
+      "id": 18,
+      "role": "joint",
+      "supportType": "none",
+      "x": 10,
+      "y": 14
+    },
+    {
+      "id": 19,
+      "role": "joint",
+      "supportType": "none",
+      "x": 10,
+      "y": 15
+    },
+    {
+      "id": 20,
+      "role": "joint",
+      "supportType": "none",
+      "x": 13,
+      "y": 15
+    },
+    {
+      "id": 21,
+      "role": "joint",
+      "supportType": "none",
+      "x": 13,
+      "y": 16
+    },
+    {
+      "id": 22,
+      "role": "joint",
+      "supportType": "none",
+      "x": 15,
+      "y": 16
+    },
+    {
+      "id": 23,
+      "role": "joint",
+      "supportType": "none",
+      "x": 15,
+      "y": 17
+    },
+    {
+      "id": 24,
+      "role": "joint",
+      "supportType": "none",
+      "x": 18,
+      "y": 17
+    },
+    {
+      "id": 25,
+      "role": "joint",
+      "supportType": "none",
+      "x": 18,
+      "y": 18
+    },
+    {
+      "id": 26,
+      "role": "joint",
+      "supportType": "none",
+      "x": 20,
+      "y": 18
+    },
+    {
+      "id": 27,
+      "role": "joint",
+      "supportType": "none",
+      "x": 20,
+      "y": 19
+    },
+    {
+      "id": 28,
+      "role": "joint",
+      "supportType": "none",
+      "x": 23,
+      "y": 19
+    },
+    {
+      "id": 29,
+      "role": "joint",
+      "supportType": "none",
+      "x": 23,
+      "y": 20
+    },
+    {
+      "id": 30,
+      "role": "joint",
+      "supportType": "none",
+      "x": 25,
+      "y": 20
+    },
+    {
+      "id": 31,
+      "role": "joint",
+      "supportType": "none",
+      "x": 25,
+      "y": 21
+    },
+    {
+      "id": 32,
+      "role": "joint",
+      "supportType": "none",
+      "x": 27,
+      "y": 21
+    },
+    {
+      "id": 33,
+      "role": "joint",
+      "supportType": "none",
+      "x": 27,
+      "y": 22
+    },
+    {
+      "id": 34,
+      "role": "joint",
+      "supportType": "none",
+      "x": 29,
+      "y": 22
+    },
+    {
+      "id": 35,
+      "role": "joint",
+      "supportType": "none",
+      "x": 29,
+      "y": 23
+    },
+    {
+      "id": 36,
+      "role": "joint",
+      "supportType": "none",
+      "x": 32,
+      "y": 23
+    },
+    {
+      "id": 37,
+      "role": "joint",
+      "supportType": "none",
+      "x": 32,
+      "y": 24
+    },
+    {
+      "id": 38,
+      "role": "joint",
+      "supportType": "none",
+      "x": 34,
+      "y": 24
+    },
+    {
+      "id": 39,
+      "role": "joint",
+      "supportType": "none",
+      "x": 34,
+      "y": 25
+    },
+    {
+      "id": 40,
+      "role": "joint",
+      "supportType": "none",
+      "x": 36,
+      "y": 25
+    },
+    {
+      "id": 41,
+      "role": "joint",
+      "supportType": "none",
+      "x": 36,
+      "y": 26
+    },
+    {
+      "id": 42,
+      "role": "joint",
+      "supportType": "none",
+      "x": 38,
+      "y": 26
+    },
+    {
+      "id": 43,
+      "role": "joint",
+      "supportType": "none",
+      "x": 38,
+      "y": 27
+    },
+    {
+      "id": 44,
+      "role": "joint",
+      "supportType": "none",
+      "x": 40,
+      "y": 27
+    },
+    {
+      "id": 45,
+      "role": "joint",
+      "supportType": "none",
+      "x": 40,
+      "y": 28
+    },
+    {
+      "id": 46,
+      "role": "joint",
+      "supportType": "none",
+      "x": 42,
+      "y": 28
+    },
+    {
+      "id": 47,
+      "role": "joint",
+      "supportType": "none",
+      "x": 42,
+      "y": 29
+    },
+    {
+      "id": 48,
+      "role": "joint",
+      "supportType": "none",
+      "x": 44,
+      "y": 29
+    },
+    {
+      "id": 49,
+      "role": "joint",
+      "supportType": "none",
+      "x": 44,
+      "y": 30
+    },
+    {
+      "id": 50,
+      "role": "joint",
+      "supportType": "none",
+      "x": 46,
+      "y": 30
+    },
+    {
+      "id": 51,
+      "role": "joint",
+      "supportType": "none",
+      "x": 46,
+      "y": 31
+    },
+    {
+      "id": 52,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 31
+    },
+    {
+      "id": 53,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 32
+    },
+    {
+      "id": 54,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 31
+    },
+    {
+      "id": 55,
+      "role": "joint",
+      "supportType": "none",
+      "x": 50,
+      "y": 31
+    },
+    {
+      "id": 56,
+      "role": "joint",
+      "supportType": "none",
+      "x": 50,
+      "y": 30
+    },
+    {
+      "id": 57,
+      "role": "joint",
+      "supportType": "none",
+      "x": 52,
+      "y": 30
+    },
+    {
+      "id": 58,
+      "role": "joint",
+      "supportType": "none",
+      "x": 52,
+      "y": 29
+    },
+    {
+      "id": 59,
+      "role": "joint",
+      "supportType": "none",
+      "x": 54,
+      "y": 29
+    },
+    {
+      "id": 60,
+      "role": "joint",
+      "supportType": "none",
+      "x": 54,
+      "y": 28
+    },
+    {
+      "id": 61,
+      "role": "joint",
+      "supportType": "none",
+      "x": 56,
+      "y": 28
+    },
+    {
+      "id": 62,
+      "role": "joint",
+      "supportType": "none",
+      "x": 56,
+      "y": 27
+    },
+    {
+      "id": 63,
+      "role": "joint",
+      "supportType": "none",
+      "x": 58,
+      "y": 27
+    },
+    {
+      "id": 64,
+      "role": "joint",
+      "supportType": "none",
+      "x": 58,
+      "y": 26
+    },
+    {
+      "id": 65,
+      "role": "joint",
+      "supportType": "none",
+      "x": 60,
+      "y": 26
+    },
+    {
+      "id": 66,
+      "role": "joint",
+      "supportType": "none",
+      "x": 60,
+      "y": 25
+    },
+    {
+      "id": 67,
+      "role": "joint",
+      "supportType": "none",
+      "x": 62,
+      "y": 25
+    },
+    {
+      "id": 68,
+      "role": "joint",
+      "supportType": "none",
+      "x": 62,
+      "y": 24
+    },
+    {
+      "id": 69,
+      "role": "joint",
+      "supportType": "none",
+      "x": 64,
+      "y": 24
+    },
+    {
+      "id": 70,
+      "role": "joint",
+      "supportType": "none",
+      "x": 64,
+      "y": 23
+    },
+    {
+      "id": 71,
+      "role": "joint",
+      "supportType": "none",
+      "x": 67,
+      "y": 23
+    },
+    {
+      "id": 72,
+      "role": "joint",
+      "supportType": "none",
+      "x": 67,
+      "y": 22
+    },
+    {
+      "id": 73,
+      "role": "joint",
+      "supportType": "none",
+      "x": 69,
+      "y": 22
+    },
+    {
+      "id": 74,
+      "role": "joint",
+      "supportType": "none",
+      "x": 69,
+      "y": 21
+    },
+    {
+      "id": 75,
+      "role": "joint",
+      "supportType": "none",
+      "x": 71,
+      "y": 21
+    },
+    {
+      "id": 76,
+      "role": "joint",
+      "supportType": "none",
+      "x": 71,
+      "y": 20
+    },
+    {
+      "id": 77,
+      "role": "joint",
+      "supportType": "none",
+      "x": 73,
+      "y": 20
+    },
+    {
+      "id": 78,
+      "role": "joint",
+      "supportType": "none",
+      "x": 73,
+      "y": 19
+    },
+    {
+      "id": 79,
+      "role": "joint",
+      "supportType": "none",
+      "x": 76,
+      "y": 19
+    },
+    {
+      "id": 80,
+      "role": "joint",
+      "supportType": "none",
+      "x": 76,
+      "y": 18
+    },
+    {
+      "id": 81,
+      "role": "joint",
+      "supportType": "none",
+      "x": 78,
+      "y": 18
+    },
+    {
+      "id": 82,
+      "role": "joint",
+      "supportType": "none",
+      "x": 78,
+      "y": 17
+    },
+    {
+      "id": 83,
+      "role": "joint",
+      "supportType": "none",
+      "x": 81,
+      "y": 17
+    },
+    {
+      "id": 84,
+      "role": "joint",
+      "supportType": "none",
+      "x": 81,
+      "y": 16
+    },
+    {
+      "id": 85,
+      "role": "joint",
+      "supportType": "none",
+      "x": 83,
+      "y": 16
+    },
+    {
+      "id": 86,
+      "role": "joint",
+      "supportType": "none",
+      "x": 83,
+      "y": 15
+    },
+    {
+      "id": 87,
+      "role": "joint",
+      "supportType": "none",
+      "x": 86,
+      "y": 15
+    },
+    {
+      "id": 88,
+      "role": "joint",
+      "supportType": "none",
+      "x": 86,
+      "y": 14
+    },
+    {
+      "id": 89,
+      "role": "joint",
+      "supportType": "none",
+      "x": 89,
+      "y": 14
+    },
+    {
+      "id": 90,
+      "role": "joint",
+      "supportType": "none",
+      "x": 89,
+      "y": 13
+    },
+    {
+      "id": 91,
+      "role": "joint",
+      "supportType": "none",
+      "x": 92,
+      "y": 13
+    },
+    {
+      "id": 92,
+      "role": "joint",
+      "supportType": "none",
+      "x": 92,
+      "y": 12
+    }
+  ]
+}

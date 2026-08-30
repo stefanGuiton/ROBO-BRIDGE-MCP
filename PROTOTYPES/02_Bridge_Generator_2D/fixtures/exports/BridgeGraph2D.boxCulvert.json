@@ -1,0 +1,351 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "culvert-sidewall",
+      "nodeA": 10,
+      "nodeB": 12,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "culvert-sidewall",
+      "nodeA": 11,
+      "nodeB": 13,
+      "rasterMode": "vertical-stack",
+      "role": "pier",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "culvert-lintel",
+      "nodeA": 12,
+      "nodeB": 13,
+      "rasterMode": "horizontal-course",
+      "role": "beam",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 3,
+      "id": 12,
+      "memberClass": "culvert-lintel-bearing",
+      "nodeA": 12,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 3,
+      "id": 13,
+      "memberClass": "culvert-lintel-bearing",
+      "nodeA": 13,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "vertical",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [
+          [
+            {
+              "x": 12,
+              "y": -9
+            },
+            {
+              "x": 12,
+              "y": 32
+            },
+            {
+              "x": 84,
+              "y": 32
+            },
+            {
+              "x": 84,
+              "y": -9
+            }
+          ]
+        ],
+        "id": "Z002",
+        "memberClass": "bonded-box-culvert",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 0,
+            "y": -9
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": -9
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "box-culvert"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "brick-native",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "system-masonry-v1",
+      "sideThicknessStuds": 2,
+      "system": "system-brick"
+    },
+    "designRevision": 1349227858,
+    "deterministicChecksum": "10B1FFEF",
+    "family": "boxCulvert",
+    "familyLabel": "Brick box culvert",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 1,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "support",
+      "supportType": "terrain",
+      "x": 12,
+      "y": -9
+    },
+    {
+      "id": 11,
+      "role": "support",
+      "supportType": "terrain",
+      "x": 84,
+      "y": -9
+    },
+    {
+      "id": 12,
+      "role": "joint",
+      "supportType": "none",
+      "x": 12,
+      "y": 32
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "supportType": "none",
+      "x": 84,
+      "y": 32
+    }
+  ]
+}

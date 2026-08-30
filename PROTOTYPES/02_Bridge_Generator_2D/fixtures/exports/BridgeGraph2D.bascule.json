@@ -1,0 +1,297 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bascule-approach",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bascule-leaf-left",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "hinged-deck",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bascule-leaf-right",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "hinged-deck",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bascule-approach",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "masonry-bascule-tower",
+      "nodeA": 6,
+      "nodeB": 2,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "masonry-bascule-tower",
+      "nodeA": 2,
+      "nodeB": 7,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "masonry-bascule-tower",
+      "nodeA": 8,
+      "nodeB": 4,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "masonry-bascule-tower",
+      "nodeA": 4,
+      "nodeB": 9,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 9,
+      "memberClass": "upper-walkway",
+      "nodeA": 7,
+      "nodeB": 9,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z002",
+        "memberClass": "masonry-tower",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 24,
+            "y": -22
+          },
+          {
+            "x": 24,
+            "y": 56
+          },
+          {
+            "x": 30,
+            "y": 56
+          },
+          {
+            "x": 30,
+            "y": -22
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "tower"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z003",
+        "memberClass": "masonry-tower",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 66,
+            "y": -21
+          },
+          {
+            "x": 66,
+            "y": 56
+          },
+          {
+            "x": 72,
+            "y": 56
+          },
+          {
+            "x": 72,
+            "y": -21
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "tower"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge",
+        "technic-beam",
+        "technic-connector",
+        "cable",
+        "chain",
+        "hinge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "hybrid",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "hybrid-v1",
+      "sideThicknessStuds": 2,
+      "system": "hybrid"
+    },
+    "designRevision": 986181244,
+    "deterministicChecksum": "41FA447B",
+    "family": "bascule",
+    "familyLabel": "Tower bascule",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 2,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "hinge": false,
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "hinge": true,
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 27,
+      "y": 34
+    },
+    {
+      "hinge": false,
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "hinge": true,
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 69,
+      "y": 34
+    },
+    {
+      "hinge": false,
+      "id": 5,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 27,
+      "y": -22
+    },
+    {
+      "id": 7,
+      "role": "tower",
+      "supportType": "none",
+      "x": 27,
+      "y": 56
+    },
+    {
+      "id": 8,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 69,
+      "y": -21
+    },
+    {
+      "id": 9,
+      "role": "tower",
+      "supportType": "none",
+      "x": 69,
+      "y": 56
+    }
+  ]
+}

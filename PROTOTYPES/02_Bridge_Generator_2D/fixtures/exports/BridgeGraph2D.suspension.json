@@ -1,0 +1,889 @@
+{
+  "cables": [
+    {
+      "anchorNodeA": 16,
+      "anchorNodeB": 17,
+      "breakable": false,
+      "hangerTargets": [
+        {
+          "x": 27,
+          "y": 34
+        },
+        {
+          "x": 35,
+          "y": 34
+        },
+        {
+          "x": 43,
+          "y": 34
+        },
+        {
+          "x": 51,
+          "y": 34
+        },
+        {
+          "x": 59,
+          "y": 34
+        },
+        {
+          "x": 67,
+          "y": 34
+        },
+        {
+          "x": 75,
+          "y": 34
+        }
+      ],
+      "id": 1,
+      "sag": 11,
+      "samples": [
+        {
+          "x": -8,
+          "y": 2
+        },
+        {
+          "x": -6,
+          "y": 7
+        },
+        {
+          "x": -3,
+          "y": 12
+        },
+        {
+          "x": -1,
+          "y": 17
+        },
+        {
+          "x": 1,
+          "y": 22
+        },
+        {
+          "x": 4,
+          "y": 27
+        },
+        {
+          "x": 6,
+          "y": 32
+        },
+        {
+          "x": 8,
+          "y": 36
+        },
+        {
+          "x": 11,
+          "y": 41
+        },
+        {
+          "x": 13,
+          "y": 46
+        },
+        {
+          "x": 15,
+          "y": 51
+        },
+        {
+          "x": 18,
+          "y": 56
+        },
+        {
+          "x": 20,
+          "y": 58
+        },
+        {
+          "x": 22,
+          "y": 57
+        },
+        {
+          "x": 25,
+          "y": 55
+        },
+        {
+          "x": 27,
+          "y": 54
+        },
+        {
+          "x": 29,
+          "y": 53
+        },
+        {
+          "x": 32,
+          "y": 51
+        },
+        {
+          "x": 34,
+          "y": 51
+        },
+        {
+          "x": 36,
+          "y": 50
+        },
+        {
+          "x": 39,
+          "y": 49
+        },
+        {
+          "x": 41,
+          "y": 49
+        },
+        {
+          "x": 43,
+          "y": 48
+        },
+        {
+          "x": 46,
+          "y": 48
+        },
+        {
+          "x": 48,
+          "y": 48
+        },
+        {
+          "x": 50,
+          "y": 48
+        },
+        {
+          "x": 53,
+          "y": 48
+        },
+        {
+          "x": 55,
+          "y": 49
+        },
+        {
+          "x": 57,
+          "y": 49
+        },
+        {
+          "x": 60,
+          "y": 50
+        },
+        {
+          "x": 62,
+          "y": 51
+        },
+        {
+          "x": 64,
+          "y": 51
+        },
+        {
+          "x": 67,
+          "y": 53
+        },
+        {
+          "x": 69,
+          "y": 54
+        },
+        {
+          "x": 71,
+          "y": 55
+        },
+        {
+          "x": 74,
+          "y": 57
+        },
+        {
+          "x": 76,
+          "y": 58
+        },
+        {
+          "x": 78,
+          "y": 56
+        },
+        {
+          "x": 81,
+          "y": 51
+        },
+        {
+          "x": 83,
+          "y": 46
+        },
+        {
+          "x": 85,
+          "y": 41
+        },
+        {
+          "x": 88,
+          "y": 36
+        },
+        {
+          "x": 90,
+          "y": 32
+        },
+        {
+          "x": 92,
+          "y": 27
+        },
+        {
+          "x": 95,
+          "y": 22
+        },
+        {
+          "x": 97,
+          "y": 17
+        },
+        {
+          "x": 99,
+          "y": 12
+        },
+        {
+          "x": 102,
+          "y": 7
+        },
+        {
+          "x": 104,
+          "y": 2
+        }
+      ],
+      "structuralRole": "main",
+      "towerNodeIds": [
+        13,
+        15
+      ]
+    },
+    {
+      "anchorNodeA": 18,
+      "anchorNodeB": 19,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 2,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 27,
+          "y": 54
+        },
+        {
+          "x": 27,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 20,
+      "anchorNodeB": 21,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 3,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 35,
+          "y": 50
+        },
+        {
+          "x": 35,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 22,
+      "anchorNodeB": 23,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 4,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 43,
+          "y": 48
+        },
+        {
+          "x": 43,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 24,
+      "anchorNodeB": 25,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 5,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 51,
+          "y": 48
+        },
+        {
+          "x": 51,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 26,
+      "anchorNodeB": 27,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 6,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 59,
+          "y": 50
+        },
+        {
+          "x": 59,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 28,
+      "anchorNodeB": 29,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 7,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 67,
+          "y": 53
+        },
+        {
+          "x": 67,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    },
+    {
+      "anchorNodeA": 30,
+      "anchorNodeB": 31,
+      "breakable": false,
+      "hangerTargets": [],
+      "id": 8,
+      "parentCableId": 1,
+      "samples": [
+        {
+          "x": 75,
+          "y": 58
+        },
+        {
+          "x": 75,
+          "y": 34
+        }
+      ],
+      "structuralRole": "hanger"
+    }
+  ],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "bonded-deck",
+      "nodeA": 9,
+      "nodeB": 10,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "bonded-deck",
+      "nodeA": 10,
+      "nodeB": 11,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "masonry-suspension-tower",
+      "nodeA": 12,
+      "nodeB": 3,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "masonry-suspension-tower",
+      "nodeA": 3,
+      "nodeB": 13,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "masonry-suspension-tower",
+      "nodeA": 14,
+      "nodeB": 9,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    },
+    {
+      "buildClass": "brick-stack",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "masonry-suspension-tower",
+      "nodeA": 9,
+      "nodeB": 15,
+      "rasterMode": "vertical-stack",
+      "role": "tower",
+      "sectionStuds": 6
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z002",
+        "memberClass": "masonry-tower",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 16,
+            "y": -17
+          },
+          {
+            "x": 16,
+            "y": 59
+          },
+          {
+            "x": 22,
+            "y": 59
+          },
+          {
+            "x": 22,
+            "y": -17
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "tower"
+      },
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z003",
+        "memberClass": "masonry-tower",
+        "minThicknessStuds": 6,
+        "outer": [
+          {
+            "x": 74,
+            "y": -16
+          },
+          {
+            "x": 74,
+            "y": 59
+          },
+          {
+            "x": 80,
+            "y": 59
+          },
+          {
+            "x": 80,
+            "y": -16
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "tower"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge",
+        "technic-beam",
+        "technic-connector",
+        "cable",
+        "chain",
+        "hinge"
+      ],
+      "bondPattern": "running",
+      "compatibility": "hybrid",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "hybrid-v1",
+      "sideThicknessStuds": 2,
+      "system": "hybrid"
+    },
+    "designRevision": 3443178049,
+    "deterministicChecksum": "9AC94903",
+    "family": "suspension",
+    "familyLabel": "Suspension",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 2,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 19,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "deck",
+      "supportType": "none",
+      "x": 77,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 11,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 12,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 19,
+      "y": -17
+    },
+    {
+      "id": 13,
+      "role": "tower",
+      "supportType": "none",
+      "x": 19,
+      "y": 59
+    },
+    {
+      "id": 14,
+      "role": "tower",
+      "supportType": "terrain",
+      "x": 77,
+      "y": -16
+    },
+    {
+      "id": 15,
+      "role": "tower",
+      "supportType": "none",
+      "x": 77,
+      "y": 59
+    },
+    {
+      "id": 16,
+      "role": "anchor",
+      "supportType": "terrain",
+      "x": -8,
+      "y": 2
+    },
+    {
+      "id": 17,
+      "role": "anchor",
+      "supportType": "terrain",
+      "x": 104,
+      "y": 2
+    },
+    {
+      "cableAttachment": true,
+      "id": 18,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 27,
+      "y": 54
+    },
+    {
+      "cableAttachment": true,
+      "id": 19,
+      "role": "deck",
+      "supportType": "none",
+      "x": 27,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 20,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 35,
+      "y": 50
+    },
+    {
+      "cableAttachment": true,
+      "id": 21,
+      "role": "deck",
+      "supportType": "none",
+      "x": 35,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 22,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 43,
+      "y": 48
+    },
+    {
+      "cableAttachment": true,
+      "id": 23,
+      "role": "deck",
+      "supportType": "none",
+      "x": 43,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 24,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 51,
+      "y": 48
+    },
+    {
+      "cableAttachment": true,
+      "id": 25,
+      "role": "deck",
+      "supportType": "none",
+      "x": 51,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 26,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 59,
+      "y": 50
+    },
+    {
+      "cableAttachment": true,
+      "id": 27,
+      "role": "deck",
+      "supportType": "none",
+      "x": 59,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 28,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 67,
+      "y": 53
+    },
+    {
+      "cableAttachment": true,
+      "id": 29,
+      "role": "deck",
+      "supportType": "none",
+      "x": 67,
+      "y": 34
+    },
+    {
+      "cableAttachment": true,
+      "id": 30,
+      "role": "anchor",
+      "supportType": "none",
+      "x": 75,
+      "y": 58
+    },
+    {
+      "cableAttachment": true,
+      "id": 31,
+      "role": "deck",
+      "supportType": "none",
+      "x": 75,
+      "y": 34
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "brick": {
+    "allowed": [
+      "brick-2x4",
+      "brick-2x2",
+      "brick-1x4",
+      "brick-1x2",
+      "brick-1x1",
+      "arch-wedge",
+      "technic-beam",
+      "technic-connector"
+    ],
+    "bondPattern": "running",
+    "deckThicknessLayers": 3,
+    "layerHeight": 1,
+    "maxBeamStuds": 24,
+    "sideThicknessStuds": 2,
+    "studSize": 1
+  },
+  "bridgeWidth": 13,
+  "crossBracing": true,
+  "deckHeight": 34,
+  "family": "tiedArch",
+  "hangerSpacing": 8,
+  "panelCount": 8,
+  "seed": 17,
+  "span": 96,
+  "structuralDensity": 0.68,
+  "symmetry": true,
+  "targetLoadClass": 3,
+  "trussHeight": 20,
+  "vehicleClearance": 7,
+  "version": 3
+}

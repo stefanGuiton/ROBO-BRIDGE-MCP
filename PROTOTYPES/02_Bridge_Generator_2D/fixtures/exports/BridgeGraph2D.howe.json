@@ -1,0 +1,584 @@
+{
+  "cables": [],
+  "members": [
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 1,
+      "memberClass": "bonded-deck",
+      "nodeA": 1,
+      "nodeB": 2,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 2,
+      "memberClass": "bonded-deck",
+      "nodeA": 2,
+      "nodeB": 3,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 3,
+      "memberClass": "bonded-deck",
+      "nodeA": 3,
+      "nodeB": 4,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 4,
+      "memberClass": "bonded-deck",
+      "nodeA": 4,
+      "nodeB": 5,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 5,
+      "memberClass": "bonded-deck",
+      "nodeA": 5,
+      "nodeB": 6,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 6,
+      "memberClass": "bonded-deck",
+      "nodeA": 6,
+      "nodeB": 7,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 7,
+      "memberClass": "bonded-deck",
+      "nodeA": 7,
+      "nodeB": 8,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "brick-course",
+      "capacityClass": 4,
+      "id": 8,
+      "memberClass": "bonded-deck",
+      "nodeA": 8,
+      "nodeB": 9,
+      "rasterMode": "horizontal-course",
+      "role": "deck",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 9,
+      "memberClass": "upper-chord",
+      "nodeA": 10,
+      "nodeB": 11,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 10,
+      "memberClass": "upper-chord",
+      "nodeA": 11,
+      "nodeB": 12,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 11,
+      "memberClass": "upper-chord",
+      "nodeA": 12,
+      "nodeB": 13,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 12,
+      "memberClass": "upper-chord",
+      "nodeA": 13,
+      "nodeB": 14,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 13,
+      "memberClass": "upper-chord",
+      "nodeA": 14,
+      "nodeB": 15,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 14,
+      "memberClass": "upper-chord",
+      "nodeA": 15,
+      "nodeB": 16,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 15,
+      "memberClass": "upper-chord",
+      "nodeA": 16,
+      "nodeB": 17,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 4,
+      "id": 16,
+      "memberClass": "upper-chord",
+      "nodeA": 17,
+      "nodeB": 18,
+      "rasterMode": "technic-member",
+      "role": "chord",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 17,
+      "memberClass": "truss-vertical",
+      "nodeA": 1,
+      "nodeB": 10,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 18,
+      "memberClass": "truss-vertical",
+      "nodeA": 2,
+      "nodeB": 11,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 19,
+      "memberClass": "truss-vertical",
+      "nodeA": 3,
+      "nodeB": 12,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 20,
+      "memberClass": "truss-vertical",
+      "nodeA": 4,
+      "nodeB": 13,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 21,
+      "memberClass": "truss-vertical",
+      "nodeA": 5,
+      "nodeB": 14,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 22,
+      "memberClass": "truss-vertical",
+      "nodeA": 6,
+      "nodeB": 15,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 23,
+      "memberClass": "truss-vertical",
+      "nodeA": 7,
+      "nodeB": 16,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 24,
+      "memberClass": "truss-vertical",
+      "nodeA": 8,
+      "nodeB": 17,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 25,
+      "memberClass": "truss-vertical",
+      "nodeA": 9,
+      "nodeB": 18,
+      "rasterMode": "technic-member",
+      "role": "vertical",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 26,
+      "memberClass": "howe-diagonal",
+      "nodeA": 10,
+      "nodeB": 2,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 27,
+      "memberClass": "howe-diagonal",
+      "nodeA": 11,
+      "nodeB": 3,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 28,
+      "memberClass": "howe-diagonal",
+      "nodeA": 12,
+      "nodeB": 4,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 29,
+      "memberClass": "howe-diagonal",
+      "nodeA": 13,
+      "nodeB": 5,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "id": 30,
+      "memberClass": "howe-counter-brace",
+      "nodeA": 4,
+      "nodeB": 14,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 31,
+      "memberClass": "howe-diagonal",
+      "nodeA": 5,
+      "nodeB": 15,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 2,
+      "id": 32,
+      "memberClass": "howe-counter-brace",
+      "nodeA": 14,
+      "nodeB": 6,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 33,
+      "memberClass": "howe-diagonal",
+      "nodeA": 6,
+      "nodeB": 16,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 34,
+      "memberClass": "howe-diagonal",
+      "nodeA": 7,
+      "nodeB": 17,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    },
+    {
+      "buildClass": "technic-frame",
+      "capacityClass": 3,
+      "id": 35,
+      "memberClass": "howe-diagonal",
+      "nodeA": 8,
+      "nodeB": 18,
+      "rasterMode": "technic-member",
+      "role": "diagonal",
+      "sectionStuds": 3
+    }
+  ],
+  "metadata": {
+    "brickZones": [
+      {
+        "bondPattern": "running",
+        "holes": [],
+        "id": "Z001",
+        "memberClass": "bonded-deck",
+        "minThicknessStuds": 2,
+        "outer": [
+          {
+            "x": 0,
+            "y": 32
+          },
+          {
+            "x": 0,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 34
+          },
+          {
+            "x": 96,
+            "y": 32
+          }
+        ],
+        "rasterMode": "course-fill",
+        "role": "deck"
+      }
+    ],
+    "bridgeWidth": 13,
+    "construction": {
+      "allowedParts": [
+        "brick-2x4",
+        "brick-2x2",
+        "brick-1x4",
+        "brick-1x2",
+        "brick-1x1",
+        "arch-wedge",
+        "technic-beam",
+        "technic-connector"
+      ],
+      "bondPattern": "running",
+      "compatibility": "hybrid",
+      "compilerReady": true,
+      "deckThicknessLayers": 3,
+      "grid": {
+        "layer": 1,
+        "stud": 1
+      },
+      "maxBeamStuds": 24,
+      "paletteId": "technic-v1",
+      "sideThicknessStuds": 2,
+      "system": "technic"
+    },
+    "designRevision": 2255707916,
+    "deterministicChecksum": "1D9356D8",
+    "family": "howe",
+    "familyLabel": "Howe truss",
+    "generatorVersion": 2,
+    "sharedDeck": true,
+    "sideStructures": 2,
+    "span": 96,
+    "vehicleClearance": 7,
+    "version": 3
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 0,
+      "y": 34
+    },
+    {
+      "id": 2,
+      "role": "deck",
+      "supportType": "none",
+      "x": 12,
+      "y": 34
+    },
+    {
+      "id": 3,
+      "role": "deck",
+      "supportType": "none",
+      "x": 24,
+      "y": 34
+    },
+    {
+      "id": 4,
+      "role": "deck",
+      "supportType": "none",
+      "x": 36,
+      "y": 34
+    },
+    {
+      "id": 5,
+      "role": "deck",
+      "supportType": "none",
+      "x": 48,
+      "y": 34
+    },
+    {
+      "id": 6,
+      "role": "deck",
+      "supportType": "none",
+      "x": 60,
+      "y": 34
+    },
+    {
+      "id": 7,
+      "role": "deck",
+      "supportType": "none",
+      "x": 72,
+      "y": 34
+    },
+    {
+      "id": 8,
+      "role": "deck",
+      "supportType": "none",
+      "x": 84,
+      "y": 34
+    },
+    {
+      "id": 9,
+      "role": "support",
+      "supportType": "fixed",
+      "x": 96,
+      "y": 34
+    },
+    {
+      "id": 10,
+      "role": "joint",
+      "supportType": "none",
+      "x": 0,
+      "y": 50
+    },
+    {
+      "id": 11,
+      "role": "joint",
+      "supportType": "none",
+      "x": 12,
+      "y": 50
+    },
+    {
+      "id": 12,
+      "role": "joint",
+      "supportType": "none",
+      "x": 24,
+      "y": 50
+    },
+    {
+      "id": 13,
+      "role": "joint",
+      "supportType": "none",
+      "x": 36,
+      "y": 50
+    },
+    {
+      "id": 14,
+      "role": "joint",
+      "supportType": "none",
+      "x": 48,
+      "y": 50
+    },
+    {
+      "id": 15,
+      "role": "joint",
+      "supportType": "none",
+      "x": 60,
+      "y": 50
+    },
+    {
+      "id": 16,
+      "role": "joint",
+      "supportType": "none",
+      "x": 72,
+      "y": 50
+    },
+    {
+      "id": 17,
+      "role": "joint",
+      "supportType": "none",
+      "x": 84,
+      "y": 50
+    },
+    {
+      "id": 18,
+      "role": "joint",
+      "supportType": "none",
+      "x": 96,
+      "y": 50
+    }
+  ]
+}
