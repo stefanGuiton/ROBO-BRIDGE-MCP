@@ -4,7 +4,7 @@ Date: 2026-08-30
 Project: ROBO BRIDGE MCP MAIN_DEMO
 Version: 3.1.0
 Branch baseline: `ba1818c71ddb2395ba6ec26f42896cd1ed392806`
-Verified source fingerprint: `a1c72622b6e8f759b706da4e14cf1a559b38a0c806b117dbf04c9cdd0d14b289`
+Verified source fingerprint: `6b13a3135ad08c4b4121a8c00819888a2af179b26c179f0d0d39120f822e4c46`
 
 ## Root verification
 
@@ -16,8 +16,8 @@ Command: `python scripts\build_release.py`
 - Python syntax: 4 files passed.
 - Required-file and removed-legacy checks: passed.
 - Release: `dist/ROBO_BRIDGE_MCP_MAIN_DEMO.zip`.
-- Release file count: 301.
-- Release SHA-256: `7183bc1dbec816a4a9263873c3d701e6ae1d66d4123a0ac26584a3823a07e83b`.
+- Release file count: 302.
+- Release SHA-256: `4391fcc70d9e6a5d49bfa6cd9d5b2bbf8751dd7aabecdc0fedcd7af4aadd750d`.
 
 The release was inspected separately to ensure it does not contain `.git`, local browser output, Oracle downloads, archives, `node_modules`, generated test builds, or nested release files.
 

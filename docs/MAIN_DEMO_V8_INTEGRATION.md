@@ -42,6 +42,7 @@ The held-brick physics is presentation and placement-intent simulation. Accepted
 - source test report SHA-256: `0f78b4d37a17c67a449165a370231b6289f4af778f37eba8306e90885229e632`
 
 The large self-contained Oracle HTML and local download/archive folders are reference inputs and are intentionally excluded from Git and release archives.
+The supplied settings path is marked `-text` in `.gitattributes` so fresh clones retain its exact LF byte representation; the provenance test also tolerates a legacy worktree that was populated before that attribute existed.
 
 ## WebMCP boundary
 

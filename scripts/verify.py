@@ -70,7 +70,7 @@ def main() -> int:
     checks.append({'name': 'JavaScript syntax', 'exitCode': 1 if js_failures else 0, 'files': len(js_files), 'failures': js_failures})
     checks.append(python_syntax())
     required = [
-        'MASTER_PLAN.md', 'README.md', 'FULL_REMEDIATION_PLAN_5_6_PRO.md', 'apps/web/index.html',
+        '.gitattributes', 'MASTER_PLAN.md', 'README.md', 'FULL_REMEDIATION_PLAN_5_6_PRO.md', 'apps/web/index.html',
         'apps/web/src/logo/main.js', 'apps/web/src/logo/runtime.js', 'apps/web/src/logo/workcell-adapter.js',
         'apps/web/src/robot/controller.js', 'apps/web/src/robot/collision.js', 'apps/web/src/bricks/build-board.js',
         'apps/web/src/perception/observation-service.js', 'apps/web/src/webmcp/register-tools.js',

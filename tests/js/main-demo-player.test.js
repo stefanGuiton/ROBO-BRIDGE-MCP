@@ -46,7 +46,10 @@ function makeRuntime() {
 test('supplied V8 player settings are provenance-locked and production disables collapse', async () => {
   const path = fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url));
   const bytes = await readFile(path);
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), PLAYER_SOURCE_PROVENANCE.suppliedSettingsSha256);
+  const normalizedBytes = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+  assert.equal(createHash('sha256').update(normalizedBytes).digest('hex'), PLAYER_SOURCE_PROVENANCE.suppliedSettingsSha256);
+  const attributes = await readFile(fileURLToPath(new URL('../../.gitattributes', import.meta.url)), 'utf8');
+  assert.match(attributes, /^apps\/web\/config\/player\/LOGO_ROBO_PLAYER_SETTINGS\.json -text$/m);
   const supplied = JSON.parse(bytes.toString('utf8'));
   assert.equal(supplied.fovDeg, 62);
   assert.equal(supplied.cameraZoom, 1.2999999999999994);
