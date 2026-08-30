@@ -42,6 +42,8 @@ const wrevEl = $('[data-wrev]');
 const progressEl = $('[data-progress]');
 const fpsEl = $('[data-fps]');
 const gripperEl = $('[data-gripper]');
+const yawEl = $('[data-yaw]');
+const jawEl = $('[data-jaw]');
 const logEl = $('[data-log]');
 const toolListEl = $('[data-tool-list]');
 const moveForm = $('[data-move-form]');
@@ -159,6 +161,8 @@ function updateUi() {
   if (tcpEl) tcpEl.textContent = `${formatNumber(state.tcp.xMm)} / ${formatNumber(state.tcp.yMm)} / ${formatNumber(state.tcp.zMm)} mm`;
   if (jointsEl) jointsEl.textContent = state.jointsRad.map((value) => `${(value * 180 / Math.PI).toFixed(0)}°`).join(' ');
   if (heldEl) heldEl.textContent = state.heldBrickId ?? 'NONE';
+  if (yawEl) yawEl.textContent = `${(state.toolYawRad * 180 / Math.PI).toFixed(1)}° AUTO`;
+  if (jawEl) jawEl.textContent = `${state.gripper.jawGapMm.toFixed(1)} mm`;
   if (rrevEl) rrevEl.textContent = String(state.robotRevision);
   if (wrevEl) wrevEl.textContent = String(state.worldRevision);
   if (progressEl) progressEl.textContent = `${progress.correctTargets}/${progress.totalTargets}`;

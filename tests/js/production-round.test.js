@@ -23,3 +23,20 @@ test('stale target revision is rejected before a mutation', async () => {
   assert.equal(claim.ok, false);
   assert.equal(claim.reason, 'stale_state');
 });
+
+test('rotated loose bricks are grasped across the short side and placed at target yaw', async () => {
+  const { handlers, board, controller } = createLiveHarness();
+  const rotated = controller.getBricks().map((brick, index) => ({
+    ...brick,
+    yawRad: index % 2 === 0 ? Math.PI / 4 : -Math.PI / 6
+  }));
+  assert.equal(controller.setBricks(rotated).ok, true);
+  const result = await runToolOnlyRound(handlers);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(board.isComplete(), true);
+  assert.equal(controller.getState().heldBrickId, null);
+  for (const brick of controller.getBricks()) {
+    assert.equal(brick.snapped, true);
+    assert.ok(Math.abs(brick.yawRad) < 1e-12);
+  }
+});

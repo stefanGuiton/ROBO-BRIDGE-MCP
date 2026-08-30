@@ -1,7 +1,7 @@
 import { UR10_GRIPPER } from './gripper-definition.js';
 
 // Official Universal Robots UR10 DH dimensions, converted from metres to mm.
-// The public visual remains a project-owned generic industrial arm.
+// The browser visual uses the separately attributed high-detail V2 mesh set.
 export const UR10_DEFINITION = Object.freeze({
   id: 'ur10-class-official-dh',
   source: 'Universal Robots DH Parameters for calculations of kinematics and dynamics',
@@ -24,10 +24,13 @@ export const UR10_DEFINITION = Object.freeze({
     0, -1, 0,
     0, 0, -1
   ]),
-  homeTcp: Object.freeze({ xMm: 600, yMm: 0, zMm: 450 }),
+  homeTcp: Object.freeze({ xMm: 670, yMm: 0, zMm: 145 }),
+  // Mirror-equivalent of the supplied LOGO ROBO reference reset posture in
+  // this production workcell's machine frame. This preserves the tuned low
+  // elbow-up presentation without changing controller/world ownership.
   homeJointsRad: Object.freeze([
-    0.2766622403558812, -3.1212750338345145, 1.4081196341271474,
-    0.1423590368307626, -1.5707962335716255, 1.847458612675451
+    2.8944679549887633, -1.4570244561418748, 2.0804053937875784,
+    -2.194177615663675, -1.5707959609255262, -1.8179216547730466
   ])
 });
 
@@ -51,8 +54,8 @@ export const CHALLENGE_LAYOUT = Object.freeze({
     minX: 600, maxX: 710, minY: 165, maxY: 275,
     surfaceZ: 30
   }),
-  pickupTcp: Object.freeze({ xMm: 520, yMm: -230, zMm: 41.4 }),
+  pickupTcp: Object.freeze({ xMm: 520, yMm: -230, zMm: 42.5 }),
   pickupAboveTcp: Object.freeze({ xMm: 520, yMm: -230, zMm: 255 }),
-  targetTcp: Object.freeze({ xMm: 655, yMm: 220, zMm: 41.4 }),
+  targetTcp: Object.freeze({ xMm: 655, yMm: 220, zMm: 42.5 }),
   targetAboveTcp: Object.freeze({ xMm: 655, yMm: 220, zMm: 255 })
 });

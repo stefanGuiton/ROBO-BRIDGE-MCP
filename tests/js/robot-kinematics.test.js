@@ -22,6 +22,14 @@ test('configured home pose is fixed-down and matches its TCP', () => {
   assert.ok(error.orientationErrorRad < 0.00005);
 });
 
+test('configured home uses the reference-derived elbow-up branch', () => {
+  const degrees = UR10_DEFINITION.homeJointsRad.map((value) => value * 180 / Math.PI);
+  assert.ok(degrees[0] > 150 && degrees[0] < 180, `shoulder pan ${degrees[0]}`);
+  assert.ok(degrees[1] > -90 && degrees[1] < -75, `shoulder lift ${degrees[1]}`);
+  assert.ok(degrees[2] > 110 && degrees[2] < 130, `elbow ${degrees[2]}`);
+  assert.ok(degrees[3] > -135 && degrees[3] < -115, `wrist 1 ${degrees[3]}`);
+});
+
 test('IK/FK round trip solves representative challenge points', () => {
   let prior = Array.from(UR10_DEFINITION.homeJointsRad);
   for (const target of [

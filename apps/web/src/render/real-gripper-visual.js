@@ -8,7 +8,7 @@ const COMPONENTS = {
 };
 const ITEM_SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 };
 
-function parseGlb(buffer) {
+export function parseGlb(buffer) {
   const bytes = new Uint8Array(buffer);
   const view = new DataView(buffer);
   if (view.getUint32(0, true) !== 0x46546c67) throw new Error('invalid_glb_magic');
@@ -29,7 +29,7 @@ function parseGlb(buffer) {
   return { json, bin };
 }
 
-class GlbModel {
+export class GlbModel {
   constructor(json, bin) {
     this.gltf = json;
     this.bin = bin;
@@ -209,6 +209,8 @@ export class RealGripperVisual {
     this.model = null;
     this.currentFrame = UR10_GRIPPER.animation.openFrame;
     this.targetFrame = this.currentFrame;
+    this.animationStartFrame = this.currentFrame;
+    this.animationStartedAt = null;
     this.status = { state: 'loading', reason: null, sourceGlbSha256: UR10_GRIPPER.sourceGlbSha256 };
     this.loadPromise = this.load();
   }
@@ -263,12 +265,31 @@ export class RealGripperVisual {
   update(flangeTransform, jawGapMm) {
     this.root.matrix.set(...flangeTransform).multiply(this.mountRotation);
     this.root.matrixWorldNeedsUpdate = true;
-    this.targetFrame = jawAnimationFrame(jawGapMm);
-    this.currentFrame += (this.targetFrame - this.currentFrame) * 0.18;
+    const nextTarget = jawAnimationFrame(jawGapMm);
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (Math.abs(nextTarget - this.targetFrame) > 1e-9) {
+      this.animationStartFrame = this.currentFrame;
+      this.targetFrame = nextTarget;
+      this.animationStartedAt = now;
+    }
+    if (this.animationStartedAt !== null) {
+      const u = Math.max(0, Math.min(1, (now - this.animationStartedAt) / UR10_GRIPPER.jawAnimationDurationMs));
+      const eased = u * u * u * (10 + u * (-15 + 6 * u));
+      this.currentFrame = this.animationStartFrame + (this.targetFrame - this.animationStartFrame) * eased;
+      if (u >= 1) { this.currentFrame = this.targetFrame; this.animationStartedAt = null; }
+    }
     if (this.model) this.model.applyTime(this.model.duration * this.currentFrame / 60);
   }
 
-  getStatus() { return { ...this.status, currentFrame: this.currentFrame, targetFrame: this.targetFrame }; }
+  getStatus() {
+    return {
+      ...this.status,
+      currentFrame: this.currentFrame,
+      targetFrame: this.targetFrame,
+      uniformScale: UR10_GRIPPER.uniformScale,
+      calibration: UR10_GRIPPER.calibration
+    };
+  }
 }
 
 export { THREE };

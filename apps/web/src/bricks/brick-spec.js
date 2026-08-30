@@ -3,15 +3,21 @@ export const BRICK_SPEC = Object.freeze({
   type: '2x4',
   studPitchMm: 8,
   logicalCellMm: 16,
-  widthMm: 16,
-  lengthMm: 32,
+  widthMm: 15.8,
+  lengthMm: 31.8,
   bodyHeightMm: 9.6,
   heightMm: 9.6,
   studDiameterMm: 4.8,
   studHeightMm: 1.8,
   canonicalYawRad: 0,
   canonicalYawDeg: 0,
-  capture: Object.freeze({ xyToleranceMm: 5.0, zToleranceMm: 3.0, tcpAboveCentreMm: 6.6 })
+  capture: Object.freeze({
+    xyToleranceMm: 0.5,
+    zToleranceMm: 0.5,
+    yawToleranceRad: Math.PI / 900,
+    tcpAboveBaseMm: 12.5,
+    tcpAboveCentreMm: 7.7
+  })
 });
 
 export const DEFAULT_BOARD_LIMITS = Object.freeze({

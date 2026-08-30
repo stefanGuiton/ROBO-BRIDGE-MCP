@@ -84,7 +84,7 @@ Page-side registration and the tool contract are tested locally. Native agent to
 
 The controller checks live state before each accepted motion sample. It includes tool/table, brick, board/tray, conservative moving-link/raised-workcell, and self-collision checks.
 
-The procedural UR10 arm visual is not calibrated as an exact collision mesh against the table. The real gripper GLB is calibrated to the controller TCP, but do not claim exact moving-link/table collision fidelity.
+The high-detail UR10 V2 visual is articulated from the authoritative controller FK but is not an exact moving-link collision mesh against the table. The real gripper GLB is calibrated to the controller TCP, but do not claim exact moving-link/table collision fidelity.
 
 No physical robot, ROS, Duet, or hardware command path is included.
 

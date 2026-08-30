@@ -1,4 +1,5 @@
-import { clamp, wrapPi } from './math.js';
+import { frameForJawGap } from './gripper-jaw-calibration.js';
+import { wrapPi } from './math.js';
 
 // Calibrated from the verified Oracle package. The source GLB is modelled in
 // metres, points along local -Z, and is mounted to the UR10 flange by Rx(pi).
@@ -10,10 +11,16 @@ export const UR10_GRIPPER = Object.freeze({
   uniformScale: 0.4,
   openGapMm: 46,
   contactGapMm: 16,
+  calibratedBrickGapMm: 15.8,
+  jawAnimationDurationMs: 450,
+  maxYawSpeedRadS: Math.PI / 2,
+  safeLateralZMm: 45,
+  lowZxyLimitMm: 3,
   animation: Object.freeze({
     closedFrame: 0,
-    contactFrame: 11.800022006034851,
-    openFrame: 23.025494813919067,
+    contactFrame: 20.64870315395287,
+    calibratedBrickFrame: 20.497117166503344,
+    openFrame: 53.82619551169074,
     fullOpenFrame: 60
   }),
   gripperRootToTcpMm: Object.freeze({
@@ -25,6 +32,15 @@ export const UR10_GRIPPER = Object.freeze({
     xMm: -0.4870334067230564 * 0.4,
     yMm: 0,
     zMm: 410.1105809169691 * 0.4
+  }),
+  calibration: Object.freeze({
+    source: Object.freeze({ nodes: 89, meshes: 33, animations: 1, durationS: 2.5, frames: 60 }),
+    axisMap: 'glTF +Y → tool -Z; glTF +Z → jaw +X; glTF +X → tool -Y',
+    closed: Object.freeze({ frame: 0, padGapMm: -0.500774 }),
+    legoContact: Object.freeze({ frame: 20.497117166503344, padGapMm: 15.8 }),
+    workOpen: Object.freeze({ frame: 53.82619551169074, padGapMm: 46, lowestClawLocalZMm: -165.87072273053695 }),
+    fullOpen: Object.freeze({ frame: 60, padGapMm: 47.4727196 }),
+    workOpenTableClearanceMm: 10.673509636250714
   })
 });
 
@@ -53,7 +69,7 @@ export function shortestHalfTurnDelta(currentYawRad, targetYawRad) {
   return delta;
 }
 
-export function selectAutomaticYaw({ currentYawRad = 0, target, heldBrick = null, bricks = [], targets = [] }) {
+export function selectAutomaticYaw({ currentYawRad = 0, target, heldBrick = null, heldBrickYawInTcpRad = 0, bricks = [], targets = [] }) {
   const candidates = heldBrick ? targets : bricks.filter((brick) => !brick.heldBy && !brick.snapped && !brick.placedTargetId);
   let nearest = null;
   for (const item of candidates) {
@@ -61,7 +77,14 @@ export function selectAutomaticYaw({ currentYawRad = 0, target, heldBrick = null
     if (!position) continue;
     const xyMm = Math.hypot(target.xMm - position.xMm, target.yMm - position.yMm);
     if (xyMm > 45 || (nearest && xyMm >= nearest.xyMm)) continue;
-    nearest = { xyMm, yawRad: Number(item.yawRad) || 0 };
+    const itemYawRad = Number(item.yawRad) || 0;
+    nearest = {
+      xyMm,
+      // The real gripper closes along its local jaw axis. A loose 2x4 is
+      // grasped across its short side; a held brick preserves the measured
+      // brick-in-TCP transform when lining up with a target.
+      yawRad: heldBrick ? itemYawRad - heldBrickYawInTcpRad : itemYawRad + Math.PI / 2
+    };
   }
   if (!nearest) return wrapPi(currentYawRad);
   return wrapPi(currentYawRad + shortestHalfTurnDelta(currentYawRad, nearest.yawRad));
@@ -93,7 +116,5 @@ export function heldBrickWorldPose(tcp, tcpYawRad, brickInTcp, brickYawInTcpRad 
 }
 
 export function jawAnimationFrame(gapMm) {
-  const { contactGapMm, openGapMm, animation } = UR10_GRIPPER;
-  const u = clamp((gapMm - contactGapMm) / (openGapMm - contactGapMm), 0, 1);
-  return animation.contactFrame + (animation.openFrame - animation.contactFrame) * u;
+  return frameForJawGap(gapMm);
 }

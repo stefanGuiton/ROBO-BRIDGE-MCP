@@ -42,4 +42,6 @@ A local Edge run verified:
 
 ## Known boundary
 
-The current arm geometry remains the project-owned procedural UR10 representation. The Oracle guidance's optional high-detail UR10 manufacturer mesh is not included in this bounded gripper checkpoint. Native signed-in WebMCP enumeration/execution remains an external acceptance gate when a supported browser context is available.
+The procedural arm has been replaced by the exact supplied V2 high-detail UR10 GLB. The renderer rebases its 27 mesh regions into seven articulated visual links and consumes the authoritative controller FK; it does not own robot state. The V2 upper-arm translation is already baked into its vertices, so the obsolete `220.941 mm` visual offset is intentionally not reapplied.
+
+This is visual calibration, not an exact moving-link collision model. Native signed-in WebMCP enumeration/execution remains an external acceptance gate when a supported browser context is available.

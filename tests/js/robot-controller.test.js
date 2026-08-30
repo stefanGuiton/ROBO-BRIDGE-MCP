@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLiveHarness } from '../helpers/live-harness.js';
+import { BRICK_SPEC } from '../../apps/web/src/bricks/brick-spec.js';
 import { distance3 } from '../../apps/web/src/robot/math.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,6 +25,16 @@ test('invalid and over-speed requests preserve the accepted pose', async () => {
   await assert.rejects(controller.moveTool({ xMm: 580, yMm: 0, zMm: 300, speedMmS: 651 }), (error) => error.code === 'speed_limit');
   assert.deepEqual(controller.getState().tcp, before.tcp);
   assert.equal(controller.getState().robotRevision, before.robotRevision);
+});
+
+test('low-height lateral motion fails closed like the calibrated reference demo', () => {
+  const { controller } = createLiveHarness();
+  controller.tcp = { xMm: 600, yMm: 0, zMm: 42.5 };
+  const before = controller.getState();
+  const plan = controller.planMove({ xMm: 610, yMm: 0, zMm: 42.5, speedMmS: 100 });
+  assert.equal(plan.ok, false);
+  assert.equal(plan.reason, 'low_height_lateral_move');
+  assert.deepEqual(controller.getState().tcp, before.tcp);
 });
 
 test('reset cancels active motion and stale operation cannot overwrite reset pose', async () => {
@@ -65,7 +76,7 @@ test('human loose-brick interference is rechecked during motion', async () => {
   const bricks = controller.getBricks();
   const red = bricks.find((brick) => brick.colour === 'red');
   const blue = bricks.find((brick) => brick.colour === 'blue');
-  const pickup = { xMm: red.position.xMm, yMm: red.position.yMm, zMm: red.position.zMm + 6.6 };
+  const pickup = { xMm: red.position.xMm, yMm: red.position.yMm, zMm: red.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm };
   await controller.moveTool({ ...pickup, zMm: 400, speedMmS: 400 });
   await controller.moveTool({ ...pickup, speedMmS: 180 });
   assert.equal((await controller.latch({ actor: 'agent' })).ok, true);

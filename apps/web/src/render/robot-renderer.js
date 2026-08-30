@@ -2,6 +2,7 @@ import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { forwardKinematics } from '../robot/kinematics.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RealGripperVisual, THREE } from './real-gripper-visual.js';
+import { Ur10Visual } from './ur10-visual.js';
 
 const BRICK_COLOURS = {
   white: 0xf3f5f8, black: 0x151b25, red: 0xef4b4f,
@@ -26,16 +27,6 @@ function makeBox(size, centre, material) {
   return mesh;
 }
 
-function setSegment(mesh, start, end) {
-  const a = new THREE.Vector3(start.xMm, start.yMm, start.zMm);
-  const b = new THREE.Vector3(end.xMm, end.yMm, end.zMm);
-  const direction = b.clone().sub(a);
-  const length = Math.max(0.001, direction.length());
-  mesh.position.copy(a.add(b).multiplyScalar(0.5));
-  mesh.scale.set(1, length, 1);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-}
-
 export class RobotRenderer {
   constructor(canvas, controller, { board = null } = {}) {
     this.canvas = canvas;
@@ -43,14 +34,13 @@ export class RobotRenderer {
     this.board = board;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xe8eef5);
-    this.scene.fog = new THREE.FogExp2(0xe8eef5, 0.00042);
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
     this.webgl.outputColorSpace = THREE.SRGBColorSpace;
     this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
-    this.webgl.toneMappingExposure = 1.08;
+    this.webgl.toneMappingExposure = 1.02;
     this.webgl.shadowMap.enabled = true;
-    this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.camera = new THREE.PerspectiveCamera(42, 1, 1, 5000);
+    this.webgl.shadowMap.type = THREE.PCFShadowMap;
+    this.camera = new THREE.PerspectiveCamera(48, 1, 1, 2600);
     this.camera.up.set(0, 0, 1);
     this.focus = new THREE.Vector3(420, 0, 170);
     this.yaw = -0.82;
@@ -72,37 +62,34 @@ export class RobotRenderer {
   }
 
   buildLighting() {
-    this.scene.add(new THREE.HemisphereLight(0xb9dcff, 0x071019, 1.55));
-    const key = new THREE.DirectionalLight(0xffffff, 3.4);
-    key.position.set(450, -650, 1100);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7c0cc, 1.55));
+    const key = new THREE.DirectionalLight(0xffffff, 2.7);
+    key.position.set(145, -270, 380);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = -900;
-    key.shadow.camera.right = 900;
-    key.shadow.camera.top = 900;
-    key.shadow.camera.bottom = -900;
-    key.shadow.camera.near = 100;
-    key.shadow.camera.far = 2400;
+    key.shadow.camera.left = -760;
+    key.shadow.camera.right = 760;
+    key.shadow.camera.top = 620;
+    key.shadow.camera.bottom = -620;
+    key.shadow.camera.near = 20;
+    key.shadow.camera.far = 1600;
     this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0x74d7ff, 1.6);
-    fill.position.set(-350, 700, 550);
+    const fill = new THREE.DirectionalLight(0xc9dcff, 0.85);
+    fill.position.set(705, 240, 220);
     this.scene.add(fill);
-    const rim = new THREE.PointLight(0xffb34f, 130000, 1700, 2);
-    rim.position.set(800, 300, 650);
-    this.scene.add(rim);
   }
 
   buildWorkcell() {
-    const tableMaterial = physicalMaterial({ color: 0xdfe7ef, roughness: 0.72, metalness: 0.08 });
+    const tableMaterial = new THREE.MeshStandardMaterial({ color: 0xd7dde5, roughness: 0.82, metalness: 0.02 });
     this.scene.add(makeBox(
-      { xMm: 1100, yMm: 900, zMm: 50 },
-      { xMm: 380, yMm: 0, zMm: -25 },
+      { xMm: 1280, yMm: 720, zMm: 8 },
+      { xMm: 380, yMm: 0, zMm: -4 },
       tableMaterial
     ));
-    const grid = new THREE.GridHelper(1000, 20, 0xa9bac9, 0xcbd6e0);
+    const grid = new THREE.GridHelper(1180, 30, 0xb6c2ce, 0xd5dde6);
     grid.rotation.x = Math.PI / 2;
     grid.position.set(380, 0, 0.5);
-    grid.material.opacity = 0.32;
+    grid.material.opacity = 0.18;
     grid.material.transparent = true;
     this.scene.add(grid);
 
@@ -131,29 +118,7 @@ export class RobotRenderer {
   }
 
   buildRobot() {
-    this.robotGroup = new THREE.Group();
-    this.scene.add(this.robotGroup);
-    const aluminium = physicalMaterial({ color: 0xb5b5b5, metalness: 0.82, roughness: 0.34, clearcoat: 0 });
-    const blue = physicalMaterial({ color: 0xa8c3d1, metalness: 0, roughness: 0.34, clearcoat: 0.18 });
-    const dark = physicalMaterial({ color: 0x505050, metalness: 0, roughness: 0.82, clearcoat: 0 });
-    this.robotGroup.add(makeBox({ xMm: 165, yMm: 165, zMm: 90 }, { xMm: 0, yMm: 0, zMm: 45 }, dark));
-    this.linkMeshes = [];
-    const radii = [33, 39, 36, 29, 26, 24];
-    for (let index = 0; index < 6; index += 1) {
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radii[index], radii[index], 1, 28), index % 2 ? aluminium : blue);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.robotGroup.add(mesh);
-      this.linkMeshes.push(mesh);
-    }
-    this.jointMeshes = [];
-    for (let index = 0; index < 7; index += 1) {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(index === 0 ? 42 : 34, 28, 18), index % 2 ? dark : blue);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.robotGroup.add(mesh);
-      this.jointMeshes.push(mesh);
-    }
+    this.ur10 = new Ur10Visual(this.scene);
     this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
     this.scene.add(this.tcpMarker);
     this.tcpRing = new THREE.Mesh(new THREE.TorusGeometry(15, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: 0x59e1ff }));
@@ -215,8 +180,7 @@ export class RobotRenderer {
     const state = this.controller.getState();
     const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
     if (!fk.ok) return;
-    for (let index = 0; index < this.linkMeshes.length; index += 1) setSegment(this.linkMeshes[index], fk.jointPositions[index], fk.jointPositions[index + 1]);
-    for (let index = 0; index < this.jointMeshes.length; index += 1) this.jointMeshes[index].position.set(fk.jointPositions[index].xMm, fk.jointPositions[index].yMm, fk.jointPositions[index].zMm);
+    this.ur10.update(state.jointsRad, fk.frames);
     this.tcpMarker.position.set(fk.tcp.xMm, fk.tcp.yMm, fk.tcp.zMm);
     this.tcpRing.position.copy(this.tcpMarker.position);
     this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
@@ -224,8 +188,8 @@ export class RobotRenderer {
 
   setView(view) {
     const presets = {
-      hero: { focus: [390, 0, 170], yaw: -0.82, pitch: 0.48, radius: 1450 },
-      top: { focus: [590, 0, 90], yaw: -0.72, pitch: 1.25, radius: 1180 },
+      hero: { focus: [390, 0, 165], yaw: -0.8621700547, pitch: 0.4069542207, radius: 1402.052424 },
+      top: { focus: [590, 0, 130], yaw: -0.72, pitch: 1.25, radius: 1600 },
       tray: { focus: [535, -220, 95], yaw: -0.82, pitch: 0.58, radius: 760 },
       latch: { focus: [520, -230, 70], yaw: -0.92, pitch: 0.42, radius: 430 },
       target: { focus: [635, 205, 90], yaw: -1.02, pitch: 0.52, radius: 720 }
@@ -333,7 +297,8 @@ export class RobotRenderer {
       meanFrameMs: times.length ? times.reduce((sum, value) => sum + value, 0) / times.length : 0,
       p95FrameMs: times.length ? times[Math.min(times.length - 1, Math.floor(times.length * 0.95))] : 0,
       maxFrameMs: times.at(-1) ?? 0,
-      gripper: this.gripper.getStatus()
+      gripper: this.gripper.getStatus(),
+      ur10: this.ur10.getStatus()
     };
   }
 }
