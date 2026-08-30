@@ -1,0 +1,13 @@
+{
+  "name": "robo-bridge-structural-solver",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node --disable-warning=ExperimentalWarning scripts/build.mjs",
+    "dev": "npm run build && node scripts/serve.mjs",
+    "test": "node --disable-warning=ExperimentalWarning scripts/build.mjs --tests && node --test --experimental-test-isolation=none .test-dist/tests/acceptance.test.js .test-dist/tests/edge-cases.test.js",
+    "fixtures": "npm run build && node scripts/export-fixtures.mjs",
+    "benchmark": "npm run build && node scripts/benchmark.mjs"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/TestResult.schema.json",
+  "title": "ROBO BRIDGE MCP V3 TestResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["testId", "success", "outcome", "failedMemberIds", "failedBrickIds", "maximumUtilisation", "loadPositionAtFirstFailure", "diagnostics"],
+  "properties": {
+    "testId": { "type": "integer", "minimum": 0 },
+    "success": { "type": "boolean" },
+    "outcome": { "enum": ["CROSSED", "BRIDGE_FAILED", "ROUTE_LOST", "STOPPED"] },
+    "failedMemberIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+    "failedBrickIds": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+    "maximumUtilisation": { "type": "number", "minimum": 0 },
+    "firstFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memberId", "reason", "loadPosition"],
+      "properties": {
+        "memberId": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string", "minLength": 1 },
+        "loadPosition": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "loadPositionAtFirstFailure": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 },
+          "memberId": { "type": "integer", "minimum": 0 },
+          "nodeId": { "type": "integer", "minimum": 0 },
+          "value": { "type": "number" }
+        }
+      }
+    }
+  }
+}

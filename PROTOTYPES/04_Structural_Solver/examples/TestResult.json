@@ -1,0 +1,10 @@
+{
+  "testId": 4001,
+  "success": true,
+  "outcome": "CROSSED",
+  "failedMemberIds": [],
+  "failedBrickIds": [],
+  "maximumUtilisation": 0.0999778352522518,
+  "loadPositionAtFirstFailure": null,
+  "diagnostics": []
+}

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7f5" />
+    <meta name="description" content="Deterministic structural gameplay solver prototype for ROBO BRIDGE MCP V3." />
+    <title>ROBO BRIDGE — Structural Solver</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="workbench">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div><p class="eyebrow">ROBO BRIDGE MCP V3 · PROTOTYPE 04</p><h1>Structural solver</h1></div>
+        <div id="mode-badge" class="mode-badge"><span></span> BUILD · IMMUNE</div>
+      </header>
+
+      <section class="control-strip" aria-label="Primary solver controls">
+        <label class="fixture-control">Fixture<select id="fixture-select"></select></label>
+        <div class="mode-switch" role="group" aria-label="Solver mode">
+          <button id="build-mode" class="active" type="button">Build</button>
+          <button id="test-mode" type="button">Test</button>
+        </div>
+        <button id="start-test" class="primary" type="button">Start test <span>→</span></button>
+        <button id="reset" type="button">Reset</button>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="viewport-card">
+          <div class="card-heading">
+            <div><p class="eyebrow">LIVE STRUCTURAL GRAPH</p><h2 id="fixture-title">—</h2><p id="fixture-description" class="subcopy"></p></div>
+            <div class="legend" aria-label="Member state legend"><span class="safe">Safe</span><span class="stressed">Stressed</span><span class="critical">Critical</span><span class="failed">Failed</span></div>
+          </div>
+          <canvas id="structure-canvas" aria-label="Structural graph visualisation"></canvas>
+          <div class="load-readout"><span>Train position</span><strong id="progress-output">0%</strong><i><b id="progress-bar"></b></i></div>
+        </article>
+
+        <aside class="diagnostics-card">
+          <div class="card-heading"><div><p class="eyebrow">SOLVE SNAPSHOT</p><h2>Exact diagnostics</h2></div><span class="pulse" aria-hidden="true"></span></div>
+          <dl id="metrics" class="metrics"></dl>
+          <div id="outcome-panel" class="outcome-panel"><span>Current outcome</span><strong>STOPPED</strong></div>
+          <div class="table-scroll"><div id="member-table" class="member-table"></div></div>
+          <div id="failure-sequence" class="failure-sequence"><span>Failure order</span><strong>None</strong></div>
+          <button id="export-result" class="export-button" type="button">Export TestResult.json</button>
+          <p class="game-note"><span>i</span> Deterministic game-strength model. Not an engineering certification calculation.</p>
+        </aside>
+      </section>
+
+      <section class="settings-grid" aria-label="Tuning and debug settings">
+        <article class="settings-card">
+          <div class="section-title"><p class="eyebrow">LOAD</p><h2>Train controls</h2></div>
+          <label>Load mass <output id="mass-output"></output><input id="mass-input" type="range" min="5" max="150" step="1" value="48" /></label>
+          <label>Load speed <output id="speed-output"></output><input id="speed-input" type="range" min="2" max="50" step="1" value="16" /></label>
+          <label>Manual position <output id="manual-output"></output><input id="manual-input" type="range" min="0" max="1000" step="1" value="0" /></label>
+          <label class="check"><input id="auto-load" type="checkbox" checked /> Automatic load movement</label>
+        </article>
+
+        <article class="settings-card">
+          <div class="section-title"><p class="eyebrow">FAILURE</p><h2>Gameplay tuning</h2></div>
+          <label>Failure threshold <output id="threshold-output"></output><input id="threshold-input" type="range" min="60" max="180" step="1" value="100" /></label>
+          <label>Difficulty multiplier <output id="difficulty-output"></output><input id="difficulty-input" type="range" min="50" max="200" step="5" value="100" /></label>
+          <label>Analysis mode<select id="analysis-select"><option value="game">Fast game heuristic</option><option value="truss-stiffness">2D truss stiffness</option></select></label>
+        </article>
+
+        <article class="settings-card">
+          <div class="section-title"><p class="eyebrow">DEBUG VIEW</p><h2>Overlays</h2></div>
+          <label class="check"><input id="show-ids" type="checkbox" checked /> Show stable IDs</label>
+          <label class="check"><input id="show-utilisation" type="checkbox" checked /> Show utilisation</label>
+          <label class="check"><input id="show-paths" type="checkbox" checked /> Show active support path</label>
+          <div class="state-key"><span><i class="safe-dot"></i>Safe &lt; 0.65</span><span><i class="stress-dot"></i>Stressed 0.65–0.90</span><span><i class="critical-dot"></i>Critical ≥ 0.90</span></div>
+        </article>
+
+        <article class="settings-card">
+          <div class="section-title"><p class="eyebrow">BUILD EDITS</p><h2>Remove structure</h2></div>
+          <label>Member<select id="member-select"></select></label><button id="remove-member" type="button">Remove member</button>
+          <label>Support<select id="support-select"></select></label><button id="remove-support" type="button">Remove support</button>
+          <p class="build-only-note">Edits are BUILD-only and become the immutable basis of the next TEST.</p>
+        </article>
+      </section>
+    </main>
+    <script type="module" src="./dist/app.js"></script>
+  </body>
+</html>
