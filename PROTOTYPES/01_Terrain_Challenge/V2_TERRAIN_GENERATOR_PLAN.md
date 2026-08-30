@@ -1,8 +1,8 @@
 # ROBO BRIDGE MCP — V2 Terrain Generator Plan
 
-**Status:** Plan only; no implementation in this document  
-**Scope:** `PROTOTYPES/01_Terrain_Challenge/` only  
-**Generator version:** Terrain Generator V2  
+**Status:** Plan only; no implementation in this document
+**Scope:** `PROTOTYPES/01_Terrain_Challenge/` only
+**Generator version:** Terrain Generator V2
 **Export contract:** V3 `ChallengeState` remains version `3`
 
 ## 1. Purpose
