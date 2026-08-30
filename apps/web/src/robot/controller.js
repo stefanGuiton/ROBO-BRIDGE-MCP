@@ -200,6 +200,10 @@ export class RobotController {
     const target = { xMm, yMm, zMm };
     const workspace = validateWorkspacePoint(target, this.workspace);
     if (!workspace.ok) return workspace;
+    const xyTravelMm = Math.hypot(target.xMm - this.tcp.xMm, target.yMm - this.tcp.yMm);
+    if (Math.min(target.zMm, this.tcp.zMm) < UR10_GRIPPER.safeLateralZMm && xyTravelMm > UR10_GRIPPER.lowZxyLimitMm) {
+      return { ok: false, reason: 'low_height_lateral_move', safeLateralZMm: UR10_GRIPPER.safeLateralZMm, lowZxyLimitMm: UR10_GRIPPER.lowZxyLimitMm };
+    }
     return { ok: true, target };
   }
 
@@ -213,6 +217,7 @@ export class RobotController {
       currentYawRad: startYawRad,
       target,
       heldBrick: this.heldBrick(),
+      heldBrickYawInTcpRad: this.brickYawInTcpRad,
       bricks: this.bricks,
       targets: this.board?.getTargets?.() ?? []
     });
@@ -258,23 +263,28 @@ export class RobotController {
     let scaleFactor = 1;
     let maxJointSpeedRadS = 0;
     let maxJointAccelerationRadS2 = 0;
+    let maxYawSpeedRadS = 0;
     let previousJoints = Array.from(this.jointsRad);
+    let previousYawRad = startYawRad;
     let previousTime = 0;
     let previousVelocities = new Array(6).fill(0);
     for (let i = 0; i < points.length; i += 1) {
       const dt = Math.max(1e-6, (timesMs[i] - previousTime) / 1000);
       const velocities = points[i].jointsRad.map((value, joint) => angleDistance(value, previousJoints[joint]) / dt);
+      maxYawSpeedRadS = Math.max(maxYawSpeedRadS, angleDistance(points[i].yawRad, previousYawRad) / dt);
       maxJointSpeedRadS = Math.max(maxJointSpeedRadS, ...velocities);
       if (i > 0) {
         const accelerations = velocities.map((value, joint) => Math.abs(value - previousVelocities[joint]) / dt);
         maxJointAccelerationRadS2 = Math.max(maxJointAccelerationRadS2, ...accelerations);
       }
       previousJoints = points[i].jointsRad;
+      previousYawRad = points[i].yawRad;
       previousVelocities = velocities;
       previousTime = timesMs[i];
     }
     if (maxJointSpeedRadS > this.jointSpeedLimitRadS) scaleFactor = Math.max(scaleFactor, maxJointSpeedRadS / this.jointSpeedLimitRadS);
     if (maxJointAccelerationRadS2 > this.jointAccelerationLimitRadS2) scaleFactor = Math.max(scaleFactor, Math.sqrt(maxJointAccelerationRadS2 / this.jointAccelerationLimitRadS2));
+    if (maxYawSpeedRadS > UR10_GRIPPER.maxYawSpeedRadS) scaleFactor = Math.max(scaleFactor, maxYawSpeedRadS / UR10_GRIPPER.maxYawSpeedRadS);
     if (scaleFactor > 1) timesMs = timesMs.map((value) => value * scaleFactor);
     points.forEach((point, index) => { point.targetElapsedMs = timesMs[index]; });
 
@@ -294,6 +304,7 @@ export class RobotController {
         accelerationMmS2: motionProfile.accelerationMmS2 / (scaleFactor ** 2),
         estimatedMaxJointSpeedRadS: maxJointSpeedRadS / scaleFactor,
         estimatedMaxJointAccelerationRadS2: maxJointAccelerationRadS2 / (scaleFactor ** 2),
+        estimatedMaxYawSpeedRadS: maxYawSpeedRadS / scaleFactor,
         timeScaleFactor: scaleFactor,
         startYawRad,
         targetYawRad
@@ -399,6 +410,11 @@ export class RobotController {
     const candidate = findLatchCandidate(this.tcp, this.bricks, this.heldBrickId);
     if (!candidate.ok) return { success: false, ok: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = candidate.brick;
+    const requiredYawRad = brick.yawRad + Math.PI / 2;
+    const yawErrorRad = Math.abs(shortestHalfTurnDelta(this.toolYawRad, requiredYawRad));
+    if (yawErrorRad > BRICK_SPEC.capture.yawToleranceRad) {
+      return { success: false, ok: false, reason: 'orientation_not_aligned', yawErrorRad, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+    }
     this.brickInTcp = captureBrickInTcp(this.tcp, this.toolYawRad, brick.position);
     this.brickYawInTcpRad = wrapPi(brick.yawRad - this.toolYawRad);
     brick.heldBy = actor === 'human' ? 'human' : 'robot';
@@ -409,7 +425,7 @@ export class RobotController {
     this.jawState = 'holding';
     this.updateHeldBrickPose();
     this.#bumpRobot('latched', { brickId: brick.id, actor });
-    return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
+    return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, yawErrorRad, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
   }
 
   async unlatch({ expectedWorldRevision, actor = 'agent' } = {}) {

@@ -24,9 +24,7 @@ const JOINT_ORIGINS = Object.freeze([
 const LINK_FRAMES = Object.freeze([
   Object.freeze({ name: 'base', frame: -1, offsetMm: [0, 0, 0], rpy: [0, 0, PI] }),
   Object.freeze({ name: 'shoulder', frame: 0, offsetMm: [0, 0, 0], rpy: [0, 0, PI] }),
-  // The V2 export has the upper-arm visual translation baked into its vertices.
-  // Reapplying the legacy 220.941 mm offset makes the link separate in motion.
-  Object.freeze({ name: 'upper arm', frame: 1, offsetMm: [0, 0, 0], rpy: [PI / 2, 0, -PI / 2] }),
+  Object.freeze({ name: 'upper arm', frame: 1, offsetMm: [0, 0, 220.941], rpy: [PI / 2, 0, -PI / 2] }),
   Object.freeze({ name: 'forearm', frame: 2, offsetMm: [0, 0, 49.042], rpy: [PI / 2, 0, -PI / 2] }),
   Object.freeze({ name: 'wrist 1', frame: 3, offsetMm: [0, 0, -114.9], rpy: [PI / 2, 0, 0] }),
   Object.freeze({ name: 'wrist 2', frame: 4, offsetMm: [0, 0, -115.8], rpy: [0, 0, 0] }),
@@ -98,8 +96,9 @@ export function ur10VisualTransforms(jointsRad) {
   if (!Array.isArray(jointsRad) || jointsRad.length !== 6 || !jointsRad.every(Number.isFinite)) {
     throw new TypeError('invalid_ur10_visual_joint_state');
   }
-  // The source demo uses a pi robot-base transform and a pi scene transform.
-  // They cancel here, leaving the visual rig in the controller's world frame.
+  // The source demo's two pi rotations cancel. Its remaining global translation
+  // is intentionally rebased so the challenge workcell and controller share the
+  // same machine origin; only link-local reference transforms live here.
   let transform = mat4Identity();
   const frames = [];
   for (let index = 0; index < JOINT_ORIGINS.length; index += 1) {
@@ -117,11 +116,15 @@ export function ur10VisualTransforms(jointsRad) {
   return { frames, links, flange };
 }
 
-const HOME_VISUAL_LINKS = ur10VisualTransforms(UR10_DEFINITION.homeJointsRad).links;
-const HOME_DH = forwardKinematics(UR10_DEFINITION.homeJointsRad, UR10_DEFINITION);
+// Align each immutable visual-link frame to the authoritative DH frame once at
+// neutral joints. Runtime articulation then consumes the controller's FK frames
+// instead of deriving a second live robot pose inside the renderer.
+const REFERENCE_ALIGNMENT_JOINTS = Object.freeze([0, 0, 0, 0, 0, 0]);
+const REFERENCE_VISUAL_LINKS = ur10VisualTransforms(REFERENCE_ALIGNMENT_JOINTS).links;
+const REFERENCE_DH = forwardKinematics(REFERENCE_ALIGNMENT_JOINTS, UR10_DEFINITION);
 const LINK_CALIBRATIONS = new Map([...LINK_PARENT_FRAMES].map(([name, frameIndex]) => {
-  const parent = new THREE.Matrix4().set(...HOME_DH.frames[frameIndex]);
-  const visual = new THREE.Matrix4().set(...HOME_VISUAL_LINKS.get(name));
+  const parent = new THREE.Matrix4().set(...REFERENCE_DH.frames[frameIndex]);
+  const visual = new THREE.Matrix4().set(...REFERENCE_VISUAL_LINKS.get(name));
   return [name, parent.invert().multiply(visual)];
 }));
 

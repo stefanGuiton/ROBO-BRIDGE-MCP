@@ -34,14 +34,13 @@ export class RobotRenderer {
     this.board = board;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xe8eef5);
-    this.scene.fog = new THREE.FogExp2(0xe8eef5, 0.00042);
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
     this.webgl.outputColorSpace = THREE.SRGBColorSpace;
     this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
-    this.webgl.toneMappingExposure = 1.08;
+    this.webgl.toneMappingExposure = 1.02;
     this.webgl.shadowMap.enabled = true;
-    this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.camera = new THREE.PerspectiveCamera(42, 1, 1, 5000);
+    this.webgl.shadowMap.type = THREE.PCFShadowMap;
+    this.camera = new THREE.PerspectiveCamera(48, 1, 1, 2600);
     this.camera.up.set(0, 0, 1);
     this.focus = new THREE.Vector3(420, 0, 170);
     this.yaw = -0.82;
@@ -63,37 +62,34 @@ export class RobotRenderer {
   }
 
   buildLighting() {
-    this.scene.add(new THREE.HemisphereLight(0xb9dcff, 0x071019, 1.55));
-    const key = new THREE.DirectionalLight(0xffffff, 3.4);
-    key.position.set(450, -650, 1100);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7c0cc, 1.55));
+    const key = new THREE.DirectionalLight(0xffffff, 2.7);
+    key.position.set(145, -270, 380);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = -900;
-    key.shadow.camera.right = 900;
-    key.shadow.camera.top = 900;
-    key.shadow.camera.bottom = -900;
-    key.shadow.camera.near = 100;
-    key.shadow.camera.far = 2400;
+    key.shadow.camera.left = -760;
+    key.shadow.camera.right = 760;
+    key.shadow.camera.top = 620;
+    key.shadow.camera.bottom = -620;
+    key.shadow.camera.near = 20;
+    key.shadow.camera.far = 1600;
     this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0x74d7ff, 1.6);
-    fill.position.set(-350, 700, 550);
+    const fill = new THREE.DirectionalLight(0xc9dcff, 0.85);
+    fill.position.set(705, 240, 220);
     this.scene.add(fill);
-    const rim = new THREE.PointLight(0xffb34f, 130000, 1700, 2);
-    rim.position.set(800, 300, 650);
-    this.scene.add(rim);
   }
 
   buildWorkcell() {
-    const tableMaterial = physicalMaterial({ color: 0xdfe7ef, roughness: 0.72, metalness: 0.08 });
+    const tableMaterial = new THREE.MeshStandardMaterial({ color: 0xd7dde5, roughness: 0.82, metalness: 0.02 });
     this.scene.add(makeBox(
-      { xMm: 1100, yMm: 900, zMm: 50 },
-      { xMm: 380, yMm: 0, zMm: -25 },
+      { xMm: 1280, yMm: 720, zMm: 8 },
+      { xMm: 380, yMm: 0, zMm: -4 },
       tableMaterial
     ));
-    const grid = new THREE.GridHelper(1000, 20, 0xa9bac9, 0xcbd6e0);
+    const grid = new THREE.GridHelper(1180, 30, 0xb6c2ce, 0xd5dde6);
     grid.rotation.x = Math.PI / 2;
     grid.position.set(380, 0, 0.5);
-    grid.material.opacity = 0.32;
+    grid.material.opacity = 0.18;
     grid.material.transparent = true;
     this.scene.add(grid);
 
@@ -192,7 +188,7 @@ export class RobotRenderer {
 
   setView(view) {
     const presets = {
-      hero: { focus: [390, 0, 250], yaw: -0.82, pitch: 0.48, radius: 1850 },
+      hero: { focus: [390, 0, 165], yaw: -0.8621700547, pitch: 0.4069542207, radius: 1402.052424 },
       top: { focus: [590, 0, 130], yaw: -0.72, pitch: 1.25, radius: 1600 },
       tray: { focus: [535, -220, 95], yaw: -0.82, pitch: 0.58, radius: 760 },
       latch: { focus: [520, -230, 70], yaw: -0.92, pitch: 0.42, radius: 430 },

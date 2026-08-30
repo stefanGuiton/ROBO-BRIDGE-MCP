@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { segmentDistance, segmentIntersectsAabb, validateCollision } from '../../apps/web/src/robot/collision.js';
+import { BRICK_SPEC } from '../../apps/web/src/bricks/brick-spec.js';
 import { createLiveHarness } from '../helpers/live-harness.js';
 
 const box = { min: { xMm: -5, yMm: -5, zMm: -5 }, max: { xMm: 5, yMm: 5, zMm: 5 } };
@@ -40,6 +41,7 @@ test('occupied target blocks a second held brick before release', async () => {
   const held = { id: 'extra', colour: first.colour, position: { xMm: 600, yMm: 0, zMm: 200 }, yawRad: 0, heldBy: 'robot', placedTargetId: null, snapped: false, graspable: true };
   controller.bricks.push(held);
   controller.heldBrickId = held.id;
-  const targetTcp = { xMm: firstTarget.position.xMm, yMm: firstTarget.position.yMm, zMm: firstTarget.position.zMm + 6.6 };
+  const targetTcp = { xMm: firstTarget.position.xMm, yMm: firstTarget.position.yMm, zMm: firstTarget.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm };
+  await controller.moveTool({ ...targetTcp, zMm: 255, speedMmS: 300 });
   await assert.rejects(controller.moveTool({ ...targetTcp, speedMmS: 180 }), (error) => error.code === 'collision');
 });
