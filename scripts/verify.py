@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_SOURCE_PARTS = {'.git', '.venv', '.playwright-cli', '.test-dist', 'ARCHIVE', 'dist', 'downloads from oracle', 'evidence', 'output', '__pycache__', '.pytest_cache', '.cache', 'node_modules'}
+EXCLUDED_SOURCE_PARTS = {'.git', '.venv', '.playwright-cli', '.test-dist', '.npm-cache', 'ARCHIVE', 'dist', 'downloads from oracle', 'evidence', 'output', '__pycache__', '.pytest_cache', '.cache', 'node_modules'}
 
 
 def run(name: str, command: list[str]) -> dict[str, object]:
