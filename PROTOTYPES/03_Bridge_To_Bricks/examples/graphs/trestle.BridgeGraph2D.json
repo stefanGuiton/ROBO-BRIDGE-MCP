@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "position": {
+        "x": 0,
+        "y": 8
+      },
+      "role": "support",
+      "supportType": "fixed"
+    },
+    {
+      "id": 2,
+      "position": {
+        "x": 10,
+        "y": 8
+      },
+      "role": "deck",
+      "supportType": "none"
+    },
+    {
+      "id": 3,
+      "position": {
+        "x": 20,
+        "y": 8
+      },
+      "role": "deck",
+      "supportType": "none"
+    },
+    {
+      "id": 4,
+      "position": {
+        "x": 30,
+        "y": 8
+      },
+      "role": "deck",
+      "supportType": "none"
+    },
+    {
+      "id": 5,
+      "position": {
+        "x": 40,
+        "y": 8
+      },
+      "role": "support",
+      "supportType": "fixed"
+    },
+    {
+      "id": 6,
+      "position": {
+        "x": 10,
+        "y": 0
+      },
+      "role": "pier",
+      "supportType": "terrain"
+    },
+    {
+      "id": 7,
+      "position": {
+        "x": 20,
+        "y": 0
+      },
+      "role": "pier",
+      "supportType": "terrain"
+    },
+    {
+      "id": 8,
+      "position": {
+        "x": 30,
+        "y": 0
+      },
+      "role": "pier",
+      "supportType": "terrain"
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "a": 1,
+      "b": 2,
+      "role": "deck",
+      "memberClass": "deck",
+      "capacityClass": 3
+    },
+    {
+      "id": 2,
+      "a": 2,
+      "b": 3,
+      "role": "deck",
+      "memberClass": "deck",
+      "capacityClass": 3
+    },
+    {
+      "id": 3,
+      "a": 3,
+      "b": 4,
+      "role": "deck",
+      "memberClass": "deck",
+      "capacityClass": 3
+    },
+    {
+      "id": 4,
+      "a": 4,
+      "b": 5,
+      "role": "deck",
+      "memberClass": "deck",
+      "capacityClass": 3
+    },
+    {
+      "id": 5,
+      "a": 6,
+      "b": 2,
+      "role": "pier",
+      "memberClass": "pier",
+      "capacityClass": 3
+    },
+    {
+      "id": 6,
+      "a": 7,
+      "b": 3,
+      "role": "pier",
+      "memberClass": "pier",
+      "capacityClass": 3
+    },
+    {
+      "id": 7,
+      "a": 8,
+      "b": 4,
+      "role": "pier",
+      "memberClass": "pier",
+      "capacityClass": 3
+    },
+    {
+      "id": 8,
+      "a": 6,
+      "b": 3,
+      "role": "diagonal",
+      "memberClass": "brace",
+      "capacityClass": 3
+    },
+    {
+      "id": 9,
+      "a": 7,
+      "b": 2,
+      "role": "diagonal",
+      "memberClass": "brace",
+      "capacityClass": 3
+    },
+    {
+      "id": 10,
+      "a": 7,
+      "b": 4,
+      "role": "diagonal",
+      "memberClass": "brace",
+      "capacityClass": 3
+    },
+    {
+      "id": 11,
+      "a": 8,
+      "b": 3,
+      "role": "diagonal",
+      "memberClass": "brace",
+      "capacityClass": 3
+    }
+  ],
+  "cables": [],
+  "metadata": {
+    "family": "trestle",
+    "span": 40,
+    "designRevision": 1
+  }
+}

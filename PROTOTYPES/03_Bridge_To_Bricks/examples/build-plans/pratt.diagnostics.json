@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "codes": [],
+  "graphFamily": "pratt",
+  "compilationTimeMs": 89.88399999999996,
+  "placementCount": 300,
+  "occupancyCellCount": 1605,
+  "rejectedClearanceCellCount": 0,
+  "dependencyEdgeCount": 421,
+  "memberCount": 29,
+  "checksum": "231bd61c"
+}

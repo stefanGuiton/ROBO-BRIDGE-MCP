@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/BridgeGraph2D.schema.json",
+  "title": "BridgeGraph2D",
+  "type": "object",
+  "required": ["nodes", "members", "metadata"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "nodes": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "position", "role"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "position": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+            "additionalProperties": false
+          },
+          "role": { "enum": ["support", "deck", "pier", "tower", "joint", "anchor"] },
+          "supportType": { "enum": ["fixed", "terrain", "none"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "members": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "a", "b", "role"],
+        "properties": {
+          "id": { "type": ["integer", "string"] },
+          "a": { "type": ["integer", "string"] },
+          "b": { "type": ["integer", "string"] },
+          "role": { "enum": ["beam", "chord", "diagonal", "vertical", "pier", "arch", "deck", "tower", "rail"] },
+          "memberClass": { "type": "string", "minLength": 1 },
+          "capacityClass": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cables": { "type": "array" },
+    "metadata": {
+      "type": "object",
+      "required": ["family", "span", "designRevision"],
+      "properties": {
+        "family": { "type": "string", "minLength": 1 },
+        "span": { "type": "number", "exclusiveMinimum": 0 },
+        "designRevision": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    }
+  }
+}

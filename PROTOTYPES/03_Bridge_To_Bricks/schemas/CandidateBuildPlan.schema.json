@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robo-bridge.local/schemas/CandidateBuildPlan.schema.json",
+  "title": "Adapter-friendly candidate BuildPlan",
+  "type": "object",
+  "required": ["schemaVersion", "compilerVersion", "designRevision", "coordinateSpace", "grid", "paletteId", "placements", "checksum", "diagnostics"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "candidate-build-plan/1.0.0" },
+    "compilerVersion": { "type": "string" },
+    "designRevision": { "type": "integer", "minimum": 0 },
+    "coordinateSpace": { "const": "bridge-local-stud-grid" },
+    "grid": {
+      "type": "object",
+      "required": ["stud", "layer", "machineTransformRequired"],
+      "properties": {
+        "stud": { "const": 1 },
+        "layer": { "const": 1 },
+        "machineTransformRequired": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "paletteId": { "type": "string" },
+    "placements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["placementId", "partType", "structuralMemberId", "phase", "gridPosition", "orientation", "dimensions", "colour", "material", "dependencies"],
+        "properties": {
+          "placementId": { "type": "integer", "minimum": 1 },
+          "partType": { "type": "string", "minLength": 1 },
+          "structuralMemberId": { "type": ["integer", "string"] },
+          "sourceMemberId": { "type": ["integer", "string", "null"] },
+          "phase": { "enum": ["foundation", "pier", "lower", "deck", "web", "upper", "rail", "cable"] },
+          "role": { "type": "string" },
+          "gridPosition": { "$ref": "#/$defs/vec3" },
+          "orientation": { "enum": [0, 90] },
+          "dimensions": { "$ref": "#/$defs/positiveVec3" },
+          "colour": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "material": { "type": "string" },
+          "occupiedCells": { "type": "array", "items": { "$ref": "#/$defs/vec3" } },
+          "dependencies": { "type": "array", "uniqueItems": true, "items": { "type": "integer", "minimum": 1 } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "checksum": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+    "diagnostics": { "type": "object" }
+  },
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } },
+      "additionalProperties": false
+    },
+    "positiveVec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "integer", "minimum": 1 }, "y": { "type": "integer", "minimum": 1 }, "z": { "type": "integer", "minimum": 1 } },
+      "additionalProperties": false
+    }
+  }
+}

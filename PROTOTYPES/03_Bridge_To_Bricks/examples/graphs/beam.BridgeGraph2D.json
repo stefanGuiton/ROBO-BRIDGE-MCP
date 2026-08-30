@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "position": {
+        "x": 0,
+        "y": 7
+      },
+      "role": "support",
+      "supportType": "fixed"
+    },
+    {
+      "id": 2,
+      "position": {
+        "x": 40,
+        "y": 7
+      },
+      "role": "support",
+      "supportType": "fixed"
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "a": 1,
+      "b": 2,
+      "role": "deck",
+      "memberClass": "beam-primary",
+      "capacityClass": 3
+    }
+  ],
+  "cables": [],
+  "metadata": {
+    "family": "beam",
+    "span": 40,
+    "designRevision": 1
+  }
+}

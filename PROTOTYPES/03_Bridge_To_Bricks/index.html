@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f7f4ec" />
+    <title>ROBO BRIDGE MCP V3 · Bridge to Bricks</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">RB</span>
+          <div>
+            <p class="eyebrow">ROBO BRIDGE MCP V3 · ISOLATED PROTOTYPE 03</p>
+            <h1>Bridge <span>to Bricks</span></h1>
+          </div>
+        </div>
+        <div class="compile-state" id="compile-state"><i></i><span>Plan valid</span><b id="checksum">—</b></div>
+      </header>
+
+      <main class="shell">
+        <aside class="panel controls-panel" aria-label="Compiler controls">
+          <section>
+            <p class="section-label">INPUT GRAPH</p>
+            <label class="field-label" for="fixture">Built-in fixture</label>
+            <select id="fixture">
+              <option value="beam">Beam</option>
+              <option value="trestle">Trestle</option>
+              <option value="warren" selected>Warren truss</option>
+              <option value="pratt">Pratt truss</option>
+              <option value="arch">Arch</option>
+            </select>
+            <label class="import-button" for="graph-file"><span>Import BridgeGraph2D.json</span><small>Generator-agnostic JSON</small></label>
+            <input id="graph-file" type="file" accept="application/json,.json" />
+          </section>
+
+          <section>
+            <div class="section-heading"><p class="section-label">GRID SETTINGS</p><button id="reset-settings" class="text-button" type="button">Reset</button></div>
+            <label class="range-field"><span>Side offset <output id="side-offset-output">6</output></span><input id="side-offset" type="range" min="5" max="10" value="6" /></label>
+            <label class="range-field"><span>Deck width <output id="deck-width-output">10</output></span><input id="deck-width" type="range" min="8" max="16" step="2" value="10" /></label>
+            <label class="range-field"><span>Clear width <output id="clear-width-output">6</output></span><input id="clear-width" type="range" min="4" max="10" step="2" value="6" /></label>
+            <label class="field-label" for="beam-lengths">Allowed beam lengths</label>
+            <input id="beam-lengths" type="text" value="80, 64, 48, 32, 24, 16, 12, 8, 6" spellcheck="false" />
+            <label class="check-field"><input id="include-1x1" type="checkbox" checked /><span>Allow 1×1 local repair</span></label>
+            <button id="compile" class="primary-button" type="button">Compile deterministic plan</button>
+          </section>
+
+          <section class="pipeline-card">
+            <p class="section-label">COMPILER PIPELINE</p>
+            <ol>
+              <li><b>01</b><span>Normalize graph</span></li>
+              <li><b>02</b><span>Extrude + deck</span></li>
+              <li><b>03</b><span>Clearance mask</span></li>
+              <li><b>04</b><span>Raster occupancy</span></li>
+              <li><b>05</b><span>Greedy packing</span></li>
+              <li><b>06</b><span>Dependency DAG</span></li>
+            </ol>
+          </section>
+        </aside>
+
+        <section class="workspace" aria-label="Bridge visualization">
+          <div class="workspace-bar">
+            <div>
+              <p class="section-label" id="view-kicker">FINAL OUTPUT</p>
+              <h2 id="view-title">Brick structure</h2>
+            </div>
+            <div class="camera-help">Drag to orbit · wheel to zoom · right-drag to pan</div>
+          </div>
+          <nav class="view-tabs" id="view-tabs" aria-label="Visualization views">
+            <button type="button" data-view="graph">2D graph</button>
+            <button type="button" data-view="extruded">Extruded</button>
+            <button type="button" data-view="clearance">Clearance</button>
+            <button type="button" data-view="occupancy">Stud grid</button>
+            <button type="button" data-view="bricks" class="active">Final bricks</button>
+            <button type="button" data-view="members">Member groups</button>
+            <button type="button" data-view="dependencies">Build order</button>
+          </nav>
+          <div class="viewport-wrap">
+            <canvas id="bridge-canvas" aria-label="Interactive 3D bridge compiler view"></canvas>
+            <div class="viewport-badge"><span id="view-badge">FINAL BRICKS</span><b id="family-badge">WARREN</b></div>
+            <div class="axis-key" aria-hidden="true"><i class="x-axis"></i>X / span <i class="y-axis"></i>Y / layers <i class="z-axis"></i>Z / width</div>
+            <div id="error-banner" class="error-banner" hidden></div>
+          </div>
+          <div class="phase-legend" id="phase-legend">
+            <span><i style="--colour:#475569"></i>Foundation</span>
+            <span><i style="--colour:#d97706"></i>Piers</span>
+            <span><i style="--colour:#2563eb"></i>Lower</span>
+            <span><i style="--colour:#64748b"></i>Deck</span>
+            <span><i style="--colour:#0f766e"></i>Web</span>
+            <span><i style="--colour:#7c3aed"></i>Upper</span>
+            <span><i style="--colour:#dc2626"></i>Rail</span>
+          </div>
+        </section>
+
+        <aside class="panel inspector-panel" aria-label="Compiler results">
+          <section>
+            <p class="section-label">LIVE METRICS</p>
+            <div class="metric-grid">
+              <article><b id="metric-time">—</b><span>compile ms</span></article>
+              <article><b id="metric-placements">—</b><span>placements</span></article>
+              <article><b id="metric-cells">—</b><span>occupancy cells</span></article>
+              <article><b id="metric-draws">—</b><span>draw calls</span></article>
+              <article><b id="metric-fps">—</b><span>FPS</span></article>
+              <article><b id="metric-edges">—</b><span>DAG edges</span></article>
+            </div>
+          </section>
+
+          <section>
+            <p class="section-label">VALIDATION</p>
+            <ul class="validation-list" id="validation-list"></ul>
+          </section>
+
+          <section>
+            <p class="section-label">PLAN SUMMARY</p>
+            <dl class="plan-summary">
+              <div><dt>Coordinate space</dt><dd>local stud grid</dd></div>
+              <div><dt>Revision</dt><dd id="revision">—</dd></div>
+              <div><dt>Catalogue parts</dt><dd id="catalogue-size">—</dd></div>
+              <div><dt>Structural groups</dt><dd id="member-count">—</dd></div>
+              <div><dt>Machine transform</dt><dd>required later</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <p class="section-label">EXPORT</p>
+            <div class="export-grid">
+              <button type="button" data-export="buildPlan">BuildPlan.json</button>
+              <button type="button" data-export="memberToPlacements">Member map</button>
+              <button type="button" data-export="dependencyGraph">Dependency DAG</button>
+              <button type="button" data-export="diagnostics">Diagnostics</button>
+            </div>
+          </section>
+
+          <div class="boundary-note"><b>Prototype boundary</b><p>Bridge-local coordinates only. No robot, machine transform, runtime authority or UR10 connection.</p></div>
+        </aside>
+      </main>
+    </div>
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three.module.js" } }
+    </script>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
