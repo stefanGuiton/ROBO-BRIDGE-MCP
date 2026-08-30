@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ROBO BRIDGE MCP V3 — Terrain Challenge</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside class="panel">
+        <header>
+          <p class="eyebrow">ROBO BRIDGE MCP V3</p>
+          <h1>Terrain Challenge</h1>
+          <p class="lede">Deterministic terrain, route anchors and supportable regions.</p>
+        </header>
+
+        <div class="preset-row" id="preset-row" aria-label="Challenge presets"></div>
+
+        <section class="controls">
+          <label>Seed <input id="seed" type="number" value="314159" step="1" /></label>
+          <label>Obstacle mode
+            <select id="mode">
+              <option value="gap">Gap</option>
+              <option value="ravine">Ravine</option>
+              <option value="river">River</option>
+            </select>
+          </label>
+          <label>Obstacle width <output id="width-output"></output><input id="obstacleWidth" type="range" min="8" max="38" step="1" /></label>
+          <label>Obstacle depth <output id="depth-output"></output><input id="obstacleDepth" type="range" min="2" max="24" step="1" /></label>
+          <label>Noise amplitude <output id="noise-output"></output><input id="noiseAmplitude" type="range" min="0" max="18" step="0.5" /></label>
+          <label>Noise frequency <output id="frequency-output"></output><input id="noiseFrequency" type="range" min="18" max="80" step="1" /></label>
+          <label>Smoothing <output id="smoothing-output"></output><input id="smoothing" type="range" min="0.5" max="8" step="0.25" /></label>
+          <label>Terrain amplitude <output id="terrain-output"></output><input id="terrainAmplitude" type="range" min="0" max="10" step="0.25" /></label>
+        </section>
+
+        <section class="toggles">
+          <label><input id="showAnchors" type="checkbox" checked /> ENTRY / EXIT</label>
+          <label><input id="showSupport" type="checkbox" checked /> Support regions</label>
+          <label><input id="showCorridor" type="checkbox" checked /> Transport corridor</label>
+        </section>
+
+        <div class="actions">
+          <button id="regenerate" class="primary">Regenerate</button>
+          <button id="export">Export ChallengeState.json</button>
+        </div>
+
+        <dl class="metrics">
+          <div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Vertices</dt><dd id="vertex-count">—</dd></div>
+          <div><dt>Triangles</dt><dd id="triangle-count">—</dd></div>
+          <div><dt>FPS</dt><dd id="fps">—</dd></div>
+          <div><dt>Scene meshes</dt><dd id="mesh-count">—</dd></div>
+        </dl>
+        <p id="status" role="status">Ready.</p>
+      </aside>
+      <main id="viewport" aria-label="Three-dimensional terrain preview">
+        <div class="viewport-help">Drag to orbit · wheel to zoom · right-drag to pan</div>
+      </main>
+    </div>
+    <script type="importmap">
+      { "imports": { "three": "/vendor/three.module.js" } }
+    </script>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>
