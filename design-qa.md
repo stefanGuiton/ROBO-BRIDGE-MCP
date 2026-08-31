@@ -10,7 +10,7 @@ Comparison viewport: 1468 × 930
 ## Visual match
 
 - Full-screen light-mode V8 player canvas: passed.
-- FPS pill, top-left HUD, centred pointer-lock/drag-look help, reticle, and bottom toolbar: passed.
+- FPS pill, top-left HUD, centred click-to-lock/Escape-release help, reticle, and bottom toolbar: passed.
 - White 1750 × 690 × 1200 mm workbench and four-leg proportions: passed.
 - 640 × 480 mm build mat with 80 × 60 instanced studs: passed.
 - Red circular MORE BRICKS control and compact authoritative brick supply: passed.
@@ -26,6 +26,8 @@ Comparison viewport: 1468 × 930
 - Table/material/lighting/player/physics/placement/mobile/debug/LUT groups present: passed.
 - One browser pick/place advanced build progress from `0/8` to `1/8`: passed.
 - Reset restored progress to `0/8`: passed.
+- Carried brick body/studs use an opaque material; placement targets alone remain translucent: passed.
+- V8 held and released brick solvers run in the 240 Hz fixed-step loop and commit through the shared controller: passed.
 - Browser console errors/warnings on the fresh final tab: 0/0.
 
 ## Authority and WebMCP

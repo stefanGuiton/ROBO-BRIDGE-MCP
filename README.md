@@ -11,9 +11,10 @@
 - the exact V8 workbench geometry, 80 × 60 stud mat, MORE BRICKS button, floor, materials, lighting, and minimal full-screen HUD;
 - a slide-out panel containing all 231 source settings, all robot actions, and live UR10 mount X/Y/Z/yaw controls;
 - desktop and mobile first-person player controls with capsule/workcell collision;
-- held-brick spring/pendulum presentation, L/M/R brick connectors, 8 mm mat snapping, target snapping, and collision-blocked previews;
+- V8 held-brick spring/pendulum physics plus free-drop gravity, 3D angular motion, restitution, friction, sleep, and brick OBB contacts;
+- L/M/R brick connectors, 8 mm mat snapping, target snapping, and collision-blocked previews;
 - explicit BUILD and TEST-lock modes, with production structural collapse disabled;
-- 240 Hz fixed-step player/held-brick updates independent of render cadence;
+- 240 Hz fixed-step player, held-brick, and loose-brick updates independent of render cadence;
 - ACES rendering, optional local 17/33/65 `.cube` LUT grading, and placed-brick batching;
 - bounded TCP speed, acceleration, joint speed, and joint acceleration;
 - cancellation, reset epochs, and serialized robot moves;
@@ -27,12 +28,12 @@
 - one nine-tool primitive WebMCP surface;
 - production red/blue build tests and persistent reliability tests.
 
-NVIDIA Newton and the old duplicate SCARA/physics runtime have been removed. ROBO BRIDGE does not claim rigid-body contact physics.
+NVIDIA Newton and the old duplicate SCARA/physics service have been removed. The browser includes the bounded Player V8 brick solver described above; it is not a general-purpose or calibrated industrial physics engine.
 
 ## MAIN_DEMO controls
 
 - `WASD`: move; `Shift`: sprint; `Space` / `Ctrl`: vertical movement.
-- Mouse: look while pointer-locked; if the browser blocks Pointer Lock, hold and drag to look. Wheel: zoom.
+- Mouse: click the scene once to capture the pointer, then look freely without holding a button. Press `Esc` to release the pointer and use the UI. Wheel: zoom.
 - Centre click: pick or place; `R`: rotate the held brick by 90 degrees.
 - `PLAYER` / `ORBIT`: switch between player navigation and inspection camera.
 - `BUILD` / `TEST LOCK`: allow or reject player construction edits.

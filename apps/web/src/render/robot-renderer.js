@@ -5,6 +5,7 @@ import { RealGripperVisual, THREE } from './real-gripper-visual.js';
 import { Ur10Visual } from './ur10-visual.js';
 import { ColorGrader } from '../player/color-grading.js';
 import { HeldBrickController } from '../player/held-brick-controller.js';
+import { LooseBrickPhysics } from '../player/loose-brick-physics.js';
 import { fixedStepAdvance } from '../player/math.js';
 import { PlacedBrickBatcher } from '../player/placed-brick-batcher.js';
 import { PlayerCapsuleSolver } from '../player/player-collision.js';
@@ -74,6 +75,10 @@ export class RobotRenderer {
     this.buildRobot();
     this.gripper = new RealGripperVisual(this.machineRoot);
     this.batcher = new PlacedBrickBatcher(this.machineRoot, playerSettings ?? {});
+    this.loosePhysics = new LooseBrickPhysics(controller, playerSettings ?? {});
+    this.controller.subscribe((event) => {
+      if (event.type === 'reset' || event.type === 'world_reset') this.loosePhysics.clear();
+    });
     if (playerSettings && humanBuildAdapter) this.installPlayerRuntime();
     this.installCameraControls();
     if (this.player) this.setPlayerMode(true);
@@ -206,8 +211,8 @@ export class RobotRenderer {
       roughness: 0.31,
       metalness: 0,
       clearcoat: 0.25,
-      transparent: true,
-      opacity: 0.82,
+      transparent: false,
+      opacity: 1,
       depthWrite: true
     });
     const body = new THREE.Mesh(
@@ -287,7 +292,18 @@ export class RobotRenderer {
       return { ok: true, action: 'more_bricks' };
     }
     if (this.humanBuildAdapter.active) {
-      const result = this.humanBuildAdapter.release();
+      const pose = this.heldVisual.getVisualPose();
+      let result = this.humanBuildAdapter.release();
+      if (!result.ok && result.keepHolding && pose) {
+        result = this.humanBuildAdapter.drop(pose.position);
+        if (result.ok) this.loosePhysics.launch(result.brick.id, {
+          position: result.brick.position,
+          quaternion: pose.quaternion,
+          velocityMmS: pose.velocityMmS,
+          angularVelocityRadS: pose.angularVelocityRadS,
+          yawRad: pose.yawRad
+        });
+      }
       if (result.ok) {
         this.heldVisual.clear();
         this.heldGhost.visible = false;
@@ -308,8 +324,16 @@ export class RobotRenderer {
   }
 
   dropHeldBrick() {
-    const result = this.humanBuildAdapter.drop();
+    const pose = this.heldVisual.getVisualPose();
+    const result = this.humanBuildAdapter.drop(pose?.position ?? null);
     if (result.ok) {
+      if (pose) this.loosePhysics.launch(result.brick.id, {
+        position: result.brick.position,
+        quaternion: pose.quaternion,
+        velocityMmS: pose.velocityMmS,
+        angularVelocityRadS: pose.angularVelocityRadS,
+        yawRad: pose.yawRad
+      });
       this.heldVisual.clear();
       this.heldGhost.visible = false;
       this.lastPreviewSignature = '';
@@ -420,7 +444,8 @@ export class RobotRenderer {
     this.heldGhost.quaternion.fromArray(pose.quaternion);
     const valid = pose.candidate?.valid;
     const blocked = pose.candidate && !pose.candidate.valid;
-    this.heldGhost.userData.material.opacity = blocked ? 0.48 : valid ? 0.9 : 0.82;
+    this.heldGhost.userData.material.opacity = 1;
+    this.heldGhost.userData.material.transparent = false;
     this.heldGhost.userData.material.emissive.setHex(blocked ? 0xff3300 : valid ? 0x22c47a : 0x000000);
     this.heldGhost.userData.material.emissiveIntensity = blocked || valid ? 0.22 : 0;
   }
@@ -479,7 +504,8 @@ export class RobotRenderer {
         this.brickMeshes.set(brick.id, mesh);
       }
       mesh.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
-      mesh.rotation.z = brick.yawRad ?? 0;
+      if (Array.isArray(brick.freeQuaternion) && brick.freeQuaternion.length === 4) mesh.quaternion.fromArray(brick.freeQuaternion).normalize();
+      else mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), brick.yawRad ?? 0);
       mesh.visible = !placedIds.has(brick.id) && brick.heldBy !== 'human';
     }
     for (const [id, mesh] of this.brickMeshes) {
@@ -601,18 +627,19 @@ export class RobotRenderer {
         if (this.frameTimes.length > 120) this.frameTimes.shift();
         const average = this.frameTimes.reduce((sum, value) => sum + value, 0) / this.frameTimes.length;
         this.fps = 1000 / average;
-        if (this.player?.enabled) {
-          const advance = fixedStepAdvance(
-            this.physicsAccumulator,
-            Math.min(delta / 1000, this.playerSettings.maximumCatchupS),
-            this.physicsStepSeconds,
-            this.maximumSubsteps
-          );
-          this.physicsAccumulator = advance.accumulator;
-          for (let index = 0; index < advance.steps; index += 1) {
+        const advance = fixedStepAdvance(
+          this.physicsAccumulator,
+          Math.min(delta / 1000, this.playerSettings?.maximumCatchupS ?? 0.25),
+          this.physicsStepSeconds,
+          this.maximumSubsteps
+        );
+        this.physicsAccumulator = advance.accumulator;
+        for (let index = 0; index < advance.steps; index += 1) {
+          if (this.player?.enabled) {
             this.player.physicsStep(this.physicsStepSeconds);
             this.heldVisual.step(this.physicsStepSeconds, this.machinePlayerProxy);
           }
+          this.loosePhysics.step(this.physicsStepSeconds);
         }
       }
       this.lastFrame = now;
@@ -679,6 +706,7 @@ export class RobotRenderer {
       ur10: this.ur10.getStatus(),
       player: this.player?.getState() ?? null,
       heldBrick: this.heldVisual?.getVisualPose() ?? null,
+      looseBrickPhysics: this.loosePhysics?.getState() ?? [],
       placedBatch: this.batcher.getDiagnostics(),
       colorGrading: this.colorGrader?.getDiagnostics() ?? null
     };

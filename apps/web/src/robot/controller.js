@@ -173,8 +173,10 @@ export class RobotController {
 
   heldBrick() { return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null; }
 
-  moveLooseBrick(brickId, position, { actor = 'human' } = {}) {
-    if (typeof brickId !== 'string' || !position || ![position.xMm, position.yMm, position.zMm].every(isFiniteNumber)) {
+  moveLooseBrick(brickId, position, { actor = 'human', yawRad = null, freeQuaternion = null } = {}) {
+    if (typeof brickId !== 'string' || !position || ![position.xMm, position.yMm, position.zMm].every(isFiniteNumber)
+      || (yawRad !== null && !isFiniteNumber(yawRad))
+      || (freeQuaternion !== null && (!Array.isArray(freeQuaternion) || freeQuaternion.length !== 4 || !freeQuaternion.every(isFiniteNumber)))) {
       return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
     }
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
@@ -183,7 +185,10 @@ export class RobotController {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     brick.position = { ...position };
-    this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position } });
+    if (yawRad !== null) brick.yawRad = yawRad;
+    if (freeQuaternion !== null) brick.freeQuaternion = [...freeQuaternion];
+    else delete brick.freeQuaternion;
+    this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position }, yawRad: brick.yawRad ?? 0 });
     return { ok: true, brick: clone(brick), actor, worldRevision: this.worldRevision };
   }
 
@@ -205,6 +210,7 @@ export class RobotController {
     brick.placedTargetId = null;
     brick.placementType = null;
     brick.connection = null;
+    delete brick.freeQuaternion;
     brick.placementType = null;
     brick.connection = null;
     this.#bumpRobot('human_pickup', { brickId, actor: 'human' });
@@ -249,6 +255,7 @@ export class RobotController {
     const finalYawRad = snap.ok ? snap.transform.yawRad : yawRad;
     brick.position = { ...finalPosition };
     brick.yawRad = finalYawRad;
+    delete brick.freeQuaternion;
     brick.heldBy = null;
     brick.ownership = null;
     brick.snapped = Boolean(snap.ok);
@@ -284,6 +291,7 @@ export class RobotController {
     if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
     brick.position = { ...position };
     brick.yawRad = yawRad;
+    delete brick.freeQuaternion;
     brick.heldBy = null;
     brick.ownership = null;
     brick.snapped = false;
@@ -299,6 +307,7 @@ export class RobotController {
     if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
     brick.position = { ...original.position };
     brick.yawRad = original.yawRad;
+    delete brick.freeQuaternion;
     brick.heldBy = null;
     brick.ownership = null;
     brick.snapped = false;
@@ -542,6 +551,7 @@ export class RobotController {
     this.brickInTcp = captureBrickInTcp(this.tcp, this.toolYawRad, brick.position);
     this.brickYawInTcpRad = wrapPi(brick.yawRad - this.toolYawRad);
     brick.heldBy = actor === 'human' ? 'human' : 'robot';
+    delete brick.freeQuaternion;
     brick.ownership = brick.heldBy;
     brick.snapped = false;
     brick.placedTargetId = null;
@@ -563,6 +573,7 @@ export class RobotController {
     if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) return { success: false, ok: false, reason: snap.reason, targetId: snap.targetId ?? null, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     brick.heldBy = null;
     brick.ownership = null;
+    delete brick.freeQuaternion;
     if (snap.ok) {
       brick.position = { ...snap.transform.position };
       brick.yawRad = snap.transform.yawRad;
@@ -605,6 +616,7 @@ export class RobotController {
     if (bricks) this.bricks = clone(bricks);
     for (const brick of this.bricks) {
       brick.heldBy = null;
+      delete brick.freeQuaternion;
       brick.ownership = null;
       brick.placedTargetId = null;
       brick.placementType = null;

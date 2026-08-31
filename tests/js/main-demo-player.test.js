@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { makeBrick } from '../../apps/web/src/bricks/brick-spec.js';
+import { BRICK_SPEC, makeBrick } from '../../apps/web/src/bricks/brick-spec.js';
 import { findLatchCandidate } from '../../apps/web/src/bricks/latch.js';
 import { BuildBoard } from '../../apps/web/src/bricks/build-board.js';
 import { RobotController } from '../../apps/web/src/robot/controller.js';
@@ -14,6 +14,8 @@ import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
 import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { fixedStepAdvance } from '../../apps/web/src/player/math.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
+import { HeldBrickController, HELD_STATES } from '../../apps/web/src/player/held-brick-controller.js';
+import { LooseBrickPhysics } from '../../apps/web/src/player/loose-brick-physics.js';
 import { PlayerController } from '../../apps/web/src/player/player-controller.js';
 import { PlayerSettingsStore, PLAYER_FALLBACK_SETTINGS, PLAYER_SOURCE_PROVENANCE } from '../../apps/web/src/player/player-settings.js';
 import { compileImageData } from '../../apps/web/src/logo/compiler.js';
@@ -47,7 +49,7 @@ function makeRuntime() {
   return { clock, board, controller, graph, placementEngine, adapter };
 }
 
-test('mouse drag rotates the player view when pointer lock is unavailable', async () => {
+test('original V8 pointer-lock flow enables free-look and Escape-style release', async () => {
   const previous = {
     document: globalThis.document,
     addEventListener: globalThis.addEventListener,
@@ -65,7 +67,11 @@ test('mouse drag rotates the player view when pointer lock is unavailable', asyn
   } };
   const windowTarget = new EventTarget();
   const canvas = new EventTarget();
-  canvas.requestPointerLock = () => Promise.reject(new Error('unsupported'));
+  const lockRequests = [];
+  canvas.requestPointerLock = (options) => {
+    lockRequests.push(options ?? null);
+    return options ? Promise.reject(new Error('raw movement unsupported')) : Promise.resolve();
+  };
   const event = (type, values) => {
     const result = new Event(type, { cancelable: true });
     for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
@@ -81,21 +87,104 @@ test('mouse drag rotates the player view when pointer lock is unavailable', asyn
     const initialYaw = player.targetYaw;
     const initialPitch = player.targetPitch;
     canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 100, clientY: 100 }));
-    documentTarget.dispatchEvent(event('mousemove', { clientX: 140, clientY: 80, movementX: 0, movementY: 0 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(lockRequests, [{ unadjustedMovement: true }, null]);
+    documentTarget.pointerLockElement = canvas;
+    documentTarget.dispatchEvent(new Event('pointerlockchange'));
+    documentTarget.dispatchEvent(event('mousemove', { clientX: 100, clientY: 100, movementX: 40, movementY: -20 }));
     assert.ok(player.targetYaw < initialYaw);
     assert.ok(player.targetPitch > initialPitch);
-    assert.equal(classes.has('player-drag-looking'), true);
-    documentTarget.dispatchEvent(event('mouseup', { button: 0, clientX: 140, clientY: 80 }));
-    assert.equal(player.dragLooking, false);
-    assert.equal(classes.has('player-drag-looking'), false);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.equal(player.pointerLockFailed, true);
+    assert.equal(player.pointerLocked, true);
+    assert.equal(classes.has('player-pointer-locked'), true);
+    documentTarget.pointerLockElement = null;
+    documentTarget.dispatchEvent(new Event('pointerlockchange'));
+    const releasedYaw = player.targetYaw;
+    documentTarget.dispatchEvent(event('mousemove', { clientX: 140, clientY: 80, movementX: 40, movementY: -20 }));
+    assert.equal(player.targetYaw, releasedYaw);
+    assert.equal(player.pointerLocked, false);
+    assert.equal(classes.has('player-pointer-locked'), false);
   } finally {
     player?.setEnabled(false);
     globalThis.document = previous.document;
     globalThis.addEventListener = previous.addEventListener;
     globalThis.matchMedia = previous.matchMedia;
   }
+});
+
+test('held brick uses the V8 240 Hz gravity and constrained-pendulum solver', () => {
+  const physics = new HeldBrickController({
+    ...PLAYER_FALLBACK_SETTINGS,
+    gravityMS2: 9.81,
+    brickMassKg: 0.0115,
+    pendulumLengthMm: 20,
+    angularDampingNms: 0.00012,
+    linearDampingPerS: 0.25,
+    maximumAngularVelocityRadS: 18,
+    pickupStiffnessNPerM: 2,
+    pickupDampingNsPerM: 0.12,
+    pickupTransitionTimeS: 0.28,
+    pickupCaptureRadiusMm: 8,
+    pickupCaptureSpeedMmS: 1200,
+    pickupMaxSpeedMmS: 4500,
+    pickupGravityScale: 0.15,
+    fullPhysicsHeightMm: 28.8,
+    snapRegionHeightMm: 45,
+    placementLockHeightMm: 9.6
+  });
+  const pivot = { x: 0, y: 0, z: 220 };
+  const player = { getHoldPivot: (output) => output.set(pivot.x, pivot.y, pivot.z) };
+  physics.pickup({ id: 'physics-brick', position: { xMm: 0, yMm: 0, zMm: 4.8 }, yawRad: 0 });
+  for (let index = 0; index < 240; index += 1) physics.step(1 / 240, player);
+  assert.equal(physics.state, HELD_STATES.HELD_PHYSICS);
+  assert.ok(Math.abs(physics.position.z - 200) < 1);
+  pivot.x = 120;
+  for (let index = 0; index < 30; index += 1) physics.step(1 / 240, player);
+  assert.ok(physics.angularVelocity.length() > 0.01);
+  assert.ok(Math.abs(physics.position.x - pivot.x) > 0.01, 'pendulum COM must not be rigidly glued to the pivot');
+  assert.ok(Math.abs(physics.quaternion.y) > 0.0001, 'pivot acceleration should create physical tilt');
+  assert.ok(physics.getVisualPose().angularVelocityRadS.every(Number.isFinite));
+});
+
+test('released bricks retain V8 gravity, angular motion, collision, and authoritative world commits', () => {
+  const { controller } = makeRuntime();
+  assert.equal(controller.moveLooseBrick('brick-red', { xMm: 0, yMm: 80, zMm: 120 }).ok, true);
+  const beforePhysics = controller.getState().worldRevision;
+  const physics = new LooseBrickPhysics(controller, {
+    ...PLAYER_FALLBACK_SETTINGS,
+    physicsHz: 240,
+    gravityMS2: 9.81,
+    brickMassKg: 0.0115,
+    linearDampingPerS: 0.25,
+    angularDampingNms: 0.00012,
+    restitution: 0.17,
+    friction: 0.62,
+    brickCollisionEnabled: true,
+    brickCollisionIterations: 2,
+    collisionPositionCorrection: 0.86,
+    collisionSlopMm: 0.08
+  });
+  assert.equal(physics.launch('brick-red', {
+    position: { xMm: 0, yMm: 80, zMm: 120 },
+    quaternion: [0.08, 0.04, 0, 0.99599],
+    velocityMmS: [180, 0, 40],
+    angularVelocityRadS: [1.2, -0.8, 2.4]
+  }), true);
+  for (let index = 0; index < 1200; index += 1) physics.step(1 / 240);
+  const brick = controller.getBricks().find((candidate) => candidate.id === 'brick-red');
+  assert.ok(controller.getState().worldRevision > beforePhysics + 30);
+  assert.ok(brick.position.xMm > 0, 'released linear velocity must move the authoritative brick');
+  assert.ok(brick.position.zMm >= BRICK_SPEC.bodyHeightMm / 2 - 1e-6);
+  assert.ok(brick.position.zMm < 25, 'gravity must return the brick to a supporting surface');
+  assert.equal(brick.freeQuaternion.length, 4);
+  assert.ok(brick.freeQuaternion.every(Number.isFinite));
+  assert.equal(physics.getState().length, 0, 'resting free body must sleep');
+});
+
+test('the visible carried brick is opaque while only placement targets remain translucent', async () => {
+  const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
+  assert.match(renderer, /MAIN_DEMO_HELD_BRICK[\s\S]*transparent:\s*false,[\s\S]*opacity:\s*1/);
+  assert.match(renderer, /heldGhost\.userData\.material\.opacity\s*=\s*1/);
+  assert.match(renderer, /heldGhost\.userData\.material\.transparent\s*=\s*false/);
 });
 
 test('supplied V8 player settings are provenance-locked and production disables collapse', async () => {

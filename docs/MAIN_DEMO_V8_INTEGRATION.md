@@ -16,11 +16,12 @@ Human player mutations go through `HumanBuildAdapter`, then `RobotController` an
 
 ## Integrated Player V8 behavior
 
-- desktop WASD, sprint, vertical movement, pointer-lock look with a click-drag fallback for embedded browsers, wheel zoom, pick/place, and 90-degree rotation;
+- desktop WASD, sprint, vertical movement, original V8 click-to-capture pointer-lock look, `Esc` release, wheel zoom, pick/place, and 90-degree rotation;
 - coarse-pointer mobile look, directional controls, rotate, and pick/place;
 - capsule collision against the worktable and robot-base exclusion volume;
-- fixed 240 Hz player and held-brick updates with bounded catch-up, independent of render cadence;
-- held-brick spring/pendulum visual response and collision-aware lift presentation;
+- fixed 240 Hz player, held-brick, and loose-brick updates with bounded catch-up, independent of render cadence;
+- held-brick gravity, full 3D angular inertia, gyroscopic torque, constrained-pendulum response, collision-aware lift, and placement assistance;
+- released-brick gravity, linear/angular damping, full quaternion rotation, table restitution/friction/sleep, and brick OBB collision response;
 - 8 mm mat snapping, blueprint-target snapping, L/M/R four-stud connector masks, connector occupancy, hysteresis, collision-blocked candidates, and derived `ConnectionGraph` diagnostics;
 - BUILD/TEST editing modes;
 - instanced placed-brick batches with ray-pick identity;
@@ -38,7 +39,7 @@ The reference demo's table, mat, floor, materials, lighting, camera composition,
 
 Display-only geometry/material/mount changes do not advance the authoritative world revision. `get_scene_state` exposes the current machine-to-display transform and display-table dimensions so structured and visible coordinates can be reconciled explicitly.
 
-The held-brick physics is presentation and placement-intent simulation. Accepted construction state remains deterministic; this project does not claim general rigid-body contact physics. BUILD mode never structurally collapses.
+The Player V8 physics is bounded to interactive bricks and placement intent. Every accepted free-body pose is committed through the authoritative `RobotController` and shared world revision; the renderer does not own hidden brick truth. This remains a browser demo solver, not a claim of calibrated general-purpose rigid-body physics. BUILD mode never structurally collapses.
 
 ## Source provenance
 

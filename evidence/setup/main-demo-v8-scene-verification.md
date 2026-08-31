@@ -8,9 +8,9 @@ Baseline HEAD: `8dfa08ff696bfcbfabac22b9f0b663af392dbe02`
 
 Command: `python scripts/verify.py`
 
-- JavaScript tests: 88 passed, 0 failed, 0 skipped.
+- JavaScript tests: 91 passed, 0 failed, 0 skipped.
 - Persistent production reliability: 20/20 passed.
-- JavaScript syntax: 49 files passed.
+- JavaScript syntax: 50 files passed.
 - Python syntax: 4 files passed.
 - Required files: passed.
 - Removed legacy/Newton paths: passed.
@@ -25,7 +25,9 @@ URL: `http://127.0.0.1:8772/`
 - Visible build state: `0/8` after reset.
 - V8 setting controls: 231.
 - Robot mount controls: 4; live X transform exercised and restored.
-- Mouse look: physical click-drag changed the live camera when the in-app browser rejected Pointer Lock.
+- Mouse look contract: click requests unadjusted Pointer Lock with the standard Pointer Lock fallback; movement is free-look only while captured and `Esc` releases capture. Automated test passed. Native capture still requires a real user gesture in the embedded browser.
+- Brick physics: 240 Hz held pendulum and released gravity/angular/restitution/friction/OBB behavior passed deterministic tests while committing through `RobotController`.
+- Carried brick opacity: opaque body/stud material passed source-level regression coverage; only placement targets remain translucent.
 - Place-next-brick control: `0/8 -> 1/8`.
 - Reset control: `1/8 -> 0/8`.
 - Console on fresh final tab: 0 errors, 0 warnings.
