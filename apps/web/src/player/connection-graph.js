@@ -84,13 +84,13 @@ export class ConnectionGraph {
   addConnection({ lowerBrickId, lowerConnector, upperBrickId, upperConnector, relativeRotationDeg = 0, relativeRotation = null, studPairs = null }) {
     const lowerSide = normalizeConnectorSide(lowerConnector);
     const upperSide = normalizeConnectorSide(upperConnector);
-    const expected = expectedConnectionCells(lowerSide, upperSide);
+    const rotation = relativeRotation ?? relativeRotationDeg;
+    const expected = expectedConnectionCells(lowerSide, upperSide, rotation);
     if (!expected) return false;
     const lowerCells = expected.lower;
     const upperCells = expected.upper;
     const pairs = (studPairs?.length ? studPairs : lowerCells.map((lower, index) => ({ lower, upper: upperCells[index] })))
       .map((pair) => ({ lower: normalizeCell(pair.lower), upper: normalizeCell(pair.upper) }));
-    const rotation = relativeRotation ?? relativeRotationDeg;
     const contract = validateConnectorConnection({
       lowerConnector: lowerSide,
       upperConnector: upperSide,
@@ -126,6 +126,14 @@ export class ConnectionGraph {
   }
 
   connectionsFor(brickId) { return this.edges.filter((edge) => edge.lowerBrickId === brickId || edge.upperBrickId === brickId); }
+
+  upperBrickIdsFor(brickId) {
+    return [...new Set(this.edges
+      .filter((edge) => edge.lowerBrickId === brickId)
+      .map((edge) => edge.upperBrickId))];
+  }
+
+  isTopmost(brickId) { return this.upperBrickIdsFor(brickId).length === 0; }
 
   removeBrick(brickOrId) {
     const brickId = typeof brickOrId === 'object' ? brickOrId.id : brickOrId;

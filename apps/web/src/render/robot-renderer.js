@@ -87,6 +87,7 @@ export class RobotRenderer {
     this.brickMeshes = new Map();
     this.targetMeshes = new Map();
     this.highlightedBrickId = null;
+    this.protectedBrickId = null;
     this.lastPreviewSignature = '';
     this.lastBatchSignature = '';
     this.physicsAccumulator = 0;
@@ -434,6 +435,7 @@ export class RobotRenderer {
       return { ok: true, action: 'more_bricks' };
     }
     if (this.humanBuildAdapter.active) return this.releaseHeldPlacement();
+    if (this.protectedBrickId) return { ok: false, reason: 'supporting_brick', brickId: this.protectedBrickId };
     if (!this.highlightedBrickId) return { ok: false, reason: 'no_pick_target' };
     const brick = this.controller.getBricks().find((candidate) => candidate.id === this.highlightedBrickId);
     const result = this.humanBuildAdapter.pickup(this.highlightedBrickId);
@@ -443,6 +445,19 @@ export class RobotRenderer {
       this.heldGhost.visible = true;
       this.highlightedBrickId = null;
     }
+    return result;
+  }
+
+  undoPlayerAction() {
+    const result = this.humanBuildAdapter.undo();
+    if (!result.ok) return result;
+    this.heldVisual.clear();
+    this.heldGhost.visible = false;
+    this.snapAnimation = null;
+    this.highlightedBrickId = null;
+    this.protectedBrickId = null;
+    this.lastPreviewSignature = '';
+    this.lastBatchSignature = '';
     return result;
   }
 
@@ -544,11 +559,14 @@ export class RobotRenderer {
       const hit = this.centreHits(pickMeshes)[0] ?? null;
       this.highlightedMoreBricks = Boolean(hit?.object?.userData?.moreBricks);
       this.workbench.setMoreBricksHighlighted(this.highlightedMoreBricks);
-      this.highlightedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
+      const aimedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
+      this.protectedBrickId = aimedBrickId && !this.humanBuildAdapter.graph.isTopmost(aimedBrickId) ? aimedBrickId : null;
+      this.highlightedBrickId = this.protectedBrickId ? null : aimedBrickId;
       for (const [id, mesh] of this.brickMeshes) {
         const highlighted = id === this.highlightedBrickId;
-        mesh.material.emissive?.setHex(highlighted ? 0xffffff : 0x000000);
-        mesh.material.emissiveIntensity = highlighted ? 0.28 : 0;
+        const protectedBrick = id === this.protectedBrickId;
+        mesh.material.emissive?.setHex(protectedBrick ? 0xff8a24 : highlighted ? 0xffffff : 0x000000);
+        mesh.material.emissiveIntensity = protectedBrick ? 0.24 : highlighted ? 0.28 : 0;
       }
       return;
     }
@@ -1044,6 +1062,7 @@ export class RobotRenderer {
       heldBrick: this.heldVisual?.getVisualPose() ?? null,
       interaction: {
         highlightedBrickId: this.highlightedBrickId,
+        protectedBrickId: this.protectedBrickId,
         highlightedMoreBricks: Boolean(this.highlightedMoreBricks),
         preview: this.humanBuildAdapter?.getPreview?.() ?? null,
         snapAnimating: Boolean(this.snapAnimation),

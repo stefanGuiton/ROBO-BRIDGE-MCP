@@ -143,7 +143,7 @@ test('an agent builds an interlocked three-brick wall using only primitive WebMC
   });
   assert.equal(mismatched.ok, false);
   assert.equal(mismatched.reason, 'connector_pair_mismatch');
-  const perpendicular = await handlers.previewPlacement({
+  const rotatedSide = await handlers.previewPlacement({
     brickId: available[2].id,
     supportBrickId: available[0].id,
     supportSide: 'R',
@@ -151,9 +151,10 @@ test('an agent builds an interlocked three-brick wall using only primitive WebMC
     yawDeg: 90,
     expectedWorldRevision: beforeRejectedPreview
   });
-  assert.equal(perpendicular.ok, false);
-  assert.equal(perpendicular.reason, 'perpendicular_connection_forbidden');
-  assert.equal(await currentRevision(handlers), beforeRejectedPreview, 'rejected WebMCP previews must remain read-only');
+  assert.equal(rotatedSide.ok, true);
+  assert.equal(rotatedSide.candidate.relativeRotationDeg, 90);
+  assert.equal(rotatedSide.candidate.studCount, 4);
+  assert.equal(await currentRevision(handlers), beforeRejectedPreview, 'all WebMCP previews must remain read-only');
   const top = await placeBrick(handlers, available[2], {
     supportBrickId: available[0].id, supportSide: 'R', carriedSide: 'L', yawDeg: 0
   });

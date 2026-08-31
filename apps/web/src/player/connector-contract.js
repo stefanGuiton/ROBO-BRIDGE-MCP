@@ -47,11 +47,26 @@ export function connectorSideForCells(cells) {
   return null;
 }
 
-export function expectedConnectionCells(supportSide, carriedSide) {
+function fullBrickCells() {
+  const full = [];
+  for (let ix = 0; ix < 4; ix += 1) for (let iy = 0; iy < 2; iy += 1) full.push({ ix, iy, column: ix, row: iy });
+  return full;
+}
+
+function normalizedQuarterTurn(relativeRotationDeg) {
+  const rotation = Number(relativeRotationDeg);
+  if (!Number.isFinite(rotation)) return null;
+  const quarterTurns = Math.round(rotation / 90);
+  if (Math.abs(rotation - quarterTurns * 90) > 1e-6) return null;
+  return ((quarterTurns % 4) + 4) % 4 * 90;
+}
+
+export function expectedConnectionCells(supportSide, carriedSide, relativeRotationDeg = 0) {
   if (!isCanonicalConnectorPair(supportSide, carriedSide)) return null;
-  if (normalizeConnectorSide(supportSide) === 'M') {
-    const full = [];
-    for (let ix = 0; ix < 4; ix += 1) for (let iy = 0; iy < 2; iy += 1) full.push({ ix, iy, column: ix, row: iy });
+  const rotation = normalizedQuarterTurn(relativeRotationDeg);
+  if (rotation === null) return null;
+  if (normalizeConnectorSide(supportSide) === 'M' || rotation === 180) {
+    const full = fullBrickCells();
     return { lower: full, upper: full.map((cell) => ({ ...cell })) };
   }
   return {
@@ -78,10 +93,12 @@ export function validateConnectorConnection({
   if (!isCanonicalConnectorPair(lower, upper)) {
     return { valid: false, reason: 'connector_pair_mismatch', expectedUpperConnector: requiredCarriedSide(lower) };
   }
-  const rotation = Number(relativeRotationDeg);
-  const parallelRotation = Number.isFinite(rotation) && Math.abs(((rotation % 180) + 180) % 180) <= 1e-6;
-  if (!parallelRotation) return { valid: false, reason: 'perpendicular_connection_forbidden' };
-  const expected = expectedConnectionCells(lower, upper);
+  const rotation = normalizedQuarterTurn(relativeRotationDeg);
+  if (rotation === null) return { valid: false, reason: 'rotation_not_quarter_turn' };
+  if (lower === 'M' && rotation % 180 !== 0) {
+    return { valid: false, reason: 'perpendicular_connection_forbidden' };
+  }
+  const expected = expectedConnectionCells(lower, upper, rotation);
   if (!Array.isArray(studPairs) || studPairs.length !== expected.lower.length) {
     return { valid: false, reason: 'connector_stud_count_mismatch', expectedStudCount: expected.lower.length };
   }
@@ -95,7 +112,7 @@ export function validateConnectorConnection({
     lowerConnector: lower,
     upperConnector: upper,
     studCount: studPairs.length,
-    relativeRotationDeg: 0
+    relativeRotationDeg: rotation
   };
 }
 

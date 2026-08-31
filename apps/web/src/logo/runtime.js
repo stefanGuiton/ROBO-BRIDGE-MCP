@@ -308,6 +308,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       pickup(brickId) { return humanBuildAdapter?.pickup(brickId) ?? { ok: false, reason: 'player_unavailable' }; },
       rotate(direction = 1) { return humanBuildAdapter?.rotate(direction) ?? { ok: false, reason: 'player_unavailable' }; },
       release() { return humanBuildAdapter?.release() ?? { ok: false, reason: 'player_unavailable' }; },
+      undo() { return humanBuildAdapter?.undo() ?? { ok: false, reason: 'player_unavailable' }; },
       drop(position = null) { return humanBuildAdapter?.drop(position) ?? { ok: false, reason: 'player_unavailable' }; },
       cancel() { return humanBuildAdapter?.cancel() ?? { ok: false, reason: 'player_unavailable' }; },
       getState() { return humanBuildAdapter?.getState() ?? { mode: 'UNAVAILABLE', locked: true, heldBrickId: null }; }

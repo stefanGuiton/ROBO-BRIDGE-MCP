@@ -64,6 +64,7 @@ export class PlacementAuthority {
     if (supportBrickId) {
       const support = bricks.find((brick) => brick.id === supportBrickId);
       if (!support || support.id === carried.id) return { ok: false, reason: 'unknown_support', worldRevision: this.board.worldRevision };
+      engine.rotationQuarterTurns = ((Math.round((yawRad - (support.yawRad ?? 0)) / (Math.PI / 2)) % 4) + 4) % 4;
       candidate = engine.connectionCandidate(
         support,
         connectorPoint(this.graph, support, supportSide),
@@ -71,7 +72,7 @@ export class PlacementAuthority {
         bricks,
         carriedSide
       );
-      if (!isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
+      if (supportSide === 'M' && !isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
         candidate = {
           ...candidate,
           valid: false,
@@ -95,8 +96,9 @@ export class PlacementAuthority {
             .sort((a, b) => a.distance - b.distance || a.brick.id.localeCompare(b.brick.id))[0]?.brick
           : null;
         if (support) {
+          engine.rotationQuarterTurns = ((Math.round((yawRad - (support.yawRad ?? 0)) / (Math.PI / 2)) % 4) + 4) % 4;
           candidate = engine.connectionCandidate(support, position, { ...carried, yawRad }, bricks, carriedSide);
-          if (!isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
+          if (candidate.supportSide === 'M' && !isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
             candidate = {
               ...candidate,
               valid: false,

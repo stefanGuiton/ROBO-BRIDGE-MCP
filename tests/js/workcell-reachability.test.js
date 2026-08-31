@@ -265,8 +265,19 @@ test('human and robot-facing previews share one placement authority and board', 
     yawRad: Math.PI
   });
   assert.equal(parallelHalfTurn.ok, true, 'a physically equivalent 180 degree input remains parallel');
-  assert.equal(parallelHalfTurn.candidate.yawRad, placed.brick.yawRad, 'parallel half-turn input must canonicalize to the support yaw');
+  assert.equal(parallelHalfTurn.candidate.relativeRotationDeg, 180);
   assert.equal(parallelHalfTurn.candidate.studCount, 8);
+
+  const rotatedSide = authority.preview({
+    brickId: second.id,
+    supportBrickId: first.id,
+    supportSide: 'R',
+    carriedSide: 'L',
+    yawRad: Math.PI / 2
+  });
+  assert.equal(rotatedSide.ok, true, 'side connector pairs must retain quarter-turn rotation');
+  assert.equal(rotatedSide.candidate.relativeRotationDeg, 90);
+  assert.equal(rotatedSide.candidate.studCount, 4);
 
   const human = new HumanBuildAdapter({ controller, board, graph, placementEngine });
   assert.equal(human.pickup(second.id).ok, true);

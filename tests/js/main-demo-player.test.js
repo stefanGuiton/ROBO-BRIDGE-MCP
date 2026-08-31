@@ -480,7 +480,7 @@ test('L/M/R connector masks overlap by two studs and reject duplicate occupancy'
   assert.equal(graph.validate().pass, true);
 });
 
-test('connector contract permits only AL-BR, AM-BM, and AR-BL with no perpendicular rotation', () => {
+test('connector contract keeps canonical pairs while side pairs rotate in quarter turns', () => {
   const sides = ['L', 'M', 'R'];
   const validPairs = new Set(['L:R', 'M:M', 'R:L']);
   for (const lowerConnector of sides) for (const upperConnector of sides) {
@@ -495,7 +495,20 @@ test('connector contract permits only AL-BR, AM-BM, and AR-BL with no perpendicu
     const parallel = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 0, studPairs });
     assert.equal(parallel.valid, true, key);
     assert.equal(parallel.studCount, lowerConnector === 'M' ? 8 : 4);
-    assert.equal(validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 90, studPairs }).reason, 'perpendicular_connection_forbidden');
+    const quarterCells = expectedConnectionCells(lowerConnector, upperConnector, 90);
+    const quarterPairs = quarterCells.lower.map((lower, index) => ({ lower, upper: quarterCells.upper[index] }));
+    const quarter = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 90, studPairs: quarterPairs });
+    if (lowerConnector === 'M') assert.equal(quarter.reason, 'perpendicular_connection_forbidden');
+    else {
+      assert.equal(quarter.valid, true, key);
+      assert.equal(quarter.relativeRotationDeg, 90);
+      assert.equal(quarter.studCount, 4);
+    }
+    const halfTurnCells = expectedConnectionCells(lowerConnector, upperConnector, 180);
+    const halfTurnPairs = halfTurnCells.lower.map((lower, index) => ({ lower, upper: halfTurnCells.upper[index] }));
+    const halfTurn = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 180, studPairs: halfTurnPairs });
+    assert.equal(halfTurn.valid, true, key);
+    assert.equal(halfTurn.studCount, 8);
   }
 });
 
@@ -538,6 +551,8 @@ test('placement engine produces exact L/M/R support candidates and blocks collis
   );
   assert.equal(right.side, 'R');
   assert.equal(right.carriedSide, 'L');
+  assert.ok(Math.abs(right.yawRad - Math.PI / 2) < 1e-9, 'AR-BL must retain the requested 90 degree turn');
+  assert.equal(right.relativeRotationDeg, 90);
   assert.equal(right.studCount, 4);
   const mismatched = placementEngine.connectionCandidate(
     support,
@@ -590,6 +605,60 @@ test('human pickup and placement use controller, board, ownership, and one revis
   assert.equal(graph.snapshot().matRoots.includes('brick-red'), true);
   assert.equal(controller.moveLooseBrick('brick-red', { xMm: 80, yMm: 80, zMm: 4.8 }).reason, 'operation_in_progress');
   assert.equal(findLatchCandidate({ ...brick.position, zMm: brick.position.zMm + 7.7 }, controller.getBricks()).reason, 'no_brick_in_capture');
+});
+
+test('only top-most structure bricks can be picked up', () => {
+  const { adapter, graph } = makeRuntime();
+  assert.equal(graph.addConnection({
+    lowerBrickId: 'brick-red',
+    lowerConnector: 'R',
+    upperBrickId: 'brick-blue',
+    upperConnector: 'L'
+  }), true);
+  const supporting = adapter.pickup('brick-red');
+  assert.equal(supporting.ok, false);
+  assert.equal(supporting.reason, 'supporting_brick');
+  assert.deepEqual(supporting.blockedByBrickIds, ['brick-blue']);
+  assert.equal(adapter.pickup('brick-blue').ok, true);
+});
+
+test('human placement undo restores the exact loose source and authoritative board state', () => {
+  const { adapter, controller, board, graph, placementEngine } = makeRuntime();
+  const original = controller.getBricks().find((brick) => brick.id === 'brick-red');
+  assert.equal(adapter.pickup(original.id).ok, true);
+  const candidate = placementEngine.matCandidate(
+    { xMm: 32, yMm: 32, zMm: 0 },
+    { id: original.id },
+    controller.getBricks()
+  );
+  adapter.setPreview(candidate);
+  assert.equal(adapter.release().ok, true);
+  assert.equal(adapter.getState().canUndo, true);
+  assert.equal(board.getPlacements().length, 1);
+  const beforeUndoRevision = controller.getState().worldRevision;
+  const undone = adapter.undo();
+  assert.equal(undone.ok, true);
+  assert.equal(undone.action, 'placement_undone');
+  assert.ok(controller.getState().worldRevision > beforeUndoRevision);
+  assert.equal(board.getPlacements().length, 0);
+  assert.equal(graph.snapshot().matRoots.includes(original.id), false);
+  const restored = controller.getBricks().find((brick) => brick.id === original.id);
+  assert.deepEqual(restored.position, original.position);
+  assert.equal(restored.yawRad, original.yawRad);
+  assert.equal(restored.placementType, null);
+  assert.equal(adapter.getState().canUndo, false);
+});
+
+test('paused controls expose undo and descriptive labels without shortcut badges', async () => {
+  const html = await readFile(fileURLToPath(new URL('../../apps/web/index.html', import.meta.url)), 'utf8');
+  const main = await readFile(fileURLToPath(new URL('../../apps/web/src/logo/main.js', import.meta.url)), 'utf8');
+  assert.match(html, /data-undo disabled>UNDO<\/button>/);
+  assert.match(html, /data-settings-toggle>SETTINGS<\/button>/);
+  assert.match(html, /data-debug-toggle>DEBUG<\/button>/);
+  assert.match(html, /data-perf-toggle>PERFORMANCE<\/button>/);
+  assert.doesNotMatch(html, /<kbd>/);
+  assert.match(main, /event\.code === 'KeyZ'/);
+  assert.match(main, /renderer\.undoPlayerAction\(\)/);
 });
 
 test('TEST mode locks player edits and returning to BUILD restores pickup', () => {

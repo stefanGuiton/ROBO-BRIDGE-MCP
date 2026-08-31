@@ -137,6 +137,7 @@ const physicalSpeedOutput = $('[data-physical-speed]');
 const playbackRateInput = $('[data-playback-rate-input]');
 const playbackRateOutput = $('[data-playback-rate]');
 const fastAcceptButton = $('[data-fast-accept]');
+const undoButtonEl = $('[data-undo]');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -182,6 +183,11 @@ $('[data-debug-close]')?.addEventListener('click', () => debugPanelEl?.classList
 $('[data-perf-close]')?.addEventListener('click', () => performancePanelEl?.classList.add('hidden'));
 addEventListener('keydown', (event) => {
   if (event.target?.matches?.('input,select,textarea')) return;
+  if ((event.ctrlKey || event.metaKey) && event.code === 'KeyZ' && !event.shiftKey) {
+    event.preventDefault();
+    handleAction(null, () => renderer.undoPlayerAction(), 'Undid last human placement');
+    return;
+  }
   if (event.code === 'F2') { event.preventDefault(); togglePanel(debugPanelEl); }
   if (event.code === 'F3') { event.preventDefault(); togglePanel(performancePanelEl); }
 });
@@ -426,6 +432,10 @@ function stageV8ParityConnection() {
   const pickup = humanBuildAdapter.pickup(carried.id);
   if (!pickup.ok) return pickup;
   renderer.heldVisual.pickup(carried);
+  const diagnosticQuarterTurns = Number(params.get('parityRotation') ?? 0);
+  placementEngine.rotationQuarterTurns = Number.isInteger(diagnosticQuarterTurns)
+    ? ((diagnosticQuarterTurns % 4) + 4) % 4
+    : 0;
   const candidate = placementEngine.connectionCandidate(
     support,
     { xMm: support.position.xMm - 12, yMm: support.position.yMm, zMm: support.position.zMm + playerSettings.brickBodyHeightMm / 2 },
@@ -479,6 +489,7 @@ humanBuildAdapter.subscribe((event) => {
   if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId}`, 'ok');
   if (event.type === 'released') addLog(`Player placed ${event.brickId}`, 'ok');
   if (event.type === 'dropped') addLog(`Player dropped ${event.brickId}`);
+  if (event.type === 'undone') addLog(`Player undid ${event.brickId}`, 'ok');
   if (event.type === 'mode_changed') addLog(`Player mode: ${event.mode}`);
 });
 
@@ -491,6 +502,8 @@ async function handleAction(button, action, successMessage) {
     return result;
   } finally { if (button) button.disabled = false; }
 }
+
+undoButtonEl?.addEventListener('click', (event) => handleAction(event.currentTarget, () => renderer.undoPlayerAction(), 'Undid last human placement'));
 
 moveForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -708,7 +721,7 @@ setInterval(() => {
   const zone = performance.interaction.snapAnimating ? 'SNAPPING'
     : performance.heldBrick?.state?.replace(/^HELD_/, '') ?? 'PHYSICS';
   if (hudZoneEl) hudZoneEl.textContent = zone;
-  const orientation = `${placementEngine.rotationQuarterTurns * 90}°`;
+  const orientation = `${preview?.type === 'BRICK' ? preview.relativeRotationDeg : placementEngine.rotationQuarterTurns * 90}°`;
   if (hudOrientationEl) hudOrientationEl.textContent = orientation;
   if (anglePillEl) {
     anglePillEl.textContent = `ANGLE ${orientation}`;
@@ -716,12 +729,14 @@ setInterval(() => {
   }
   const snapStatus = performance.interaction.snapAnimating ? 'SNAPPING' : preview?.status ?? 'NONE';
   if (hudSnapEl) hudSnapEl.textContent = snapStatus;
-  const aimed = Boolean(performance.interaction.highlightedBrickId || performance.interaction.highlightedMoreBricks || (preview && preview.status !== 'NONE'));
+  const aimed = Boolean(performance.interaction.highlightedBrickId || performance.interaction.protectedBrickId || performance.interaction.highlightedMoreBricks || (preview && preview.status !== 'NONE'));
   crosshairEl?.classList.toggle('target', aimed);
   if (reticleStatusEl) reticleStatusEl.textContent = performance.interaction.highlightedMoreBricks ? 'MORE BRICKS'
-    : performance.interaction.highlightedBrickId ? 'PICK BRICK'
+    : performance.interaction.protectedBrickId ? 'SUPPORTING BRICK'
+      : performance.interaction.highlightedBrickId ? 'PICK BRICK'
       : preview?.status === 'VALID' ? `SNAP ${preview.mode ?? preview.type}`
         : preview?.status === 'BLOCKED' ? 'BLOCKED' : '';
+  if (undoButtonEl) undoButtonEl.disabled = !humanBuildAdapter.canUndo();
   if (performanceContentEl) performanceContentEl.innerHTML = `<span>FPS mean</span><b>${fpsText}</b><span>Frame mean</span><b>${frameText}</b><span>Frame p95</span><b>${performance.p95FrameMs.toFixed(2)} ms</b><span>Frame max</span><b>${performance.maxFrameMs.toFixed(2)} ms</b><span>Physics</span><b>${playerSettings.physicsHz} Hz</b><span>Loose bodies</span><b>${performance.looseBrickPhysics.length}</b>`;
 }, 500);
 window.addEventListener('resize', () => renderer.render());

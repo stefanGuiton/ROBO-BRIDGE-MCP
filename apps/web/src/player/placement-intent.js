@@ -2,7 +2,6 @@ import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { angleWrap, gridCandidateLocal, occupancyCells } from './math.js';
 import {
   CONNECTION_SIDES,
-  canonicalParallelYaw,
   connectorSideForCells,
   requiredCarriedSide,
   validateConnectorConnection
@@ -141,7 +140,12 @@ export class PlacementIntentEngine {
     const connectorPairMismatch = requestedCarriedSide !== null && requestedCarriedSide !== carriedSide;
     this.carriedSide = carriedSide;
     const supportYaw = support.yawRad ?? 0;
-    const targetYaw = canonicalParallelYaw(supportYaw);
+    const requestedQuarterTurns = ((this.rotationQuarterTurns % 4) + 4) % 4;
+    const effectiveQuarterTurns = supportSide === 'M'
+      ? Math.floor(requestedQuarterTurns / 2) * 2
+      : requestedQuarterTurns;
+    const relativeRotationDeg = effectiveQuarterTurns * 90;
+    const targetYaw = angleWrap(supportYaw + effectiveQuarterTurns * Math.PI / 2);
     const layer = Number.isInteger(support.stackLayer) ? support.stackLayer + 1
       : Math.max(1, Math.round((support.position.zMm - (this.tableFrame.placementSurfaceZMm + this.settings.brickBodyHeightMm / 2)) / this.settings.brickBodyHeightMm) + 1);
     const anchor = this.graph.connectorLocal(carriedSide, false);
@@ -175,7 +179,7 @@ export class PlacementIntentEngine {
       const upperConnector = lowerBrickId === support.id
         ? carriedSide
         : connectorSideForCells(studPairs.map((pair) => pair.upper));
-      const contract = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 0, studPairs });
+      const contract = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg, studPairs });
       if (contract.valid) connections.push({
         lowerBrickId,
         lowerConnector: contract.lowerConnector,
@@ -203,7 +207,7 @@ export class PlacementIntentEngine {
       type: 'BRICK', mode: supportSide, status: valid ? 'VALID' : 'BLOCKED', valid, blockedReason,
       placementType: 'brick-connection', position, previewPosition: { ...position }, yawRad: targetYaw, previewYawRad: targetYaw,
       pivot: { ...pivot }, carriedBrickId: carried.id, supportBrickId: support.id,
-      side: supportSide, supportSide, carriedSide, requestedCarriedSide, relativeRotationDeg: 0,
+      side: supportSide, supportSide, carriedSide, requestedCarriedSide, relativeRotationDeg,
       layer, studMatches: acceptedMatches, studCount: acceptedMatches.length, overhang: acceptedMatches.length < 8,
       connections, connection: connections[0] ?? null
     };
