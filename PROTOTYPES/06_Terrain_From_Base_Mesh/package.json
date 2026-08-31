@@ -1,0 +1,11 @@
+{
+  "name": "robo-bridge-terrain-from-base-mesh",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "check": "node --check app.js && node --check terrain-core.js && node --check terrain-webmcp.js",
+    "test": "node test_core.mjs && node test_webmcp.mjs"
+  }
+}

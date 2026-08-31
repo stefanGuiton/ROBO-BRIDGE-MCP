@@ -1,0 +1,19 @@
+{
+  "formatVersion": 1,
+  "rows": 66,
+  "cols": 91,
+  "blockWidth": 0.02,
+  "blockHeight": 0.0125,
+  "gridOrigin": [
+    -0.8850480914115906,
+    -0.6644023060798645
+  ],
+  "baseHeight": 0.06293711066246033,
+  "chunkSize": 32,
+  "colorSpace": "sRGB",
+  "recordBytes": 6,
+  "sourceSha256": "66bd021d4d8f226a563a219b718776ad8be5f9cdb0110d2d2808c1d4288daaf6",
+  "cellDataSha256": "072a2c87793ada42a0771cab6594b7a6e3c0204cf1807ab46c4aa9ac913d9644",
+  "occupiedCells": 5644,
+  "emptyCells": 362
+}
