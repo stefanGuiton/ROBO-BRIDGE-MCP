@@ -83,7 +83,7 @@ test('original V8 pointer-lock flow enables free-look and Escape-style release',
   globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
   let player;
   try {
-    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, {});
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
     player.setEnabled(true);
     const initialYaw = player.targetYaw;
     const initialPitch = player.targetPitch;
@@ -104,6 +104,60 @@ test('original V8 pointer-lock flow enables free-look and Escape-style release',
     assert.equal(player.targetYaw, releasedYaw);
     assert.equal(player.pointerLocked, false);
     assert.equal(classes.has('player-pointer-locked'), false);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
+
+test('in-app fallback enables no-drag free-look when pointer lock is rejected', async () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const classes = new Set();
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: {
+    add: (name) => classes.add(name),
+    remove: (name) => classes.delete(name),
+    toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name)
+  } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  canvas.requestPointerLock = () => Promise.reject(new Error('pointer lock unavailable in embedded preview'));
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
+    player.setEnabled(true);
+    const initialYaw = player.targetYaw;
+    canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 100, clientY: 100 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(player.fallbackLookActive, true);
+    assert.equal(player.getState().lookMode, 'in-app-fallback');
+    assert.equal(classes.has('player-look-fallback'), true);
+    canvas.dispatchEvent(event('mousemove', { clientX: 145, clientY: 80, movementX: 0, movementY: 0, buttons: 0 }));
+    assert.ok(player.targetYaw < initialYaw, 'ordinary in-app mouse movement must rotate without dragging');
+    let primary = 0;
+    player.onPrimary = () => { primary += 1; };
+    canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 145, clientY: 80 }));
+    assert.equal(primary, 1, 'second click remains the primary pick/release action');
+    windowTarget.dispatchEvent(event('keydown', { code: 'Escape', target: null }));
+    assert.equal(player.fallbackLookActive, false);
+    assert.equal(classes.has('player-look-fallback'), false);
   } finally {
     player?.setEnabled(false);
     globalThis.document = previous.document;

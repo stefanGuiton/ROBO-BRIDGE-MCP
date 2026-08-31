@@ -144,7 +144,7 @@ function targetObject(target) {
   };
 }
 
-export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, workcellProfile = null, getUserCamera = null, captureCamera = null }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, fastPlacement = null, workcellProfile = null, getUserCamera = null, captureCamera = null, placementPreviewObserver = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
 
   function worldRevision() { return controller.getState().worldRevision; }
@@ -188,6 +188,45 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
   function currentObjects() { return [...controller.getBricks().map(brickObject), ...board.getTargets().map(targetObject), ...structureObjects()]; }
   function robotState() { return { ok: true, ...controller.getState(), coordinateFrame: 'machine-mm-rad' }; }
   function resultWithState(result) { return { ...result, state: robotState(), worldRevision: worldRevision() }; }
+  function publicPlacementState(state = {}) {
+    return {
+      ok: state.ok !== false,
+      reason: state.reason ?? null,
+      cacheId: state.cacheId ?? null,
+      status: state.status ?? 'NONE',
+      queueLength: state.queueLength ?? state.queue?.length ?? 0,
+      maximumLookahead: state.maximumLookahead ?? 5,
+      planningDurationMs: state.planningDurationMs ?? null,
+      running: Boolean(state.running),
+      worldRevision: state.worldRevision ?? worldRevision(),
+      queue: (state.queue ?? []).map((proposal) => ({
+        proposalId: proposal.proposalId,
+        slotIndex: proposal.slotIndex,
+        slotLabel: proposal.slotLabel,
+        status: proposal.status,
+        reason: proposal.reason ?? null,
+        expectedWorldRevision: proposal.expectedWorldRevision,
+        brickId: proposal.brickId,
+        colour: proposal.brick?.colour ?? proposal.requestedColour ?? null,
+        sourcePosition: proposal.brick?.position ? clone(proposal.brick.position) : null,
+        targetPosition: proposal.candidate?.position
+          ? clone(proposal.candidate.position)
+          : proposal.requestedPosition ? clone(proposal.requestedPosition) : null,
+        targetYawDeg: Number(proposal.candidate?.yawRad ?? proposal.yawRad ?? 0) * 180 / Math.PI,
+        sourceReassigned: Boolean(proposal.sourceReassigned),
+        trajectory: proposal.trajectory ? {
+          shape: proposal.trajectory.shape,
+          safeZMm: proposal.trajectory.safeZMm,
+          waypoints: proposal.trajectory.waypoints.map((waypoint) => ({
+            stage: waypoint.stage,
+            action: waypoint.action,
+            brickId: waypoint.brickId,
+            tcp: waypoint.tcp ? clone(waypoint.tcp) : undefined
+          }))
+        } : null
+      }))
+    };
+  }
 
   const runtime = {
     getWorldRevision: worldRevision,
@@ -269,6 +308,44 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       cancel() { return humanBuildAdapter?.cancel() ?? { ok: false, reason: 'player_unavailable' }; },
       getState() { return humanBuildAdapter?.getState() ?? { mode: 'UNAVAILABLE', locked: true, heldBrickId: null }; }
     },
+    placement: {
+      getQueue() {
+        return fastPlacement
+          ? publicPlacementState({ ok: true, ...fastPlacement.getState() })
+          : { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
+      },
+      planQueue(request = {}) {
+        if (!fastPlacement) return { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
+        return publicPlacementState(fastPlacement.planQueue(request.placements, { expectedWorldRevision: request.expectedWorldRevision }));
+      },
+      async executeNext(request = {}, options = {}) {
+        if (!fastPlacement) return { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
+        const result = await fastPlacement.execute({
+          proposalId: request.proposalId,
+          physicalSpeedMmS: request.physicalSpeedMmS,
+          playbackMultiplier: request.playbackMultiplier,
+          signal: options.signal
+        });
+        return {
+          ok: result.ok,
+          reason: result.reason ?? null,
+          cacheId: result.cacheId ?? fastPlacement.getState().cacheId,
+          proposalId: result.proposalId ?? request.proposalId,
+          brickId: result.brickId ?? null,
+          finalPosition: result.finalPosition ? clone(result.finalPosition) : null,
+          placementType: result.placementType ?? null,
+          targetId: result.targetId ?? null,
+          physicalDurationMs: result.physicalDurationMs ?? null,
+          playbackDurationMs: result.playbackDurationMs ?? null,
+          executionWallDurationMs: result.executionWallDurationMs ?? null,
+          playbackMultiplier: result.playbackMultiplier ?? request.playbackMultiplier,
+          physicalSpeedMmS: result.physicalSpeedMmS ?? request.physicalSpeedMmS,
+          stages: (result.stages ?? []).map((stage) => ({ stage: stage.stage, durationMs: stage.durationMs ?? null, brickId: stage.brickId ?? null })),
+          remainingQueued: result.remainingQueued ?? fastPlacement.getState().queueLength,
+          worldRevision: result.worldRevision ?? worldRevision()
+        };
+      }
+    },
     game: {
       async getBuildState(filters = {}) {
         return {
@@ -296,7 +373,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
         if (request.expectedWorldRevision !== worldRevision()) {
           return { ok: false, reason: 'stale_state', expectedWorldRevision: request.expectedWorldRevision, worldRevision: worldRevision() };
         }
-        return placementAuthority.preview({
+        const result = placementAuthority.preview({
           brickId: request.brickId,
           position: Number.isFinite(request.xMm) && Number.isFinite(request.yMm) && Number.isFinite(request.zMm)
             ? { xMm: request.xMm, yMm: request.yMm, zMm: request.zMm }
@@ -306,6 +383,8 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           supportSide: request.supportSide ?? 'M',
           carriedSide: request.carriedSide ?? null
         });
+        try { placementPreviewObserver?.(request, result); } catch { /* an optional visual observer cannot invalidate a read-only tool */ }
+        return result;
       },
       getCamera(cameraId, size = { widthPx: 640, heightPx: 360 }) {
         const widthPx = Number(size.widthPx);

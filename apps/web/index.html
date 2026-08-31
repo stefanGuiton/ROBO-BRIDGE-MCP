@@ -46,6 +46,22 @@
             <label><span>X mm</span><input name="xMm" type="number" step="0.1" value="670" required></label><label><span>Y mm</span><input name="yMm" type="number" step="0.1" value="0" required></label>
             <label><span>Z mm</span><input name="zMm" type="number" step="0.1" value="145" required></label><label><span>Speed</span><input name="speedMmS" type="number" step="1" min="1" max="650" value="500" required></label><button type="submit" class="primary">MOVE TOOL</button>
           </form>
+          <section class="fast-placement-panel" aria-label="Fast placement proposal">
+            <div class="fast-placement-heading"><strong>FAST GHOST PLACEMENT</strong><span data-fast-status>NO PROPOSAL</span></div>
+            <form class="move-form" data-fast-placement-form>
+              <label class="wide"><span>Reachable brick</span><select name="brickId" data-fast-brick></select></label>
+              <label><span>X mm</span><input name="xMm" type="number" step="8" required></label><label><span>Y mm</span><input name="yMm" type="number" step="8" required></label>
+              <label><span>Z mm</span><input name="zMm" type="number" step="9.6" required></label><label><span>Yaw °</span><input name="yawDeg" type="number" step="90" value="0" required></label>
+              <button type="submit" class="primary">PREVIEW / REPLACE A</button>
+            </form>
+            <div class="ghost-nudge" aria-label="Nudge ghost by one stud"><button type="button" data-proposal-nudge="0,8">↑</button><button type="button" data-proposal-nudge="-8,0">←</button><button type="button" data-proposal-nudge="8,0">→</button><button type="button" data-proposal-nudge="0,-8">↓</button><button type="button" data-proposal-rotate>ROTATE 90°</button></div>
+            <div class="button-grid"><button type="button" data-fast-queue-add>ADD AS NEXT A–E</button><button type="button" data-fast-queue-clear>CLEAR QUEUE</button></div>
+            <ol class="fast-queue" data-fast-queue aria-label="Five-placement look-ahead queue"></ol>
+            <label class="fast-slider"><span>Physical robot speed <output data-physical-speed>650 mm/s</output></span><input type="range" min="50" max="650" step="25" value="650" data-physical-speed-input></label>
+            <label class="fast-slider"><span>Simulation playback <output data-playback-rate>20×</output></span><input type="range" min="1" max="40" step="1" value="20" data-playback-rate-input></label>
+            <small data-fast-estimate>Preview a valid cyan brick, then accept. Physical limits remain unchanged.</small>
+            <div class="button-grid"><button type="button" class="primary" data-fast-accept>ACCEPT NEXT &amp; PLACE</button><button type="button" data-fast-cancel>CANCEL</button></div>
+          </section>
           <div class="button-grid quick-targets"><button type="button" data-target="home">LOAD HOME</button><button type="button" data-target="pickup">LOAD PICKUP</button><button type="button" data-target="target">LOAD TARGET</button></div>
           <div class="button-grid robot-actions"><button type="button" class="primary wide" data-action="run">PLACE NEXT BRICK</button><button type="button" class="primary" data-action="round">BUILD FULL ROUND</button><button type="button" data-action="latch">LATCH</button><button type="button" data-action="unlatch">UNLATCH</button><button type="button" data-action="home">HOME</button><button type="button" data-action="reset">RESET</button></div>
           <div class="button-grid views"><button type="button" data-view="hero">HERO</button><button type="button" data-view="top">TOP</button><button type="button" data-view="tray">TRAY</button><button type="button" data-view="target">TARGET</button></div>

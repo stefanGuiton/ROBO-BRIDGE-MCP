@@ -72,6 +72,45 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.previewPlacement(input)
     },
     {
+      name:'plan_placement_queue', description:'Read-only planning of one to five ghost placements. Reserves distinct reachable source bricks and returns cached up-across-down Cartesian trajectory templates without moving the robot or changing worldRevision.',
+      inputSchema:{
+        type:'object',
+        properties:{
+          placements:{
+            type:'array',minItems:1,maxItems:5,
+            items:{type:'object',properties:{
+              brickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+              colour:{type:'string',enum:PALETTE},
+              xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},
+              yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},
+              zMm:{type:'number',minimum:0,maximum:workspace.zMaxMm},
+              yawDeg:{type:'number',minimum:-360,maximum:360,default:0}
+            },required:['xMm','yMm','zMm'],additionalProperties:false}
+          },
+          expectedWorldRevision:REVISION
+        },required:['placements','expectedWorldRevision'],additionalProperties:false
+      },
+      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
+        expectedWorldRevision:input.expectedWorldRevision,
+        placements:input.placements.map((placement)=>({
+          brickId:placement.brickId??null,
+          colour:placement.colour??null,
+          position:{xMm:placement.xMm,yMm:placement.yMm,zMm:placement.zMm},
+          yawRad:Number(placement.yawDeg??0)*Math.PI/180
+        }))
+      })
+    },
+    {
+      name:'execute_next_placement', description:'Execute only the next accepted cached placement through the shared RobotController. This is one bounded pick/place, not a multi-brick build shortcut; exact revision and cancellation are required.',
+      inputSchema:{type:'object',properties:{
+        proposalId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+        physicalSpeedMmS:{type:'number',exclusiveMinimum:0,maximum:workspace.speedLimitMmS??650,default:650},
+        playbackMultiplier:{type:'number',minimum:1,maximum:40,default:20},
+        expectedWorldRevision:REVISION
+      },required:['proposalId','physicalSpeedMmS','playbackMultiplier','expectedWorldRevision'],additionalProperties:false},
+      annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input,options)=>handlers.executeNextPlacement(input,options)
+    },
+    {
       name:'move_tool', description:'Move the shared fixed-down TCP. The request must include the latest exact world revision. Motion is cancelled if the call aborts and fails closed if the world changes.',
       inputSchema:{type:'object',properties:{xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},zMm:{type:'number',minimum:workspace.zMinMm,maximum:workspace.zMaxMm},speedMmS:{type:'number',exclusiveMinimum:0,maximum:workspace.speedLimitMmS ?? 650},expectedWorldRevision:REVISION},required:['xMm','yMm','zMm','speedMmS','expectedWorldRevision'],additionalProperties:false},
       annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input,options)=>handlers.moveTool(input,options)

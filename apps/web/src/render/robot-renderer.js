@@ -55,12 +55,13 @@ function makeBox(size, centre, material) {
 }
 
 export class RobotRenderer {
-  constructor(canvas, controller, { board = null, playerSettings = null, humanBuildAdapter = null } = {}) {
+  constructor(canvas, controller, { board = null, playerSettings = null, humanBuildAdapter = null, fastPlacement = null } = {}) {
     this.canvas = canvas;
     this.controller = controller;
     this.board = board;
     this.playerSettings = playerSettings;
     this.humanBuildAdapter = humanBuildAdapter;
+    this.fastPlacement = fastPlacement;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xe9eef3).multiplyScalar(playerSettings?.backgroundBrightness ?? 1.4);
     this.scene.fog = null;
@@ -245,6 +246,13 @@ export class RobotRenderer {
     this.machineRoot.add(this.heldGhost);
     this.snapPreview = this.makeSnapPreview();
     this.machineRoot.add(this.snapPreview.group);
+    this.lookaheadPreviews = [this.snapPreview];
+    for (let index = 1; index < 5; index += 1) {
+      const visuals = this.makeSnapPreview();
+      visuals.group.name = `MAIN_DEMO_LOOKAHEAD_GHOST_${String.fromCharCode(65 + index)}`;
+      this.machineRoot.add(visuals.group);
+      this.lookaheadPreviews.push(visuals);
+    }
     this.colorGrader = new ColorGrader(this.webgl, this.playerSettings);
     this.player.onPrimary = () => this.primaryPlayerAction();
     this.player.onRotate = () => {
@@ -336,10 +344,8 @@ export class RobotRenderer {
     mesh.instanceMatrix.needsUpdate = true;
   }
 
-  syncSnapPreview() {
-    const preview = this.humanBuildAdapter?.getPreview?.();
-    const visuals = this.snapPreview;
-    if (this.snapAnimation || !preview || preview.type === 'CARRY' || preview.status === 'NONE') {
+  syncPreviewVisual(preview, visuals) {
+    if (!preview || preview.type === 'CARRY' || preview.status === 'NONE') {
       visuals.group.visible = false;
       return;
     }
@@ -349,8 +355,9 @@ export class RobotRenderer {
     visuals.ghost.position.set(position.xMm, position.yMm, position.zMm);
     visuals.ghost.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawRad);
     const overhang = preview.valid && preview.overhang && this.playerSettings.connectionOverhangGhostStyle === 'Yellow';
-    visuals.ghost.userData.material.color.setHex(preview.valid ? (overhang ? 0xe5b72e : 0x21c77a) : 0xe34f45);
-    visuals.ghost.userData.material.opacity = this.playerSettings.ghostOpacity;
+    const proposalColour = preview.status === 'STALE' ? 0xe5a52e : preview.valid ? 0x35d6ff : 0xe34f45;
+    visuals.ghost.userData.material.color.setHex(preview.proposal ? proposalColour : preview.valid ? (overhang ? 0xe5b72e : 0x21c77a) : 0xe34f45);
+    visuals.ghost.userData.material.opacity = this.playerSettings.ghostOpacity * (preview.opacityScale ?? 1);
     const connectionVisible = preview.type === 'BRICK';
     visuals.supportMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
     visuals.carriedMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
@@ -363,6 +370,24 @@ export class RobotRenderer {
     this.fillSnapMarkers(visuals.supportMarks, support, preview.supportSide, true);
     this.fillSnapMarkers(visuals.carriedMarks, carried, preview.carriedSide, false, { position, yawRad });
     visuals.pivot.position.set(preview.pivot.xMm, preview.pivot.yMm, preview.pivot.zMm + this.playerSettings.studHeightMm + 1.2);
+  }
+
+  syncSnapPreview() {
+    const visualsPool = this.lookaheadPreviews ?? [this.snapPreview];
+    if (this.snapAnimation) {
+      for (const visuals of visualsPool) visuals.group.visible = false;
+      return;
+    }
+    const humanPreview = this.humanBuildAdapter?.getPreview?.();
+    if (humanPreview) {
+      this.syncPreviewVisual(humanPreview, visualsPool[0]);
+      for (let index = 1; index < visualsPool.length; index += 1) visualsPool[index].group.visible = false;
+      return;
+    }
+    const previews = this.fastPlacement?.getRenderPreviews?.() ?? [];
+    for (let index = 0; index < visualsPool.length; index += 1) {
+      this.syncPreviewVisual(previews[index] ?? null, visualsPool[index]);
+    }
   }
 
   setPlayerMode(enabled) {
@@ -976,14 +1001,18 @@ export class RobotRenderer {
       this.brickFactory.rebuild();
       this.batcher.rebuildGeometry();
       applyV8BrickGeometry(this.heldGhost, this.playerSettings, this.brickFactory);
-      applyV8BrickGeometry(this.snapPreview.ghost, this.playerSettings, this.brickFactory);
+      for (const visuals of this.lookaheadPreviews ?? [this.snapPreview]) {
+        applyV8BrickGeometry(visuals.ghost, this.playerSettings, this.brickFactory);
+      }
       for (const mesh of this.brickMeshes.values()) applyV8BrickGeometry(mesh, this.playerSettings, this.brickFactory);
       this.lastBatchSignature = '';
     }
     if (brickMaterialChanged) {
       this.batcher.applyMaterialSettings();
       applyV8BrickMaterial(this.heldGhost, this.playerSettings);
-      applyV8BrickMaterial(this.snapPreview.ghost, this.playerSettings);
+      for (const visuals of this.lookaheadPreviews ?? [this.snapPreview]) {
+        applyV8BrickMaterial(visuals.ghost, this.playerSettings);
+      }
       const bricks = new Map(this.controller.getBricks().map((brick) => [brick.id, brick]));
       for (const [id, mesh] of this.brickMeshes) applyV8BrickMaterial(mesh, this.playerSettings, bricks.get(id));
     }

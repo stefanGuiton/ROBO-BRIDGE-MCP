@@ -87,6 +87,7 @@ export class RobotController {
     this.jointSpeedLimitRadS = jointSpeedLimitRadS;
     this.jointAccelerationLimitRadS2 = jointAccelerationLimitRadS2;
     this.timeScale = timeScale;
+    this.playbackMultiplier = timeScale === 0 ? 0 : 1 / timeScale;
     this.board = board;
     this.bricks = clone(bricks);
     this.revisionClock = revisionClock;
@@ -108,6 +109,8 @@ export class RobotController {
     this.activeAbortController = null;
     this.operationEpoch = 0;
     this.pendingMoveCount = 0;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
     this.releaseClearanceBrickId = null;
     this.placementAuthority = placementAuthority;
   }
@@ -150,6 +153,7 @@ export class RobotController {
       accelerationLimitMmS2: this.accelerationLimitMmS2,
       jointSpeedLimitRadS: this.jointSpeedLimitRadS,
       jointAccelerationLimitRadS2: this.jointAccelerationLimitRadS2,
+      simulationPlaybackMultiplier: this.playbackMultiplier,
       moving: this.moving,
       operationState: this.operationState,
       heldBrickId: this.heldBrickId,
@@ -161,14 +165,51 @@ export class RobotController {
   getWorkspace() { return clone(this.workspace); }
   getBricks() { return clone(this.bricks); }
 
+  operationBlocked(operationToken = null) {
+    return Boolean(this.exclusiveOperationToken && operationToken !== this.exclusiveOperationToken);
+  }
+
+  beginExclusiveOperation(label = 'compound') {
+    if (this.exclusiveOperationToken || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    const token = Symbol(label);
+    this.exclusiveOperationToken = token;
+    this.exclusiveOperationLabel = label;
+    this.emit('exclusive_operation_started', { label });
+    return { ok: true, token, worldRevision: this.worldRevision };
+  }
+
+  endExclusiveOperation(token) {
+    if (!token || token !== this.exclusiveOperationToken) return false;
+    const label = this.exclusiveOperationLabel;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
+    this.emit('exclusive_operation_completed', { label });
+    return true;
+  }
+
+  setSimulationPlaybackMultiplier(multiplier) {
+    if (!Number.isFinite(multiplier) || multiplier < 1 || multiplier > 40) {
+      return { ok: false, reason: 'invalid_input', minimum: 1, maximum: 40 };
+    }
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.exclusiveOperationToken) {
+      return { ok: false, reason: 'operation_in_progress' };
+    }
+    this.playbackMultiplier = multiplier;
+    this.timeScale = 1 / multiplier;
+    this.emit('playback_rate_changed', { multiplier });
+    return { ok: true, multiplier, physicalSpeedLimitMmS: this.speedLimitMmS };
+  }
+
   setPlacementAuthority(authority) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) return false;
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) return false;
     this.placementAuthority = authority;
     return true;
   }
 
   setBricks(bricks) {
-    if (this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (this.operationBlocked() || this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     this.bricks = clone(bricks);
     this.heldBrickId = null;
     this.jawGapMm = UR10_GRIPPER.openGapMm;
@@ -180,7 +221,7 @@ export class RobotController {
   }
 
   addLooseBricks(bricks, { actor = 'human' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!Array.isArray(bricks) || bricks.length < 1 || bricks.length > 50) {
@@ -238,7 +279,7 @@ export class RobotController {
   }
 
   beginHumanCarry(brickId) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (this.heldBrickId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
@@ -266,7 +307,7 @@ export class RobotController {
     brickId, position, yawRad = 0, connection = null, placementType = 'free-build',
     supportBrickId = null, supportSide = null, carriedSide = null
   } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -360,7 +401,7 @@ export class RobotController {
   }
 
   commitHumanDrop({ brickId, position, yawRad = 0 } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -382,6 +423,9 @@ export class RobotController {
   }
 
   cancelHumanCarry(brickId, original) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
     brick.position = { ...original.position };
@@ -534,17 +578,25 @@ export class RobotController {
   async planMoveResponsive(request, signal, epoch) {
     const steps = this.planMoveSteps(request);
     let result = steps.next();
+    let samplesSinceYield = 0;
     while (!result.done) {
       if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled');
-      if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
-      else if (typeof requestAnimationFrame === 'function') await new Promise((resolve) => requestAnimationFrame(resolve));
-      else await Promise.resolve();
+      samplesSinceYield += 1;
+      if (samplesSinceYield >= 12) {
+        samplesSinceYield = 0;
+        if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+        else if (typeof requestAnimationFrame === 'function') await new Promise((resolve) => requestAnimationFrame(resolve));
+        else await Promise.resolve();
+      }
       result = steps.next();
     }
     return result.value;
   }
 
   moveTool(request = {}) {
+    if (this.operationBlocked(request.operationToken ?? null)) {
+      return Promise.reject(new RobotError('operation_in_progress', { worldRevision: this.worldRevision }));
+    }
     const queuedEpoch = this.operationEpoch;
     this.pendingMoveCount += 1;
     const run = async () => {
@@ -616,8 +668,8 @@ export class RobotController {
     return this.operation;
   }
 
-  async latch({ expectedWorldRevision, actor = 'agent' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+  async latch({ expectedWorldRevision, actor = 'agent', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     const candidate = findLatchCandidate(this.tcp, this.bricks, this.heldBrickId);
     if (!candidate.ok) return { success: false, ok: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
@@ -642,8 +694,8 @@ export class RobotController {
     return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, yawErrorRad, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
   }
 
-  async unlatch({ expectedWorldRevision, actor = 'agent' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+  async unlatch({ expectedWorldRevision, actor = 'agent', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (!this.heldBrickId) return { success: false, ok: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = this.heldBrick();
@@ -719,6 +771,8 @@ export class RobotController {
 
   async reset({ bricks = null } = {}) {
     this.operationEpoch += 1;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
     this.activeAbortController?.abort(new DOMException('Reset requested', 'AbortError'));
     try { await this.operation; } catch { /* cancellation/rejection is expected before reset */ }
     this.operationState = 'resetting';

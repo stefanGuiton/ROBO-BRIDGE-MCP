@@ -68,6 +68,33 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return bridge.world.previewPlacement(input);
   }
 
+  async function planPlacementQueue(input = {}) {
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    if (!Array.isArray(input.placements) || input.placements.length < 1 || input.placements.length > 5) {
+      return inputError('placements must contain between one and five destinations.');
+    }
+    const before = bridge.getWorldRevision();
+    if (before !== input.expectedWorldRevision) {
+      return machineError('stale_state', 'World state changed. Read state again before planning.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
+    }
+    const result = await bridge.placement.planQueue(input);
+    if (result?.ok === false && result.reason !== undefined) activity.push('RECOVER', `PLAN ${result.reason}`);
+    else activity.push('TARGET', `cached ${result.queueLength ?? 0} placement proposals`, { cacheId: result.cacheId, worldRevision: before });
+    return result;
+  }
+
+  async function executeNextPlacement(input = {}, options = {}) {
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const before = bridge.getWorldRevision();
+    if (before !== input.expectedWorldRevision) {
+      return machineError('stale_state', 'World state changed. Read state again before executing.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
+    }
+    const result = await bridge.placement.executeNext(input, { signal: options.signal });
+    if (result?.ok === false) activity.push('RECOVER', `PLACE ${result.reason}`, { proposalId: input.proposalId });
+    else activity.push('PLACE', `executed ${result.proposalId}`, { brickId: result.brickId, playbackDurationMs: result.playbackDurationMs, worldRevision: result.worldRevision });
+    return result;
+  }
+
   async function moveTool(input = {}, options = {}) {
     for (const field of ['xMm','yMm','zMm','speedMmS']) if (!finite(input[field])) return inputError(`${field} must be finite.`);
     if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
@@ -118,5 +145,5 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return result;
   }
 
-  return Object.freeze({ getSceneState, getBuildState, getRobotState, getWorkspace, observeCamera, previewPlacement, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
+  return Object.freeze({ getSceneState, getBuildState, getRobotState, getWorkspace, observeCamera, previewPlacement, planPlacementQueue, executeNextPlacement, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
 }

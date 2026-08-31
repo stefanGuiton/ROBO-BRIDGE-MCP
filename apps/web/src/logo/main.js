@@ -3,6 +3,7 @@ import { PlacementAuthority } from '../bricks/placement-authority.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { RobotRenderer } from '../render/robot-renderer.js';
 import { RobotController, RobotError } from '../robot/controller.js';
+import { PlacementLookaheadCoordinator } from '../robot/placement-lookahead.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RevisionClock } from '../state/revision-clock.js';
 import { compileImageData } from './compiler.js';
@@ -64,11 +65,13 @@ const placementAuthority = evidenceMode ? null : new PlacementAuthority({
 if (placementAuthority && !controller.setPlacementAuthority(placementAuthority)) {
   throw new Error('Unable to attach the shared V8 placement authority');
 }
+const fastPlacement = placementAuthority ? new PlacementLookaheadCoordinator({ controller, placementAuthority, workcellProfile }) : null;
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
   playerSettings,
-  humanBuildAdapter
+  humanBuildAdapter,
+  fastPlacement
 });
 const runtime = createLogoRoboRuntime({
   controller,
@@ -76,9 +79,20 @@ const runtime = createLogoRoboRuntime({
   resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
   humanBuildAdapter,
   placementAuthority,
+  fastPlacement,
   workcellProfile: evidenceMode ? null : workcellProfile,
   getUserCamera: () => renderer.getUserCameraConfig(),
-  captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options)
+  captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options),
+  placementPreviewObserver: (request) => fastPlacement?.preview({
+    brickId: request.brickId,
+    position: Number.isFinite(request.xMm) && Number.isFinite(request.yMm) && Number.isFinite(request.zMm)
+      ? { xMm: request.xMm, yMm: request.yMm, zMm: request.zMm }
+      : null,
+    yawRad: Number(request.yawDeg ?? 0) * Math.PI / 180,
+    supportBrickId: request.supportBrickId ?? null,
+    supportSide: request.supportSide ?? 'M',
+    carriedSide: request.carriedSide ?? null
+  })
 });
 
 const $ = (selector) => document.querySelector(selector);
@@ -113,6 +127,16 @@ const crosshairEl = $('#crosshair');
 const performancePanelEl = $('#performance-panel');
 const performanceContentEl = $('[data-perf-content]');
 const debugPanelEl = $('#debug-panel');
+const fastPlacementForm = $('[data-fast-placement-form]');
+const fastBrickEl = $('[data-fast-brick]');
+const fastStatusEl = $('[data-fast-status]');
+const fastEstimateEl = $('[data-fast-estimate]');
+const fastQueueEl = $('[data-fast-queue]');
+const physicalSpeedInput = $('[data-physical-speed-input]');
+const physicalSpeedOutput = $('[data-physical-speed]');
+const playbackRateInput = $('[data-playback-rate-input]');
+const playbackRateOutput = $('[data-playback-rate]');
+const fastAcceptButton = $('[data-fast-accept]');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -234,6 +258,7 @@ async function latch(input = {}) { return runtime.robot.latch({ actor: input.act
 async function unlatch(input = {}) { return runtime.robot.unlatch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function resetScene() {
   moreBricksBurst = 0;
+  fastPlacement?.cancel();
   const result = await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision });
   setStatus('READY');
   addLog('Workcell reset');
@@ -297,6 +322,69 @@ async function runRound({ signal } = {}) {
   return { ok: true, results, progress: board.progress(), scene: getSceneState() };
 }
 
+function refreshFastBrickChoices(selectedId = null) {
+  if (!fastPlacement || !fastBrickEl) return;
+  const available = fastPlacement.availableBricks();
+  const selected = selectedId ?? fastBrickEl.value;
+  fastBrickEl.replaceChildren(...available.map((brick) => {
+    const option = document.createElement('option');
+    option.value = brick.id;
+    option.textContent = `${brick.colour.toUpperCase()} · ${brick.id}`;
+    return option;
+  }));
+  if (available.some((brick) => brick.id === selected)) fastBrickEl.value = selected;
+}
+
+function readFastPlacementForm() {
+  if (!fastPlacementForm) return null;
+  const form = new FormData(fastPlacementForm);
+  return {
+    brickId: String(form.get('brickId') ?? ''),
+    position: { xMm: Number(form.get('xMm')), yMm: Number(form.get('yMm')), zMm: Number(form.get('zMm')) },
+    yawRad: Number(form.get('yawDeg')) * Math.PI / 180
+  };
+}
+
+function previewFastPlacement() {
+  const request = readFastPlacementForm();
+  if (!fastPlacement || !request) return { status: 'INVALID', reason: 'runtime_unavailable' };
+  return fastPlacement.preview(request);
+}
+
+function queuedDestination(proposal) {
+  return {
+    brickId: proposal.requestedBrickId ?? proposal.brickId ?? null,
+    colour: proposal.requestedColour ?? null,
+    position: proposal.requestedPosition ? { ...proposal.requestedPosition } : null,
+    yawRad: proposal.yawRad ?? 0,
+    supportBrickId: proposal.supportBrickId ?? null,
+    supportSide: proposal.supportSide ?? 'M',
+    carriedSide: proposal.carriedSide ?? null
+  };
+}
+
+function addFastPlacementToQueue() {
+  const request = readFastPlacementForm();
+  if (!fastPlacement || !request) return { ok: false, reason: 'runtime_unavailable' };
+  const current = fastPlacement.getState().queue.map(queuedDestination);
+  if (current.length >= 5) return { ok: false, reason: 'queue_full', maximumLookahead: 5 };
+  return fastPlacement.planQueue([...current, request]);
+}
+
+async function executeFastPlacement({ signal } = {}) {
+  if (!fastPlacement) return { ok: false, reason: 'runtime_unavailable' };
+  const result = await fastPlacement.execute({
+    physicalSpeedMmS: Number(physicalSpeedInput?.value ?? 650),
+    playbackMultiplier: Number(playbackRateInput?.value ?? 20),
+    signal
+  });
+  if (result.ok) {
+    addLog(`Fast placed ${result.brickId} in ${(result.playbackDurationMs / 1000).toFixed(2)} s`, 'ok');
+    refreshFastBrickChoices();
+  } else addLog(`Fast placement rejected: ${result.reason}`, 'bad');
+  return result;
+}
+
 function captureCamera(cameraId = 'user_camera', options = {}) {
   return runtime.world.captureCamera({ cameraId, ...options });
 }
@@ -353,6 +441,7 @@ function stageV8ParityConnection() {
 
 const actions = {
   getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
+  previewFastPlacement, executeFastPlacement, cancelFastPlacement: () => fastPlacement?.cancel() ?? { ok: false, reason: 'runtime_unavailable' },
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 420 }, { signal })
 };
 
@@ -444,6 +533,88 @@ const PLAYER_PRESETS = Object.freeze({
   balanced: { mouseSensitivityRadPerPx: 0.00165, moveSpeedMmS: 1500, verticalSpeedMmS: 1000, accelerationMmS2: 5500, decelerationMmS2: 6500, maximumSpeedMmS: 3600 },
   fast: { mouseSensitivityRadPerPx: 0.00205, moveSpeedMmS: 2300, verticalSpeedMmS: 1500, accelerationMmS2: 7800, decelerationMmS2: 8500, maximumSpeedMmS: 5200 }
 });
+
+if (fastPlacementForm && fastPlacement) {
+  const frame = placementEngine.tableFrame;
+  const defaults = {
+    xMm: frame.centre.xMm,
+    yMm: frame.centre.yMm,
+    zMm: frame.placementSurfaceZMm + playerSettings.brickBodyHeightMm / 2,
+    yawDeg: 0
+  };
+  for (const [name, value] of Object.entries(defaults)) {
+    const field = fastPlacementForm.elements.namedItem(name);
+    if (field) field.value = Number(value.toFixed(2));
+  }
+  refreshFastBrickChoices();
+  fastPlacementForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const state = previewFastPlacement();
+    addLog(state.status === 'VALID' ? 'Fast ghost proposal ready' : `Ghost rejected: ${state.reason}`, state.status === 'VALID' ? 'ok' : 'bad');
+  });
+  for (const button of document.querySelectorAll('[data-proposal-nudge]')) button.addEventListener('click', () => {
+    const [dx, dy] = button.dataset.proposalNudge.split(',').map(Number);
+    for (const [name, delta] of [['xMm', dx], ['yMm', dy]]) {
+      const field = fastPlacementForm.elements.namedItem(name);
+      field.value = Number(field.value) + delta;
+    }
+    previewFastPlacement();
+  });
+  $('[data-proposal-rotate]')?.addEventListener('click', () => {
+    const field = fastPlacementForm.elements.namedItem('yawDeg');
+    field.value = (Number(field.value) + 90) % 360;
+    previewFastPlacement();
+  });
+  fastAcceptButton?.addEventListener('click', (event) => handleAction(event.currentTarget, () => executeFastPlacement(), null));
+  $('[data-fast-cancel]')?.addEventListener('click', () => {
+    fastPlacement.cancel();
+    addLog('Fast placement cancelled');
+  });
+  $('[data-fast-queue-clear]')?.addEventListener('click', () => {
+    fastPlacement.cancel();
+    addLog('Look-ahead queue cleared');
+  });
+  $('[data-fast-queue-add]')?.addEventListener('click', () => {
+    const state = addFastPlacementToQueue();
+    addLog(state.ok ? `Cached ${state.queueLength} ghost placements` : `Queue rejected: ${state.reason}`, state.ok ? 'ok' : 'bad');
+  });
+  const syncRange = (input, output, suffix) => {
+    const update = () => { if (output) output.textContent = `${input.value}${suffix}`; };
+    input?.addEventListener('input', update);
+    update();
+  };
+  syncRange(physicalSpeedInput, physicalSpeedOutput, ' mm/s');
+  syncRange(playbackRateInput, playbackRateOutput, '×');
+  fastPlacement.subscribe((state) => {
+    if (fastStatusEl) fastStatusEl.textContent = state.status.replace('_', ' ');
+    if (fastAcceptButton) fastAcceptButton.disabled = state.status !== 'VALID';
+    if (fastEstimateEl) {
+      const distance = state.proposal?.approximatePhysicalDistanceMm;
+      const physicalSeconds = distance ? distance / Number(physicalSpeedInput?.value ?? 650) : null;
+      const playbackSeconds = physicalSeconds ? physicalSeconds / Number(playbackRateInput?.value ?? 20) : null;
+      fastEstimateEl.textContent = state.status === 'VALID'
+        ? `Cyan = valid · rough travel ${physicalSeconds.toFixed(1)} physical s / ${playbackSeconds.toFixed(2)} displayed s. Live planning and collision checks still apply.`
+        : state.status === 'STALE' ? 'Amber = world changed. Preview again before accepting.'
+          : state.status === 'INVALID' ? `Red = ${state.reason}. Adjust the ghost and retry.`
+            : 'Preview a valid cyan brick, then accept. Physical limits remain unchanged.';
+    }
+    if (fastQueueEl) {
+      fastQueueEl.replaceChildren(...state.queue.map((proposal) => {
+        const item = document.createElement('li');
+        const label = document.createElement('b');
+        label.textContent = proposal.slotLabel;
+        const source = document.createElement('span');
+        source.textContent = `${proposal.brick?.colour?.toUpperCase?.() ?? '—'} ${proposal.brickId ?? 'NO SOURCE'} → ${Math.round(proposal.requestedPosition?.xMm ?? 0)},${Math.round(proposal.requestedPosition?.yMm ?? 0)}`;
+        const status = document.createElement('em');
+        status.textContent = proposal.sourceReassigned ? 'REASSIGNED' : proposal.status;
+        status.className = proposal.sourceReassigned ? 'reassigned' : proposal.status === 'VALID' ? '' : 'invalid';
+        item.append(label, source, status);
+        return item;
+      }));
+    }
+  });
+  previewFastPlacement();
+}
 for (const button of document.querySelectorAll('[data-settings-preset]')) button.addEventListener('click', () => {
   const preset = button.dataset.settingsPreset;
   playerSettingsStore.setMany(PLAYER_PRESETS[preset]);
@@ -525,7 +696,9 @@ setInterval(() => {
   }
   if (playerStateEl) {
     playerStateEl.textContent = performance.player?.enabled
-      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI' : 'CLICK TO LOCK POINTER')
+      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI'
+        : performance.player.fallbackLookActive ? 'PLAYER · IN-APP LOOK · ESC FOR UI'
+          : 'CLICK TO LOOK AROUND')
       : 'ORBIT CAMERA';
   }
   const heldId = performance.heldBrick?.brickId ?? performance.interaction.snapBrickId ?? null;
@@ -564,13 +737,14 @@ try {
   addLog('WebMCP registration failed', 'bad');
 }
 
-window.__LOGO_ROBO__ = Object.freeze({
+const publicRuntime = Object.freeze({
   version: '3.1.0-main-demo-player-v8',
   product: 'ROBO BRIDGE MCP MAIN_DEMO',
   actions,
   runtime,
   robotController: controller,
   humanBuildAdapter,
+  fastPlacement,
   connectionGraph,
   playerSettingsStore,
   playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,
@@ -582,8 +756,12 @@ window.__LOGO_ROBO__ = Object.freeze({
   getWorkspace,
   get scene() { return getSceneState(); }
 });
-window.__ROBO_BRIDGE__ = window.__LOGO_ROBO__;
-window.__LOGO_ROBO_RUNTIME__ = runtime;
+if (Object.isExtensible(window)) {
+  window.__LOGO_ROBO__ = publicRuntime;
+  window.__ROBO_BRIDGE__ = publicRuntime;
+  window.__LOGO_ROBO_RUNTIME__ = runtime;
+}
+document.documentElement.dataset.runtimeReady = 'true';
 
 if (['connection', 'snap'].includes(params.get('parityPreview'))) {
   setTimeout(() => { window.__LOGO_ROBO_PARITY_PREVIEW__ = stageV8ParityConnection(); }, 80);

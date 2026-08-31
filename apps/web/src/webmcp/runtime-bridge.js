@@ -5,6 +5,7 @@ export const STABLE_ERRORS = Object.freeze([
   'no_brick_in_capture','already_holding','not_holding','target_occupied','wrong_colour','no_snap_target',
   'unknown_target','claim_conflict','wrong_mode','stale_state','operation_in_progress','invalid_input'
   ,'unknown_brick','unknown_support','placement_unavailable','out_of_bounds','out_of_range','mat_occupied','connector_occupied_or_misaligned'
+  ,'no_reachable_brick','proposal_required'
 ]);
 
 export function machineError(reason, message, extra = {}) {
@@ -59,6 +60,11 @@ export function createRuntimeBridge(runtime = null) {
       latch: (request) => call(runtime?.robot?.latch?.bind(runtime.robot), request),
       unlatch: (request) => call(runtime?.robot?.unlatch?.bind(runtime.robot), request),
       reset: (request) => call(runtime?.robot?.reset?.bind(runtime.robot), request)
+    },
+    placement: {
+      getQueue: () => call(runtime?.placement?.getQueue?.bind(runtime.placement)),
+      planQueue: (request) => call(runtime?.placement?.planQueue?.bind(runtime.placement), request),
+      executeNext: (request, options) => call(runtime?.placement?.executeNext?.bind(runtime.placement), request, options)
     },
     game: {
       getBuildState: (filters) => call(runtime?.game?.getBuildState?.bind(runtime.game), filters),

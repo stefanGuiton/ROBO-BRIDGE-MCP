@@ -11,6 +11,8 @@ import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
 import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
 import { RobotController } from '../../apps/web/src/robot/controller.js';
+import { FastPlacementCoordinator } from '../../apps/web/src/robot/fast-placement.js';
+import { PlacementLookaheadCoordinator } from '../../apps/web/src/robot/placement-lookahead.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { createLogoRoboRuntime, placedBuildBounds } from '../../apps/web/src/logo/runtime.js';
 import { createObservationService } from '../../apps/web/src/perception/observation-service.js';
@@ -19,6 +21,88 @@ import { projectObjectBounds } from '../../apps/web/src/perception/projection.js
 
 const supplied = JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url), 'utf8'));
 const settings = { ...PLAYER_FALLBACK_SETTINGS, ...supplied };
+
+function makeFastPlacementHarness() {
+  const profile = createV8WorkcellProfile(settings);
+  const generated = makeReachableV8Spawn(settings, profile);
+  const clock = new RevisionClock();
+  const board = new BuildBoard([], { revisionClock: clock, mode: 'co-build' });
+  const controller = new RobotController({
+    board,
+    bricks: [generated.records[0]],
+    revisionClock: clock,
+    workspace: profile.workspace,
+    layout: profile.layout,
+    timeScale: 0
+  });
+  const graph = new ConnectionGraph(settings);
+  const placementEngine = new PlacementIntentEngine(settings, board, graph);
+  placementEngine.configureTableFrame({
+    centre: {
+      xMm: (profile.matBounds.minX + profile.matBounds.maxX) / 2,
+      yMm: (profile.matBounds.minY + profile.matBounds.maxY) / 2
+    },
+    yawRad: 0,
+    placementSurfaceZMm: profile.placementSurfaceZMm,
+    widthMm: settings.matWidthMm,
+    depthMm: settings.matDepthMm
+  });
+  const authority = new PlacementAuthority({
+    board, graph, placementEngine, settings,
+    getBricks: () => controller.getBricks(), profile
+  });
+  assert.equal(controller.setPlacementAuthority(authority), true);
+  const fastPlacement = new FastPlacementCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
+  const target = {
+    xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
+    yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
+    zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2
+  };
+  return { profile, controller, board, fastPlacement, brick: generated.records[0], target, clock };
+}
+
+function makeLookaheadHarness() {
+  const profile = createV8WorkcellProfile(settings);
+  const generated = makeReachableV8Spawn(settings, profile);
+  const clock = new RevisionClock();
+  const board = new BuildBoard([], { revisionClock: clock, mode: 'co-build' });
+  const controller = new RobotController({
+    board,
+    bricks: generated.records.slice(0, 8),
+    revisionClock: clock,
+    workspace: profile.workspace,
+    layout: profile.layout,
+    timeScale: 0
+  });
+  const graph = new ConnectionGraph(settings);
+  const placementEngine = new PlacementIntentEngine(settings, board, graph);
+  placementEngine.configureTableFrame({
+    centre: {
+      xMm: (profile.matBounds.minX + profile.matBounds.maxX) / 2,
+      yMm: (profile.matBounds.minY + profile.matBounds.maxY) / 2
+    },
+    yawRad: 0,
+    placementSurfaceZMm: profile.placementSurfaceZMm,
+    widthMm: settings.matWidthMm,
+    depthMm: settings.matDepthMm
+  });
+  const authority = new PlacementAuthority({
+    board, graph, placementEngine, settings,
+    getBricks: () => controller.getBricks(), profile
+  });
+  assert.equal(controller.setPlacementAuthority(authority), true);
+  const lookahead = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
+  const centre = {
+    xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
+    yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
+    zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2
+  };
+  const placements = Array.from({ length: 5 }, (_, index) => ({
+    position: { ...centre, xMm: centre.xMm + (index - 2) * 40 },
+    yawRad: 0
+  }));
+  return { profile, controller, board, lookahead, placements, clock };
+}
 
 test('V8 workcell maps the visible supply and mat into one validated machine frame', () => {
   const profile = createV8WorkcellProfile(settings);
@@ -191,6 +275,156 @@ test('human and robot-facing previews share one placement authority and board', 
   assert.equal(humanObservation.ok, true);
   assert.ok(humanObservation.detections.length > 0);
   assert.equal(humanObservation.snapshotRevision, clock.value);
+});
+
+test('five-slot look-ahead is read-only, reserves unique sources, and caches staple trajectories', () => {
+  const { lookahead, placements, clock } = makeLookaheadHarness();
+  const before = clock.value;
+  const stale = lookahead.planQueue(placements, { expectedWorldRevision: before + 1 });
+  assert.equal(stale.ok, false);
+  assert.equal(stale.reason, 'stale_state');
+  const result = lookahead.planQueue(placements, { expectedWorldRevision: before });
+  assert.equal(result.ok, true, result.reason);
+  assert.equal(clock.value, before, 'look-ahead planning must not mutate the world');
+  assert.equal(result.queue.length, 5);
+  assert.equal(new Set(result.queue.map((proposal) => proposal.brickId)).size, 5);
+  assert.deepEqual(result.queue.map((proposal) => proposal.slotLabel), ['A', 'B', 'C', 'D', 'E']);
+  assert.equal(lookahead.getRenderPreviews().length, 5);
+  for (const proposal of result.queue) {
+    assert.equal(proposal.trajectory.shape, 'staple-up-across-down');
+    assert.deepEqual(proposal.trajectory.waypoints.map((waypoint) => waypoint.stage), [
+      'source_approach','source_descend','capture','source_lift','transfer','target_descend','release','target_retreat'
+    ]);
+    assert.equal(proposal.trajectory.waypoints[0].tcp.zMm, proposal.trajectory.waypoints[3].tcp.zMm);
+    assert.equal(proposal.trajectory.waypoints[3].tcp.zMm, proposal.trajectory.waypoints[4].tcp.zMm);
+  }
+});
+
+test('a human taking a reserved source repairs the queue with the nearest free replacement', () => {
+  const { lookahead, placements, controller, clock } = makeLookaheadHarness();
+  const planned = lookahead.planQueue(placements);
+  assert.equal(planned.ok, true);
+  const stolen = planned.queue[0];
+  const revisionBeforeHumanMove = clock.value;
+  const moved = controller.moveLooseBrick(
+    stolen.brickId,
+    { ...stolen.brick.position, yMm: stolen.brick.position.yMm + 1 },
+    { actor: 'human' }
+  );
+  assert.equal(moved.ok, true);
+  assert.equal(clock.value, revisionBeforeHumanMove + 1);
+  const repaired = lookahead.getState();
+  assert.equal(repaired.queue.length, 5);
+  assert.notEqual(repaired.queue[0].brickId, stolen.brickId);
+  assert.equal(repaired.queue[0].sourceReassigned, true);
+  assert.equal(new Set(repaired.queue.map((proposal) => proposal.brickId)).size, 5);
+  assert.ok(repaired.queue.every((proposal) => proposal.expectedWorldRevision === clock.value));
+});
+
+test('look-ahead executes only the next proposal and repairs the remaining cache', async () => {
+  const { lookahead, placements, board } = makeLookaheadHarness();
+  const planned = lookahead.planQueue(placements.slice(0, 2));
+  assert.equal(planned.ok, true);
+  const rejected = await lookahead.execute({ proposalId: planned.queue[1].proposalId, physicalSpeedMmS: 650, playbackMultiplier: 40 });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.reason, 'invalid_input');
+  const result = await lookahead.execute({ proposalId: planned.queue[0].proposalId, physicalSpeedMmS: 650, playbackMultiplier: 40 });
+  assert.equal(result.ok, true, result.reason);
+  assert.ok(result.playbackDurationMs < 2000);
+  assert.equal(result.remainingQueued, 1);
+  assert.equal(board.getPlacements().length, 1);
+  const remaining = lookahead.getState();
+  assert.equal(remaining.queue.length, 1);
+  assert.equal(remaining.queue[0].status, 'VALID');
+  assert.equal(remaining.queue[0].expectedWorldRevision, remaining.worldRevision);
+});
+
+test('fast ghost proposal is read-only, revision-locked, WebMCP-visible, and exposes cyan render state', () => {
+  const { fastPlacement, target, clock, brick, controller, board, profile } = makeFastPlacementHarness();
+  const before = clock.value;
+  const preview = fastPlacement.preview({ brickId: brick.id, position: target, yawRad: 0 });
+  assert.equal(preview.status, 'VALID');
+  assert.equal(clock.value, before, 'ghost planning must not mutate authoritative state');
+  assert.equal(fastPlacement.getRenderPreview().proposal, true);
+  assert.equal(fastPlacement.getRenderPreview().valid, true);
+  const runtime = createLogoRoboRuntime({
+    controller,
+    board,
+    placementAuthority: fastPlacement.placementAuthority,
+    workcellProfile: profile,
+    placementPreviewObserver: (request) => fastPlacement.preview({
+      brickId: request.brickId,
+      position: { xMm: request.xMm, yMm: request.yMm, zMm: request.zMm },
+      yawRad: Number(request.yawDeg ?? 0) * Math.PI / 180
+    })
+  });
+  const webPreview = runtime.world.previewPlacement({
+    brickId: brick.id,
+    ...target,
+    yawDeg: 0,
+    expectedWorldRevision: before
+  });
+  assert.equal(webPreview.ok, true);
+  assert.equal(fastPlacement.getState().status, 'VALID');
+  assert.equal(clock.value, before, 'WebMCP preview visibility must remain read-only');
+  const moved = controller.moveLooseBrick(brick.id, { ...brick.position, yMm: brick.position.yMm + 1 }, { actor: 'human' });
+  assert.equal(moved.ok, true);
+  assert.equal(fastPlacement.getState().status, 'STALE');
+});
+
+test('fast placement keeps physical limits unchanged and completes displayed playback below two seconds', async () => {
+  const { fastPlacement, target, brick, controller, board } = makeFastPlacementHarness();
+  assert.equal(fastPlacement.preview({ brickId: brick.id, position: target, yawRad: 0 }).status, 'VALID');
+  const physicalLimits = {
+    speed: controller.getState().speedLimitMmS,
+    acceleration: controller.getState().accelerationLimitMmS2,
+    jointSpeed: controller.getState().jointSpeedLimitRadS,
+    jointAcceleration: controller.getState().jointAccelerationLimitRadS2
+  };
+  const startedAt = performance.now();
+  const execution = fastPlacement.execute({ physicalSpeedMmS: 650, playbackMultiplier: 40 });
+  const concurrent = await controller.latch({ actor: 'human' });
+  assert.equal(concurrent.reason, 'operation_in_progress', 'exclusive compound motion must reject overlapping control');
+  const result = await execution;
+  const elapsedMs = performance.now() - startedAt;
+  assert.equal(result.ok, true, result.reason);
+  assert.ok(result.playbackDurationMs < 2000, `reported playback was ${result.playbackDurationMs} ms`);
+  assert.ok(elapsedMs < 2500, `accept-to-release/retreat took ${elapsedMs.toFixed(0)} ms`);
+  assert.equal(board.getPlacements().length, 1);
+  assert.deepEqual({
+    speed: controller.getState().speedLimitMmS,
+    acceleration: controller.getState().accelerationLimitMmS2,
+    jointSpeed: controller.getState().jointSpeedLimitRadS,
+    jointAcceleration: controller.getState().jointAccelerationLimitRadS2
+  }, physicalLimits);
+  assert.equal(controller.getState().simulationPlaybackMultiplier, 40);
+});
+
+test('reset cancels fast compound motion and prevents stale samples from committing afterward', async () => {
+  const { fastPlacement, target, brick, controller } = makeFastPlacementHarness();
+  assert.equal(fastPlacement.preview({ brickId: brick.id, position: target, yawRad: 0 }).status, 'VALID');
+  const execution = fastPlacement.execute({ physicalSpeedMmS: 80, playbackMultiplier: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  const resetState = await controller.reset();
+  const result = await execution;
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'cancelled');
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.deepEqual(controller.getState().tcp, resetState.tcp);
+  assert.equal(controller.getState().heldBrickId, null);
+});
+
+test('twenty fast-placement trials preserve one controller/board authority', async () => {
+  for (let trial = 0; trial < 20; trial += 1) {
+    const { fastPlacement, target, brick, controller, board } = makeFastPlacementHarness();
+    const offsetTarget = { ...target, xMm: target.xMm + (trial % 4) * 8, yMm: target.yMm + Math.floor(trial / 4) * 8 };
+    assert.equal(fastPlacement.preview({ brickId: brick.id, position: offsetTarget, yawRad: (trial % 2) * Math.PI / 2 }).status, 'VALID', `trial ${trial + 1} preview`);
+    const result = await fastPlacement.execute({ physicalSpeedMmS: 650, playbackMultiplier: 40 });
+    assert.equal(result.ok, true, `trial ${trial + 1}: ${result.reason ?? 'unknown'}`);
+    assert.ok(result.playbackDurationMs < 2000, `trial ${trial + 1} exceeded displayed target`);
+    assert.equal(board.getPlacements().length, 1);
+    assert.equal(controller.getBricks().filter((candidate) => candidate.placementType).length, 1);
+  }
 });
 
 test('human bridge placement preserves its preview anchor and both support connections', () => {

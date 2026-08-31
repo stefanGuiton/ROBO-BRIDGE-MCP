@@ -30,6 +30,11 @@ export class PlayerController {
     this.targetPitch = this.pitch;
     this.enabled = false;
     this.pointerLocked = false;
+    this.fallbackLookActive = false;
+    this.fallbackPointerX = null;
+    this.fallbackPointerY = null;
+    this.pointerLockAttempt = 0;
+    this.pointerLockFallbackTimer = null;
     this.mobileMode = false;
     this.touchId = null;
     this.touchX = 0;
@@ -42,16 +47,17 @@ export class PlayerController {
   bind() {
     this.canvas.addEventListener('mousedown', (event) => {
       if (!this.enabled || this.mobileMode || event.button !== 0) return;
-      if (document.pointerLockElement !== this.canvas) this.requestLock();
+      if (document.pointerLockElement !== this.canvas && !this.fallbackLookActive) this.requestLock(event);
       else this.onPrimary?.();
     });
     this.canvas.addEventListener('wheel', (event) => {
-      if (!this.enabled || (!this.pointerLocked && !this.mobileMode)) return;
+      if (!this.enabled || (!this.pointerLocked && !this.fallbackLookActive && !this.mobileMode)) return;
       event.preventDefault();
       this.onWheel?.(event.deltaY);
     }, { passive: false });
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.canvas;
+      if (this.pointerLocked) this.deactivateFallbackLook({ notify: false });
       document.body.classList.toggle('player-pointer-locked', this.pointerLocked);
       document.body.classList.toggle('pointer-locked', this.pointerLocked);
       if (!this.pointerLocked) this.keys.clear();
@@ -61,7 +67,25 @@ export class PlayerController {
       if (!this.enabled || this.mobileMode || !this.pointerLocked) return;
       this.applyLookDelta(event.movementX, event.movementY, this.settings.mouseSensitivityRadPerPx);
     });
-    document.addEventListener('pointerlockerror', () => this.onPointerLockError?.());
+    this.canvas.addEventListener('mousemove', (event) => {
+      if (!this.enabled || this.mobileMode || !this.fallbackLookActive) return;
+      if (this.fallbackPointerX === null || this.fallbackPointerY === null) {
+        this.fallbackPointerX = event.clientX;
+        this.fallbackPointerY = event.clientY;
+        return;
+      }
+      const dx = clamp(event.clientX - this.fallbackPointerX, -80, 80);
+      const dy = clamp(event.clientY - this.fallbackPointerY, -80, 80);
+      this.fallbackPointerX = event.clientX;
+      this.fallbackPointerY = event.clientY;
+      this.applyLookDelta(dx, dy, this.settings.mouseSensitivityRadPerPx);
+    });
+    this.canvas.addEventListener('mouseleave', () => {
+      if (!this.fallbackLookActive) return;
+      this.fallbackPointerX = null;
+      this.fallbackPointerY = null;
+    });
+    document.addEventListener('pointerlockerror', () => this.activateFallbackLook());
     addEventListener('keydown', (event) => {
       if (!this.enabled || event.target?.matches?.('input,select,textarea,button')) return;
       if (MOVEMENT_CODES.has(event.code)) {
@@ -72,7 +96,10 @@ export class PlayerController {
         event.preventDefault();
         this.onRotate?.();
       }
-      if (event.code === 'Escape') this.onEscape?.();
+      if (event.code === 'Escape') {
+        if (this.fallbackLookActive) this.deactivateFallbackLook();
+        this.onEscape?.();
+      }
     });
     addEventListener('keyup', (event) => this.keys.delete(event.code));
     addEventListener('blur', () => {
@@ -111,25 +138,62 @@ export class PlayerController {
     document.body.classList.toggle('mobile-mode', this.mobileMode);
   }
 
-  requestLock() {
+  requestLock(originEvent = null) {
     if (this.mobileMode || typeof this.canvas.requestPointerLock !== 'function') {
-      this.onPointerLockError?.();
+      this.activateFallbackLook(originEvent);
       return;
     }
+    const attempt = ++this.pointerLockAttempt;
+    clearTimeout(this.pointerLockFallbackTimer);
+    this.pointerLockFallbackTimer = setTimeout(() => {
+      if (attempt === this.pointerLockAttempt && document.pointerLockElement !== this.canvas) {
+        this.activateFallbackLook(originEvent);
+      }
+    }, 220);
+    const fail = () => {
+      if (attempt === this.pointerLockAttempt && document.pointerLockElement !== this.canvas) {
+        this.activateFallbackLook(originEvent);
+      }
+    };
     try {
       const request = this.canvas.requestPointerLock({ unadjustedMovement: true });
       request?.catch?.(() => {
         try {
           const fallback = this.canvas.requestPointerLock();
-          fallback?.catch?.(() => this.onPointerLockError?.());
+          fallback?.catch?.(fail);
         } catch {
-          this.onPointerLockError?.();
+          fail();
         }
       });
     } catch {
       try { this.canvas.requestPointerLock(); }
-      catch { this.onPointerLockError?.(); }
+      catch { fail(); }
     }
+  }
+
+  activateFallbackLook(originEvent = null) {
+    if (!this.enabled || this.mobileMode || this.pointerLocked) return false;
+    clearTimeout(this.pointerLockFallbackTimer);
+    this.pointerLockFallbackTimer = null;
+    this.fallbackLookActive = true;
+    this.fallbackPointerX = Number.isFinite(originEvent?.clientX) ? originEvent.clientX : null;
+    this.fallbackPointerY = Number.isFinite(originEvent?.clientY) ? originEvent.clientY : null;
+    document.body.classList.add('player-look-fallback');
+    this.onPointerLockError?.();
+    this.onPointerLock?.(false, { fallback: true });
+    return true;
+  }
+
+  deactivateFallbackLook({ notify = true } = {}) {
+    clearTimeout(this.pointerLockFallbackTimer);
+    this.pointerLockFallbackTimer = null;
+    const wasActive = this.fallbackLookActive;
+    this.fallbackLookActive = false;
+    this.fallbackPointerX = null;
+    this.fallbackPointerY = null;
+    document.body.classList.remove('player-look-fallback');
+    this.keys.clear();
+    if (wasActive && notify) this.onPointerLock?.(false, { fallback: false });
   }
 
   touchDown(event) {
@@ -171,6 +235,8 @@ export class PlayerController {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (!this.enabled) {
+      this.pointerLockAttempt += 1;
+      this.deactivateFallbackLook({ notify: false });
       this.keys.clear();
       this.mobileKeys.clear();
       this.velocity.set(0, 0, 0);
@@ -257,6 +323,8 @@ export class PlayerController {
       enabled: this.enabled,
       mobileMode: this.mobileMode,
       pointerLocked: this.pointerLocked,
+      fallbackLookActive: this.fallbackLookActive,
+      lookMode: this.pointerLocked ? 'pointer-lock' : this.fallbackLookActive ? 'in-app-fallback' : 'inactive',
       position: this.position.toArray(),
       velocity: this.velocity.toArray(),
       yaw: this.yaw,

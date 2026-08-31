@@ -10,6 +10,7 @@ import { PlacementIntentEngine } from '../../apps/web/src/player/placement-inten
 import { PLAYER_FALLBACK_SETTINGS } from '../../apps/web/src/player/player-settings.js';
 import { makeReachableV8Spawn } from '../../apps/web/src/player/v8-spawn.js';
 import { RobotController } from '../../apps/web/src/robot/controller.js';
+import { PlacementLookaheadCoordinator } from '../../apps/web/src/robot/placement-lookahead.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { createLogoRoboToolHandlers } from '../../apps/web/src/webmcp/tool-handlers.js';
 import { createRuntimeBridge } from '../../apps/web/src/webmcp/runtime-bridge.js';
@@ -44,8 +45,9 @@ function makeToolOnlyWorkcell() {
     getBricks: () => controller.getBricks(), profile
   });
   assert.equal(controller.setPlacementAuthority(authority), true);
-  const runtime = createLogoRoboRuntime({ controller, board, placementAuthority: authority, workcellProfile: profile });
-  return { handlers: createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) }), board, graph, profile };
+  const fastPlacement = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
+  const runtime = createLogoRoboRuntime({ controller, board, placementAuthority: authority, fastPlacement, workcellProfile: profile });
+  return { handlers: createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) }), board, graph, profile, fastPlacement, controller };
 }
 
 async function currentRevision(handlers) {
@@ -83,6 +85,39 @@ async function placeBrick(handlers, brick, placementRequest) {
   await move(handlers, preview.retreatTcp);
   return { preview, unlatch };
 }
+
+test('WebMCP plans five ghosts read-only and executes one accepted placement in one mutating call', async () => {
+  const { handlers, profile, board } = makeToolOnlyWorkcell();
+  const revision = await currentRevision(handlers);
+  const centre = {
+    xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
+    yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
+    zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2
+  };
+  const planned = await handlers.planPlacementQueue({
+    expectedWorldRevision: revision,
+    placements: Array.from({ length: 5 }, (_, index) => ({
+      position: { ...centre, xMm: centre.xMm + (index - 2) * 40 },
+      yawRad: 0
+    }))
+  });
+  assert.equal(planned.ok, true, planned.reason);
+  assert.equal(planned.worldRevision, revision);
+  assert.equal(planned.queueLength, 5);
+  const startedAt = performance.now();
+  const placed = await handlers.executeNextPlacement({
+    proposalId: planned.queue[0].proposalId,
+    physicalSpeedMmS: 650,
+    playbackMultiplier: 40,
+    expectedWorldRevision: revision
+  });
+  assert.equal(placed.ok, true, placed.reason);
+  assert.ok(placed.playbackDurationMs < 2000);
+  assert.ok(placed.executionWallDurationMs < 2500);
+  assert.ok(performance.now() - startedAt < 2500);
+  assert.equal(placed.remainingQueued, 4);
+  assert.equal(board.getPlacements().length, 1);
+});
 
 test('an agent builds an interlocked three-brick wall using only primitive WebMCP handlers', async () => {
   const { handlers, board, graph, profile } = makeToolOnlyWorkcell();
