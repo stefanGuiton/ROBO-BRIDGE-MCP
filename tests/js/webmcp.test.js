@@ -7,24 +7,42 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function parse(value) { return typeof value === 'string' ? JSON.parse(value) : value; }
 
-test('registers one bounded nine-tool production surface with exact controller limits', async () => {
+test('registers one bounded primitive production surface with exact controller limits', async () => {
   const registered = [];
   globalThis.document = { modelContext: { async registerTool(tool, options) { registered.push({ tool, options }); } } };
   const { runtime, handlers } = createLiveHarness();
   const result = await registerWebMcpTools(runtime);
   assert.equal(result.ok, true);
-  assert.deepEqual(result.toolNames, ['get_build_state','get_robot_state','get_workspace','observe_camera','move_tool','latch','unlatch','claim_target','reset_workcell']);
-  assert.equal(registered.length, 9);
+  assert.deepEqual(result.toolNames, ['get_scene_state','get_build_state','get_robot_state','get_workspace','observe_camera','preview_placement','move_tool','latch','unlatch','claim_target','reset_workcell']);
+  assert.equal(registered.length, 11);
   const definitions = getLogoRoboToolDefinitions(handlers);
   const move = definitions.find((tool) => tool.name === 'move_tool');
+  const observe = definitions.find((tool) => tool.name === 'observe_camera');
   assert.equal(move.inputSchema.properties.xMm.minimum, 470);
   assert.equal(move.inputSchema.properties.xMm.maximum, 710);
   assert.equal(move.inputSchema.properties.speedMmS.maximum, 650);
   assert.ok(move.inputSchema.required.includes('expectedWorldRevision'));
+  assert.deepEqual(observe.inputSchema.properties.cameraId.enum, [
+    'tray_camera','canvas_camera','top_camera','left_camera','right_camera','user_camera'
+  ]);
   for (const { tool, options } of registered) {
     assert.equal(tool.inputSchema.additionalProperties, false);
     assert.ok(options.signal instanceof AbortSignal);
   }
+});
+
+test('authoritative scene read is bounded and preserves the world revision', async () => {
+  const registered = [];
+  globalThis.document = { modelContext: { async registerTool(tool, options) { registered.push({ tool, options }); } } };
+  const { runtime } = createLiveHarness();
+  await registerWebMcpTools(runtime);
+  const before = runtime.getWorldRevision();
+  const scene = parse(await registered.find(({ tool }) => tool.name === 'get_scene_state').tool.execute({ type: 'brick', limit: 3 }));
+  assert.equal(scene.ok, true);
+  assert.equal(scene.worldRevision, before);
+  assert.equal(scene.objects.length, Math.min(3, scene.totalAvailable));
+  assert.ok(scene.objects.every((object) => object.type === 'brick'));
+  assert.equal(runtime.getWorldRevision(), before);
 });
 
 test('native tool-call abort signal reaches the production controller and cancels motion', async () => {

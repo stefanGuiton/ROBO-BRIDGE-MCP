@@ -77,6 +77,7 @@ export class RobotController {
     board = null,
     bricks = [],
     revisionClock = board?.revisionClock ?? new RevisionClock()
+    ,placementAuthority = null
   } = {}) {
     this.definition = definition;
     this.workspace = workspace;
@@ -108,6 +109,7 @@ export class RobotController {
     this.operationEpoch = 0;
     this.pendingMoveCount = 0;
     this.releaseClearanceBrickId = null;
+    this.placementAuthority = placementAuthority;
   }
 
   get worldRevision() { return this.revisionClock.value; }
@@ -123,9 +125,9 @@ export class RobotController {
     for (const listener of this.listeners) listener(event);
   }
 
-  #bumpRobot(type, details = {}) {
+  #bumpRobot(type, details = {}, { bumpWorld = true } = {}) {
     this.robotRevision += 1;
-    this.revisionClock.bump();
+    if (bumpWorld) this.revisionClock.bump();
     this.emit(type, details);
   }
 
@@ -158,6 +160,12 @@ export class RobotController {
 
   getWorkspace() { return clone(this.workspace); }
   getBricks() { return clone(this.bricks); }
+
+  setPlacementAuthority(authority) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) return false;
+    this.placementAuthority = authority;
+    return true;
+  }
 
   setBricks(bricks) {
     if (this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
@@ -220,6 +228,11 @@ export class RobotController {
     if (yawRad !== null) brick.yawRad = yawRad;
     if (freeQuaternion !== null) brick.freeQuaternion = [...freeQuaternion];
     else delete brick.freeQuaternion;
+    brick.reachability = {
+      reachable: false,
+      reason: 'pose_changed_requires_revalidation',
+      validatedAtWorldRevision: this.worldRevision
+    };
     this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position }, yawRad: brick.yawRad ?? 0 });
     return { ok: true, brick: clone(brick), actor, worldRevision: this.worldRevision };
   }
@@ -259,6 +272,35 @@ export class RobotController {
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick || brick.heldBy !== 'human') {
       return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
+    }
+    if (this.placementAuthority) {
+      const authoritative = this.placementAuthority.commit({
+        brickId,
+        position,
+        yawRad,
+        actor: 'human',
+        supportBrickId: connection?.lowerBrickId ?? null,
+        supportSide: connection?.lowerConnector ?? 'M',
+        carriedSide: connection?.upperConnector ?? null
+      });
+      if (!authoritative.ok) return authoritative;
+      brick.position = { ...authoritative.position };
+      brick.yawRad = authoritative.yawRad;
+      delete brick.freeQuaternion;
+      brick.heldBy = null;
+      brick.ownership = null;
+      brick.snapped = authoritative.snapped;
+      brick.placedTargetId = authoritative.targetId;
+      brick.placementType = authoritative.placementType;
+      brick.connection = authoritative.connection ? clone(authoritative.connection) : null;
+      this.#bumpRobot('human_placement', {
+        brickId,
+        actor: 'human',
+        placementType: authoritative.placementType,
+        targetId: authoritative.targetId,
+        connection: authoritative.connection
+      }, { bumpWorld: false });
+      return { ...authoritative, brick: clone(brick), placementAuthorityApplied: true, worldRevision: this.worldRevision };
     }
     const snap = this.board?.trySnapBrick({
       brickId,
@@ -601,6 +643,47 @@ export class RobotController {
     if (!this.heldBrickId) return { success: false, ok: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = this.heldBrick();
     const position = { ...brick.position };
+    if (this.placementAuthority) {
+      const placement = this.placementAuthority.commit({
+        brickId: brick.id,
+        position,
+        yawRad: brick.yawRad,
+        actor
+      });
+      if (!placement.ok) {
+        return { success: false, ok: false, reason: placement.reason, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+      }
+      brick.position = { ...placement.position };
+      brick.yawRad = placement.yawRad;
+      brick.heldBy = null;
+      brick.ownership = null;
+      delete brick.freeQuaternion;
+      brick.snapped = placement.snapped;
+      brick.placedTargetId = placement.targetId;
+      brick.placementType = placement.placementType;
+      brick.connection = placement.connection ? clone(placement.connection) : null;
+      this.heldBrickId = null;
+      this.jawGapMm = UR10_GRIPPER.openGapMm;
+      this.jawState = 'open';
+      this.brickInTcp = null;
+      this.brickYawInTcpRad = 0;
+      this.releaseClearanceBrickId = brick.id;
+      this.#bumpRobot('unlatched', { brickId: brick.id, snap: placement, actor }, { bumpWorld: false });
+      return {
+        success: true,
+        ok: true,
+        brickId: brick.id,
+        finalPosition: { ...brick.position },
+        snapped: placement.snapped,
+        targetId: placement.targetId,
+        correctness: placement.correctness,
+        placementType: placement.placementType,
+        connection: placement.connection,
+        reason: null,
+        robotRevision: this.robotRevision,
+        worldRevision: this.worldRevision
+      };
+    }
     const snap = this.board?.trySnapBrick({ brickId: brick.id, colour: brick.colour, position, yawRad: brick.yawRad, actor }) ?? { ok: false, reason: 'no_snap_target' };
     if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) return { success: false, ok: false, reason: snap.reason, targetId: snap.targetId ?? null, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     brick.heldBy = null;

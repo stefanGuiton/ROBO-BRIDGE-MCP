@@ -207,7 +207,12 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
     return { ok: false, reason: 'invalid_input' };
   }
   const radial = Math.hypot(target.xMm, target.yMm);
-  if (radial > 1280 || radial < 220 || target.zMm < 40 || target.zMm > 900) {
+  // The V8 workbench mounts the robot flange frame directly on the tabletop.
+  // Its calibrated gripper TCP reaches 12.5 mm above that plane when grasping
+  // a 9.6 mm brick, so the former challenge-tray-only 40 mm guard incorrectly
+  // rejected physically valid tabletop pickups. Table penetration remains
+  // fail-closed in the collision layer.
+  if (radial > 1280 || radial < 220 || target.zMm < 8 || target.zMm > 900) {
     return { ok: false, reason: 'outside_workspace', diagnostics: { radialMm: radial } };
   }
   const reference = validateJointState(previousJoints, definition).ok

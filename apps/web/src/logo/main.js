@@ -1,4 +1,5 @@
 import { BuildBoard } from '../bricks/build-board.js';
+import { PlacementAuthority } from '../bricks/placement-authority.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { RobotRenderer } from '../render/robot-renderer.js';
 import { RobotController, RobotError } from '../robot/controller.js';
@@ -14,7 +15,8 @@ import { HumanBuildAdapter } from '../player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
 import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } from '../player/player-settings.js';
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
-import { makeV8InitialSpawn, makeV8MoreSpawn, mapV8SpawnToMachine } from '../player/v8-spawn.js';
+import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
+import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -35,17 +37,49 @@ const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
 const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
-const makePlayerBricks = () => mapV8SpawnToMachine(makeV8InitialSpawn(playerSettings), playerSettings);
-const controller = new RobotController({ board, bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(), revisionClock, timeScale: evidenceMode ? 0 : 0.35 });
+const workcellProfile = createV8WorkcellProfile(playerSettings);
+const makePlayerBricks = () => {
+  const generated = makeReachableV8Spawn(playerSettings, workcellProfile);
+  if (!generated.ok) throw new Error(`V8 reachable scene generation failed: ${generated.reason}`);
+  return generated.records;
+};
+const controller = new RobotController({
+  board,
+  bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(),
+  revisionClock,
+  workspace: evidenceMode ? undefined : workcellProfile.workspace,
+  layout: evidenceMode ? undefined : workcellProfile.layout,
+  timeScale: evidenceMode ? 0 : 0.35
+});
 const connectionGraph = new ConnectionGraph(playerSettings);
 const placementEngine = new PlacementIntentEngine(playerSettings, board, connectionGraph);
+const placementAuthority = evidenceMode ? null : new PlacementAuthority({
+  board,
+  graph: connectionGraph,
+  placementEngine,
+  settings: playerSettings,
+  getBricks: () => controller.getBricks(),
+  profile: workcellProfile
+});
+if (placementAuthority && !controller.setPlacementAuthority(placementAuthority)) {
+  throw new Error('Unable to attach the shared V8 placement authority');
+}
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
   playerSettings,
   humanBuildAdapter
 });
-const runtime = createLogoRoboRuntime({ controller, board, resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks, humanBuildAdapter });
+const runtime = createLogoRoboRuntime({
+  controller,
+  board,
+  resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
+  humanBuildAdapter,
+  placementAuthority,
+  workcellProfile: evidenceMode ? null : workcellProfile,
+  getUserCamera: () => renderer.getUserCameraConfig(),
+  captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options)
+});
 
 const $ = (selector) => document.querySelector(selector);
 const statusEl = $('[data-status]');
@@ -91,8 +125,15 @@ playerSettingsStore.subscribe((key) => renderer.applySettings(key));
 let moreBricksBurst = 0;
 function spawnMoreBricks() {
   const startIndex = controller.getBricks().length;
-  const records = mapV8SpawnToMachine(makeV8MoreSpawn(playerSettings, ++moreBricksBurst, { startIndex }), playerSettings);
-  const result = controller.addLooseBricks(records, { actor: 'human' });
+  const generated = makeReachableV8MoreSpawn(
+    playerSettings,
+    workcellProfile,
+    ++moreBricksBurst,
+    controller.getBricks(),
+    { startIndex }
+  );
+  if (!generated.ok) return generated;
+  const result = controller.addLooseBricks(generated.records, { actor: 'human' });
   if (!result.ok) return result;
   renderer.launchSpawnedBricks(result.bricks);
   renderer.workbench.pressMoreBricks();
@@ -165,9 +206,12 @@ function getSceneState() {
     },
     blueprintId: blueprint.blueprintId,
     workcell: {
-      tableZMm: CHALLENGE_LAYOUT.tableZMm,
-      tray: CHALLENGE_LAYOUT.tray,
-      board: CHALLENGE_LAYOUT.board,
+      profileId: evidenceMode ? 'challenge-evidence-v2' : workcellProfile.id,
+      tableZMm: evidenceMode ? CHALLENGE_LAYOUT.tableZMm : workcellProfile.tableSurfaceZMm,
+      tray: evidenceMode ? CHALLENGE_LAYOUT.tray : null,
+      board: evidenceMode ? CHALLENGE_LAYOUT.board : null,
+      supplyZone: evidenceMode ? null : workcellProfile.supplyZone,
+      buildZone: evidenceMode ? null : workcellProfile.buildZone,
       displayTable: {
         xMm: playerSettings.tableXmm,
         yMm: playerSettings.tableYmm,
@@ -190,9 +234,7 @@ async function latch(input = {}) { return runtime.robot.latch({ actor: input.act
 async function unlatch(input = {}) { return runtime.robot.unlatch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function resetScene() {
   moreBricksBurst = 0;
-  const result = evidenceMode
-    ? await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision })
-    : controller.setBricks(makePlayerBricks());
+  const result = await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision });
   setStatus('READY');
   addLog('Workcell reset');
   return { ok: true, robot: getRobotState(), scene: getSceneState(), result };
@@ -255,6 +297,24 @@ async function runRound({ signal } = {}) {
   return { ok: true, results, progress: board.progress(), scene: getSceneState() };
 }
 
+function captureCamera(cameraId = 'user_camera', options = {}) {
+  return runtime.world.captureCamera({ cameraId, ...options });
+}
+
+for (const button of document.querySelectorAll('[data-camera-capture]')) {
+  button.addEventListener('click', () => {
+    const result = captureCamera(button.dataset.cameraCapture, { widthPx: 640, heightPx: 360, quality: 0.82 });
+    const image = $('[data-camera-preview]');
+    const status = $('[data-camera-preview-status]');
+    if (!result.ok) {
+      if (status) status.textContent = `Camera unavailable: ${result.reason}`;
+      return;
+    }
+    if (image) image.src = result.dataUrl;
+    if (status) status.textContent = `${result.cameraId} · revision ${result.worldRevision} · ${result.widthPx}×${result.heightPx}`;
+  });
+}
+
 function stageV8ParityConnection() {
   const [supportSource, carriedSource] = controller.getBricks();
   if (!supportSource || !carriedSource) return { ok: false, reason: 'insufficient_bricks' };
@@ -292,7 +352,7 @@ function stageV8ParityConnection() {
 }
 
 const actions = {
-  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound,
+  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 420 }, { signal })
 };
 
@@ -320,7 +380,7 @@ controller.subscribe((event) => {
   if (event.type === 'motion_cancelled') addLog('Motion cancelled safely', 'bad');
   if (event.type === 'latched') addLog(`Latch accepted: ${event.brickId}`, 'ok');
   if (event.type === 'unlatched') addLog(event.snap?.ok ? `Board snap accepted: ${event.snap.targetId}` : 'Released without snap', event.snap?.ok ? 'ok' : 'bad');
-  if (event.type === 'unlatched' && event.snap?.ok) {
+  if (!placementAuthority && event.type === 'unlatched' && event.snap?.ok) {
     connectionGraph.registerPlacement(event.brickId, { placementType: 'blueprint-target' });
   }
   if (event.type === 'reset' || event.type === 'world_reset') connectionGraph.clear();

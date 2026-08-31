@@ -6,8 +6,24 @@ import { visibilityForObject } from './visibility.js';
 const MAX_LIMIT = 20;
 const clone = (value) => structuredClone(value);
 
+function cameraMetadata(camera) {
+  return {
+    coordinateFrame: 'machine-mm-rad',
+    projection: camera.projection,
+    positionMm: clone(camera.position),
+    targetMm: clone(camera.target),
+    up: clone(camera.up ?? [0, 1, 0]),
+    fovYDeg: camera.fovYDeg ?? null,
+    halfWidthMm: camera.halfWidth ?? null,
+    nearMm: camera.nearMm,
+    farMm: camera.farMm,
+    matrixConvention: 'row-major; column-vector; clip=P*V*point'
+  };
+}
+
 function actionTcp(object, pose) {
   if (object.type === 'brick') {
+    if (object.reachability?.pickupTcp) return clone(object.reachability.pickupTcp);
     return { xMm: pose.worldXmm, yMm: pose.worldYmm, zMm: pose.worldZmm + BRICK_SPEC.capture.tcpAboveCentreMm };
   }
   if (object.type === 'target') {
@@ -30,8 +46,9 @@ export function createObservationService({ bridge, cameraRig = createCameraRig()
     if (snapshotData?.ok === false) return snapshotData;
     const revision = snapshotData.worldRevision;
     const objects = snapshotData.objects;
-    const camera = bridge.getCamera?.(cameraId, cameraRig.getSize()) ?? cameraRig.getCamera(cameraId, revision);
-    if (!camera) return { ok: false, reason: 'internal_error', message: 'Camera unavailable.' };
+    const runtimeCamera = bridge.getCamera?.(cameraId, cameraRig.getSize()) ?? null;
+    const camera = bridge.runtimeCameraAuthority ? runtimeCamera : (runtimeCamera ?? cameraRig.getCamera(cameraId, revision));
+    if (!camera) return { ok: false, reason: 'camera_unavailable', message: `${cameraId} is unavailable.` };
     const detections = [];
     for (const object of objects) {
       if (!['brick', 'target'].includes(object.type)) continue;
@@ -50,6 +67,15 @@ export function createObservationService({ bridge, cameraRig = createCameraRig()
         centrePx: projection.centrePx.map((value) => Math.round(value * 10) / 10),
         ...pose,
         recommendedTcp: actionTcp(object, pose),
+        recommendedPickupTcp: object.type === 'brick' ? actionTcp(object, pose) : null,
+        safeApproachTcp: object.reachability?.safeApproachTcp ? clone(object.reachability.safeApproachTcp) : null,
+        liftTcp: object.reachability?.liftTcp ? clone(object.reachability.liftTcp) : null,
+        reachable: object.type === 'brick' ? object.reachability?.reachable === true : null,
+        reachabilityReason: object.type === 'brick' && object.reachability?.reachable !== true ? 'not_validated' : null,
+        graspable: object.type === 'brick' ? object.graspable !== false && object.state === 'free' : null,
+        heldBy: object.ownership ?? null,
+        snapped: object.state === 'snapped',
+        placedTargetId: object.placedTargetId ?? null,
         visible: true,
         visibilityModel: 'five-ray-aabb-approximation',
         visibleFraction: visibility.visibleFraction,
@@ -58,7 +84,7 @@ export function createObservationService({ bridge, cameraRig = createCameraRig()
       });
     }
     detections.sort((a, b) => b.visibleFraction - a.visibleFraction || a.objectId.localeCompare(b.objectId));
-    const snapshot = Object.freeze({ ok: true, cameraId, sequence: ++sequence, snapshotRevision: revision, widthPx: camera.widthPx, heightPx: camera.heightPx, approximateOcclusion: true, detections: detections.slice(0, limit) });
+    const snapshot = Object.freeze({ ok: true, cameraId, sequence: ++sequence, snapshotRevision: revision, widthPx: camera.widthPx, heightPx: camera.heightPx, camera: cameraMetadata(camera), approximateOcclusion: true, detections: detections.slice(0, limit) });
     snapshots.set(cameraId, snapshot);
     return clone(snapshot);
   }

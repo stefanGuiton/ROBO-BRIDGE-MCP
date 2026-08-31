@@ -9,6 +9,10 @@ const GROUP_RULES = [
   ['Camera / Graphics', /^(pixelRatio|shadows|shadowMap|shadowUpdate|mobileShadow|exposure|toneMapping)/],
   ['ACES Colour Grading', /^(colorGrading|grade|lut)/],
   ['Lighting', /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadowBias|shadowNormalBias)/],
+  ['Reference Sun', /^sun/],
+  ['UR10 Surface Normals', /^ur10(Normal|Smooth|Weld|Clean)/],
+  ['UR10 Materials', /^ur10(Blue|Dark|Aluminium|LightPolymer|Rubber)/],
+  ['Scene Materials', /^(floor|gripperMaterial)/],
   ['Robot Mount', /^robotMount/],
   ['Scene', /^(restitution|friction|spawnCount|seed|hudHz)/],
   ['Debug', /^debug/]
@@ -17,6 +21,8 @@ const GROUP_RULES = [
 const SELECT_OPTIONS = Object.freeze({
   mobileControlsMode: ['Auto', 'On', 'Off'],
   toneMapping: ['ACES', 'Neutral', 'None'],
+  ur10NormalMode: ['smooth', 'hybrid', 'exported', 'flat'],
+  ur10NormalWeighting: ['corner', 'area', 'uniform'],
   connectionOverhangGhostStyle: ['Yellow', 'Green']
 });
 

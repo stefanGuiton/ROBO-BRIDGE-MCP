@@ -9,6 +9,47 @@ const PRODUCTION_CAMERA_CONFIGS = Object.freeze({
   canvas_camera: Object.freeze({ position: [655, 220, 680], target: [655, 220, 0], halfWidth: 92 })
 });
 
+function overheadCameraForBounds(bounds, size, heightMm = 680) {
+  const centreX = (bounds.minX + bounds.maxX) / 2;
+  const centreY = (bounds.minY + bounds.maxY) / 2;
+  const aspect = size.widthPx / size.heightPx;
+  const halfWidth = Math.max(
+    (bounds.maxX - bounds.minX) / 2 + 32,
+    ((bounds.maxY - bounds.minY) / 2 + 32) * aspect
+  );
+  return { position: [centreX, centreY, heightMm], target: [centreX, centreY, 0], up: [0, 1, 0], halfWidth };
+}
+
+function sideCameraForBounds(bounds, size, side, tableFrame = null) {
+  const centreX = (bounds.minX + bounds.maxX) / 2;
+  const centreY = (bounds.minY + bounds.maxY) / 2;
+  const aspect = size.widthPx / size.heightPx;
+  const halfWidth = Math.max((tableFrame?.depthMm ?? (bounds.maxY - bounds.minY)) / 2 + 48, 360 * aspect);
+  const offsetX = Math.max(900, bounds.maxX - bounds.minX + 360);
+  const xAxis = tableFrame?.xAxis ?? [1, 0, 0];
+  const direction = side === 'left' ? -1 : 1;
+  return {
+    position: [centreX + xAxis[0] * offsetX * direction, centreY + xAxis[1] * offsetX * direction, 320],
+    target: [centreX, centreY, 120],
+    up: [0, 0, 1],
+    halfWidth,
+    farMm: 2600
+  };
+}
+
+export function cameraConfigsForWorkcell(profile, size = { widthPx: 640, heightPx: 360 }) {
+  if (!profile?.supplyZone || !profile?.buildZone) return PRODUCTION_CAMERA_CONFIGS;
+  const topCamera = overheadCameraForBounds(profile.tableBounds, size, 1000);
+  topCamera.up = profile.tableFrame?.yAxis ?? [0, 1, 0];
+  return {
+    tray_camera: overheadCameraForBounds(profile.supplyZone, size),
+    canvas_camera: overheadCameraForBounds(profile.buildZone, size),
+    top_camera: topCamera,
+    left_camera: sideCameraForBounds(profile.tableBounds, size, 'left', profile.tableFrame),
+    right_camera: sideCameraForBounds(profile.tableBounds, size, 'right', profile.tableFrame)
+  };
+}
+
 const STABLE_ERROR_MAP = Object.freeze({
   no_ik_solution: 'ik_failed',
   joint_limit: 'ik_failed'
@@ -35,6 +76,8 @@ function brickObject(brick) {
     placedTargetId: brick.placedTargetId ?? null,
     placementType: brick.placementType ?? null,
     connection: brick.connection ? clone(brick.connection) : null
+    ,graspable: brick.graspable !== false
+    ,reachability: brick.reachability ? clone(brick.reachability) : null
   };
 }
 
@@ -57,22 +100,26 @@ function targetObject(target) {
   };
 }
 
-export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, workcellProfile = null, getUserCamera = null, captureCamera = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
 
   function worldRevision() { return controller.getState().worldRevision; }
 
   function structureObjects() {
-    const tray = CHALLENGE_LAYOUT.tray;
-    const boardLayout = CHALLENGE_LAYOUT.board;
+    const activeLayout = workcellProfile?.layout ?? CHALLENGE_LAYOUT;
+    const tray = activeLayout.tray;
+    const boardLayout = activeLayout.board;
     const wall = 6;
-    const structures = [
+    const structures = [];
+    if (boardLayout) structures.push(
       { id: 'structure-board', type: 'structure', position: { xMm: (boardLayout.minX + boardLayout.maxX) / 2, yMm: (boardLayout.minY + boardLayout.maxY) / 2, zMm: boardLayout.surfaceZ / 2 }, bounds: { xMm: boardLayout.maxX - boardLayout.minX, yMm: boardLayout.maxY - boardLayout.minY, zMm: boardLayout.surfaceZ }, visible: true, occluder: true },
+    );
+    if (tray) structures.push(
       { id: 'structure-tray-left', type: 'structure', position: { xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, visible: true, occluder: true },
       { id: 'structure-tray-right', type: 'structure', position: { xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, visible: true, occluder: true },
       { id: 'structure-tray-front', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true },
       { id: 'structure-tray-back', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true }
-    ];
+    );
     const fk = forwardKinematics(controller.getState().jointsRad);
     if (fk.ok) {
       const points = [...fk.jointPositions, fk.tcp];
@@ -84,7 +131,10 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           position: { xMm: (a.xMm + b.xMm) / 2, yMm: (a.yMm + b.yMm) / 2, zMm: (a.zMm + b.zMm) / 2 },
           bounds: { xMm: Math.abs(a.xMm - b.xMm) + 20, yMm: Math.abs(a.yMm - b.yMm) + 20, zMm: Math.abs(a.zMm - b.zMm) + 20 },
           visible: true,
-          occluder: true
+          // This is a conservative axis-aligned diagnostic envelope, not a
+          // calibrated visual-link mesh. Treating it as a camera occluder can
+          // hide the entire supply zone even when the rendered arm does not.
+          occluder: false
         });
       }
     }
@@ -110,8 +160,12 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           coordinateFrame: 'machine-mm-rad',
           toolOrientation: 'fixed-down-auto-yaw',
           graspTcpOffsetMm: BRICK_SPEC.capture.tcpAboveCentreMm,
-          recommendedClearanceZMm: 400,
-          recommendedTransferTcp: { xMm: 600, yMm: 0, zMm: 450 }
+          recommendedClearanceZMm: workcellProfile?.safeClearanceZMm ?? 400,
+          recommendedTransferTcp: clone(workcellProfile?.recommendedTransferTcp ?? { xMm: 600, yMm: 0, zMm: 450 }),
+          workcellProfileId: workcellProfile?.id ?? 'challenge-evidence-v2',
+          supplyZone: workcellProfile ? clone(workcellProfile.supplyZone) : null,
+          buildZone: workcellProfile ? clone(workcellProfile.buildZone) : null,
+          placementSurfaceZMm: workcellProfile?.placementSurfaceZMm ?? CHALLENGE_LAYOUT.board.surfaceZ
         };
       },
       async moveTool(request = {}, options = {}) {
@@ -193,12 +247,44 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       getObjectById(id) {
         return currentObjects().find((object) => object.id === id) ?? null;
       },
+      previewPlacement(request = {}) {
+        if (!placementAuthority) return { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
+        if (request.expectedWorldRevision !== worldRevision()) {
+          return { ok: false, reason: 'stale_state', expectedWorldRevision: request.expectedWorldRevision, worldRevision: worldRevision() };
+        }
+        return placementAuthority.preview({
+          brickId: request.brickId,
+          position: Number.isFinite(request.xMm) && Number.isFinite(request.yMm) && Number.isFinite(request.zMm)
+            ? { xMm: request.xMm, yMm: request.yMm, zMm: request.zMm }
+            : null,
+          yawRad: Number(request.yawDeg ?? 0) * Math.PI / 180,
+          supportBrickId: request.supportBrickId ?? null,
+          supportSide: request.supportSide ?? 'M',
+          carriedSide: request.carriedSide ?? null
+        });
+      },
       getCamera(cameraId, size = { widthPx: 640, heightPx: 360 }) {
         const widthPx = Number(size.widthPx);
         const heightPx = Number(size.heightPx);
         if (!Number.isFinite(widthPx) || !Number.isFinite(heightPx)) return null;
-        const rig = createCameraRig({ widthPx, heightPx, cameraConfigs: PRODUCTION_CAMERA_CONFIGS });
+        const cameraConfigs = { ...cameraConfigsForWorkcell(workcellProfile, { widthPx, heightPx }) };
+        if (cameraId === 'user_camera') {
+          const userCamera = getUserCamera?.({ widthPx, heightPx, worldRevision: worldRevision() });
+          if (!userCamera) return null;
+          cameraConfigs.user_camera = userCamera;
+        }
+        const rig = createCameraRig({ widthPx, heightPx, cameraConfigs });
         return rig.getCamera(cameraId, worldRevision());
+      },
+      captureCamera(request = {}) {
+        if (typeof captureCamera !== 'function') return { ok: false, reason: 'camera_unavailable', cameraId: request.cameraId ?? null, worldRevision: worldRevision() };
+        const before = worldRevision();
+        const descriptor = runtime.world.getCamera(request.cameraId, { widthPx: request.widthPx, heightPx: request.heightPx });
+        if (!descriptor) return { ok: false, reason: 'camera_unavailable', cameraId: request.cameraId ?? null, worldRevision: before };
+        const result = captureCamera(descriptor, request);
+        const after = worldRevision();
+        if (after !== before) return { ok: false, reason: 'internal_error', message: 'Camera capture changed world state.', worldRevision: after };
+        return { ...result, worldRevision: before };
       }
     }
   };

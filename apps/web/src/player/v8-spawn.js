@@ -1,4 +1,10 @@
 import { seededRng } from './math.js';
+import { BRICK_SPEC } from '../bricks/brick-spec.js';
+import { validateCollision } from '../robot/collision.js';
+import { toolOrientationForYaw } from '../robot/gripper-definition.js';
+import { forwardKinematics, inverseKinematicsPose } from '../robot/kinematics.js';
+import { UR10_DEFINITION } from '../robot/ur10-definition.js';
+import { validateWorkspacePoint } from '../robot/workspace.js';
 
 export const V8_BRICK_PALETTE = Object.freeze([
   Object.freeze({ colour: 'red', displayHex: 0xe64444 }),
@@ -125,4 +131,164 @@ export function mapV8SpawnToMachine(records, settings) {
     }
     return record;
   });
+}
+
+function validatePickupSequence(record, accepted, profile) {
+  const pickupTcp = {
+    xMm: record.position.xMm,
+    yMm: record.position.yMm,
+    zMm: record.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+  };
+  const safeApproachTcp = { ...pickupTcp, zMm: profile.safeClearanceZMm };
+  const waypoints = [safeApproachTcp];
+  const descent = Math.max(1, Math.ceil((safeApproachTcp.zMm - pickupTcp.zMm) / 10));
+  for (let index = 1; index <= descent; index += 1) {
+    const t = index / descent;
+    waypoints.push({
+      xMm: pickupTcp.xMm,
+      yMm: pickupTcp.yMm,
+      zMm: safeApproachTcp.zMm + (pickupTcp.zMm - safeApproachTcp.zMm) * t
+    });
+  }
+  const bricks = [...accepted, record];
+  const toolYawRad = record.yawRad + Math.PI / 2;
+  let priorJoints = Array.from(UR10_DEFINITION.homeJointsRad);
+  let first = true;
+  for (const point of waypoints) {
+    const workspace = validateWorkspacePoint(point, profile.workspace);
+    if (!workspace.ok) return { ok: false, reason: workspace.reason, point };
+    const ik = inverseKinematicsPose({
+      ...point,
+      rotation: toolOrientationForYaw(toolYawRad, UR10_DEFINITION.fixedToolOrientation)
+    }, priorJoints, UR10_DEFINITION, { maxBranchJumpRad: first ? 6.3 : 0.55 });
+    first = false;
+    if (!ik.ok) return { ok: false, reason: ik.reason, point };
+    const fk = forwardKinematics(ik.jointsRad, UR10_DEFINITION);
+    const collision = validateCollision({
+      tcp: point,
+      jointPositions: [...fk.jointPositions, fk.tcp],
+      bricks,
+      ignoreBrickIds: point.zMm > pickupTcp.zMm + 14 ? [record.id] : []
+    }, profile.layout);
+    if (!collision.ok) return { ok: false, reason: collision.reason, obstacle: collision.obstacle, point };
+    priorJoints = ik.jointsRad;
+  }
+  return {
+    ok: true,
+    pickupTcp,
+    safeApproachTcp,
+    liftTcp: { ...safeApproachTcp },
+    sampleCount: waypoints.length
+  };
+}
+
+function colourForReachableIndex(index, rng) {
+  const guaranteed = ['red', 'blue', 'red', 'blue'];
+  const colour = guaranteed[index] ?? V8_BRICK_PALETTE[Math.floor(rng() * V8_BRICK_PALETTE.length)].colour;
+  return V8_BRICK_PALETTE.find((entry) => entry.colour === colour);
+}
+
+export function makeReachableV8Spawn(settings, profile, {
+  idPrefix = 'v8-brick',
+  startIndex = 0,
+  count: requestedCount = settings.spawnCount,
+  occupied = [],
+  seed = settings.seed
+} = {}) {
+  if (!profile?.supplyZone || !profile?.workspace || !profile?.layout) {
+    return { ok: false, reason: 'invalid_workcell_profile', records: [], diagnostics: { rejected: [] } };
+  }
+  const rng = seededRng(seed);
+  const count = Math.max(1, Math.min(20, Math.round(requestedCount)));
+  const zone = profile.supplyZone;
+  const spacingX = 48;
+  const spacingY = 42;
+  const columns = Math.max(1, Math.floor((zone.maxX - zone.minX) / spacingX));
+  const rows = Math.max(1, Math.ceil(count / columns));
+  const accepted = occupied.map((record) => structuredClone(record));
+  const records = [];
+  const rejected = [];
+  const maximumAttempts = Math.max(count * 12, 96);
+  const capacityRows = Math.max(1, Math.floor((zone.maxY - zone.minY - 40) / spacingY) + 1);
+  const capacity = Math.max(1, columns * capacityRows);
+  for (let attempt = 0; attempt < maximumAttempts && records.length < count; attempt += 1) {
+    const index = records.length;
+    const slot = (attempt + occupied.length) % capacity;
+    const column = slot % columns;
+    const row = Math.floor(slot / columns);
+    const xMm = zone.minX + 24 + column * spacingX + (rng() - 0.5) * 3;
+    const yMm = zone.minY + 24 + row * spacingY + (rng() - 0.5) * 3;
+    if (xMm > zone.maxX - 20 || yMm > zone.maxY - 20) continue;
+    const palette = colourForReachableIndex(index, rng);
+    const record = makeRecord(
+      `${idPrefix}-${startIndex + index}`,
+      palette,
+      xMm,
+      yMm,
+      profile.looseBrickCentreZMm,
+      Math.round(rng() * 2) * Math.PI / 2
+    );
+    if (accepted.some((other) => Math.hypot(other.position.xMm - xMm, other.position.yMm - yMm) < 38)) {
+      rejected.push({ attempt, reason: 'spawn_overlap', xMm, yMm });
+      continue;
+    }
+    const validation = validatePickupSequence(record, accepted, profile);
+    if (!validation.ok) {
+      rejected.push({ attempt, ...validation });
+      continue;
+    }
+    record.reachability = {
+      reachable: true,
+      pickupTcp: validation.pickupTcp,
+      safeApproachTcp: validation.safeApproachTcp,
+      liftTcp: validation.liftTcp,
+      validationSamples: validation.sampleCount,
+      profileId: profile.id
+    };
+    accepted.push(record);
+    records.push(record);
+  }
+  if (records.length !== count) {
+    return {
+      ok: false,
+      reason: 'scene_generation_failed',
+      records: [],
+      diagnostics: { requestedCount: count, acceptedCount: records.length, attemptCount: maximumAttempts, rejected: rejected.slice(0, 30) }
+    };
+  }
+  return {
+    ok: true,
+    records,
+    diagnostics: {
+      seed,
+      requestedCount: count,
+      acceptedCount: records.length,
+      rejectedCount: rejected.length,
+      guaranteedColours: { red: records.filter((brick) => brick.colour === 'red').length, blue: records.filter((brick) => brick.colour === 'blue').length },
+      profileId: profile.id
+    }
+  };
+}
+
+export function makeReachableV8MoreSpawn(settings, profile, burst, occupied, {
+  idPrefix = 'v8-brick',
+  startIndex = occupied?.length ?? 0,
+  count = 10
+} = {}) {
+  const result = makeReachableV8Spawn(settings, profile, {
+    idPrefix,
+    startIndex,
+    count,
+    occupied,
+    seed: (settings.seed ^ (burst * 0x9e3779b9)) >>> 0
+  });
+  if (!result.ok) return result;
+  for (let index = 0; index < result.records.length; index += 1) {
+    const record = result.records[index];
+    record.position.zMm += 65 + (index % 4) * 22;
+    record.initialVelocityMps = [0, 0, 0.015 + (index % 3) * 0.008];
+    record.initialAngularVelocityRadS = [0, 0, ((index % 5) - 2) * 0.35];
+    record.reachability.pendingPhysicsSettle = true;
+  }
+  return result;
 }

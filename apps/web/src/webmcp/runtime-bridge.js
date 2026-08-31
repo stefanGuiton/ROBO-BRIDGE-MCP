@@ -4,6 +4,7 @@ export const STABLE_ERRORS = Object.freeze([
   'runtime_unavailable','internal_error','outside_workspace','speed_limit','ik_failed','collision','cancelled',
   'no_brick_in_capture','already_holding','not_holding','target_occupied','wrong_colour','no_snap_target',
   'unknown_target','claim_conflict','wrong_mode','stale_state','operation_in_progress','invalid_input'
+  ,'unknown_brick','unknown_support','placement_unavailable','out_of_bounds','out_of_range','mat_occupied','connector_occupied_or_misaligned'
 ]);
 
 export function machineError(reason, message, extra = {}) {
@@ -20,7 +21,7 @@ function hasFunction(value, path) {
 export function runtimeAvailability(runtime) {
   const required = [
     ['getWorldRevision'], ['game','getBuildState'], ['game','claimTarget'], ['robot','getState'], ['robot','getWorkspace'],
-    ['robot','moveTool'], ['robot','latch'], ['robot','unlatch'], ['robot','reset'], ['world','getSnapshotData'], ['world','getObjectById']
+    ['robot','moveTool'], ['robot','latch'], ['robot','unlatch'], ['robot','reset'], ['world','getSnapshotData'], ['world','getObjectById'], ['world','previewPlacement']
   ];
   const missing = required.filter((path) => !hasFunction(runtime, path)).map((path) => path.join('.'));
   return { ok: missing.length === 0, missing };
@@ -41,6 +42,7 @@ export function createRuntimeBridge(runtime = null) {
   };
   return Object.freeze({
     availability,
+    runtimeCameraAuthority: availability.ok && typeof runtime.world?.getCamera === 'function',
     getWorldRevision() {
       if (!availability.ok) return -1;
       const revision = Number(runtime.getWorldRevision());
@@ -72,6 +74,7 @@ export function createRuntimeBridge(runtime = null) {
         } catch { return machineError('internal_error', 'The runtime failed while reading the world snapshot.'); }
       },
       getObjectById: async (id) => availability.ok ? clone(await runtime.world.getObjectById(id)) : null
+      ,previewPlacement: (request) => call(runtime?.world?.previewPlacement?.bind(runtime.world), request)
     }
   });
 }

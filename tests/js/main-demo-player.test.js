@@ -308,10 +308,14 @@ test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MOR
   assert.match(html, /data-hud-zone>PHYSICS/);
   assert.match(html, /id="angle-pill"/);
   assert.match(html, /data-settings-preset="precise"[\s\S]*data-settings-preset="balanced"[\s\S]*data-settings-preset="fast"/);
+  assert.match(html, /data-camera-capture="top_camera"[\s\S]*data-camera-capture="left_camera"[\s\S]*data-camera-capture="right_camera"[\s\S]*data-camera-capture="user_camera"/);
   assert.match(css, /\.panel\.closed\{transform:translateX\(calc\(100% \+ 28px\)\)/);
   assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
   assert.match(main, /spawnMoreBricks, runOnePickPlace/);
+  assert.match(main, /getUserCamera: \(\) => renderer\.getUserCameraConfig\(\)[\s\S]*captureCamera: \(descriptor, options\) => renderer\.captureInspectionCamera\(descriptor, options\)/);
+  assert.match(main, /function captureCamera\([\s\S]*runtime\.world\.captureCamera/);
   assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
+  assert.match(renderer, /captureInspectionCamera\([\s\S]*WebGLRenderTarget[\s\S]*readRenderTargetPixels/);
   assert.match(workbench, /CylinderGeometry\(50, 50, 24, 32\)/);
   assert.match(workbench, /context\.fillText\('MORE', 256, 205\)[\s\S]*context\.fillText\('BRICKS', 256, 315\)/);
 });

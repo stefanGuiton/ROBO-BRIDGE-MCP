@@ -12,7 +12,7 @@
 
 `MAIN_DEMO` is now the canonical root browser/player runtime. The supplied Player V8 behavior is integrated through adapters into the existing authoritative `RevisionClock -> BuildBoard + RobotController -> Runtime` chain; it is not an iframe or a second world.
 
-This checkpoint supplies desktop/mobile navigation, held-brick interaction, L/M/R connectors, BUILD/TEST locking, fixed-step updates, batching, ACES/LUT support, the exact V8 workbench/material/lighting scene, all 231 supplied settings, live robot mount controls, and the existing UR10/real-gripper/WebMCP surface. The one canonical machine frame is mounted on the V8 table; no second robot or brick truth was introduced. Bridge terrain, generator, brick compiler, structural solver, and train remain separate verified prototypes until their contracts are deliberately connected to this root runtime.
+This checkpoint supplies desktop/mobile navigation, held-brick interaction, L/M/R connectors, BUILD/TEST locking, fixed-step updates, batching, ACES/LUT support, the exact V8 workbench/material/lighting scene, all supplied settings, live robot mount controls, tuned UR10 PBR/smooth-by-angle controls, deterministic reachable brick supply, and an eleven-tool primitive WebMCP surface. The one canonical machine frame is mounted on the V8 table; no second robot or brick truth was introduced. On 2026-08-31 Codex natively built an interlocked three-brick wall through the browser WebMCP tools. Bridge terrain, generator, brick compiler, structural solver, and train remain separate verified prototypes until their contracts are deliberately connected to this root runtime.
 
 See `docs/MAIN_DEMO_V8_INTEGRATION.md` for the implementation and acceptance boundary.
 

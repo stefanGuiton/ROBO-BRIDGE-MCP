@@ -86,12 +86,14 @@ export class HumanBuildAdapter {
     });
     if (!result.ok) return { ...result, keepHolding: true };
     const brickId = this.active.brickId;
-    this.graph.registerPlacement(brickId, {
-      placementType: result.snapped ? 'blueprint-target' : preview.placementType,
-      cells: preview.cells ?? [],
-      connection: preview.connection,
-      connections: preview.connections ?? []
-    });
+    if (!result.placementAuthorityApplied) {
+      this.graph.registerPlacement(brickId, {
+        placementType: result.snapped ? 'blueprint-target' : preview.placementType,
+        cells: preview.cells ?? [],
+        connection: preview.connection,
+        connections: preview.connections ?? []
+      });
+    }
     this.active = null;
     this.placementEngine.reset();
     this.emit('released', { brickId, result });

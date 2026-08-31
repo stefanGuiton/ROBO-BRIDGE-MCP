@@ -191,7 +191,7 @@ export class BuildBoard {
     };
   }
 
-  acceptPlacement({ brickId, colour, position, yawRad = 0, actor = null, connection = null, placementType = 'free-build' }) {
+  acceptPlacement({ brickId, colour, position, yawRad = 0, actor = null, connection = null, connections = [], cells = [], placementType = 'free-build' }) {
     if (!brickId || !position || ![position.xMm, position.yMm, position.zMm, yawRad].every(Number.isFinite)) {
       return { ok: false, accepted: false, reason: 'invalid_input', worldRevision: this.worldRevision };
     }
@@ -207,7 +207,9 @@ export class BuildBoard {
       yawDeg: yawRad * 180 / Math.PI,
       actor: owner,
       placementType,
-      connection: connection ? clone(connection) : null
+      connection: connection ? clone(connection) : null,
+      connections: clone(connections),
+      cells: clone(cells)
     };
     this.#placements.set(brickId, record);
     if (owner) this.#contributions[owner] += 1;

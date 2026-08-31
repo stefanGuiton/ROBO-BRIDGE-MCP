@@ -2,6 +2,7 @@ import { mat4Identity, mat4Multiply } from '../robot/math.js';
 import { forwardKinematics } from '../robot/kinematics.js';
 import { UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { GlbModel, parseGlb, THREE } from './real-gripper-visual.js';
+import { buildUr10SurfaceGeometryAsync, UR10_NORMAL_DEFAULTS } from './ur10-surface-normals.js';
 
 export const UR10_VISUAL = Object.freeze({
   assetPath: '../../assets/models/UR10-v2-complete.glb',
@@ -74,6 +75,21 @@ const MATERIALS = Object.freeze({
   pcasa_light: Object.freeze({ color: 0xa7a7a7, metalness: 0, roughness: 0.38, clearcoat: 0.16, clearcoatRoughness: 0.30 }),
   rubber_black: Object.freeze({ color: 0x151515, metalness: 0, roughness: 0.82, clearcoat: 0, clearcoatRoughness: 0.60 })
 });
+
+const MATERIAL_SETTINGS = Object.freeze({
+  ur_blue: 'ur10Blue',
+  hub_caps: 'ur10Blue',
+  powder_dark: 'ur10Dark',
+  anodized_aluminium: 'ur10Aluminium',
+  pcasa_light: 'ur10LightPolymer',
+  rubber_black: 'ur10Rubber'
+});
+
+const EDITED_NORMAL_NODES = new Set(['Circle.002', 'Circle.003', 'Circle.004', 'Circle', 'Circle.001', 'Circle.005', 'Circle.006']);
+
+function colourValue(value, fallback) {
+  try { return new THREE.Color(value ?? fallback); } catch { return new THREE.Color(fallback); }
+}
 
 function transformMatrix(xyzMm = [0, 0, 0], rpy = [0, 0, 0]) {
   const [roll, pitch, yaw] = rpy;
@@ -153,11 +169,14 @@ function triangleCount(json) {
 }
 
 export class Ur10Visual {
-  constructor(scene) {
+  constructor(scene, settings = {}) {
     this.scene = scene;
+    this.settings = settings;
     this.groups = new Map();
     this.materials = new Map(Object.entries(MATERIALS).map(([name, descriptor]) => [name, materialFromDescriptor(descriptor)]));
     this.status = { state: 'loading', reason: null, sourceGlbSha256: UR10_VISUAL.sourceGlbSha256 };
+    this.sourceMeshes = [];
+    this.normalBuildSerial = 0;
     for (const link of LINK_FRAMES) {
       const group = new THREE.Group();
       group.name = `UR10_V2_${link.name.toUpperCase().replaceAll(' ', '_')}`;
@@ -193,19 +212,93 @@ export class Ur10Visual {
         used.add(node);
         node.removeFromParent();
         node.material = this.materials.get(materialName);
+        this.sourceMeshes.push({
+          node,
+          nodeName,
+          positions: new Float32Array(node.geometry.getAttribute('position').array),
+          normals: new Float32Array(node.geometry.getAttribute('normal').array),
+          indices: new Uint32Array(node.geometry.index.array),
+          edited: EDITED_NORMAL_NODES.has(nodeName)
+        });
         this.groups.get(linkName).geometry.add(node);
       }
       if (used.size !== UR10_VISUAL.nodeCount) throw new Error('ur10_mesh_region_coverage_mismatch');
+      this.applyMaterialSettings();
+      await this.rebuildNormals();
       this.model = model;
       this.status = {
         state: 'ready', reason: null, sourceGlbSha256: UR10_VISUAL.sourceGlbSha256,
-        nodes: json.nodes.length, meshes: json.meshes.length, triangles
+        nodes: json.nodes.length, meshes: json.meshes.length, triangles,
+        normals: this.normalDiagnostics
       };
       return this.status;
     } catch (error) {
       this.status = { ...this.status, state: 'failed', reason: error.message };
       return this.status;
     }
+  }
+
+  normalOptions() {
+    return {
+      mode: this.settings.ur10NormalMode ?? UR10_NORMAL_DEFAULTS.mode,
+      angleDeg: Number(this.settings.ur10SmoothAngleDeg ?? UR10_NORMAL_DEFAULTS.angleDeg),
+      weldToleranceMm: Number(this.settings.ur10WeldToleranceMm ?? UR10_NORMAL_DEFAULTS.weldToleranceMm),
+      weighting: this.settings.ur10NormalWeighting ?? UR10_NORMAL_DEFAULTS.weighting,
+      clean: this.settings.ur10CleanDegenerateFaces ?? UR10_NORMAL_DEFAULTS.clean
+    };
+  }
+
+  async rebuildNormals() {
+    if (!this.sourceMeshes.length) return null;
+    const serial = ++this.normalBuildSerial;
+    const started = performance.now();
+    const options = this.normalOptions();
+    const results = await Promise.all(this.sourceMeshes.map((source) => buildUr10SurfaceGeometryAsync({
+      positions: source.positions,
+      normals: source.normals,
+      indices: source.indices,
+      edited: source.edited,
+      ...options
+    })));
+    if (serial !== this.normalBuildSerial) return null;
+    let triangles = 0, renderVertices = 0, removedFaces = 0;
+    for (let index = 0; index < this.sourceMeshes.length; index += 1) {
+      const source = this.sourceMeshes[index], result = results[index];
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(result.positions, 3));
+      geometry.setAttribute('normal', new THREE.BufferAttribute(result.normals, 3));
+      geometry.setIndex(new THREE.BufferAttribute(result.indices, 1));
+      geometry.computeBoundingBox(); geometry.computeBoundingSphere(); geometry.name = source.node.geometry.name;
+      const previous = source.node.geometry;
+      source.node.geometry = geometry;
+      previous.dispose?.();
+      triangles += result.diagnostics.triangles;
+      renderVertices += result.diagnostics.renderVertices;
+      removedFaces += result.diagnostics.removedFaces;
+    }
+    this.normalDiagnostics = { ...options, triangles, renderVertices, removedFaces, durationMs: performance.now() - started };
+    if (this.status.state === 'ready') this.status = { ...this.status, normals: this.normalDiagnostics };
+    return this.normalDiagnostics;
+  }
+
+  applyMaterialSettings() {
+    for (const [name, material] of this.materials) {
+      const defaults = MATERIALS[name];
+      const prefix = MATERIAL_SETTINGS[name];
+      material.color.copy(colourValue(this.settings[`${prefix}Color`], defaults.color));
+      material.metalness = Number(this.settings[`${prefix}Metalness`] ?? defaults.metalness);
+      material.roughness = Number(this.settings[`${prefix}Roughness`] ?? defaults.roughness);
+      material.clearcoat = Number(this.settings[`${prefix}Clearcoat`] ?? defaults.clearcoat);
+      material.clearcoatRoughness = Number(this.settings[`${prefix}ClearcoatRoughness`] ?? defaults.clearcoatRoughness);
+      material.needsUpdate = true;
+    }
+  }
+
+  applySettings(key = '*') {
+    if (key === '*' || /^ur10(Blue|Dark|Aluminium|LightPolymer|Rubber)/.test(key)) this.applyMaterialSettings();
+    if (key === '*' || /^ur10(Normal|Smooth|Weld|Clean)/.test(key)) this.rebuildNormals().catch((error) => {
+      this.status = { ...this.status, reason: error.message, normalRebuildFailed: true };
+    });
   }
 
   update(jointsRad, dhFrames = null) {

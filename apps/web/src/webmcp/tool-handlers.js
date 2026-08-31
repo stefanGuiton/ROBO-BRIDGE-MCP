@@ -25,6 +25,30 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return result;
   }
 
+  async function getSceneState(input = {}) {
+    if (input.colour !== undefined && !COLOURS.has(String(input.colour).toLowerCase())) return inputError('Unknown colour filter.');
+    if (input.type !== undefined && !TYPES.has(input.type)) return inputError('Unknown type filter.');
+    const limit = input.limit === undefined ? 20 : input.limit;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 20) return inputError('limit must be an integer from 1 to 20.');
+    const snapshot = await bridge.world.getSnapshotData();
+    if (snapshot?.ok === false) return snapshot;
+    const build = await bridge.game.getBuildState({ limit });
+    if (build?.ok === false) return build;
+    let objects = snapshot.objects.filter((object) => ['brick', 'target'].includes(object.type));
+    if (input.type !== undefined) objects = objects.filter((object) => object.type === input.type);
+    if (input.colour !== undefined) objects = objects.filter((object) => String(object.colour).toLowerCase() === String(input.colour).toLowerCase());
+    objects.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id));
+    return {
+      ok: true,
+      coordinateFrame: 'machine-mm-rad',
+      worldRevision: snapshot.worldRevision,
+      objects: objects.slice(0, limit),
+      totalAvailable: objects.length,
+      truncated: objects.length > limit,
+      build
+    };
+  }
+
   async function getRobotState() { return bridge.robot.getState(); }
   async function getWorkspace() { return bridge.robot.getWorkspace(); }
 
@@ -33,6 +57,15 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     if (input.type !== undefined && !TYPES.has(input.type)) return inputError('Unknown type filter.');
     const result = await observationService.observe(input);
     return result;
+  }
+
+  async function previewPlacement(input = {}) {
+    if (typeof input.brickId !== 'string' || input.brickId.length < 1 || input.brickId.length > 64 || !/^[A-Za-z0-9_.:-]+$/.test(input.brickId)) return inputError('brickId is invalid.');
+    if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    const hasPosition = ['xMm', 'yMm', 'zMm'].every((field) => finite(input[field]));
+    if (!hasPosition && !input.supportBrickId) return inputError('Provide xMm/yMm/zMm or supportBrickId.');
+    if (input.yawDeg !== undefined && !finite(input.yawDeg)) return inputError('yawDeg must be finite.');
+    return bridge.world.previewPlacement(input);
   }
 
   async function moveTool(input = {}, options = {}) {
@@ -85,5 +118,5 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return result;
   }
 
-  return Object.freeze({ getBuildState, getRobotState, getWorkspace, observeCamera, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
+  return Object.freeze({ getSceneState, getBuildState, getRobotState, getWorkspace, observeCamera, previewPlacement, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
 }

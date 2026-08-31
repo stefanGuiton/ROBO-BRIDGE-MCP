@@ -193,7 +193,8 @@ export class GlbModel {
 }
 
 export class RealGripperVisual {
-  constructor(scene) {
+  constructor(scene, settings = {}) {
+    this.settings = settings;
     this.root = new THREE.Group();
     this.root.name = 'REAL_GRIPPER_ROOT';
     this.root.matrixAutoUpdate = false;
@@ -211,6 +212,7 @@ export class RealGripperVisual {
     this.targetFrame = this.currentFrame;
     this.animationStartFrame = this.currentFrame;
     this.animationStartedAt = null;
+    this.lastAppliedFrame = null;
     this.status = { state: 'loading', reason: null, sourceGlbSha256: UR10_GRIPPER.sourceGlbSha256 };
     this.loadPromise = this.load();
   }
@@ -229,7 +231,10 @@ export class RealGripperVisual {
       this.baseShift.position.set(-(box.min.x + box.max.x) / 2, 0, -(box.min.z + box.max.z) / 2);
       this.baseShift.add(this.model.sourceRoot);
       await this.applyMaterialConfig();
+      this.captureMaterialDefaults();
+      this.applySettings('*');
       this.model.applyTime(this.model.duration * this.currentFrame / 60);
+      this.lastAppliedFrame = this.currentFrame;
       this.status = {
         state: 'ready', reason: null, sourceGlbSha256: UR10_GRIPPER.sourceGlbSha256,
         nodes: json.nodes.length, meshes: json.meshes.length, animations: json.animations?.length ?? 0
@@ -262,6 +267,28 @@ export class RealGripperVisual {
     } catch { /* GLB material factors remain a safe fallback. */ }
   }
 
+  captureMaterialDefaults() {
+    for (const material of this.model?.materials ?? []) {
+      material.userData.roboBridgeDefaults = {
+        metalness: material.metalness,
+        roughness: material.roughness,
+        clearcoat: 'clearcoat' in material ? material.clearcoat : null
+      };
+    }
+  }
+
+  applySettings(key = '*') {
+    if (!this.model || (key !== '*' && !/^gripperMaterial/.test(key))) return;
+    for (const material of this.model.materials) {
+      const defaults = material.userData.roboBridgeDefaults;
+      if (!defaults) continue;
+      material.metalness = Math.max(0, Math.min(1, defaults.metalness * Number(this.settings.gripperMaterialMetalnessScale ?? 1)));
+      material.roughness = Math.max(0, Math.min(1, defaults.roughness * Number(this.settings.gripperMaterialRoughnessScale ?? 1)));
+      if (defaults.clearcoat !== null) material.clearcoat = Math.max(0, Math.min(1, defaults.clearcoat * Number(this.settings.gripperMaterialClearcoatScale ?? 1)));
+      material.needsUpdate = true;
+    }
+  }
+
   update(flangeTransform, jawGapMm) {
     this.root.matrix.set(...flangeTransform).multiply(this.mountRotation);
     this.root.matrixWorldNeedsUpdate = true;
@@ -278,7 +305,10 @@ export class RealGripperVisual {
       this.currentFrame = this.animationStartFrame + (this.targetFrame - this.animationStartFrame) * eased;
       if (u >= 1) { this.currentFrame = this.targetFrame; this.animationStartedAt = null; }
     }
-    if (this.model) this.model.applyTime(this.model.duration * this.currentFrame / 60);
+    if (this.model && this.currentFrame !== this.lastAppliedFrame) {
+      this.model.applyTime(this.model.duration * this.currentFrame / 60);
+      this.lastAppliedFrame = this.currentFrame;
+    }
   }
 
   getStatus() {
