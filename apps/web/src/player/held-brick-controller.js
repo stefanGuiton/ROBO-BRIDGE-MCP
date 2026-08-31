@@ -1,5 +1,4 @@
 import * as THREE from '../../vendor/three.module.min.js';
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { clamp, mToMm, mmToM, quaternionErrorVector, smootherstep, supportHeightMm } from './math.js';
 
 export const HELD_STATES = Object.freeze({
@@ -181,9 +180,9 @@ export class HeldBrickController {
 
   stepPendulum(dt) {
     const s = this.settings;
-    const supportHeight = supportHeightMm(this.quaternion, BRICK_SPEC.lengthMm / 2, BRICK_SPEC.widthMm / 2, BRICK_SPEC.bodyHeightMm / 2);
+    const supportHeight = supportHeightMm(this.quaternion, s.brickLengthMm / 2, s.brickWidthMm / 2, s.brickBodyHeightMm / 2);
     const clearance = this.position.z - supportHeight;
-    const lockHeight = Math.max(0, s.placementLockHeightMm ?? BRICK_SPEC.bodyHeightMm);
+    const lockHeight = Math.max(0, s.placementLockHeightMm ?? s.brickBodyHeightMm);
     const snapHeight = Math.max(lockHeight, s.snapRegionHeightMm ?? 45);
     const physicsHeight = Math.max(snapHeight, s.fullPhysicsHeightMm ?? 28.8);
     const placementIntent = Boolean(this.candidate?.valid);
@@ -212,7 +211,7 @@ export class HeldBrickController {
     const s = this.settings;
     const mass = Math.max(1e-6, s.brickMassKg ?? 0.0115);
     const length = mmToM(s.pendulumLengthMm ?? 20);
-    const a = mmToM(BRICK_SPEC.lengthMm), b = mmToM(BRICK_SPEC.widthMm), c = mmToM(BRICK_SPEC.bodyHeightMm);
+    const a = mmToM(s.brickLengthMm), b = mmToM(s.brickWidthMm), c = mmToM(s.brickBodyHeightMm);
     const ixx = mass * (b * b + c * c) / 12, iyy = mass * (a * a + c * c) / 12, izz = mass * (a * a + b * b) / 12;
     this.bodyInertia.set(ixx, 0, 0, 0, iyy, 0, 0, 0, izz);
     this.rotation4.makeRotationFromQuaternion(this.quaternion);
@@ -254,7 +253,7 @@ export class HeldBrickController {
   }
 
   enforceSurface() {
-    const supportHeight = supportHeightMm(this.quaternion, BRICK_SPEC.lengthMm / 2, BRICK_SPEC.widthMm / 2, BRICK_SPEC.bodyHeightMm / 2);
+    const supportHeight = supportHeightMm(this.quaternion, this.settings.brickLengthMm / 2, this.settings.brickWidthMm / 2, this.settings.brickBodyHeightMm / 2);
     const minimumZ = supportHeight + Math.max(0, this.settings.heldSurfaceClearanceMm ?? 0.15);
     if (this.position.z >= minimumZ) return;
     this.position.z = minimumZ;

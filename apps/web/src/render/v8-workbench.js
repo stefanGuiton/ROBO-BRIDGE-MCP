@@ -1,4 +1,5 @@
 import { THREE } from './real-gripper-visual.js';
+import { v8SupplyRegion } from '../player/v8-spawn.js';
 
 function dispose(root) {
   root.traverse((object) => {
@@ -24,17 +25,14 @@ function moreBricksTexture() {
   const context = canvas.getContext('2d');
   context.fillStyle = '#d71920';
   context.fillRect(0, 0, 512, 512);
-  context.strokeStyle = '#fff';
-  context.lineWidth = 12;
-  context.beginPath();
-  context.arc(256, 256, 220, 0, Math.PI * 2);
-  context.stroke();
   context.fillStyle = '#fff';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.font = '900 88px Arial, sans-serif';
-  context.fillText('MORE', 256, 205);
-  context.fillText('BRICKS', 256, 305);
+  context.translate(256, 256);
+  context.rotate(-Math.PI / 2);
+  context.font = "900 104px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif";
+  context.fillText('MORE', 0, -56);
+  context.fillText('BRICKS', 0, 56);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
@@ -142,35 +140,88 @@ export class V8Workbench {
 
   addGrid() {
     const s = this.settings;
-    const size = Math.max(s.matWidthMm, s.matDepthMm);
-    const grid = new THREE.GridHelper(size, Math.max(2, Math.round(size / s.gridPitchMm)), s.gridColor, s.gridColor);
+    const width = s.matWidthMm;
+    const depth = s.matDepthMm;
+    const pitch = s.gridPitchMm;
+    const z = s.tableTopHeightMm + s.matThicknessMm + s.matStudHeightMm + 0.12;
+    const vertices = [];
+    const columns = Math.round(width / pitch);
+    const rows = Math.round(depth / pitch);
+    for (let index = 0; index <= columns; index += 1) {
+      const x = -width / 2 + index * pitch;
+      vertices.push(x, -depth / 2, 0, x, depth / 2, 0);
+    }
+    for (let index = 0; index <= rows; index += 1) {
+      const y = -depth / 2 + index * pitch;
+      vertices.push(-width / 2, y, 0, width / 2, y, 0);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    const material = new THREE.LineBasicMaterial({
+      color: s.gridColor,
+      transparent: true,
+      opacity: s.gridOpacity,
+      depthWrite: false
+    });
+    const grid = new THREE.LineSegments(geometry, material);
     grid.name = 'MAIN_DEMO_V8_BUILD_GRID';
-    grid.rotation.x = Math.PI / 2;
     grid.rotation.z = THREE.MathUtils.degToRad(s.matYawDeg);
-    grid.position.set(s.matXmm, s.matYmm, s.tableTopHeightMm + s.matThicknessMm + s.matStudHeightMm + 0.2);
-    grid.material.transparent = true;
-    grid.material.opacity = s.gridOpacity;
+    grid.position.set(s.matXmm, s.matYmm, z);
     this.root.add(grid);
   }
 
   addMoreBricksButton() {
     const s = this.settings;
+    const geometry = new THREE.CylinderGeometry(50, 50, 24, 32);
+    geometry.rotateX(Math.PI / 2);
+    const sideMaterial = new THREE.MeshStandardMaterial({ color: 0xc9151b, roughness: 0.32, metalness: 0.08, emissive: 0x000000 });
+    const topMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, map: moreBricksTexture(), roughness: 0.28, metalness: 0.04, emissive: 0x000000 });
+    const bottomMaterial = new THREE.MeshStandardMaterial({ color: 0x8e1014, roughness: 0.45, metalness: 0.08 });
     const button = new THREE.Mesh(
-      new THREE.CylinderGeometry(50, 50, 24, 48),
+      geometry,
       [
-        new THREE.MeshStandardMaterial({ color: 0xc9151b, roughness: 0.32, metalness: 0.08 }),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, map: moreBricksTexture(), roughness: 0.28, metalness: 0.04 }),
-        new THREE.MeshStandardMaterial({ color: 0x9f1117, roughness: 0.4, metalness: 0.04 })
+        sideMaterial,
+        topMaterial,
+        bottomMaterial
       ]
     );
     button.name = 'MAIN_DEMO_V8_MORE_BRICKS_BUTTON';
-    button.rotation.x = Math.PI / 2;
-    button.position.set(-s.tableWidthMm / 2 + 82, -s.tableDepthMm / 2 + 92, s.tableTopHeightMm + 12.5);
+    const region = v8SupplyRegion(s);
+    button.position.set(-s.tableWidthMm / 2 + 82, region.yMin + 52, s.tableTopHeightMm + 12.5);
     button.castShadow = true;
     button.receiveShadow = true;
     button.userData.moreBricks = true;
+    button.userData.sideMaterial = sideMaterial;
+    button.userData.topMaterial = topMaterial;
+    this.moreBricksPressStart = -1;
     this.moreBricksButton = button;
     this.root.add(button);
+  }
+
+  setMoreBricksHighlighted(highlighted) {
+    const button = this.moreBricksButton;
+    if (!button) return;
+    const emissive = highlighted ? 0x5a0909 : 0x000000;
+    button.userData.sideMaterial.emissive.setHex(emissive);
+    button.userData.topMaterial.emissive.setHex(emissive);
+    button.userData.sideMaterial.emissiveIntensity = highlighted ? 0.32 : 0;
+    button.userData.topMaterial.emissiveIntensity = highlighted ? 0.32 : 0;
+  }
+
+  pressMoreBricks(now = performance.now()) {
+    this.moreBricksPressStart = now;
+  }
+
+  update(now = performance.now()) {
+    if (!this.moreBricksButton || this.moreBricksPressStart < 0) return;
+    const progress = (now - this.moreBricksPressStart) / 180;
+    if (progress >= 1) {
+      this.moreBricksButton.position.z = this.settings.tableTopHeightMm + 12.5;
+      this.moreBricksPressStart = -1;
+      return;
+    }
+    const pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
+    this.moreBricksButton.position.z = this.settings.tableTopHeightMm + 12.5 - 5 * pulse;
   }
 
   worldPoint(localPoint) {

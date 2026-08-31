@@ -16,6 +16,8 @@
 - explicit BUILD and TEST-lock modes, with production structural collapse disabled;
 - 240 Hz fixed-step player, held-brick, and loose-brick updates independent of render cadence;
 - ACES rendering, optional local 17/33/65 `.cube` LUT grading, and placed-brick batching;
+- reference-derived UR10 smooth-by-angle normals (15° / 0.002 mm weld / corner weighting) rebuilt off the render thread, plus live PBR controls for every UR10 material family, the real gripper, table, mat, floor, and bricks;
+- a V8-table workcell profile with deterministic reachable brick inventory and red/blue availability guarantees;
 - bounded TCP speed, acceleration, joint speed, and joint acceleration;
 - cancellation, reset epochs, and serialized robot moves;
 - conservative workcell, brick, link, and self-collision checks;
@@ -25,7 +27,7 @@
 - compiler-generated red/blue tray inventory;
 - an eight-brick deterministic red/blue MAIN_DEMO round;
 - simulator-native bounded perception with actionable `recommendedTcp` coordinates;
-- one nine-tool primitive WebMCP surface;
+- one eleven-tool primitive WebMCP surface, including bounded scene reads and read-only placement preview;
 - production red/blue build tests and persistent reliability tests.
 
 NVIDIA Newton and the old duplicate SCARA/physics service have been removed. The browser includes the bounded Player V8 brick solver described above; it is not a general-purpose or calibrated industrial physics engine.
@@ -87,10 +89,12 @@ This creates `dist/ROBO_BRIDGE_MCP_MAIN_DEMO.zip` with `RELEASE_MANIFEST.json` i
 
 The current primitive tools are:
 
+- `get_scene_state`
 - `get_build_state`
 - `get_robot_state`
 - `get_workspace`
-- `observe_camera`
+- `observe_camera` (`tray`, `canvas`, hidden `top`/`left`/`right`, or the human's current view)
+- `preview_placement`
 - `move_tool`
 - `latch`
 - `unlatch`
@@ -99,7 +103,7 @@ The current primitive tools are:
 
 Every mutation requires the exact latest `worldRevision`. WebMCP is progressive enhancement. The manual browser demo still works when `document.modelContext` is not available.
 
-Page-side registration and the tool contract are tested locally. Native agent tool enumeration/call/cancel must still be checked in the final supported challenge browser when that capability is available; do not treat mocked registration as that external acceptance proof.
+Page-side registration and the tool contract are tested locally. On 2026-08-31, the Codex in-app browser natively enumerated all eleven tools and used only the primitive scene/read, placement-preview, move, latch, and unlatch tools to build an interlocked three-brick wall with the live UR10. Native cancellation remains covered by the controller/WebMCP automated tests and should be repeated in the final challenge-browser submission session.
 
 ## Safety scope
 

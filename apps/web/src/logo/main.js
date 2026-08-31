@@ -1,7 +1,9 @@
 import { BuildBoard } from '../bricks/build-board.js';
+import { PlacementAuthority } from '../bricks/placement-authority.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { RobotRenderer } from '../render/robot-renderer.js';
 import { RobotController, RobotError } from '../robot/controller.js';
+import { PlacementLookaheadCoordinator } from '../robot/placement-lookahead.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RevisionClock } from '../state/revision-clock.js';
 import { compileImageData } from './compiler.js';
@@ -14,6 +16,8 @@ import { HumanBuildAdapter } from '../player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
 import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } from '../player/player-settings.js';
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
+import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
+import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -32,18 +36,64 @@ const blueprint = makeRoundBlueprint();
 const makeRoundBricks = () => createChallengeInventory(blueprint);
 const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
-const controller = new RobotController({ board, bricks: makeRoundBricks(), revisionClock, timeScale: evidenceMode ? 0 : 0.35 });
 const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
-const connectionGraph = new ConnectionGraph();
+const workcellProfile = createV8WorkcellProfile(playerSettings);
+const makePlayerBricks = () => {
+  const generated = makeReachableV8Spawn(playerSettings, workcellProfile);
+  if (!generated.ok) throw new Error(`V8 reachable scene generation failed: ${generated.reason}`);
+  return generated.records;
+};
+const controller = new RobotController({
+  board,
+  bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(),
+  revisionClock,
+  workspace: evidenceMode ? undefined : workcellProfile.workspace,
+  layout: evidenceMode ? undefined : workcellProfile.layout,
+  timeScale: evidenceMode ? 0 : 0.35
+});
+const connectionGraph = new ConnectionGraph(playerSettings);
 const placementEngine = new PlacementIntentEngine(playerSettings, board, connectionGraph);
+const placementAuthority = evidenceMode ? null : new PlacementAuthority({
+  board,
+  graph: connectionGraph,
+  placementEngine,
+  settings: playerSettings,
+  getBricks: () => controller.getBricks(),
+  profile: workcellProfile
+});
+if (placementAuthority && !controller.setPlacementAuthority(placementAuthority)) {
+  throw new Error('Unable to attach the shared V8 placement authority');
+}
+const fastPlacement = placementAuthority ? new PlacementLookaheadCoordinator({ controller, placementAuthority, workcellProfile }) : null;
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
   playerSettings,
-  humanBuildAdapter
+  humanBuildAdapter,
+  fastPlacement
 });
-const runtime = createLogoRoboRuntime({ controller, board, resetBricks: makeRoundBricks, humanBuildAdapter });
+const runtime = createLogoRoboRuntime({
+  controller,
+  board,
+  resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
+  humanBuildAdapter,
+  placementAuthority,
+  fastPlacement,
+  workcellProfile: evidenceMode ? null : workcellProfile,
+  getUserCamera: () => renderer.getUserCameraConfig(),
+  captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options),
+  placementPreviewObserver: (request) => fastPlacement?.preview({
+    brickId: request.brickId,
+    position: Number.isFinite(request.xMm) && Number.isFinite(request.yMm) && Number.isFinite(request.zMm)
+      ? { xMm: request.xMm, yMm: request.yMm, zMm: request.zMm }
+      : null,
+    yawRad: Number(request.yawDeg ?? 0) * Math.PI / 180,
+    supportBrickId: request.supportBrickId ?? null,
+    supportSide: request.supportSide ?? 'M',
+    carriedSide: request.carriedSide ?? null
+  })
+});
 
 const $ = (selector) => document.querySelector(selector);
 const statusEl = $('[data-status]');
@@ -65,6 +115,29 @@ const moveForm = $('[data-move-form]');
 const moveButton = moveForm?.querySelector('button[type="submit"]');
 const playerStateEl = $('[data-player-state]');
 const playerHeldEl = $('[data-player-held]');
+const hudFpsEl = $('[data-hud-fps]');
+const hudFrameEl = $('[data-hud-frame]');
+const hudPositionEl = $('[data-hud-pos]');
+const hudZoneEl = $('[data-hud-zone]');
+const hudOrientationEl = $('[data-hud-orientation]');
+const hudSnapEl = $('[data-hud-snap]');
+const anglePillEl = $('[data-angle-pill]');
+const reticleStatusEl = $('[data-reticle-status]');
+const crosshairEl = $('#crosshair');
+const performancePanelEl = $('#performance-panel');
+const performanceContentEl = $('[data-perf-content]');
+const debugPanelEl = $('#debug-panel');
+const fastPlacementForm = $('[data-fast-placement-form]');
+const fastBrickEl = $('[data-fast-brick]');
+const fastStatusEl = $('[data-fast-status]');
+const fastEstimateEl = $('[data-fast-estimate]');
+const fastQueueEl = $('[data-fast-queue]');
+const physicalSpeedInput = $('[data-physical-speed-input]');
+const physicalSpeedOutput = $('[data-physical-speed]');
+const playbackRateInput = $('[data-playback-rate-input]');
+const playbackRateOutput = $('[data-playback-rate]');
+const fastAcceptButton = $('[data-fast-accept]');
+const undoButtonEl = $('[data-undo]');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -74,7 +147,24 @@ const settingsPanelController = installPlayerSettingsPanel({
   onImportError: (error) => addLog(`Settings import rejected: ${error.message}`, 'bad')
 });
 playerSettingsStore.subscribe((key) => renderer.applySettings(key));
-renderer.setMoreBricksHandler(() => handleAction(null, () => resetScene(), 'Fresh authoritative brick set loaded'));
+let moreBricksBurst = 0;
+function spawnMoreBricks() {
+  const startIndex = controller.getBricks().length;
+  const generated = makeReachableV8MoreSpawn(
+    playerSettings,
+    workcellProfile,
+    ++moreBricksBurst,
+    controller.getBricks(),
+    { startIndex }
+  );
+  if (!generated.ok) return generated;
+  const result = controller.addLooseBricks(generated.records, { actor: 'human' });
+  if (!result.ok) return result;
+  renderer.launchSpawnedBricks(result.bricks);
+  renderer.workbench.pressMoreBricks();
+  return { ...result, action: 'more_bricks' };
+}
+renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Added 10 V8 physics bricks'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 
@@ -86,12 +176,20 @@ function openSettingsFilter(query = '') {
   search.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-$('[data-debug-toggle]')?.addEventListener('click', () => openSettingsFilter('debug'));
-$('[data-perf-toggle]')?.addEventListener('click', () => document.body.classList.toggle('perf-expanded'));
+const togglePanel = (panel) => panel?.classList.toggle('hidden');
+$('[data-debug-toggle]')?.addEventListener('click', () => togglePanel(debugPanelEl));
+$('[data-perf-toggle]')?.addEventListener('click', () => togglePanel(performancePanelEl));
+$('[data-debug-close]')?.addEventListener('click', () => debugPanelEl?.classList.add('hidden'));
+$('[data-perf-close]')?.addEventListener('click', () => performancePanelEl?.classList.add('hidden'));
 addEventListener('keydown', (event) => {
   if (event.target?.matches?.('input,select,textarea')) return;
-  if (event.code === 'F2') { event.preventDefault(); openSettingsFilter('debug'); }
-  if (event.code === 'F3') { event.preventDefault(); document.body.classList.toggle('perf-expanded'); }
+  if ((event.ctrlKey || event.metaKey) && event.code === 'KeyZ' && !event.shiftKey) {
+    event.preventDefault();
+    handleAction(null, () => renderer.undoPlayerAction(), 'Undid last human placement');
+    return;
+  }
+  if (event.code === 'F2') { event.preventDefault(); togglePanel(debugPanelEl); }
+  if (event.code === 'F3') { event.preventDefault(); togglePanel(performancePanelEl); }
 });
 
 function nowLabel() { return new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
@@ -106,6 +204,15 @@ function addLog(message, kind = '') {
   row.append(time, text);
   logEl.prepend(row);
   while (logEl.children.length > 20) logEl.lastElementChild.remove();
+}
+let toastTimer = 0;
+function showToast(message) {
+  const toast = $('#toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
 }
 function setStatus(value, kind = '') { if (statusEl) { statusEl.textContent = value; statusEl.dataset.kind = kind; } }
 function formatNumber(value) { return Number.isFinite(value) ? value.toFixed(1) : '—'; }
@@ -129,9 +236,12 @@ function getSceneState() {
     },
     blueprintId: blueprint.blueprintId,
     workcell: {
-      tableZMm: CHALLENGE_LAYOUT.tableZMm,
-      tray: CHALLENGE_LAYOUT.tray,
-      board: CHALLENGE_LAYOUT.board,
+      profileId: evidenceMode ? 'challenge-evidence-v2' : workcellProfile.id,
+      tableZMm: evidenceMode ? CHALLENGE_LAYOUT.tableZMm : workcellProfile.tableSurfaceZMm,
+      tray: evidenceMode ? CHALLENGE_LAYOUT.tray : null,
+      board: evidenceMode ? CHALLENGE_LAYOUT.board : null,
+      supplyZone: evidenceMode ? null : workcellProfile.supplyZone,
+      buildZone: evidenceMode ? null : workcellProfile.buildZone,
       displayTable: {
         xMm: playerSettings.tableXmm,
         yMm: playerSettings.tableYmm,
@@ -153,6 +263,8 @@ async function moveTool(input, { signal } = {}) {
 async function latch(input = {}) { return runtime.robot.latch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function unlatch(input = {}) { return runtime.robot.unlatch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function resetScene() {
+  moreBricksBurst = 0;
+  fastPlacement?.cancel();
   const result = await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision });
   setStatus('READY');
   addLog('Workcell reset');
@@ -216,8 +328,130 @@ async function runRound({ signal } = {}) {
   return { ok: true, results, progress: board.progress(), scene: getSceneState() };
 }
 
+function refreshFastBrickChoices(selectedId = null) {
+  if (!fastPlacement || !fastBrickEl) return;
+  const available = fastPlacement.availableBricks();
+  const selected = selectedId ?? fastBrickEl.value;
+  fastBrickEl.replaceChildren(...available.map((brick) => {
+    const option = document.createElement('option');
+    option.value = brick.id;
+    option.textContent = `${brick.colour.toUpperCase()} · ${brick.id}`;
+    return option;
+  }));
+  if (available.some((brick) => brick.id === selected)) fastBrickEl.value = selected;
+}
+
+function readFastPlacementForm() {
+  if (!fastPlacementForm) return null;
+  const form = new FormData(fastPlacementForm);
+  return {
+    brickId: String(form.get('brickId') ?? ''),
+    position: { xMm: Number(form.get('xMm')), yMm: Number(form.get('yMm')), zMm: Number(form.get('zMm')) },
+    yawRad: Number(form.get('yawDeg')) * Math.PI / 180
+  };
+}
+
+function previewFastPlacement() {
+  const request = readFastPlacementForm();
+  if (!fastPlacement || !request) return { status: 'INVALID', reason: 'runtime_unavailable' };
+  return fastPlacement.preview(request);
+}
+
+function queuedDestination(proposal) {
+  return {
+    brickId: proposal.requestedBrickId ?? proposal.brickId ?? null,
+    colour: proposal.requestedColour ?? null,
+    position: proposal.requestedPosition ? { ...proposal.requestedPosition } : null,
+    yawRad: proposal.yawRad ?? 0,
+    supportBrickId: proposal.supportBrickId ?? null,
+    supportSide: proposal.supportSide ?? 'M',
+    carriedSide: proposal.carriedSide ?? null
+  };
+}
+
+function addFastPlacementToQueue() {
+  const request = readFastPlacementForm();
+  if (!fastPlacement || !request) return { ok: false, reason: 'runtime_unavailable' };
+  const current = fastPlacement.getState().queue.map(queuedDestination);
+  if (current.length >= 5) return { ok: false, reason: 'queue_full', maximumLookahead: 5 };
+  return fastPlacement.planQueue([...current, request]);
+}
+
+async function executeFastPlacement({ signal } = {}) {
+  if (!fastPlacement) return { ok: false, reason: 'runtime_unavailable' };
+  const result = await fastPlacement.execute({
+    physicalSpeedMmS: Number(physicalSpeedInput?.value ?? 650),
+    playbackMultiplier: Number(playbackRateInput?.value ?? 20),
+    signal
+  });
+  if (result.ok) {
+    addLog(`Fast placed ${result.brickId} in ${(result.playbackDurationMs / 1000).toFixed(2)} s`, 'ok');
+    refreshFastBrickChoices();
+  } else addLog(`Fast placement rejected: ${result.reason}`, 'bad');
+  return result;
+}
+
+function captureCamera(cameraId = 'user_camera', options = {}) {
+  return runtime.world.captureCamera({ cameraId, ...options });
+}
+
+for (const button of document.querySelectorAll('[data-camera-capture]')) {
+  button.addEventListener('click', () => {
+    const result = captureCamera(button.dataset.cameraCapture, { widthPx: 640, heightPx: 360, quality: 0.82 });
+    const image = $('[data-camera-preview]');
+    const status = $('[data-camera-preview-status]');
+    if (!result.ok) {
+      if (status) status.textContent = `Camera unavailable: ${result.reason}`;
+      return;
+    }
+    if (image) image.src = result.dataUrl;
+    if (status) status.textContent = `${result.cameraId} · revision ${result.worldRevision} · ${result.widthPx}×${result.heightPx}`;
+  });
+}
+
+function stageV8ParityConnection() {
+  const [supportSource, carriedSource] = controller.getBricks();
+  if (!supportSource || !carriedSource) return { ok: false, reason: 'insufficient_bricks' };
+  const frame = placementEngine.tableFrame;
+  const supportPosition = {
+    xMm: frame.centre.xMm - 72,
+    yMm: frame.centre.yMm,
+    zMm: frame.placementSurfaceZMm + playerSettings.brickBodyHeightMm / 2
+  };
+  const carriedPosition = {
+    xMm: supportPosition.xMm - 180,
+    yMm: supportPosition.yMm - 130,
+    zMm: supportPosition.zMm + 120
+  };
+  controller.moveLooseBrick(supportSource.id, supportPosition, { actor: 'parity_diagnostic', yawRad: 0 });
+  controller.moveLooseBrick(carriedSource.id, carriedPosition, { actor: 'parity_diagnostic', yawRad: 0 });
+  connectionGraph.clear();
+  connectionGraph.registerMatRoot(supportSource.id, []);
+  const support = controller.getBricks().find((brick) => brick.id === supportSource.id);
+  const carried = controller.getBricks().find((brick) => brick.id === carriedSource.id);
+  const pickup = humanBuildAdapter.pickup(carried.id);
+  if (!pickup.ok) return pickup;
+  renderer.heldVisual.pickup(carried);
+  const diagnosticQuarterTurns = Number(params.get('parityRotation') ?? 0);
+  placementEngine.rotationQuarterTurns = Number.isInteger(diagnosticQuarterTurns)
+    ? ((diagnosticQuarterTurns % 4) + 4) % 4
+    : 0;
+  const candidate = placementEngine.connectionCandidate(
+    support,
+    { xMm: support.position.xMm - 12, yMm: support.position.yMm, zMm: support.position.zMm + playerSettings.brickBodyHeightMm / 2 },
+    carried,
+    controller.getBricks()
+  );
+  humanBuildAdapter.setPreview(candidate);
+  renderer.heldVisual.setCandidate(candidate);
+  renderer.setView('tray');
+  renderer.render();
+  return { ok: true, candidate };
+}
+
 const actions = {
-  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, runOnePickPlace, runRound,
+  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
+  previewFastPlacement, executeFastPlacement, cancelFastPlacement: () => fastPlacement?.cancel() ?? { ok: false, reason: 'runtime_unavailable' },
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 420 }, { signal })
 };
 
@@ -245,7 +479,7 @@ controller.subscribe((event) => {
   if (event.type === 'motion_cancelled') addLog('Motion cancelled safely', 'bad');
   if (event.type === 'latched') addLog(`Latch accepted: ${event.brickId}`, 'ok');
   if (event.type === 'unlatched') addLog(event.snap?.ok ? `Board snap accepted: ${event.snap.targetId}` : 'Released without snap', event.snap?.ok ? 'ok' : 'bad');
-  if (event.type === 'unlatched' && event.snap?.ok) {
+  if (!placementAuthority && event.type === 'unlatched' && event.snap?.ok) {
     connectionGraph.registerPlacement(event.brickId, { placementType: 'blueprint-target' });
   }
   if (event.type === 'reset' || event.type === 'world_reset') connectionGraph.clear();
@@ -255,6 +489,7 @@ humanBuildAdapter.subscribe((event) => {
   if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId}`, 'ok');
   if (event.type === 'released') addLog(`Player placed ${event.brickId}`, 'ok');
   if (event.type === 'dropped') addLog(`Player dropped ${event.brickId}`);
+  if (event.type === 'undone') addLog(`Player undid ${event.brickId}`, 'ok');
   if (event.type === 'mode_changed') addLog(`Player mode: ${event.mode}`);
 });
 
@@ -267,6 +502,8 @@ async function handleAction(button, action, successMessage) {
     return result;
   } finally { if (button) button.disabled = false; }
 }
+
+undoButtonEl?.addEventListener('click', (event) => handleAction(event.currentTarget, () => renderer.undoPlayerAction(), 'Undid last human placement'));
 
 moveForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -291,7 +528,7 @@ for (const button of document.querySelectorAll('[data-target]')) {
 $('[data-action="run"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => runOnePickPlace(), null));
 $('[data-action="round"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => runRound(), null));
 $('[data-action="home"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => actions.home(), 'Home accepted'));
-$('[data-action="reset"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => resetScene(), null));
+for (const button of document.querySelectorAll('[data-action="reset"]')) button.addEventListener('click', (event) => handleAction(event.currentTarget, () => resetScene(), null));
 $('[data-action="latch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => latch({ actor: 'human' }), 'Latch accepted'));
 $('[data-action="unlatch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => unlatch({ actor: 'human' }), 'Unlatch accepted'));
 for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => renderer.setView(button.dataset.view));
@@ -304,6 +541,117 @@ for (const button of document.querySelectorAll('[data-player-mode]')) {
 }
 $('[data-build-mode="BUILD"]')?.addEventListener('click', () => humanBuildAdapter.setMode('BUILD'));
 $('[data-build-mode="TEST"]')?.addEventListener('click', () => humanBuildAdapter.setMode('TEST'));
+const PLAYER_PRESETS = Object.freeze({
+  precise: { mouseSensitivityRadPerPx: 0.00125, moveSpeedMmS: 900, verticalSpeedMmS: 650, accelerationMmS2: 3800, decelerationMmS2: 5200, maximumSpeedMmS: 2200 },
+  balanced: { mouseSensitivityRadPerPx: 0.00165, moveSpeedMmS: 1500, verticalSpeedMmS: 1000, accelerationMmS2: 5500, decelerationMmS2: 6500, maximumSpeedMmS: 3600 },
+  fast: { mouseSensitivityRadPerPx: 0.00205, moveSpeedMmS: 2300, verticalSpeedMmS: 1500, accelerationMmS2: 7800, decelerationMmS2: 8500, maximumSpeedMmS: 5200 }
+});
+
+if (fastPlacementForm && fastPlacement) {
+  const frame = placementEngine.tableFrame;
+  const defaults = {
+    xMm: frame.centre.xMm,
+    yMm: frame.centre.yMm,
+    zMm: frame.placementSurfaceZMm + playerSettings.brickBodyHeightMm / 2,
+    yawDeg: 0
+  };
+  for (const [name, value] of Object.entries(defaults)) {
+    const field = fastPlacementForm.elements.namedItem(name);
+    if (field) field.value = Number(value.toFixed(2));
+  }
+  refreshFastBrickChoices();
+  fastPlacementForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const state = previewFastPlacement();
+    addLog(state.status === 'VALID' ? 'Fast ghost proposal ready' : `Ghost rejected: ${state.reason}`, state.status === 'VALID' ? 'ok' : 'bad');
+  });
+  for (const button of document.querySelectorAll('[data-proposal-nudge]')) button.addEventListener('click', () => {
+    const [dx, dy] = button.dataset.proposalNudge.split(',').map(Number);
+    for (const [name, delta] of [['xMm', dx], ['yMm', dy]]) {
+      const field = fastPlacementForm.elements.namedItem(name);
+      field.value = Number(field.value) + delta;
+    }
+    previewFastPlacement();
+  });
+  $('[data-proposal-rotate]')?.addEventListener('click', () => {
+    const field = fastPlacementForm.elements.namedItem('yawDeg');
+    field.value = (Number(field.value) + 90) % 360;
+    previewFastPlacement();
+  });
+  fastAcceptButton?.addEventListener('click', (event) => handleAction(event.currentTarget, () => executeFastPlacement(), null));
+  $('[data-fast-cancel]')?.addEventListener('click', () => {
+    fastPlacement.cancel();
+    addLog('Fast placement cancelled');
+  });
+  $('[data-fast-queue-clear]')?.addEventListener('click', () => {
+    fastPlacement.cancel();
+    addLog('Look-ahead queue cleared');
+  });
+  $('[data-fast-queue-add]')?.addEventListener('click', () => {
+    const state = addFastPlacementToQueue();
+    addLog(state.ok ? `Cached ${state.queueLength} ghost placements` : `Queue rejected: ${state.reason}`, state.ok ? 'ok' : 'bad');
+  });
+  const syncRange = (input, output, suffix) => {
+    const update = () => { if (output) output.textContent = `${input.value}${suffix}`; };
+    input?.addEventListener('input', update);
+    update();
+  };
+  syncRange(physicalSpeedInput, physicalSpeedOutput, ' mm/s');
+  syncRange(playbackRateInput, playbackRateOutput, '×');
+  fastPlacement.subscribe((state) => {
+    if (fastStatusEl) fastStatusEl.textContent = state.status.replace('_', ' ');
+    if (fastAcceptButton) fastAcceptButton.disabled = state.status !== 'VALID';
+    if (fastEstimateEl) {
+      const distance = state.proposal?.approximatePhysicalDistanceMm;
+      const physicalSeconds = distance ? distance / Number(physicalSpeedInput?.value ?? 650) : null;
+      const playbackSeconds = physicalSeconds ? physicalSeconds / Number(playbackRateInput?.value ?? 20) : null;
+      fastEstimateEl.textContent = state.status === 'VALID'
+        ? `Cyan = valid · rough travel ${physicalSeconds.toFixed(1)} physical s / ${playbackSeconds.toFixed(2)} displayed s. Live planning and collision checks still apply.`
+        : state.status === 'STALE' ? 'Amber = world changed. Preview again before accepting.'
+          : state.status === 'INVALID' ? `Red = ${state.reason}. Adjust the ghost and retry.`
+            : 'Preview a valid cyan brick, then accept. Physical limits remain unchanged.';
+    }
+    if (fastQueueEl) {
+      fastQueueEl.replaceChildren(...state.queue.map((proposal) => {
+        const item = document.createElement('li');
+        const label = document.createElement('b');
+        label.textContent = proposal.slotLabel;
+        const source = document.createElement('span');
+        source.textContent = `${proposal.brick?.colour?.toUpperCase?.() ?? '—'} ${proposal.brickId ?? 'NO SOURCE'} → ${Math.round(proposal.requestedPosition?.xMm ?? 0)},${Math.round(proposal.requestedPosition?.yMm ?? 0)}`;
+        const status = document.createElement('em');
+        status.textContent = proposal.sourceReassigned ? 'REASSIGNED' : proposal.status;
+        status.className = proposal.sourceReassigned ? 'reassigned' : proposal.status === 'VALID' ? '' : 'invalid';
+        item.append(label, source, status);
+        return item;
+      }));
+    }
+  });
+  previewFastPlacement();
+}
+for (const button of document.querySelectorAll('[data-settings-preset]')) button.addEventListener('click', () => {
+  const preset = button.dataset.settingsPreset;
+  playerSettingsStore.setMany(PLAYER_PRESETS[preset]);
+  for (const candidate of document.querySelectorAll('[data-settings-preset]')) candidate.classList.toggle('active', candidate === button);
+  showToast(`${button.textContent} player preset`);
+});
+$('[data-new-seed]')?.addEventListener('click', async () => {
+  playerSettingsStore.set('seed', Math.floor(Math.random() * 0x100000000) >>> 0);
+  if (seedEl) seedEl.textContent = String(playerSettings.seed);
+  await resetScene();
+  showToast('New seed loaded');
+});
+$('[data-copy-player-settings]')?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(playerSettingsStore.exportJSON());
+    showToast('Settings JSON copied');
+  } catch {
+    showToast('Clipboard unavailable');
+  }
+});
+$('[data-reset-brick-settings]')?.addEventListener('click', () => {
+  playerSettingsStore.setMany({ brickLengthMm: 31.8, brickWidthMm: 15.8, brickBodyHeightMm: 9.6, studPitchMm: 8, studDiameterMm: 4.8, studHeightMm: 1.8, brickMassKg: 0.0024 });
+  showToast('Real brick dimensions restored');
+});
 $('[data-export-player-settings]')?.addEventListener('click', () => {
   const blob = new Blob([playerSettingsStore.exportJSON()], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -349,18 +697,47 @@ function updateToolDiagnostics(event) {
 renderer.start();
 setInterval(() => {
   const performance = renderer.getPerformance();
-  if (fpsEl) fpsEl.textContent = performance.fps ? performance.fps.toFixed(0) : '—';
-  if (frameMsEl) frameMsEl.textContent = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
+  const fpsText = performance.fps ? performance.fps.toFixed(0) : '—';
+  const frameText = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
+  if (fpsEl) fpsEl.textContent = fpsText;
+  if (frameMsEl) frameMsEl.textContent = frameText;
+  if (hudFpsEl) hudFpsEl.textContent = fpsText;
+  if (hudFrameEl) hudFrameEl.textContent = frameText;
   if (gripperEl) {
     gripperEl.textContent = performance.gripper.state === 'ready' ? 'REAL GLB READY' : performance.gripper.state.toUpperCase();
     gripperEl.dataset.kind = performance.gripper.state === 'ready' ? 'ok' : 'warning';
   }
   if (playerStateEl) {
     playerStateEl.textContent = performance.player?.enabled
-      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI' : 'PLAYER · CLICK TO LOCK POINTER')
+      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI'
+        : performance.player.fallbackLookActive ? 'PLAYER · IN-APP LOOK · ESC FOR UI'
+          : 'CLICK TO LOOK AROUND')
       : 'ORBIT CAMERA';
   }
-  if (playerHeldEl) playerHeldEl.textContent = performance.heldBrick?.brickId ?? 'NONE';
+  const heldId = performance.heldBrick?.brickId ?? performance.interaction.snapBrickId ?? null;
+  if (playerHeldEl) playerHeldEl.textContent = heldId ?? 'NONE';
+  if (hudPositionEl) hudPositionEl.textContent = performance.player?.position?.map((value) => Math.round(value)).join(' ') ?? '—';
+  const preview = performance.interaction.preview;
+  const zone = performance.interaction.snapAnimating ? 'SNAPPING'
+    : performance.heldBrick?.state?.replace(/^HELD_/, '') ?? 'PHYSICS';
+  if (hudZoneEl) hudZoneEl.textContent = zone;
+  const orientation = `${preview?.type === 'BRICK' ? preview.relativeRotationDeg : placementEngine.rotationQuarterTurns * 90}°`;
+  if (hudOrientationEl) hudOrientationEl.textContent = orientation;
+  if (anglePillEl) {
+    anglePillEl.textContent = `ANGLE ${orientation}`;
+    anglePillEl.classList.toggle('hidden', !heldId);
+  }
+  const snapStatus = performance.interaction.snapAnimating ? 'SNAPPING' : preview?.status ?? 'NONE';
+  if (hudSnapEl) hudSnapEl.textContent = snapStatus;
+  const aimed = Boolean(performance.interaction.highlightedBrickId || performance.interaction.protectedBrickId || performance.interaction.highlightedMoreBricks || (preview && preview.status !== 'NONE'));
+  crosshairEl?.classList.toggle('target', aimed);
+  if (reticleStatusEl) reticleStatusEl.textContent = performance.interaction.highlightedMoreBricks ? 'MORE BRICKS'
+    : performance.interaction.protectedBrickId ? 'SUPPORTING BRICK'
+      : performance.interaction.highlightedBrickId ? 'PICK BRICK'
+      : preview?.status === 'VALID' ? `SNAP ${preview.mode ?? preview.type}`
+        : preview?.status === 'BLOCKED' ? 'BLOCKED' : '';
+  if (undoButtonEl) undoButtonEl.disabled = !humanBuildAdapter.canUndo();
+  if (performanceContentEl) performanceContentEl.innerHTML = `<span>FPS mean</span><b>${fpsText}</b><span>Frame mean</span><b>${frameText}</b><span>Frame p95</span><b>${performance.p95FrameMs.toFixed(2)} ms</b><span>Frame max</span><b>${performance.maxFrameMs.toFixed(2)} ms</b><span>Physics</span><b>${playerSettings.physicsHz} Hz</b><span>Loose bodies</span><b>${performance.looseBrickPhysics.length}</b>`;
 }, 500);
 window.addEventListener('resize', () => renderer.render());
 
@@ -375,13 +752,14 @@ try {
   addLog('WebMCP registration failed', 'bad');
 }
 
-window.__LOGO_ROBO__ = Object.freeze({
+const publicRuntime = Object.freeze({
   version: '3.1.0-main-demo-player-v8',
   product: 'ROBO BRIDGE MCP MAIN_DEMO',
   actions,
   runtime,
   robotController: controller,
   humanBuildAdapter,
+  fastPlacement,
   connectionGraph,
   playerSettingsStore,
   playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,
@@ -393,8 +771,17 @@ window.__LOGO_ROBO__ = Object.freeze({
   getWorkspace,
   get scene() { return getSceneState(); }
 });
-window.__ROBO_BRIDGE__ = window.__LOGO_ROBO__;
-window.__LOGO_ROBO_RUNTIME__ = runtime;
+if (Object.isExtensible(window)) {
+  window.__LOGO_ROBO__ = publicRuntime;
+  window.__ROBO_BRIDGE__ = publicRuntime;
+  window.__LOGO_ROBO_RUNTIME__ = runtime;
+}
+document.documentElement.dataset.runtimeReady = 'true';
+
+if (['connection', 'snap'].includes(params.get('parityPreview'))) {
+  setTimeout(() => { window.__LOGO_ROBO_PARITY_PREVIEW__ = stageV8ParityConnection(); }, 80);
+  if (params.get('parityPreview') === 'snap') setTimeout(() => renderer.releaseHeldPlacement(), 3000);
+}
 
 if (evidenceMode) {
   runRound().then((result) => { window.__LOGO_ROBO_EVIDENCE_RESULT__ = result; window.__LOGO_ROBO_EVIDENCE_READY__ = true; });

@@ -57,3 +57,37 @@ export function fixedStepAdvance(accumulator, frameSeconds, stepSeconds, maximum
   }
   return { accumulator: Math.max(0, nextAccumulator), steps };
 }
+
+// Exact deterministic helpers from the authoritative Oracle V8 player demo.
+export function seededRng(seed) {
+  let value = (seed | 0) || 0x6d2b79f5;
+  return () => {
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    return (value >>> 0) / 4294967296;
+  };
+}
+
+export function gridCandidateLocal(x, y, orientation, pitch = 8, originX = 0, originY = 0) {
+  const offsetX = orientation === 0 ? 1.5 * pitch : 0.5 * pitch;
+  const offsetY = orientation === 0 ? 0.5 * pitch : 1.5 * pitch;
+  const ix = Math.round((x - originX - offsetX) / pitch);
+  const iy = Math.round((y - originY - offsetY) / pitch);
+  return {
+    x: originX + ix * pitch + offsetX,
+    y: originY + iy * pitch + offsetY,
+    ix,
+    iy
+  };
+}
+
+export function occupancyCells(ix, iy, orientation) {
+  const result = [];
+  const columns = orientation === 0 ? 4 : 2;
+  const rows = orientation === 0 ? 2 : 4;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) result.push([ix + column, iy + row]);
+  }
+  return result;
+}

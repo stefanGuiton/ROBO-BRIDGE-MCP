@@ -10,6 +10,9 @@ test('production observation is atomic, bounded, actionable, and excludes struct
   const result = await handlers.observeCamera({ cameraId: 'tray_camera', type: 'brick', limit: 20 });
   assert.equal(result.ok, true);
   assert.equal(result.approximateOcclusion, true);
+  assert.equal(result.camera.coordinateFrame, 'machine-mm-rad');
+  assert.equal(result.camera.matrixConvention, 'row-major; column-vector; clip=P*V*point');
+  assert.ok(['orthographic', 'perspective'].includes(result.camera.projection));
   assert.ok(result.detections.length >= 2);
   assert.ok(result.detections.every((detection) => detection.type === 'brick'));
   assert.ok(result.detections.every((detection) => Number.isFinite(detection.recommendedTcp?.zMm)));
@@ -22,6 +25,17 @@ test('runtime-unavailable observation fails instead of reporting an empty camera
   const result = await service.observe({ cameraId: 'tray_camera' });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'runtime_unavailable');
+});
+
+test('authoritative user camera fails closed when the renderer camera is unavailable', async () => {
+  const bridge = {
+    runtimeCameraAuthority: true,
+    getCamera: () => null,
+    world: { async getSnapshotData() { return { worldRevision: 4, objects: [] }; } }
+  };
+  const result = await createObservationService({ bridge }).observe({ cameraId: 'user_camera' });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'camera_unavailable');
 });
 
 test('observation uses one atomic runtime snapshot revision', async () => {

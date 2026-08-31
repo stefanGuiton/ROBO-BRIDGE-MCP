@@ -1,24 +1,29 @@
 const GROUP_RULES = [
-  ['Robot Mount', /^robotMount/],
   ['Player', /^(mouse|invertY|pitch|fov|cameraZoom|nearClip|farClip|player|moveSpeed|verticalSpeed|sprint|acceleration|deceleration|movementDamping|maximumSpeed|unlimitedPickup|maximumPickup|selectionHighlight|hold)/],
   ['Mobile Controls', /^mobile/],
   ['Physics', /^(gravity|physicsHz|maximumSubsteps|maximumCatchup|brickMass|pendulum|angularDamping|linearDamping|maximumAngular|pivotAcceleration|pickup)/],
-  ['Connections', /^(brickConnections|connection|autoCapture|structuralCollapse)/],
-  ['Placement', /^(placement|heldCollision|gridPitch|snap|ghostOpacity|allowPicking|brickCollision|collision|heldSurface)/],
+  ['Placement', /^(placement|heldCollision|gridPitch|snap|ghostOpacity|allowPicking|brickCollision|collision|heldSurface|brickConnections|connection|autoCapture|structuralCollapse)/],
   ['Brick', /^(brickLength|brickWidth|brickBody|studPitch|studDiameter|studHeight|brickRoughness|brickMetalness)/],
   ['Table', /^(table|leg)/],
   ['20×20 Stud Build Mat', /^(mat|gridVisible|gridColor|gridOpacity)/],
   ['Camera / Graphics', /^(pixelRatio|shadows|shadowMap|shadowUpdate|mobileShadow|exposure|toneMapping)/],
   ['ACES Colour Grading', /^(colorGrading|grade|lut)/],
   ['Lighting', /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadowBias|shadowNormalBias)/],
+  ['Reference Sun', /^sun/],
+  ['UR10 Surface Normals', /^ur10(Normal|Smooth|Weld|Clean)/],
+  ['UR10 Materials', /^ur10(Blue|Dark|Aluminium|LightPolymer|Rubber)/],
+  ['Scene Materials', /^(floor|gripperMaterial)/],
+  ['Robot Mount', /^robotMount/],
   ['Scene', /^(restitution|friction|spawnCount|seed|hudHz)/],
   ['Debug', /^debug/]
 ];
 
 const SELECT_OPTIONS = Object.freeze({
   mobileControlsMode: ['Auto', 'On', 'Off'],
-  toneMapping: ['ACES', 'Linear', 'None'],
-  connectionOverhangGhostStyle: ['Yellow', 'Red', 'White']
+  toneMapping: ['ACES', 'Neutral', 'None'],
+  ur10NormalMode: ['smooth', 'hybrid', 'exported', 'flat'],
+  ur10NormalWeighting: ['corner', 'area', 'uniform'],
+  connectionOverhangGhostStyle: ['Yellow', 'Green']
 });
 
 function labelFor(key) {
@@ -105,7 +110,7 @@ export function installPlayerSettingsPanel({ store, panel, groups, search, onImp
   for (const name of [...GROUP_RULES.map(([group]) => group), 'Advanced']) {
     const details = document.createElement('details');
     details.className = 'settings-group';
-    details.open = name === 'Robot Mount';
+    details.open = ['Player', 'Physics', 'Placement', '20×20 Stud Build Mat'].includes(name);
     const summary = document.createElement('summary');
     summary.textContent = name;
     const body = document.createElement('div');
@@ -122,6 +127,7 @@ export function installPlayerSettingsPanel({ store, panel, groups, search, onImp
   const setOpen = (open) => {
     if (open && document.pointerLockElement) document.exitPointerLock?.();
     panel.classList.toggle('is-open', open);
+    panel.classList.toggle('closed', !open);
     panel.setAttribute('aria-hidden', String(!open));
     document.body.classList.toggle('settings-open', open);
   };

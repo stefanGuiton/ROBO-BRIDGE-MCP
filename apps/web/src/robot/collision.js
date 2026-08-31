@@ -95,17 +95,19 @@ function workcellAabbs(layout) {
   const tray = layout.tray;
   const board = layout.board;
   const wall = 6;
-  const walls = [
+  const walls = tray ? [
     aabbFromCenter({ xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, 'tray_wall_left'),
     aabbFromCenter({ xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ + tray.wallHeight / 2 }, { xMm: wall, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, 'tray_wall_right'),
     aabbFromCenter({ xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + tray.wallHeight / 2 }, { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, 'tray_wall_front'),
     aabbFromCenter({ xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + tray.wallHeight / 2 }, { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, 'tray_wall_back')
-  ];
+  ] : [];
+  const tableBounds = layout.tableBounds ?? { minX: -1000, maxX: 1200, minY: -1000, maxY: 1000 };
   return {
-    table: { id: 'table', min: { xMm: -1000, yMm: -1000, zMm: -80 }, max: { xMm: 1200, yMm: 1000, zMm: layout.tableZMm } },
-    board: { id: 'board', min: { xMm: board.minX, yMm: board.minY, zMm: layout.tableZMm }, max: { xMm: board.maxX, yMm: board.maxY, zMm: board.surfaceZ } },
-    trayFloor: { id: 'tray_floor', min: { xMm: tray.minX, yMm: tray.minY, zMm: layout.tableZMm }, max: { xMm: tray.maxX, yMm: tray.maxY, zMm: tray.floorZ } },
-    walls
+    table: { id: 'table', min: { xMm: tableBounds.minX, yMm: tableBounds.minY, zMm: -80 }, max: { xMm: tableBounds.maxX, yMm: tableBounds.maxY, zMm: layout.tableZMm } },
+    board: board ? { id: 'board', min: { xMm: board.minX, yMm: board.minY, zMm: layout.tableZMm }, max: { xMm: board.maxX, yMm: board.maxY, zMm: board.surfaceZ } } : null,
+    trayFloor: tray ? { id: 'tray_floor', min: { xMm: tray.minX, yMm: tray.minY, zMm: layout.tableZMm }, max: { xMm: tray.maxX, yMm: tray.maxY, zMm: tray.floorZ } } : null,
+    walls,
+    obstacles: (layout.obstacles ?? []).map((obstacle) => aabbFromCenter(obstacle.position, obstacle.bounds, obstacle.id))
   };
 }
 
@@ -158,9 +160,10 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
   const moving = movingBodyAabb(tcp, heldBrick);
 
   if (moving.min.zMm < layout.tableZMm - 0.1) return { ok: false, reason: 'collision', obstacle: 'table' };
-  if (!allowBoardContact && aabbOverlap(moving, workcell.board)) return { ok: false, reason: 'collision', obstacle: 'board' };
-  if (!intendedPickupId && aabbOverlap(moving, workcell.trayFloor)) return { ok: false, reason: 'collision', obstacle: 'tray_floor' };
+  if (workcell.board && !allowBoardContact && aabbOverlap(moving, workcell.board)) return { ok: false, reason: 'collision', obstacle: 'board' };
+  if (workcell.trayFloor && !intendedPickupId && aabbOverlap(moving, workcell.trayFloor)) return { ok: false, reason: 'collision', obstacle: 'tray_floor' };
   for (const wall of workcell.walls) if (aabbOverlap(moving, wall)) return { ok: false, reason: 'collision', obstacle: wall.id };
+  for (const obstacle of workcell.obstacles) if (aabbOverlap(moving, obstacle)) return { ok: false, reason: 'collision', obstacle: obstacle.id };
 
   for (const brick of bricks) {
     if (ignored.has(brick.id) || brick.id === heldBrick?.id || brick.id === intendedPickupId) continue;
@@ -172,7 +175,7 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
     if (self) return self;
     // The published DH frame does not define the project-owned visual link mesh relative to the table.
     // Tool/brick clearance enforces the table plane; moving link capsules are checked against raised workcell geometry and self-collision.
-    const environment = [...workcell.walls, workcell.board];
+    const environment = [...workcell.walls, ...(workcell.board ? [workcell.board] : []), ...workcell.obstacles];
     for (let i = 1; i < jointPositions.length - 1; i += 1) {
       const a = jointPositions[i];
       const b = jointPositions[i + 1];

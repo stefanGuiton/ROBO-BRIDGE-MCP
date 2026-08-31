@@ -11,6 +11,11 @@ import { RobotController } from '../../apps/web/src/robot/controller.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { parseCubeLUT } from '../../apps/web/src/player/color-grading.js';
 import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
+import {
+  expectedConnectionCells,
+  isCanonicalConnectorPair,
+  validateConnectorConnection
+} from '../../apps/web/src/player/connector-contract.js';
 import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { fixedStepAdvance } from '../../apps/web/src/player/math.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
@@ -18,6 +23,7 @@ import { HeldBrickController, HELD_STATES } from '../../apps/web/src/player/held
 import { LooseBrickPhysics } from '../../apps/web/src/player/loose-brick-physics.js';
 import { PlayerController } from '../../apps/web/src/player/player-controller.js';
 import { PlayerSettingsStore, PLAYER_FALLBACK_SETTINGS, PLAYER_SOURCE_PROVENANCE } from '../../apps/web/src/player/player-settings.js';
+import { makeV8InitialSpawn, makeV8MoreSpawn, V8_BRICK_PALETTE } from '../../apps/web/src/player/v8-spawn.js';
 import { compileImageData } from '../../apps/web/src/logo/compiler.js';
 import { makePattern } from '../../apps/web/src/logo/patterns.js';
 import { challengeBoardLimits, challengeInventoryHasNoOverlap, createChallengeInventory, remapBlueprintToChallenge } from '../../apps/web/src/logo/workcell-adapter.js';
@@ -82,7 +88,7 @@ test('original V8 pointer-lock flow enables free-look and Escape-style release',
   globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
   let player;
   try {
-    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, {});
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
     player.setEnabled(true);
     const initialYaw = player.targetYaw;
     const initialPitch = player.targetPitch;
@@ -103,6 +109,132 @@ test('original V8 pointer-lock flow enables free-look and Escape-style release',
     assert.equal(player.targetYaw, releasedYaw);
     assert.equal(player.pointerLocked, false);
     assert.equal(classes.has('player-pointer-locked'), false);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
+
+test('in-app fallback enables no-drag free-look when pointer lock is rejected', async () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const classes = new Set();
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: {
+    add: (name) => classes.add(name),
+    remove: (name) => classes.delete(name),
+    toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name)
+  } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  canvas.requestPointerLock = () => Promise.reject(new Error('pointer lock unavailable in embedded preview'));
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
+    player.setEnabled(true);
+    const initialYaw = player.targetYaw;
+    canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 100, clientY: 100 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(player.fallbackLookActive, true);
+    assert.equal(player.getState().lookMode, 'in-app-fallback');
+    assert.equal(classes.has('player-look-fallback'), true);
+    canvas.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    canvas.dispatchEvent(event('mousemove', { clientX: 145, clientY: 100, movementX: 0, movementY: 0, buttons: 0 }));
+    assert.ok(player.targetYaw < initialYaw, 'ordinary in-app mouse movement must rotate without dragging');
+    assert.equal(player.getState().fallbackEdgeTurn.dx, 0, 'normal FPS look must not invoke edge assist outside the final 100 pixels');
+    let primary = 0;
+    player.onPrimary = () => { primary += 1; };
+    canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 145, clientY: 80 }));
+    assert.equal(primary, 1, 'second click remains the primary pick/release action');
+    windowTarget.dispatchEvent(event('keydown', { code: 'Escape', target: null }));
+    assert.equal(player.fallbackLookActive, false);
+    assert.equal(classes.has('player-look-fallback'), false);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
+
+test('in-app fallback adds exponential 100px edge assist and an immediate bounded fast-flick boost', async () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const classes = new Set();
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: {
+    add: (name) => classes.add(name),
+    remove: (name) => classes.delete(name),
+    toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name)
+  } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
+    player.setEnabled(true);
+    player.activateFallbackLook(event('mousedown', { clientX: 400, clientY: 300, timeStamp: 1000 }));
+    canvas.dispatchEvent(event('mousemove', { clientX: 110, clientY: 300, movementX: -290, movementY: 0, buttons: 0, timeStamp: 1100 }));
+    assert.equal(player.getState().fallbackEdgeTurn.dx, 0, 'edge assist must remain off outside the final 100 pixels');
+    assert.equal(player.getState().fallbackFlickBoost.dx, 0, 'a fast move outside the edge band must not receive a boost');
+    canvas.dispatchEvent(event('mousemove', { clientX: 75, clientY: 300, movementX: -35, movementY: 0, buttons: 0, timeStamp: 1200 }));
+    const softRate = Math.abs(player.getState().fallbackEdgeTurn.dx);
+    assert.equal(classes.has('player-look-edge'), true);
+    assert.ok(player.getState().fallbackEdgeTurn.dx < 0);
+    assert.ok(softRate > 0, 'the continuous assist must begin inside 100 pixels');
+    assert.equal(player.getState().fallbackFlickBoost.dx, 0, 'slow entry into the edge band must remain gentle');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 300, movementX: 325, movementY: 0, buttons: 0, timeStamp: 1300 }));
+    canvas.dispatchEvent(event('mousemove', { clientX: 10, clientY: 10, movementX: -390, movementY: -290, buttons: 0, timeStamp: 1310 }));
+    assert.ok(Math.abs(player.getState().fallbackEdgeTurn.dx) > softRate, 'turn rate must rise exponentially toward the edge');
+    assert.ok(player.getState().fallbackFlickBoost.dx < 0, 'a fast left flick must add an immediate left-turn boost');
+    assert.ok(player.getState().fallbackFlickBoost.dy < 0, 'a fast corner flick must boost pitch on the same event');
+    const edgeYaw = player.targetYaw;
+    player.applyFallbackEdgeTurn(0.25);
+    assert.ok(player.targetYaw > edgeYaw, 'holding near the left edge must keep turning left without more cursor travel');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 300, movementX: 390, movementY: 290, buttons: 0, timeStamp: 1410 }));
+    const centreYaw = player.targetYaw;
+    player.applyFallbackEdgeTurn(0.25);
+    assert.equal(player.targetYaw, centreYaw, 'returning toward the centre must stop continuous edge turning');
+    assert.equal(classes.has('player-look-edge'), false);
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 20, movementX: 0, movementY: -280, buttons: 0, timeStamp: 1510 }));
+    const topPitch = player.targetPitch;
+    player.applyFallbackEdgeTurn(0.1);
+    assert.ok(player.targetPitch > topPitch, 'holding near the top edge must keep looking up');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 580, movementX: 0, movementY: 560, buttons: 0, timeStamp: 1610 }));
+    const bottomPitch = player.targetPitch;
+    player.applyFallbackEdgeTurn(0.1);
+    assert.ok(player.targetPitch < bottomPitch, 'holding near the bottom edge must keep looking down');
   } finally {
     player?.setEnabled(false);
     globalThis.document = previous.document;
@@ -182,7 +314,9 @@ test('released bricks retain V8 gravity, angular motion, collision, and authorit
 
 test('the visible carried brick is opaque while only placement targets remain translucent', async () => {
   const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
-  assert.match(renderer, /MAIN_DEMO_HELD_BRICK[\s\S]*transparent:\s*false,[\s\S]*opacity:\s*1/);
+  const visual = await readFile(fileURLToPath(new URL('../../apps/web/src/player/v8-brick-visual.js', import.meta.url)), 'utf8');
+  assert.match(renderer, /createV8BrickVisual\(\{ colour: 'green',[\s\S]*MAIN_DEMO_HELD_BRICK/);
+  assert.match(visual, /transparent:\s*ghost,[\s\S]*opacity:\s*ghost \? settings\.ghostOpacity : 1/);
   assert.match(renderer, /heldGhost\.userData\.material\.opacity\s*=\s*1/);
   assert.match(renderer, /heldGhost\.userData\.material\.transparent\s*=\s*false/);
 });
@@ -211,7 +345,7 @@ test('V8 scene exposes all settings plus live robot mount controls in the tucked
   const store = new PlayerSettingsStore({ ...PLAYER_FALLBACK_SETTINGS, tableWidthMm: 1750, matPanelsX: 4 });
   assert.deepEqual(
     ['robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'].map((key) => store.get()[key]),
-    [-560, 0, 1200, 0]
+    [-820, 170, 1200, 0]
   );
   assert.equal(store.setMany({ robotMountXmm: -500, structuralCollapseEnabled: true }).ok, true);
   assert.equal(store.get().robotMountXmm, -500);
@@ -257,6 +391,69 @@ test('240 Hz fixed-step schedule is independent of 60/90/120/144 render cadence'
   assert.deepEqual(totals, [1200, 1200, 1200, 1200]);
 });
 
+test('locked V8 seed reproduces the original immediate 12-brick multicolour spawn', async () => {
+  const supplied = JSON.parse(await readFile(fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url)), 'utf8'));
+  const bricks = makeV8InitialSpawn(supplied);
+  assert.equal(bricks.length, 12);
+  assert.deepEqual(V8_BRICK_PALETTE.map(({ colour }) => colour), [
+    'red', 'blue', 'yellow', 'green', 'orange', 'white', 'black', 'purple', 'teal'
+  ]);
+  assert.deepEqual(bricks.slice(0, 4).map((brick) => ({
+    colour: brick.colour,
+    position: Object.values(brick.position).map((value) => Number(value.toFixed(4))),
+    yawRad: Number(brick.yawRad.toFixed(6))
+  })), [
+    { colour: 'blue', position: [-666.679, -236.6628, 1204.8], yawRad: 0.746199 },
+    { colour: 'white', position: [-619.6378, -237.222, 1204.8], yawRad: 3.673034 },
+    { colour: 'yellow', position: [-572.752, -236.7345, 1204.8], yawRad: 5.891398 },
+    { colour: 'purple', position: [-524.4297, -236.7476, 1204.8], yawRad: 1.774049 }
+  ]);
+  assert.ok(bricks.every((brick) => brick.position.zMm === supplied.tableTopHeightMm + supplied.brickBodyHeightMm / 2));
+});
+
+test('MORE BRICKS deterministically adds ten physical launch records without replacing the initial set', async () => {
+  const supplied = JSON.parse(await readFile(fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url)), 'utf8'));
+  const initial = makeV8InitialSpawn(supplied);
+  const added = makeV8MoreSpawn(supplied, 1, { startIndex: initial.length });
+  assert.equal(added.length, 10);
+  assert.equal(new Set([...initial, ...added].map((brick) => brick.id)).size, 22);
+  assert.deepEqual(added.slice(0, 2).map((brick) => ({
+    colour: brick.colour,
+    position: Object.values(brick.position).map((value) => Number(value.toFixed(4))),
+    velocity: brick.initialVelocityMps.map((value) => Number(value.toFixed(6))),
+    spin: brick.initialAngularVelocityRadS.map((value) => Number(value.toFixed(6)))
+  })), [
+    { colour: 'orange', position: [-645, -192.7218, 1269.8], velocity: [-0.026279, -0.017203, 0.047627], spin: [0.533923, -0.15917, 1.333971] },
+    { colour: 'black', position: [-591, -194.7956, 1291.8], velocity: [0.01161, -0.025243, 0.036362], spin: [-0.818007, -0.340853, 0.838226] }
+  ]);
+});
+
+test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MORE BRICKS action', async () => {
+  const html = await readFile(fileURLToPath(new URL('../../apps/web/index.html', import.meta.url)), 'utf8');
+  const css = await readFile(fileURLToPath(new URL('../../apps/web/logo.css', import.meta.url)), 'utf8');
+  const main = await readFile(fileURLToPath(new URL('../../apps/web/src/logo/main.js', import.meta.url)), 'utf8');
+  const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
+  const workbench = await readFile(fileURLToPath(new URL('../../apps/web/src/render/v8-workbench.js', import.meta.url)), 'utf8');
+  assert.match(html, /LOGO ROBO <span>PLAYER LAB V8 · 120 HZ TARGET<\/span>/);
+  assert.match(html, /W forward · A left · S back · D right · Wheel zoom · Click pick\/release · R rotates around selected studs/);
+  assert.match(html, /data-hud-zone>PHYSICS/);
+  assert.match(html, /id="angle-pill"/);
+  assert.match(html, /data-settings-preset="precise"[\s\S]*data-settings-preset="balanced"[\s\S]*data-settings-preset="fast"/);
+  assert.match(html, /data-camera-capture="top_camera"[\s\S]*data-camera-capture="left_camera"[\s\S]*data-camera-capture="right_camera"[\s\S]*data-camera-capture="user_camera"/);
+  assert.match(css, /\.panel\.closed\{transform:translateX\(calc\(100% \+ 28px\)\)/);
+  assert.match(css, /#angle-pill\{bottom:calc\(78px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /#reticle-status\{bottom:calc\(46px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
+  assert.match(main, /spawnMoreBricks, runOnePickPlace/);
+  assert.match(main, /getUserCamera: \(\) => renderer\.getUserCameraConfig\(\)[\s\S]*captureCamera: \(descriptor, options\) => renderer\.captureInspectionCamera\(descriptor, options\)/);
+  assert.match(main, /function captureCamera\([\s\S]*runtime\.world\.captureCamera/);
+  assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
+  assert.match(renderer, /captureInspectionCamera\([\s\S]*WebGLRenderTarget[\s\S]*readRenderTargetPixels/);
+  assert.match(workbench, /CylinderGeometry\(50, 50, 24, 32\)/);
+  assert.match(workbench, /context\.rotate\(-Math\.PI \/ 2\)/);
+  assert.match(workbench, /Impact[\s\S]*context\.fillText\('MORE', 0, -56\)[\s\S]*context\.fillText\('BRICKS', 0, 56\)/);
+});
+
 test('fixed-step catch-up is capped after a suspended browser frame', () => {
   const advance = fixedStepAdvance(0, 12, 1 / 240, 8);
   assert.equal(advance.steps, 8);
@@ -283,37 +480,98 @@ test('L/M/R connector masks overlap by two studs and reject duplicate occupancy'
   assert.equal(graph.validate().pass, true);
 });
 
+test('connector contract keeps canonical pairs while side pairs rotate in quarter turns', () => {
+  const sides = ['L', 'M', 'R'];
+  const validPairs = new Set(['L:R', 'M:M', 'R:L']);
+  for (const lowerConnector of sides) for (const upperConnector of sides) {
+    const key = `${lowerConnector}:${upperConnector}`;
+    assert.equal(isCanonicalConnectorPair(lowerConnector, upperConnector), validPairs.has(key), key);
+    const expected = expectedConnectionCells(lowerConnector, upperConnector);
+    if (!validPairs.has(key)) {
+      assert.equal(expected, null);
+      continue;
+    }
+    const studPairs = expected.lower.map((lower, index) => ({ lower, upper: expected.upper[index] }));
+    const parallel = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 0, studPairs });
+    assert.equal(parallel.valid, true, key);
+    assert.equal(parallel.studCount, lowerConnector === 'M' ? 8 : 4);
+    const quarterCells = expectedConnectionCells(lowerConnector, upperConnector, 90);
+    const quarterPairs = quarterCells.lower.map((lower, index) => ({ lower, upper: quarterCells.upper[index] }));
+    const quarter = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 90, studPairs: quarterPairs });
+    if (lowerConnector === 'M') assert.equal(quarter.reason, 'perpendicular_connection_forbidden');
+    else {
+      assert.equal(quarter.valid, true, key);
+      assert.equal(quarter.relativeRotationDeg, 90);
+      assert.equal(quarter.studCount, 4);
+    }
+    const halfTurnCells = expectedConnectionCells(lowerConnector, upperConnector, 180);
+    const halfTurnPairs = halfTurnCells.lower.map((lower, index) => ({ lower, upper: halfTurnCells.upper[index] }));
+    const halfTurn = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 180, studPairs: halfTurnPairs });
+    assert.equal(halfTurn.valid, true, key);
+    assert.equal(halfTurn.studCount, 8);
+  }
+});
+
 test('placement engine produces exact L/M/R support candidates and blocks collisions', () => {
   const { placementEngine } = makeRuntime();
-  const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 4.8 }, yawRad: 0 };
-  const carried = { id: 'carried', position: { xMm: 0, yMm: 0, zMm: 4.8 }, yawRad: 0 };
+  const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 8.6 }, yawRad: 0 };
+  const carried = { id: 'carried', position: { xMm: 184, yMm: 0, zMm: 18.2 }, yawRad: 0 };
   const left = placementEngine.connectionCandidate(
     support,
-    { xMm: 188, yMm: 0, zMm: 9.6 },
+    { xMm: 188, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(left.side, 'L');
-  assert.equal(left.position.xMm, 192);
-  assert.ok(Math.abs(left.position.zMm - 14.4) < 1e-9);
+  assert.equal(left.carriedSide, 'R');
+  assert.equal(left.position.xMm, 184);
+  assert.ok(Math.abs(left.position.zMm - 18.2) < 1e-9);
+  carried.position.xMm = 200;
+  carried.yawRad = Math.PI / 2;
+  placementEngine.rotationQuarterTurns = 1;
   const middle = placementEngine.connectionCandidate(
     support,
-    { xMm: 200, yMm: 0, zMm: 9.6 },
+    { xMm: 200, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(middle.side, 'M');
+  assert.equal(middle.carriedSide, 'M');
+  assert.equal(middle.position.xMm, support.position.xMm);
+  assert.equal(middle.position.yMm, support.position.yMm);
+  assert.equal(middle.yawRad, support.yawRad, 'brick-on-brick preview must lock parallel despite a perpendicular carried pose');
+  assert.equal(middle.studCount, 8, 'AM-BM must engage all eight studs');
+  assert.equal(middle.overhang, false);
+  carried.position.xMm = 216;
   const right = placementEngine.connectionCandidate(
     support,
-    { xMm: 212, yMm: 0, zMm: 9.6 },
+    { xMm: 212, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(right.side, 'R');
-  const blocker = { id: 'blocker', position: { ...right.position }, yawRad: right.yawRad };
+  assert.equal(right.carriedSide, 'L');
+  assert.ok(Math.abs(right.yawRad - Math.PI / 2) < 1e-9, 'AR-BL must retain the requested 90 degree turn');
+  assert.equal(right.relativeRotationDeg, 90);
+  assert.equal(right.studCount, 4);
+  const mismatched = placementEngine.connectionCandidate(
+    support,
+    { xMm: 212, yMm: 0, zMm: 13.4 },
+    carried,
+    [support, carried],
+    'M'
+  );
+  assert.equal(mismatched.valid, false);
+  assert.equal(mismatched.blockedReason, 'CONNECTOR_PAIR_MISMATCH');
+  assert.equal(mismatched.carriedSide, 'L', 'invalid BM-AR requests must still preview the canonical BR-AL alignment');
+  const blocker = {
+    id: 'blocker',
+    position: { ...right.position, xMm: right.position.xMm + 4, yMm: right.position.yMm + 4 },
+    yawRad: right.yawRad
+  };
   const blocked = placementEngine.connectionCandidate(
     support,
-    { xMm: 212, yMm: 0, zMm: 9.6 },
+    { xMm: 212, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried, blocker]
   );
@@ -347,6 +605,60 @@ test('human pickup and placement use controller, board, ownership, and one revis
   assert.equal(graph.snapshot().matRoots.includes('brick-red'), true);
   assert.equal(controller.moveLooseBrick('brick-red', { xMm: 80, yMm: 80, zMm: 4.8 }).reason, 'operation_in_progress');
   assert.equal(findLatchCandidate({ ...brick.position, zMm: brick.position.zMm + 7.7 }, controller.getBricks()).reason, 'no_brick_in_capture');
+});
+
+test('only top-most structure bricks can be picked up', () => {
+  const { adapter, graph } = makeRuntime();
+  assert.equal(graph.addConnection({
+    lowerBrickId: 'brick-red',
+    lowerConnector: 'R',
+    upperBrickId: 'brick-blue',
+    upperConnector: 'L'
+  }), true);
+  const supporting = adapter.pickup('brick-red');
+  assert.equal(supporting.ok, false);
+  assert.equal(supporting.reason, 'supporting_brick');
+  assert.deepEqual(supporting.blockedByBrickIds, ['brick-blue']);
+  assert.equal(adapter.pickup('brick-blue').ok, true);
+});
+
+test('human placement undo restores the exact loose source and authoritative board state', () => {
+  const { adapter, controller, board, graph, placementEngine } = makeRuntime();
+  const original = controller.getBricks().find((brick) => brick.id === 'brick-red');
+  assert.equal(adapter.pickup(original.id).ok, true);
+  const candidate = placementEngine.matCandidate(
+    { xMm: 32, yMm: 32, zMm: 0 },
+    { id: original.id },
+    controller.getBricks()
+  );
+  adapter.setPreview(candidate);
+  assert.equal(adapter.release().ok, true);
+  assert.equal(adapter.getState().canUndo, true);
+  assert.equal(board.getPlacements().length, 1);
+  const beforeUndoRevision = controller.getState().worldRevision;
+  const undone = adapter.undo();
+  assert.equal(undone.ok, true);
+  assert.equal(undone.action, 'placement_undone');
+  assert.ok(controller.getState().worldRevision > beforeUndoRevision);
+  assert.equal(board.getPlacements().length, 0);
+  assert.equal(graph.snapshot().matRoots.includes(original.id), false);
+  const restored = controller.getBricks().find((brick) => brick.id === original.id);
+  assert.deepEqual(restored.position, original.position);
+  assert.equal(restored.yawRad, original.yawRad);
+  assert.equal(restored.placementType, null);
+  assert.equal(adapter.getState().canUndo, false);
+});
+
+test('paused controls expose undo and descriptive labels without shortcut badges', async () => {
+  const html = await readFile(fileURLToPath(new URL('../../apps/web/index.html', import.meta.url)), 'utf8');
+  const main = await readFile(fileURLToPath(new URL('../../apps/web/src/logo/main.js', import.meta.url)), 'utf8');
+  assert.match(html, /data-undo disabled>UNDO<\/button>/);
+  assert.match(html, /data-settings-toggle>SETTINGS<\/button>/);
+  assert.match(html, /data-debug-toggle>DEBUG<\/button>/);
+  assert.match(html, /data-perf-toggle>PERFORMANCE<\/button>/);
+  assert.doesNotMatch(html, /<kbd>/);
+  assert.match(main, /event\.code === 'KeyZ'/);
+  assert.match(main, /renderer\.undoPlayerAction\(\)/);
 });
 
 test('TEST mode locks player edits and returning to BUILD restores pickup', () => {

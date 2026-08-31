@@ -77,6 +77,7 @@ export class RobotController {
     board = null,
     bricks = [],
     revisionClock = board?.revisionClock ?? new RevisionClock()
+    ,placementAuthority = null
   } = {}) {
     this.definition = definition;
     this.workspace = workspace;
@@ -86,6 +87,7 @@ export class RobotController {
     this.jointSpeedLimitRadS = jointSpeedLimitRadS;
     this.jointAccelerationLimitRadS2 = jointAccelerationLimitRadS2;
     this.timeScale = timeScale;
+    this.playbackMultiplier = timeScale === 0 ? 0 : 1 / timeScale;
     this.board = board;
     this.bricks = clone(bricks);
     this.revisionClock = revisionClock;
@@ -107,7 +109,10 @@ export class RobotController {
     this.activeAbortController = null;
     this.operationEpoch = 0;
     this.pendingMoveCount = 0;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
     this.releaseClearanceBrickId = null;
+    this.placementAuthority = placementAuthority;
   }
 
   get worldRevision() { return this.revisionClock.value; }
@@ -123,9 +128,9 @@ export class RobotController {
     for (const listener of this.listeners) listener(event);
   }
 
-  #bumpRobot(type, details = {}) {
+  #bumpRobot(type, details = {}, { bumpWorld = true } = {}) {
     this.robotRevision += 1;
-    this.revisionClock.bump();
+    if (bumpWorld) this.revisionClock.bump();
     this.emit(type, details);
   }
 
@@ -141,13 +146,15 @@ export class RobotController {
         jawState: this.jawState,
         uniformScale: UR10_GRIPPER.uniformScale,
         gripperRootToTcpMm: { ...UR10_GRIPPER.gripperRootToTcpMm },
-        brickInTcp: this.brickInTcp ? { ...this.brickInTcp } : null
+        brickInTcp: this.brickInTcp ? { ...this.brickInTcp } : null,
+        brickYawInTcpRad: this.heldBrickId ? this.brickYawInTcpRad : null
       },
       jointsRad: Array.from(this.jointsRad),
       speedLimitMmS: this.speedLimitMmS,
       accelerationLimitMmS2: this.accelerationLimitMmS2,
       jointSpeedLimitRadS: this.jointSpeedLimitRadS,
       jointAccelerationLimitRadS2: this.jointAccelerationLimitRadS2,
+      simulationPlaybackMultiplier: this.playbackMultiplier,
       moving: this.moving,
       operationState: this.operationState,
       heldBrickId: this.heldBrickId,
@@ -159,8 +166,51 @@ export class RobotController {
   getWorkspace() { return clone(this.workspace); }
   getBricks() { return clone(this.bricks); }
 
+  operationBlocked(operationToken = null) {
+    return Boolean(this.exclusiveOperationToken && operationToken !== this.exclusiveOperationToken);
+  }
+
+  beginExclusiveOperation(label = 'compound') {
+    if (this.exclusiveOperationToken || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    const token = Symbol(label);
+    this.exclusiveOperationToken = token;
+    this.exclusiveOperationLabel = label;
+    this.emit('exclusive_operation_started', { label });
+    return { ok: true, token, worldRevision: this.worldRevision };
+  }
+
+  endExclusiveOperation(token) {
+    if (!token || token !== this.exclusiveOperationToken) return false;
+    const label = this.exclusiveOperationLabel;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
+    this.emit('exclusive_operation_completed', { label });
+    return true;
+  }
+
+  setSimulationPlaybackMultiplier(multiplier) {
+    if (!Number.isFinite(multiplier) || multiplier < 1 || multiplier > 40) {
+      return { ok: false, reason: 'invalid_input', minimum: 1, maximum: 40 };
+    }
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.exclusiveOperationToken) {
+      return { ok: false, reason: 'operation_in_progress' };
+    }
+    this.playbackMultiplier = multiplier;
+    this.timeScale = 1 / multiplier;
+    this.emit('playback_rate_changed', { multiplier });
+    return { ok: true, multiplier, physicalSpeedLimitMmS: this.speedLimitMmS };
+  }
+
+  setPlacementAuthority(authority) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) return false;
+    this.placementAuthority = authority;
+    return true;
+  }
+
   setBricks(bricks) {
-    if (this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (this.operationBlocked() || this.operationState !== 'idle') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     this.bricks = clone(bricks);
     this.heldBrickId = null;
     this.jawGapMm = UR10_GRIPPER.openGapMm;
@@ -169,6 +219,38 @@ export class RobotController {
     this.brickYawInTcpRad = 0;
     this.#bumpRobot('world_reset');
     return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
+  }
+
+  addLooseBricks(bricks, { actor = 'human' } = {}) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    if (!Array.isArray(bricks) || bricks.length < 1 || bricks.length > 50) {
+      return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    const known = new Set(this.bricks.map((brick) => brick.id));
+    const accepted = [];
+    for (const source of bricks) {
+      if (!source || typeof source.id !== 'string' || known.has(source.id)
+        || !source.position || ![source.position.xMm, source.position.yMm, source.position.zMm, source.yawRad].every(isFiniteNumber)) {
+        return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+      }
+      known.add(source.id);
+      const brick = clone({
+        ...source,
+        heldBy: null,
+        ownership: null,
+        placedTargetId: null,
+        placementType: null,
+        connection: null,
+        snapped: false,
+        graspable: source.graspable !== false
+      });
+      accepted.push(brick);
+    }
+    this.bricks.push(...accepted);
+    this.#bumpRobot('loose_bricks_added', { actor, brickIds: accepted.map((brick) => brick.id) });
+    return { ok: true, bricks: clone(accepted), count: accepted.length, worldRevision: this.worldRevision };
   }
 
   heldBrick() { return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null; }
@@ -188,12 +270,17 @@ export class RobotController {
     if (yawRad !== null) brick.yawRad = yawRad;
     if (freeQuaternion !== null) brick.freeQuaternion = [...freeQuaternion];
     else delete brick.freeQuaternion;
+    brick.reachability = {
+      reachable: false,
+      reason: 'pose_changed_requires_revalidation',
+      validatedAtWorldRevision: this.worldRevision
+    };
     this.#bumpRobot('loose_brick_moved', { brickId, actor, position: { ...position }, yawRad: brick.yawRad ?? 0 });
     return { ok: true, brick: clone(brick), actor, worldRevision: this.worldRevision };
   }
 
   beginHumanCarry(brickId) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (this.heldBrickId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
@@ -217,8 +304,11 @@ export class RobotController {
     return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 
-  commitHumanPlacement({ brickId, position, yawRad = 0, connection = null, placementType = 'free-build' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+  commitHumanPlacement({
+    brickId, position, yawRad = 0, connection = null, placementType = 'free-build',
+    supportBrickId = null, supportSide = null, carriedSide = null
+  } = {}) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -227,6 +317,37 @@ export class RobotController {
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick || brick.heldBy !== 'human') {
       return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
+    }
+    if (this.placementAuthority) {
+      const authoritative = this.placementAuthority.commit({
+        brickId,
+        position,
+        yawRad,
+        actor: 'human',
+        supportBrickId: supportBrickId ?? connection?.lowerBrickId ?? connection?.groups?.[0]?.lowerBrickId ?? null,
+        supportSide: supportSide ?? connection?.lowerConnector ?? connection?.groups?.[0]?.lowerConnector ?? 'M',
+        carriedSide: carriedSide ?? connection?.upperConnector ?? connection?.groups?.[0]?.upperConnector ?? null
+      });
+      if (!authoritative.ok) return authoritative;
+      brick.position = { ...authoritative.position };
+      brick.yawRad = authoritative.yawRad;
+      delete brick.freeQuaternion;
+      brick.heldBy = null;
+      brick.ownership = null;
+      brick.snapped = authoritative.snapped;
+      brick.placedTargetId = authoritative.targetId;
+      brick.placementType = authoritative.placementType;
+      brick.connection = authoritative.connections?.length > 1
+        ? { groups: clone(authoritative.connections) }
+        : authoritative.connection ? clone(authoritative.connection) : null;
+      this.#bumpRobot('human_placement', {
+        brickId,
+        actor: 'human',
+        placementType: authoritative.placementType,
+        targetId: authoritative.targetId,
+        connection: authoritative.connection
+      }, { bumpWorld: false });
+      return { ...authoritative, brick: clone(brick), placementAuthorityApplied: true, worldRevision: this.worldRevision };
     }
     const snap = this.board?.trySnapBrick({
       brickId,
@@ -281,7 +402,7 @@ export class RobotController {
   }
 
   commitHumanDrop({ brickId, position, yawRad = 0 } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -303,6 +424,9 @@ export class RobotController {
   }
 
   cancelHumanCarry(brickId, original) {
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick || brick.heldBy !== 'human') return { ok: false, reason: 'not_holding', worldRevision: this.worldRevision };
     brick.position = { ...original.position };
@@ -326,8 +450,9 @@ export class RobotController {
     brick.yawRad = pose.yawRad;
   }
 
-  validateMoveRequest({ xMm, yMm, zMm, speedMmS, expectedWorldRevision }) {
+  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision }) {
     if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) return { ok: false, reason: 'invalid_input' };
+    if (yawRad !== undefined && !isFiniteNumber(yawRad)) return { ok: false, reason: 'invalid_input' };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (speedMmS > this.speedLimitMmS) return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
     const target = { xMm, yMm, zMm };
@@ -346,14 +471,16 @@ export class RobotController {
     const startTcp = { ...this.tcp };
     const target = validation.target;
     const startYawRad = this.toolYawRad;
-    const targetYawRad = selectAutomaticYaw({
-      currentYawRad: startYawRad,
-      target,
-      heldBrick: this.heldBrick(),
-      heldBrickYawInTcpRad: this.brickYawInTcpRad,
-      bricks: this.bricks,
-      targets: this.board?.getTargets?.() ?? []
-    });
+    const targetYawRad = isFiniteNumber(request.yawRad)
+      ? wrapPi(request.yawRad)
+      : selectAutomaticYaw({
+        currentYawRad: startYawRad,
+        target,
+        heldBrick: this.heldBrick(),
+        heldBrickYawInTcpRad: this.brickYawInTcpRad,
+        bricks: this.bricks,
+        targets: this.board?.getTargets?.() ?? []
+      });
     const yawDeltaRad = shortestHalfTurnDelta(startYawRad, targetYawRad);
     const distanceMm = distance3(startTcp, target);
     const releasedBrick = this.releaseClearanceBrickId ? this.bricks.find((brick) => brick.id === this.releaseClearanceBrickId) : null;
@@ -455,17 +582,25 @@ export class RobotController {
   async planMoveResponsive(request, signal, epoch) {
     const steps = this.planMoveSteps(request);
     let result = steps.next();
+    let samplesSinceYield = 0;
     while (!result.done) {
       if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled');
-      if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
-      else if (typeof requestAnimationFrame === 'function') await new Promise((resolve) => requestAnimationFrame(resolve));
-      else await Promise.resolve();
+      samplesSinceYield += 1;
+      if (samplesSinceYield >= 12) {
+        samplesSinceYield = 0;
+        if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+        else if (typeof requestAnimationFrame === 'function') await new Promise((resolve) => requestAnimationFrame(resolve));
+        else await Promise.resolve();
+      }
       result = steps.next();
     }
     return result.value;
   }
 
   moveTool(request = {}) {
+    if (this.operationBlocked(request.operationToken ?? null)) {
+      return Promise.reject(new RobotError('operation_in_progress', { worldRevision: this.worldRevision }));
+    }
     const queuedEpoch = this.operationEpoch;
     this.pendingMoveCount += 1;
     const run = async () => {
@@ -537,8 +672,8 @@ export class RobotController {
     return this.operation;
   }
 
-  async latch({ expectedWorldRevision, actor = 'agent' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+  async latch({ expectedWorldRevision, actor = 'agent', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     const candidate = findLatchCandidate(this.tcp, this.bricks, this.heldBrickId);
     if (!candidate.ok) return { success: false, ok: false, reason: candidate.reason, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
@@ -563,12 +698,53 @@ export class RobotController {
     return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, yawErrorRad, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
   }
 
-  async unlatch({ expectedWorldRevision, actor = 'agent' } = {}) {
-    if (this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+  async unlatch({ expectedWorldRevision, actor = 'agent', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (!this.heldBrickId) return { success: false, ok: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = this.heldBrick();
     const position = { ...brick.position };
+    if (this.placementAuthority) {
+      const placement = this.placementAuthority.commit({
+        brickId: brick.id,
+        position,
+        yawRad: brick.yawRad,
+        actor
+      });
+      if (!placement.ok) {
+        return { success: false, ok: false, reason: placement.reason, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+      }
+      brick.position = { ...placement.position };
+      brick.yawRad = placement.yawRad;
+      brick.heldBy = null;
+      brick.ownership = null;
+      delete brick.freeQuaternion;
+      brick.snapped = placement.snapped;
+      brick.placedTargetId = placement.targetId;
+      brick.placementType = placement.placementType;
+      brick.connection = placement.connection ? clone(placement.connection) : null;
+      this.heldBrickId = null;
+      this.jawGapMm = UR10_GRIPPER.openGapMm;
+      this.jawState = 'open';
+      this.brickInTcp = null;
+      this.brickYawInTcpRad = 0;
+      this.releaseClearanceBrickId = brick.id;
+      this.#bumpRobot('unlatched', { brickId: brick.id, snap: placement, actor }, { bumpWorld: false });
+      return {
+        success: true,
+        ok: true,
+        brickId: brick.id,
+        finalPosition: { ...brick.position },
+        snapped: placement.snapped,
+        targetId: placement.targetId,
+        correctness: placement.correctness,
+        placementType: placement.placementType,
+        connection: placement.connection,
+        reason: null,
+        robotRevision: this.robotRevision,
+        worldRevision: this.worldRevision
+      };
+    }
     const snap = this.board?.trySnapBrick({ brickId: brick.id, colour: brick.colour, position, yawRad: brick.yawRad, actor }) ?? { ok: false, reason: 'no_snap_target' };
     if (!snap.ok && ['target_occupied', 'wrong_colour'].includes(snap.reason)) return { success: false, ok: false, reason: snap.reason, targetId: snap.targetId ?? null, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     brick.heldBy = null;
@@ -599,6 +775,8 @@ export class RobotController {
 
   async reset({ bricks = null } = {}) {
     this.operationEpoch += 1;
+    this.exclusiveOperationToken = null;
+    this.exclusiveOperationLabel = null;
     this.activeAbortController?.abort(new DOMException('Reset requested', 'AbortError'));
     try { await this.operation; } catch { /* cancellation/rejection is expected before reset */ }
     this.operationState = 'resetting';

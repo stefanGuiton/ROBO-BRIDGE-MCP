@@ -32,6 +32,9 @@ Human player mutations go through `HumanBuildAdapter`, then `RobotController` an
 - four live robot-mount controls (`X`, `Y`, `Z`, and yaw) that transform the one renderer machine frame without changing controller-space truth;
 - an eight-brick deterministic red/blue production round that remains inside the one authoritative tray/board/controller state;
 - exact existing UR10 V2 visual and calibrated real-gripper GLB preserved.
+- the tuned UR10 material lab and 15° smooth-by-angle normal pipeline, including welded seams, hard-edge preservation, degenerate-face cleanup, corner weighting, and a shared worker;
+- deterministic reachable supply slots in the visible V8 pile, with actionable pickup/approach/lift TCPs exposed through structured scene state;
+- performance-safe shadow throttling, one brick snapshot per rendered frame, stable placed-batch signatures, and frame/draw diagnostics.
 
 ## Deliberate adaptations
 
@@ -53,12 +56,22 @@ The supplied settings path is marked `-text` in `.gitattributes` so fresh clones
 
 ## WebMCP boundary
 
-The existing nine primitive tools remain the only production WebMCP surface. No player-only high-level snap/build tool was added. Page-side schema and registration behavior are covered by the repository tests. On 2026-08-31, the Codex in-app browser natively enumerated all nine tools and executed `get_build_state` and `get_robot_state`; both returned world revision `0` without mutation. Native mutating-tool cancellation was not repeated in this visual integration pass, though its forwarding path remains covered by the automated suite.
+The eleven production tools remain primitive and Cartesian-only. `get_scene_state` exposes bounded authoritative inventory, while `preview_placement` validates mat/target/stud intent and returns exact approach/required/retreat TCPs without mutating the world. No joint command or high-level build/playback shortcut was added.
+
+`observe_camera` supports the deterministic `tray_camera`, `canvas_camera`, hidden `top_camera`, `left_camera`, and `right_camera`, plus `user_camera`. The human view is converted from the renderer back into the shared machine frame before projection. All observations are read-only and preserve `worldRevision`.
+
+For local visual QA, `window.__LOGO_ROBO__.actions.captureCamera(cameraId)` renders any of those six views to an off-screen JPEG. It does not move the visible camera, register another WebMCP surface, or mutate simulator state.
+
+On 2026-08-31, the Codex in-app browser natively enumerated all eleven tools. Codex then used only `get_scene_state`, `get_robot_state`, `get_workspace`, `preview_placement`, `move_tool`, `latch`, and `unlatch` to select three reported-reachable bricks and build a real interlocked wall in the visible live scene. The final top brick matched five studs across two base-brick support connections. The robot finished empty-handed at safe height; browser state reached monotonic world revision 1239 with no console warnings/errors. Native cancellation forwarding remains covered by the automated suite and should be repeated in the final submission session.
+
+Evidence: `evidence/browser/main-demo-v8-native-webmcp-wall.md`, `evidence/browser/main-demo-v8-native-webmcp-wall.png`, and `evidence/browser/main-demo-multicamera-acceptance.md`.
 
 ## Verification commands
 
 ```powershell
 npm run test:player
+npm run test:js
+npm run test:reliability
 python scripts\verify.py
 python scripts\build_release.py
 ```
