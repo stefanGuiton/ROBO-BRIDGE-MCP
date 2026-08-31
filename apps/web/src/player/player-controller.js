@@ -6,6 +6,21 @@ const MOVEMENT_CODES = new Set([
   'ShiftLeft', 'ShiftRight', 'Space', 'ControlLeft', 'ControlRight'
 ]);
 
+const FALLBACK_EDGE_YAW_PX_PER_SECOND = 1900;
+const FALLBACK_EDGE_PITCH_PX_PER_SECOND = 1150;
+const FALLBACK_EDGE_BAND_PX = 100;
+const FALLBACK_RATE_EXPONENT = 3;
+const FALLBACK_FLICK_MIN_SPEED_PX_PER_SECOND = 850;
+const FALLBACK_FLICK_MAX_SPEED_PX_PER_SECOND = 5000;
+const FALLBACK_FLICK_YAW_BOOST_PX = 150;
+const FALLBACK_FLICK_PITCH_BOOST_PX = 95;
+
+function exponentialEdgeRate(distancePx) {
+  const normalized = clamp((FALLBACK_EDGE_BAND_PX - distancePx) / FALLBACK_EDGE_BAND_PX, 0, 1);
+  const curved = Math.expm1(FALLBACK_RATE_EXPONENT * normalized) / Math.expm1(FALLBACK_RATE_EXPONENT);
+  return curved;
+}
+
 export class PlayerController {
   constructor(camera, canvas, settings, collisionSolver) {
     this.camera = camera;
@@ -33,6 +48,11 @@ export class PlayerController {
     this.fallbackLookActive = false;
     this.fallbackPointerX = null;
     this.fallbackPointerY = null;
+    this.fallbackPointerTime = null;
+    this.fallbackEdgeDx = 0;
+    this.fallbackEdgeDy = 0;
+    this.fallbackFlickDx = 0;
+    this.fallbackFlickDy = 0;
     this.pointerLockAttempt = 0;
     this.pointerLockFallbackTimer = null;
     this.mobileMode = false;
@@ -69,21 +89,30 @@ export class PlayerController {
     });
     this.canvas.addEventListener('mousemove', (event) => {
       if (!this.enabled || this.mobileMode || !this.fallbackLookActive) return;
-      if (this.fallbackPointerX === null || this.fallbackPointerY === null) {
-        this.fallbackPointerX = event.clientX;
-        this.fallbackPointerY = event.clientY;
-        return;
+      if (this.fallbackPointerX !== null && this.fallbackPointerY !== null) {
+        const rawDx = event.clientX - this.fallbackPointerX;
+        const rawDy = event.clientY - this.fallbackPointerY;
+        const dx = clamp(rawDx, -80, 80);
+        const dy = clamp(rawDy, -80, 80);
+        this.applyLookDelta(dx, dy, this.settings.mouseSensitivityRadPerPx);
+        this.updateFallbackEdgeTurn(event.clientX, event.clientY);
+        const elapsedSeconds = Number.isFinite(event.timeStamp) && Number.isFinite(this.fallbackPointerTime)
+          ? clamp((event.timeStamp - this.fallbackPointerTime) / 1000, 1 / 240, 0.1)
+          : 1 / 60;
+        this.applyFallbackFlickBoost(rawDx, rawDy, elapsedSeconds);
+      } else {
+        this.updateFallbackEdgeTurn(event.clientX, event.clientY);
       }
-      const dx = clamp(event.clientX - this.fallbackPointerX, -80, 80);
-      const dy = clamp(event.clientY - this.fallbackPointerY, -80, 80);
       this.fallbackPointerX = event.clientX;
       this.fallbackPointerY = event.clientY;
-      this.applyLookDelta(dx, dy, this.settings.mouseSensitivityRadPerPx);
+      this.fallbackPointerTime = Number.isFinite(event.timeStamp) ? event.timeStamp : null;
     });
     this.canvas.addEventListener('mouseleave', () => {
       if (!this.fallbackLookActive) return;
       this.fallbackPointerX = null;
       this.fallbackPointerY = null;
+      this.fallbackPointerTime = null;
+      this.resetFallbackEdgeTurn();
     });
     document.addEventListener('pointerlockerror', () => this.activateFallbackLook());
     addEventListener('keydown', (event) => {
@@ -105,6 +134,7 @@ export class PlayerController {
     addEventListener('blur', () => {
       this.keys.clear();
       this.mobileKeys.clear();
+      this.resetFallbackEdgeTurn();
     });
     for (const element of document.querySelectorAll('[data-mobile-move]')) {
       const code = element.dataset.mobileMove;
@@ -178,6 +208,8 @@ export class PlayerController {
     this.fallbackLookActive = true;
     this.fallbackPointerX = Number.isFinite(originEvent?.clientX) ? originEvent.clientX : null;
     this.fallbackPointerY = Number.isFinite(originEvent?.clientY) ? originEvent.clientY : null;
+    this.fallbackPointerTime = Number.isFinite(originEvent?.timeStamp) ? originEvent.timeStamp : null;
+    this.resetFallbackEdgeTurn();
     document.body.classList.add('player-look-fallback');
     this.onPointerLockError?.();
     this.onPointerLock?.(false, { fallback: true });
@@ -191,6 +223,8 @@ export class PlayerController {
     this.fallbackLookActive = false;
     this.fallbackPointerX = null;
     this.fallbackPointerY = null;
+    this.fallbackPointerTime = null;
+    this.resetFallbackEdgeTurn();
     document.body.classList.remove('player-look-fallback');
     this.keys.clear();
     if (wasActive && notify) this.onPointerLock?.(false, { fallback: false });
@@ -232,6 +266,64 @@ export class PlayerController {
     this.targetPitch = clamp(this.targetPitch, minimum, maximum);
   }
 
+  updateFallbackEdgeTurn(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect?.();
+    if (!rect || !Number.isFinite(clientX) || !Number.isFinite(clientY) || rect.width <= 0 || rect.height <= 0) {
+      this.resetFallbackEdgeTurn();
+      return;
+    }
+    const left = exponentialEdgeRate(clientX - rect.left);
+    const right = exponentialEdgeRate(rect.right - clientX);
+    const top = exponentialEdgeRate(clientY - rect.top);
+    const bottom = exponentialEdgeRate(rect.bottom - clientY);
+    this.fallbackEdgeDx = right - left;
+    this.fallbackEdgeDy = bottom - top;
+    document.body.classList.toggle('player-look-edge', Math.abs(this.fallbackEdgeDx) > 0.001 || Math.abs(this.fallbackEdgeDy) > 0.001);
+  }
+
+  applyFallbackFlickBoost(dx, dy, elapsedSeconds) {
+    this.fallbackFlickDx = 0;
+    this.fallbackFlickDy = 0;
+    if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) return;
+    const strength = (delta) => clamp(
+      (Math.abs(delta) / elapsedSeconds - FALLBACK_FLICK_MIN_SPEED_PX_PER_SECOND)
+        / (FALLBACK_FLICK_MAX_SPEED_PX_PER_SECOND - FALLBACK_FLICK_MIN_SPEED_PX_PER_SECOND),
+      0,
+      1
+    );
+    const movingTowardXEdge = Math.sign(dx) === Math.sign(this.fallbackEdgeDx);
+    const movingTowardYEdge = Math.sign(dy) === Math.sign(this.fallbackEdgeDy);
+    const xStrength = strength(dx);
+    const yStrength = strength(dy);
+    if (movingTowardXEdge && xStrength > 0) {
+      this.fallbackFlickDx = Math.sign(dx) * xStrength * Math.sqrt(Math.abs(this.fallbackEdgeDx)) * FALLBACK_FLICK_YAW_BOOST_PX;
+    }
+    if (movingTowardYEdge && yStrength > 0) {
+      this.fallbackFlickDy = Math.sign(dy) * yStrength * Math.sqrt(Math.abs(this.fallbackEdgeDy)) * FALLBACK_FLICK_PITCH_BOOST_PX;
+    }
+    if (Math.abs(this.fallbackFlickDx) > 0.001 || Math.abs(this.fallbackFlickDy) > 0.001) {
+      this.applyLookDelta(this.fallbackFlickDx, this.fallbackFlickDy, this.settings.mouseSensitivityRadPerPx);
+    }
+  }
+
+  resetFallbackEdgeTurn() {
+    this.fallbackEdgeDx = 0;
+    this.fallbackEdgeDy = 0;
+    this.fallbackFlickDx = 0;
+    this.fallbackFlickDy = 0;
+    document.body.classList.remove('player-look-edge');
+  }
+
+  applyFallbackEdgeTurn(dt) {
+    if (!this.fallbackLookActive || !Number.isFinite(dt) || dt <= 0) return;
+    if (Math.abs(this.fallbackEdgeDx) <= 0.001 && Math.abs(this.fallbackEdgeDy) <= 0.001) return;
+    this.applyLookDelta(
+      this.fallbackEdgeDx * FALLBACK_EDGE_YAW_PX_PER_SECOND * dt,
+      this.fallbackEdgeDy * FALLBACK_EDGE_PITCH_PX_PER_SECOND * dt,
+      this.settings.mouseSensitivityRadPerPx
+    );
+  }
+
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (!this.enabled) {
@@ -257,6 +349,7 @@ export class PlayerController {
 
   physicsStep(dt) {
     if (!this.enabled) return;
+    this.applyFallbackEdgeTurn(dt);
     const smoothing = Math.max(0.0001, this.settings.mouseSmoothingS);
     const lookAlpha = 1 - Math.exp(-dt / smoothing);
     this.yaw += (this.targetYaw - this.yaw) * lookAlpha;
@@ -324,6 +417,8 @@ export class PlayerController {
       mobileMode: this.mobileMode,
       pointerLocked: this.pointerLocked,
       fallbackLookActive: this.fallbackLookActive,
+      fallbackEdgeTurn: { dx: this.fallbackEdgeDx, dy: this.fallbackEdgeDy },
+      fallbackFlickBoost: { dx: this.fallbackFlickDx, dy: this.fallbackFlickDy },
       lookMode: this.pointerLocked ? 'pointer-lock' : this.fallbackLookActive ? 'in-app-fallback' : 'inactive',
       position: this.position.toArray(),
       velocity: this.velocity.toArray(),

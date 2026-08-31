@@ -149,8 +149,10 @@ test('in-app fallback enables no-drag free-look when pointer lock is rejected', 
     assert.equal(player.fallbackLookActive, true);
     assert.equal(player.getState().lookMode, 'in-app-fallback');
     assert.equal(classes.has('player-look-fallback'), true);
-    canvas.dispatchEvent(event('mousemove', { clientX: 145, clientY: 80, movementX: 0, movementY: 0, buttons: 0 }));
+    canvas.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    canvas.dispatchEvent(event('mousemove', { clientX: 145, clientY: 100, movementX: 0, movementY: 0, buttons: 0 }));
     assert.ok(player.targetYaw < initialYaw, 'ordinary in-app mouse movement must rotate without dragging');
+    assert.equal(player.getState().fallbackEdgeTurn.dx, 0, 'normal FPS look must not invoke edge assist outside the final 100 pixels');
     let primary = 0;
     player.onPrimary = () => { primary += 1; };
     canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 145, clientY: 80 }));
@@ -158,6 +160,76 @@ test('in-app fallback enables no-drag free-look when pointer lock is rejected', 
     windowTarget.dispatchEvent(event('keydown', { code: 'Escape', target: null }));
     assert.equal(player.fallbackLookActive, false);
     assert.equal(classes.has('player-look-fallback'), false);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
+
+test('in-app fallback adds exponential 100px edge assist and an immediate bounded fast-flick boost', async () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const classes = new Set();
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: {
+    add: (name) => classes.add(name),
+    remove: (name) => classes.delete(name),
+    toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name)
+  } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, { getDiagnostics: () => ({}) });
+    player.setEnabled(true);
+    player.activateFallbackLook(event('mousedown', { clientX: 400, clientY: 300, timeStamp: 1000 }));
+    canvas.dispatchEvent(event('mousemove', { clientX: 110, clientY: 300, movementX: -290, movementY: 0, buttons: 0, timeStamp: 1100 }));
+    assert.equal(player.getState().fallbackEdgeTurn.dx, 0, 'edge assist must remain off outside the final 100 pixels');
+    assert.equal(player.getState().fallbackFlickBoost.dx, 0, 'a fast move outside the edge band must not receive a boost');
+    canvas.dispatchEvent(event('mousemove', { clientX: 75, clientY: 300, movementX: -35, movementY: 0, buttons: 0, timeStamp: 1200 }));
+    const softRate = Math.abs(player.getState().fallbackEdgeTurn.dx);
+    assert.equal(classes.has('player-look-edge'), true);
+    assert.ok(player.getState().fallbackEdgeTurn.dx < 0);
+    assert.ok(softRate > 0, 'the continuous assist must begin inside 100 pixels');
+    assert.equal(player.getState().fallbackFlickBoost.dx, 0, 'slow entry into the edge band must remain gentle');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 300, movementX: 325, movementY: 0, buttons: 0, timeStamp: 1300 }));
+    canvas.dispatchEvent(event('mousemove', { clientX: 10, clientY: 10, movementX: -390, movementY: -290, buttons: 0, timeStamp: 1310 }));
+    assert.ok(Math.abs(player.getState().fallbackEdgeTurn.dx) > softRate, 'turn rate must rise exponentially toward the edge');
+    assert.ok(player.getState().fallbackFlickBoost.dx < 0, 'a fast left flick must add an immediate left-turn boost');
+    assert.ok(player.getState().fallbackFlickBoost.dy < 0, 'a fast corner flick must boost pitch on the same event');
+    const edgeYaw = player.targetYaw;
+    player.applyFallbackEdgeTurn(0.25);
+    assert.ok(player.targetYaw > edgeYaw, 'holding near the left edge must keep turning left without more cursor travel');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 300, movementX: 390, movementY: 290, buttons: 0, timeStamp: 1410 }));
+    const centreYaw = player.targetYaw;
+    player.applyFallbackEdgeTurn(0.25);
+    assert.equal(player.targetYaw, centreYaw, 'returning toward the centre must stop continuous edge turning');
+    assert.equal(classes.has('player-look-edge'), false);
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 20, movementX: 0, movementY: -280, buttons: 0, timeStamp: 1510 }));
+    const topPitch = player.targetPitch;
+    player.applyFallbackEdgeTurn(0.1);
+    assert.ok(player.targetPitch > topPitch, 'holding near the top edge must keep looking up');
+    canvas.dispatchEvent(event('mousemove', { clientX: 400, clientY: 580, movementX: 0, movementY: 560, buttons: 0, timeStamp: 1610 }));
+    const bottomPitch = player.targetPitch;
+    player.applyFallbackEdgeTurn(0.1);
+    assert.ok(player.targetPitch < bottomPitch, 'holding near the bottom edge must keep looking down');
   } finally {
     player?.setEnabled(false);
     globalThis.document = previous.document;
