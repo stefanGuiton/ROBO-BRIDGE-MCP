@@ -53,8 +53,8 @@ export class PlacedBrickBatcher {
     const capacity = Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(1, count))));
     const material = new THREE.MeshPhysicalMaterial({
       color: COLOURS[colour] ?? COLOURS.white,
-      roughness: 0.31,
-      metalness: 0,
+      roughness: this.settings.brickRoughness ?? 0.31,
+      metalness: this.settings.brickMetalness ?? 0,
       clearcoat: 0.25
     });
     const body = new THREE.InstancedMesh(this.bodyGeometry, material, capacity);
@@ -70,6 +70,14 @@ export class PlacedBrickBatcher {
     studs.userData.placedBrickBatch = group;
     this.groups.set(colour, group);
     return group;
+  }
+
+  applyMaterialSettings() {
+    for (const group of this.groups.values()) {
+      group.material.roughness = this.settings.brickRoughness ?? 0.31;
+      group.material.metalness = this.settings.brickMetalness ?? 0;
+      group.material.needsUpdate = true;
+    }
   }
 
   rebuild(bricks, placedIds) {

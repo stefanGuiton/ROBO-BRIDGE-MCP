@@ -8,6 +8,8 @@
 - automatic internal tool yaw with a calibrated full-pose IK target;
 - the supplied real animated gripper GLB, JSON material overrides, and authoritative jaw/held-brick state;
 - a project-local Three.js r185 light-mode workcell renderer;
+- the exact V8 workbench geometry, 80 × 60 stud mat, MORE BRICKS button, floor, materials, lighting, and minimal full-screen HUD;
+- a slide-out panel containing all 231 source settings, all robot actions, and live UR10 mount X/Y/Z/yaw controls;
 - desktop and mobile first-person player controls with capsule/workcell collision;
 - held-brick spring/pendulum presentation, L/M/R brick connectors, 8 mm mat snapping, target snapping, and collision-blocked previews;
 - explicit BUILD and TEST-lock modes, with production structural collapse disabled;
@@ -20,6 +22,7 @@
 - deterministic local image-to-Blueprint compiler;
 - explicit Blueprint-to-live-machine transform;
 - compiler-generated red/blue tray inventory;
+- an eight-brick deterministic red/blue MAIN_DEMO round;
 - simulator-native bounded perception with actionable `recommendedTcp` coordinates;
 - one nine-tool primitive WebMCP surface;
 - production red/blue build tests and persistent reliability tests.

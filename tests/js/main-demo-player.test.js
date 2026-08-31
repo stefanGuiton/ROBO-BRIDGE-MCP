@@ -15,6 +15,9 @@ import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter
 import { fixedStepAdvance } from '../../apps/web/src/player/math.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
 import { PlayerSettingsStore, PLAYER_FALLBACK_SETTINGS, PLAYER_SOURCE_PROVENANCE } from '../../apps/web/src/player/player-settings.js';
+import { compileImageData } from '../../apps/web/src/logo/compiler.js';
+import { makePattern } from '../../apps/web/src/logo/patterns.js';
+import { challengeBoardLimits, challengeInventoryHasNoOverlap, createChallengeInventory, remapBlueprintToChallenge } from '../../apps/web/src/logo/workcell-adapter.js';
 
 const settings = {
   ...PLAYER_FALLBACK_SETTINGS,
@@ -61,6 +64,40 @@ test('supplied V8 player settings are provenance-locked and production disables 
   for (const [key, value] of Object.entries(supplied)) {
     assert.deepEqual(store.get()[key], key === 'structuralCollapseEnabled' ? false : value, key);
   }
+});
+
+test('V8 scene exposes all settings plus live robot mount controls in the tucked-away panel', async () => {
+  const store = new PlayerSettingsStore({ ...PLAYER_FALLBACK_SETTINGS, tableWidthMm: 1750, matPanelsX: 4 });
+  assert.deepEqual(
+    ['robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'].map((key) => store.get()[key]),
+    [-560, 0, 1200, 0]
+  );
+  assert.equal(store.setMany({ robotMountXmm: -500, structuralCollapseEnabled: true }).ok, true);
+  assert.equal(store.get().robotMountXmm, -500);
+  assert.equal(store.get().structuralCollapseEnabled, false);
+  const html = await readFile(fileURLToPath(new URL('../../apps/web/index.html', import.meta.url)), 'utf8');
+  const panel = await readFile(fileURLToPath(new URL('../../apps/web/src/player/player-settings-panel.js', import.meta.url)), 'utf8');
+  const workbench = await readFile(fileURLToPath(new URL('../../apps/web/src/render/v8-workbench.js', import.meta.url)), 'utf8');
+  assert.match(html, /data-settings-panel/);
+  assert.match(html, /PLACE NEXT BRICK/);
+  assert.match(panel, /20×20 Stud Build Mat/);
+  assert.match(panel, /Robot Mount/);
+  assert.match(workbench, /MAIN_DEMO_V8_MORE_BRICKS_BUTTON/);
+  assert.match(workbench, /matPanelsX \* s\.matPanelStuds/);
+});
+
+test('fuller V8 production round remains authoritative, red-blue, and tray-safe', () => {
+  const compiled = compileImageData(makePattern('diagonal', 64), {
+    brickBudget: 8,
+    boardLimits: challengeBoardLimits(),
+    fitMode: 'contain',
+    seed: 173
+  }).blueprint;
+  const blueprint = remapBlueprintToChallenge(compiled);
+  const inventory = createChallengeInventory(blueprint);
+  assert.equal(blueprint.brickCount, 8);
+  assert.deepEqual([...new Set(inventory.map((brick) => brick.colour))].sort(), ['blue', 'red']);
+  assert.equal(challengeInventoryHasNoOverlap(inventory), true);
 });
 
 test('240 Hz fixed-step schedule is independent of 60/90/120/144 render cadence', () => {

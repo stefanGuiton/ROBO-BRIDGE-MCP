@@ -1,6 +1,6 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { forwardKinematics } from '../robot/kinematics.js';
-import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
+import { UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RealGripperVisual, THREE } from './real-gripper-visual.js';
 import { Ur10Visual } from './ur10-visual.js';
 import { ColorGrader } from '../player/color-grading.js';
@@ -9,20 +9,17 @@ import { fixedStepAdvance } from '../player/math.js';
 import { PlacedBrickBatcher } from '../player/placed-brick-batcher.js';
 import { PlayerCapsuleSolver } from '../player/player-collision.js';
 import { PlayerController } from '../player/player-controller.js';
+import { V8Workbench } from './v8-workbench.js';
 
 const BRICK_COLOURS = {
   white: 0xf3f5f8, black: 0x151b25, red: 0xef4b4f,
   blue: 0x3b78ff, yellow: 0xffd447, green: 0x49c47a
 };
 
-function physicalMaterial(options) {
-  return new THREE.MeshPhysicalMaterial({
-    roughness: 0.36,
-    metalness: 0.65,
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.28,
-    ...options
-  });
+function toneMappingFromSetting(value) {
+  if (value === 'Linear') return THREE.LinearToneMapping;
+  if (value === 'None') return THREE.NoToneMapping;
+  return THREE.ACESFilmicToneMapping;
 }
 
 function makeBox(size, centre, material) {
@@ -41,20 +38,20 @@ export class RobotRenderer {
     this.playerSettings = playerSettings;
     this.humanBuildAdapter = humanBuildAdapter;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xe8eef5);
+    this.scene.background = new THREE.Color(0xe9eef3).multiplyScalar(playerSettings?.backgroundBrightness ?? 1.4);
     this.scene.fog = null;
     this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
     this.webgl.outputColorSpace = THREE.SRGBColorSpace;
-    this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
-    this.webgl.toneMappingExposure = 1.02;
-    this.webgl.shadowMap.enabled = true;
+    this.webgl.toneMapping = toneMappingFromSetting(playerSettings?.toneMapping);
+    this.webgl.toneMappingExposure = playerSettings?.exposure ?? 1.05;
+    this.webgl.shadowMap.enabled = playerSettings?.shadowsEnabled ?? true;
     this.webgl.shadowMap.type = THREE.PCFShadowMap;
-    this.camera = new THREE.PerspectiveCamera(48, 1, 1, 2600);
+    this.camera = new THREE.PerspectiveCamera(playerSettings?.fovDeg ?? 62, 1, playerSettings?.nearClipMm ?? 2, playerSettings?.farClipMm ?? 12000);
     this.camera.up.set(0, 0, 1);
-    this.focus = new THREE.Vector3(420, 0, 170);
+    this.focus = new THREE.Vector3(0, 50, 1050);
     this.yaw = -0.82;
     this.pitch = 0.47;
-    this.radius = 1450;
+    this.radius = 2450;
     this.running = false;
     this.lastFrame = 0;
     this.fps = 0;
@@ -68,11 +65,15 @@ export class RobotRenderer {
     this.physicsAccumulator = 0;
     this.physicsStepSeconds = 1 / Math.max(30, playerSettings?.physicsHz ?? 240);
     this.maximumSubsteps = Math.max(1, playerSettings?.maximumSubsteps ?? 8);
+    this.machineRoot = new THREE.Group();
+    this.machineRoot.name = 'AUTHORITATIVE_UR10_MACHINE_FRAME';
+    this.scene.add(this.machineRoot);
     this.buildLighting();
     this.buildWorkcell();
+    this.applyMachineTransform();
     this.buildRobot();
-    this.gripper = new RealGripperVisual(this.scene);
-    this.batcher = new PlacedBrickBatcher(this.scene, playerSettings ?? {});
+    this.gripper = new RealGripperVisual(this.machineRoot);
+    this.batcher = new PlacedBrickBatcher(this.machineRoot, playerSettings ?? {});
     if (playerSettings && humanBuildAdapter) this.installPlayerRuntime();
     this.installCameraControls();
     if (this.player) this.setPlayerMode(true);
@@ -80,80 +81,89 @@ export class RobotRenderer {
   }
 
   buildLighting() {
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7c0cc, 1.55));
-    const key = new THREE.DirectionalLight(0xffffff, 2.7);
-    key.position.set(145, -270, 380);
+    if (this.lightingRoot) this.scene.remove(this.lightingRoot);
+    this.lightingRoot = new THREE.Group();
+    this.lightingRoot.name = 'MAIN_DEMO_V8_LIGHTING';
+    this.scene.add(this.lightingRoot);
+    const s = this.playerSettings;
+    this.lightingRoot.add(new THREE.HemisphereLight(0xffffff, 0x8290a0, s.environmentIntensity));
+    const key = new THREE.DirectionalLight(0xfff2dd, s.keyLightIntensity);
+    key.position.set(s.keyXmm, s.keyYmm, s.keyZmm);
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = -760;
-    key.shadow.camera.right = 760;
-    key.shadow.camera.top = 620;
-    key.shadow.camera.bottom = -620;
-    key.shadow.camera.near = 20;
-    key.shadow.camera.far = 1600;
-    this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xc9dcff, 0.85);
-    fill.position.set(705, 240, 220);
-    this.scene.add(fill);
+    key.shadow.mapSize.set(s.shadowMapResolution, s.shadowMapResolution);
+    key.shadow.bias = s.shadowBias;
+    key.shadow.normalBias = s.shadowNormalBias;
+    key.shadow.camera.left = -1700;
+    key.shadow.camera.right = 1700;
+    key.shadow.camera.top = 1700;
+    key.shadow.camera.bottom = -1700;
+    key.shadow.camera.near = 50;
+    key.shadow.camera.far = 6000;
+    key.target.position.set(s.tableXmm, s.tableYmm, s.tableTopHeightMm);
+    this.lightingRoot.add(key, key.target);
+    const fill = new THREE.DirectionalLight(0xdbeaff, s.fillIntensity);
+    fill.position.set(1200, -1500, 1500);
+    this.lightingRoot.add(fill);
+    const rim = new THREE.DirectionalLight(0xfff0da, s.rimIntensity);
+    rim.position.set(400, 1700, 1700);
+    this.lightingRoot.add(rim);
   }
 
   buildWorkcell() {
-    const tableMaterial = new THREE.MeshStandardMaterial({ color: 0xd7dde5, roughness: 0.82, metalness: 0.02 });
-    this.workSurface = makeBox(
-      { xMm: 1280, yMm: 720, zMm: 8 },
-      { xMm: 380, yMm: 0, zMm: -4 },
-      tableMaterial
+    this.floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(8000, 8000),
+      new THREE.MeshStandardMaterial({ color: 0xdfe4e8, roughness: 0.86, metalness: 0 })
     );
-    this.workSurface.name = 'MAIN_DEMO_BUILD_SURFACE';
-    this.workSurface.userData.playerSurface = true;
-    this.scene.add(this.workSurface);
-    const grid = new THREE.GridHelper(1180, 30, 0xb6c2ce, 0xd5dde6);
-    grid.rotation.x = Math.PI / 2;
-    grid.position.set(380, 0, 0.5);
-    grid.material.opacity = 0.18;
-    grid.material.transparent = true;
-    this.scene.add(grid);
+    this.floor.name = 'MAIN_DEMO_V8_FLOOR';
+    this.floor.receiveShadow = true;
+    this.scene.add(this.floor);
+    this.workbench = new V8Workbench(this.scene, this.playerSettings);
+    this.workSurface = this.workbench.mat;
+  }
 
-    const tray = CHALLENGE_LAYOUT.tray;
-    const trayMaterial = physicalMaterial({ color: 0x405768, metalness: 0.45, roughness: 0.42 });
-    this.scene.add(makeBox(
-      { xMm: tray.maxX - tray.minX, yMm: tray.maxY - tray.minY, zMm: tray.floorZ },
-      { xMm: (tray.minX + tray.maxX) / 2, yMm: (tray.minY + tray.maxY) / 2, zMm: tray.floorZ / 2 },
-      trayMaterial
-    ));
-    const wallThickness = 6;
-    const wallZ = tray.floorZ + tray.wallHeight / 2;
-    for (const spec of [
-      [{ xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, { xMm: tray.minX, yMm: (tray.minY + tray.maxY) / 2, zMm: wallZ }],
-      [{ xMm: wallThickness, yMm: tray.maxY - tray.minY, zMm: tray.wallHeight }, { xMm: tray.maxX, yMm: (tray.minY + tray.maxY) / 2, zMm: wallZ }],
-      [{ xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: tray.wallHeight }, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: wallZ }],
-      [{ xMm: tray.maxX - tray.minX, yMm: wallThickness, zMm: tray.wallHeight }, { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: wallZ }]
-    ]) this.scene.add(makeBox(spec[0], spec[1], trayMaterial));
+  applyMachineTransform() {
+    const s = this.playerSettings;
+    this.machineRoot.position.set(s.robotMountXmm, s.robotMountYmm, s.robotMountZmm);
+    this.machineRoot.rotation.set(0, 0, THREE.MathUtils.degToRad(s.robotMountYawDeg));
+    this.machineRoot.updateMatrixWorld(true);
+  }
 
-    const board = CHALLENGE_LAYOUT.board;
-    this.scene.add(makeBox(
-      { xMm: board.maxX - board.minX, yMm: board.maxY - board.minY, zMm: board.surfaceZ },
-      { xMm: (board.minX + board.maxX) / 2, yMm: (board.minY + board.maxY) / 2, zMm: board.surfaceZ / 2 },
-      physicalMaterial({ color: 0xc8d1d8, metalness: 0.18, roughness: 0.48 })
-    ));
+  machinePointFromWorld(point) {
+    this.machineRoot.updateMatrixWorld(true);
+    return this.machineRoot.worldToLocal(point.clone());
+  }
+
+  playerObstacles() {
+    const s = this.playerSettings;
+    return [
+      ...this.workbench.collisionBoxes(),
+      {
+        kind: 'ROBOT_BASE',
+        minX: s.robotMountXmm - 125,
+        maxX: s.robotMountXmm + 125,
+        minY: s.robotMountYmm - 125,
+        maxY: s.robotMountYmm + 125,
+        minZ: s.robotMountZmm,
+        maxZ: s.robotMountZmm + 310
+      }
+    ];
   }
 
   buildRobot() {
-    this.ur10 = new Ur10Visual(this.scene);
+    this.ur10 = new Ur10Visual(this.machineRoot);
     this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
-    this.scene.add(this.tcpMarker);
+    this.machineRoot.add(this.tcpMarker);
     this.tcpRing = new THREE.Mesh(new THREE.TorusGeometry(15, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: 0x59e1ff }));
     this.tcpRing.rotation.x = Math.PI / 2;
-    this.scene.add(this.tcpRing);
+    this.machineRoot.add(this.tcpRing);
   }
 
   installPlayerRuntime() {
-    const obstacles = [
-      { kind: 'WORKTABLE', minX: -260, maxX: 1020, minY: -360, maxY: 360, minZ: -8, maxZ: 0 },
-      { kind: 'ROBOT_BASE', minX: -120, maxX: 120, minY: -120, maxY: 120, minZ: 0, maxZ: 310 }
-    ];
-    this.playerCollision = new PlayerCapsuleSolver(this.playerSettings, obstacles);
+    this.playerCollision = new PlayerCapsuleSolver(this.playerSettings, this.playerObstacles());
     this.player = new PlayerController(this.camera, this.canvas, this.playerSettings, this.playerCollision);
+    this.machinePlayerProxy = {
+      getHoldPivot: (output) => this.machineRoot.worldToLocal(this.player.getHoldPivot(output))
+    };
     this.heldVisual = new HeldBrickController(this.playerSettings);
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = this.playerSettings.unlimitedPickupReach
@@ -161,7 +171,7 @@ export class RobotRenderer {
       : this.playerSettings.maximumPickupDistanceMm;
     this.ndcCentre = new THREE.Vector2(0, 0);
     this.heldGhost = this.makeHeldGhost();
-    this.scene.add(this.heldGhost);
+    this.machineRoot.add(this.heldGhost);
     this.colorGrader = new ColorGrader(this.webgl, this.playerSettings);
     this.player.onPrimary = () => this.primaryPlayerAction();
     this.player.onRotate = () => {
@@ -244,9 +254,21 @@ export class RobotRenderer {
       this.camera.zoom = this.playerSettings.cameraZoom;
       this.camera.updateProjectionMatrix();
       if (!this.playerInitialized) {
+        const s = this.playerSettings;
+        const radius = Math.max(0, s.playerCollisionDiameterMm * 0.5);
+        const spawn = this.workbench.worldPoint(new THREE.Vector3(
+          338,
+          -s.tableDepthMm / 2 - radius - s.playerCollisionSkinMm - s.playerSpawnBehindTableMm - 1250,
+          s.playerEyeHeightMm
+        ));
+        const target = this.workbench.worldPoint(new THREE.Vector3(
+          s.matXmm,
+          s.matYmm,
+          s.tableTopHeightMm + s.matThicknessMm + 220
+        ));
         this.player.setLookAt(
-          new THREE.Vector3(380, -980, 560),
-          new THREE.Vector3(470, 0, 90)
+          spawn,
+          target
         );
         this.playerInitialized = true;
       } else {
@@ -260,6 +282,10 @@ export class RobotRenderer {
 
   primaryPlayerAction() {
     if (!this.player?.enabled) return { ok: false, reason: 'player_mode_disabled' };
+    if (!this.humanBuildAdapter.active && this.highlightedMoreBricks) {
+      this.moreBricksHandler?.();
+      return { ok: true, action: 'more_bricks' };
+    }
     if (this.humanBuildAdapter.active) {
       const result = this.humanBuildAdapter.release();
       if (result.ok) {
@@ -307,10 +333,12 @@ export class RobotRenderer {
     if (!active) {
       const pickMeshes = [
         ...this.brickMeshes.values(),
-        ...this.batcher.pickMeshes()
+        ...this.batcher.pickMeshes(),
+        this.workbench.moreBricksButton
       ].filter((mesh) => mesh.visible);
       const hit = this.centreHits(pickMeshes)[0] ?? null;
-      this.highlightedBrickId = this.brickIdFromHit(hit);
+      this.highlightedMoreBricks = Boolean(hit?.object?.userData?.moreBricks);
+      this.highlightedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
       for (const [id, mesh] of this.brickMeshes) {
         const highlighted = id === this.highlightedBrickId;
         mesh.material.emissive?.setHex(highlighted ? 0xffffff : 0x000000);
@@ -340,13 +368,17 @@ export class RobotRenderer {
           if (support) {
             candidate = this.humanBuildAdapter.placementEngine.connectionCandidate(
               support,
-              { xMm: hit.point.x, yMm: hit.point.y, zMm: hit.point.z },
+              (() => {
+                const point = this.machinePointFromWorld(hit.point);
+                return { xMm: point.x, yMm: point.y, zMm: point.z };
+              })(),
               carried,
               bricks
             );
           }
         } else if (hit.object.userData?.playerSurface) {
-          const point = { xMm: hit.point.x, yMm: hit.point.y, zMm: hit.point.z };
+          const local = this.machinePointFromWorld(hit.point);
+          const point = { xMm: local.x, yMm: local.y, zMm: local.z };
           const target = this.humanBuildAdapter.placementEngine.nearestTarget(point);
           candidate = target
             ? this.humanBuildAdapter.placementEngine.targetCandidate(target, carried)
@@ -356,7 +388,7 @@ export class RobotRenderer {
       if (candidate) break;
     }
     if (!candidate) {
-      const pivot = this.player.getHoldPivot();
+      const pivot = this.machinePointFromWorld(this.player.getHoldPivot());
       candidate = {
         type: 'CARRY',
         status: 'CARRYING',
@@ -407,7 +439,7 @@ export class RobotRenderer {
           new THREE.MeshStandardMaterial({ color: colour, transparent: true, opacity: 0.22, depthWrite: false })
         );
         mesh.userData.targetId = target.id;
-        this.scene.add(mesh);
+        this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
       mesh.visible = !target.occupiedBy;
@@ -415,7 +447,7 @@ export class RobotRenderer {
       mesh.rotation.z = target.yawRad ?? 0;
     }
     for (const [id, mesh] of this.targetMeshes) {
-      if (!seen.has(id)) { this.scene.remove(mesh); this.targetMeshes.delete(id); }
+      if (!seen.has(id)) { this.machineRoot.remove(mesh); this.targetMeshes.delete(id); }
     }
   }
 
@@ -442,7 +474,7 @@ export class RobotRenderer {
         );
         body.name = `BRICK_${brick.id}`;
         body.userData.brickId = brick.id;
-        this.scene.add(body);
+        this.machineRoot.add(body);
         mesh = body;
         this.brickMeshes.set(brick.id, mesh);
       }
@@ -451,7 +483,7 @@ export class RobotRenderer {
       mesh.visible = !placedIds.has(brick.id) && brick.heldBy !== 'human';
     }
     for (const [id, mesh] of this.brickMeshes) {
-      if (!seen.has(id)) { this.scene.remove(mesh); this.brickMeshes.delete(id); }
+      if (!seen.has(id)) { this.machineRoot.remove(mesh); this.brickMeshes.delete(id); }
     }
   }
 
@@ -468,11 +500,11 @@ export class RobotRenderer {
   setView(view) {
     if (this.player?.enabled) this.player.setEnabled(false);
     const presets = {
-      hero: { focus: [390, 0, 165], yaw: -0.8621700547, pitch: 0.4069542207, radius: 1402.052424 },
-      top: { focus: [590, 0, 130], yaw: -0.72, pitch: 1.25, radius: 1600 },
-      tray: { focus: [535, -220, 95], yaw: -0.82, pitch: 0.58, radius: 760 },
-      latch: { focus: [520, -230, 70], yaw: -0.92, pitch: 0.42, radius: 430 },
-      target: { focus: [635, 205, 90], yaw: -1.02, pitch: 0.52, radius: 720 }
+      hero: { focus: [0, 50, 1020], yaw: -1.03, pitch: 0.30, radius: 2550 },
+      top: { focus: [0, 50, 1120], yaw: -Math.PI / 2, pitch: 1.42, radius: 2300 },
+      tray: { focus: [-60, -175, 1210], yaw: -1.02, pitch: 0.52, radius: 720 },
+      latch: { focus: [-40, -180, 1240], yaw: -0.92, pitch: 0.42, radius: 430 },
+      target: { focus: [95, 220, 1210], yaw: -1.02, pitch: 0.52, radius: 720 }
     };
     const preset = presets[view] ?? presets.hero;
     this.focus.set(...preset.focus);
@@ -537,7 +569,10 @@ export class RobotRenderer {
     const rect = this.canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
-    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    const cap = this.player?.mobileMode
+      ? this.playerSettings.mobilePixelRatioCap
+      : this.playerSettings.pixelRatioCap;
+    const pixelRatio = Math.min(cap ?? 1, window.devicePixelRatio || 1);
     this.webgl.setPixelRatio(pixelRatio);
     if (this.canvas.width !== Math.round(width * pixelRatio) || this.canvas.height !== Math.round(height * pixelRatio)) this.webgl.setSize(width, height, false);
     this.camera.aspect = width / height;
@@ -576,7 +611,7 @@ export class RobotRenderer {
           this.physicsAccumulator = advance.accumulator;
           for (let index = 0; index < advance.steps; index += 1) {
             this.player.physicsStep(this.physicsStepSeconds);
-            this.heldVisual.step(this.physicsStepSeconds, this.player);
+            this.heldVisual.step(this.physicsStepSeconds, this.machinePlayerProxy);
           }
         }
       }
@@ -588,6 +623,50 @@ export class RobotRenderer {
   }
 
   stop() { this.running = false; }
+
+  setMoreBricksHandler(handler) { this.moreBricksHandler = handler; }
+
+  applySettings(key = '*') {
+    const tableChanged = key === '*' || /^(table|leg|mat|gridVisible|gridColor|gridOpacity)/.test(key);
+    const mountChanged = key === '*' || /^robotMount/.test(key);
+    const lightingChanged = key === '*' || /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadow|exposure|toneMapping)/.test(key);
+    const collisionChanged = tableChanged || mountChanged || key === '*' || /^playerCollision/.test(key);
+    const brickMaterialChanged = key === '*' || /^(brickRoughness|brickMetalness)$/.test(key);
+    if (tableChanged) {
+      this.workbench.rebuild();
+      this.workSurface = this.workbench.mat;
+    }
+    if (mountChanged) this.applyMachineTransform();
+    if (collisionChanged) this.playerCollision?.setObstacles(this.playerObstacles());
+    if (lightingChanged) {
+      this.scene.background = new THREE.Color(0xe9eef3).multiplyScalar(this.playerSettings.backgroundBrightness);
+      this.webgl.toneMappingExposure = this.playerSettings.exposure;
+      this.webgl.toneMapping = toneMappingFromSetting(this.playerSettings.toneMapping);
+      this.webgl.shadowMap.enabled = this.playerSettings.shadowsEnabled;
+      this.buildLighting();
+    }
+    if (brickMaterialChanged) {
+      this.batcher.applyMaterialSettings();
+      for (const mesh of this.looseBrickMeshes.values()) {
+        mesh.material.roughness = this.playerSettings.brickRoughness ?? 0.31;
+        mesh.material.metalness = this.playerSettings.brickMetalness ?? 0;
+        mesh.material.needsUpdate = true;
+      }
+    }
+    this.physicsStepSeconds = 1 / Math.max(30, this.playerSettings.physicsHz ?? 240);
+    this.maximumSubsteps = Math.max(1, this.playerSettings.maximumSubsteps ?? 8);
+    if (this.raycaster) {
+      this.raycaster.far = this.playerSettings.unlimitedPickupReach
+        ? Number.POSITIVE_INFINITY
+        : this.playerSettings.pickupReachMm;
+    }
+    this.camera.fov = this.playerSettings.fovDeg;
+    this.camera.near = this.playerSettings.nearClipMm;
+    this.camera.far = this.playerSettings.farClipMm;
+    this.camera.zoom = this.playerSettings.cameraZoom;
+    this.camera.updateProjectionMatrix();
+    this.render();
+  }
 
   getPerformance() {
     const times = [...this.frameTimes].sort((a, b) => a - b);

@@ -92,7 +92,11 @@ export const PLAYER_FALLBACK_SETTINGS = Object.freeze({
   lutEnabled: false,
   lutStrength: 1,
   lutName: 'None',
-  lutSize: 0
+  lutSize: 0,
+  robotMountXmm: -560,
+  robotMountYmm: 0,
+  robotMountZmm: 1200,
+  robotMountYawDeg: 0
 });
 
 function sanitizeSettings(input = {}, allowedKeys = null) {
@@ -142,9 +146,30 @@ export class PlayerSettingsStore {
   set(key, value) {
     if (!(key in this.value) || key === 'structuralCollapseEnabled') return false;
     this.value[key] = value;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.value)); } catch { /* storage is optional */ }
+    this.persist();
     for (const listener of this.listeners) listener(key, value, this.value);
     return true;
+  }
+
+  setMany(values) {
+    const sanitized = sanitizeSettings(values, Object.keys(this.value));
+    if (!Object.keys(sanitized).length) return { ok: false, reason: 'no_valid_settings' };
+    for (const [key, value] of Object.entries(sanitized)) {
+      if (key !== 'structuralCollapseEnabled') this.value[key] = value;
+    }
+    this.value.structuralCollapseEnabled = false;
+    this.persist();
+    for (const listener of this.listeners) listener('*', null, this.value);
+    return { ok: true, count: Object.keys(sanitized).length };
+  }
+
+  reset() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage is optional */ }
+    return { ...this.value, structuralCollapseEnabled: false };
+  }
+
+  persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.value)); } catch { /* storage is optional */ }
   }
 
   subscribe(listener) {

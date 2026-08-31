@@ -13,13 +13,14 @@ import { ConnectionGraph } from '../player/connection-graph.js';
 import { HumanBuildAdapter } from '../player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
 import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } from '../player/player-settings.js';
+import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
 
 function makeRoundBlueprint() {
   const compiled = compileImageData(makePattern('diagonal', 64), {
-    brickBudget: 6,
+    brickBudget: 8,
     boardLimits: challengeBoardLimits(),
     fitMode: 'contain',
     seed: 173
@@ -54,6 +55,7 @@ const rrevEl = $('[data-rrev]');
 const wrevEl = $('[data-wrev]');
 const progressEl = $('[data-progress]');
 const fpsEl = $('[data-fps]');
+const frameMsEl = $('[data-frame-ms]');
 const gripperEl = $('[data-gripper]');
 const yawEl = $('[data-yaw]');
 const jawEl = $('[data-jaw]');
@@ -63,6 +65,34 @@ const moveForm = $('[data-move-form]');
 const moveButton = moveForm?.querySelector('button[type="submit"]');
 const playerStateEl = $('[data-player-state]');
 const playerHeldEl = $('[data-player-held]');
+
+const settingsPanelController = installPlayerSettingsPanel({
+  store: playerSettingsStore,
+  panel: $('[data-settings-panel]'),
+  groups: $('[data-settings-groups]'),
+  search: $('[data-settings-search]'),
+  onImportError: (error) => addLog(`Settings import rejected: ${error.message}`, 'bad')
+});
+playerSettingsStore.subscribe((key) => renderer.applySettings(key));
+renderer.setMoreBricksHandler(() => handleAction(null, () => resetScene(), 'Fresh authoritative brick set loaded'));
+const seedEl = $('[data-seed]');
+if (seedEl) seedEl.textContent = String(playerSettings.seed);
+
+function openSettingsFilter(query = '') {
+  settingsPanelController?.setOpen(true);
+  const search = $('[data-settings-search]');
+  if (!search) return;
+  search.value = query;
+  search.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+$('[data-debug-toggle]')?.addEventListener('click', () => openSettingsFilter('debug'));
+$('[data-perf-toggle]')?.addEventListener('click', () => document.body.classList.toggle('perf-expanded'));
+addEventListener('keydown', (event) => {
+  if (event.target?.matches?.('input,select,textarea')) return;
+  if (event.code === 'F2') { event.preventDefault(); openSettingsFilter('debug'); }
+  if (event.code === 'F3') { event.preventDefault(); document.body.classList.toggle('perf-expanded'); }
+});
 
 function nowLabel() { return new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
 function addLog(message, kind = '') {
@@ -88,8 +118,29 @@ function getSceneState() {
     schemaVersion: 'logo-robo.scene.v2',
     worldRevision: snapshot.worldRevision,
     coordinateFrame: 'machine-mm-rad',
+    displayFrame: {
+      id: 'main-demo-v8-world-mm',
+      machineOriginMm: {
+        xMm: playerSettings.robotMountXmm,
+        yMm: playerSettings.robotMountYmm,
+        zMm: playerSettings.robotMountZmm
+      },
+      machineYawDeg: playerSettings.robotMountYawDeg
+    },
     blueprintId: blueprint.blueprintId,
-    workcell: { tableZMm: CHALLENGE_LAYOUT.tableZMm, tray: CHALLENGE_LAYOUT.tray, board: CHALLENGE_LAYOUT.board },
+    workcell: {
+      tableZMm: CHALLENGE_LAYOUT.tableZMm,
+      tray: CHALLENGE_LAYOUT.tray,
+      board: CHALLENGE_LAYOUT.board,
+      displayTable: {
+        xMm: playerSettings.tableXmm,
+        yMm: playerSettings.tableYmm,
+        yawDeg: playerSettings.tableYawDeg,
+        widthMm: playerSettings.tableWidthMm,
+        depthMm: playerSettings.tableDepthMm,
+        topHeightMm: playerSettings.tableTopHeightMm
+      }
+    },
     objects: snapshot.objects,
     build: board.getBuildState({ limit: 20 })
   };
@@ -285,6 +336,7 @@ $('[data-clear-lut]')?.addEventListener('click', () => {
 
 function updateToolDiagnostics(event) {
   if (!toolListEl) return;
+  toolListEl.querySelector('[data-status="pending"]')?.remove();
   let tool = toolListEl.querySelector(`[data-tool="${event.toolName}"]`);
   if (!tool) { tool = document.createElement('span'); tool.dataset.tool = event.toolName; tool.textContent = event.toolName; toolListEl.append(tool); }
   tool.dataset.status = event.status;
@@ -297,7 +349,8 @@ function updateToolDiagnostics(event) {
 renderer.start();
 setInterval(() => {
   const performance = renderer.getPerformance();
-  if (fpsEl) fpsEl.textContent = performance.fps ? `${performance.fps.toFixed(0)} FPS` : '—';
+  if (fpsEl) fpsEl.textContent = performance.fps ? performance.fps.toFixed(0) : '—';
+  if (frameMsEl) frameMsEl.textContent = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
   if (gripperEl) {
     gripperEl.textContent = performance.gripper.state === 'ready' ? 'REAL GLB READY' : performance.gripper.state.toUpperCase();
     gripperEl.dataset.kind = performance.gripper.state === 'ready' ? 'ok' : 'warning';

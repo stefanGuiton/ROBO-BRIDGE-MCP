@@ -26,11 +26,17 @@ Human player mutations go through `HumanBuildAdapter`, then `RobotController` an
 - instanced placed-brick batches with ray-pick identity;
 - ACES tone mapping and optional local 17/33/65 `.cube` LUT grading;
 - all supplied primitive settings retained, with local persisted overrides restricted to known setting keys;
+- the source V8 white 1750 × 690 × 1200 mm workbench, four legs, 640 × 480 mm stud mat, 80 × 60 instanced studs, red MORE BRICKS control, floor, materials, ACES exposure, and three-light rig;
+- the source-style full-screen FPS/HUD/help/bottom-toolbar shell, with all robot actions and 231 live settings moved into the slide-out Settings panel;
+- four live robot-mount controls (`X`, `Y`, `Z`, and yaw) that transform the one renderer machine frame without changing controller-space truth;
+- an eight-brick deterministic red/blue production round that remains inside the one authoritative tray/board/controller state;
 - exact existing UR10 V2 visual and calibrated real-gripper GLB preserved.
 
 ## Deliberate adaptations
 
-The reference demo's behavior is mapped into the repository's canonical millimetre machine frame and existing challenge workcell. Its table/world and standalone brick truth were not copied because that would violate the shared-state architecture.
+The reference demo's table, mat, floor, materials, lighting, camera composition, HUD, and settings surface are mapped into the browser as a display-world layer. The existing canonical millimetre machine frame is mounted on that table through one `AUTHORITATIVE_UR10_MACHINE_FRAME` transform. UR10 links, real gripper, bricks, target ghosts, placed-brick batches, ray hits, and player placement coordinates all pass through that same transform. The reference demo's standalone brick truth was not copied.
+
+Display-only geometry/material/mount changes do not advance the authoritative world revision. `get_scene_state` exposes the current machine-to-display transform and display-table dimensions so structured and visible coordinates can be reconciled explicitly.
 
 The held-brick physics is presentation and placement-intent simulation. Accepted construction state remains deterministic; this project does not claim general rigid-body contact physics. BUILD mode never structurally collapses.
 
@@ -46,7 +52,7 @@ The supplied settings path is marked `-text` in `.gitattributes` so fresh clones
 
 ## WebMCP boundary
 
-The existing nine primitive tools remain the only production WebMCP surface. No player-only high-level snap/build tool was added. Page-side schema and registration behavior are covered by the repository tests. Native agent enumeration, execution, and cancellation remain an external acceptance gate when a browser exposing `document.modelContext` is available.
+The existing nine primitive tools remain the only production WebMCP surface. No player-only high-level snap/build tool was added. Page-side schema and registration behavior are covered by the repository tests. On 2026-08-31, the Codex in-app browser natively enumerated all nine tools and executed `get_build_state` and `get_robot_state`; both returned world revision `0` without mutation. Native mutating-tool cancellation was not repeated in this visual integration pass, though its forwarding path remains covered by the automated suite.
 
 ## Verification commands
 

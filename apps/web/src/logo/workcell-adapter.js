@@ -65,7 +65,7 @@ export function createChallengeInventory(blueprint, layout = CHALLENGE_LAYOUT) {
   const minY = layout.tray.minY + 22;
   const maxY = layout.tray.maxY - 22;
   const positions = [];
-  for (let y = minY; y <= maxY + 1e-9; y += 24) {
+  for (let y = minY; y <= maxY + 1e-9; y += 22) {
     for (let x = minX; x <= maxX + 1e-9; x += 38) positions.push({ xMm: x, yMm: y });
   }
   if (positions.length < blueprint.brickCount) throw new Error(`inventory_exceeds_tray_capacity:${blueprint.brickCount}/${positions.length}`);
