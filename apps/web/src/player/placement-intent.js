@@ -1,38 +1,27 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
-import { angleWrap } from './math.js';
+import { angleWrap, gridCandidateLocal, occupancyCells } from './math.js';
 
 const SIDES = Object.freeze(['L', 'M', 'R']);
-const SIDE_OFFSET = Object.freeze({ L: -BRICK_SPEC.studPitchMm, M: 0, R: BRICK_SPEC.studPitchMm });
 
 function rotate2(x, y, yawRad) {
-  const cosine = Math.cos(yawRad);
-  const sine = Math.sin(yawRad);
+  const cosine = Math.cos(yawRad), sine = Math.sin(yawRad);
   return { x: cosine * x - sine * y, y: sine * x + cosine * y };
 }
 
-function localX(point, brick) {
-  const dx = point.xMm - brick.position.xMm;
-  const dy = point.yMm - brick.position.yMm;
-  return rotate2(dx, dy, -(brick.yawRad ?? 0)).x;
-}
-
 function axisProjectionRadius(yawRad, halfLength, halfWidth, axisX, axisY) {
-  const long = rotate2(1, 0, yawRad);
-  const short = rotate2(0, 1, yawRad);
+  const long = rotate2(1, 0, yawRad), short = rotate2(0, 1, yawRad);
   return halfLength * Math.abs(long.x * axisX + long.y * axisY)
     + halfWidth * Math.abs(short.x * axisX + short.y * axisY);
 }
 
-export function brickObbOverlap(a, b, clearanceMm = 0.1) {
-  const halfLength = BRICK_SPEC.lengthMm / 2;
-  const halfWidth = BRICK_SPEC.widthMm / 2;
-  const halfHeight = BRICK_SPEC.bodyHeightMm / 2;
+export function brickObbOverlap(a, b, clearanceMm = 0.1, settings = BRICK_SPEC) {
+  const halfLength = (settings.brickLengthMm ?? settings.lengthMm) / 2;
+  const halfWidth = (settings.brickWidthMm ?? settings.widthMm) / 2;
+  const halfHeight = (settings.brickBodyHeightMm ?? settings.bodyHeightMm) / 2;
   if (Math.abs(a.position.zMm - b.position.zMm) >= halfHeight * 2 - clearanceMm) return false;
-  const deltaX = b.position.xMm - a.position.xMm;
-  const deltaY = b.position.yMm - a.position.yMm;
+  const deltaX = b.position.xMm - a.position.xMm, deltaY = b.position.yMm - a.position.yMm;
   for (const yaw of [a.yawRad ?? 0, (a.yawRad ?? 0) + Math.PI / 2, b.yawRad ?? 0, (b.yawRad ?? 0) + Math.PI / 2]) {
-    const axisX = Math.cos(yaw);
-    const axisY = Math.sin(yaw);
+    const axisX = Math.cos(yaw), axisY = Math.sin(yaw);
     const distance = Math.abs(deltaX * axisX + deltaY * axisY);
     const radius = axisProjectionRadius(a.yawRad ?? 0, halfLength, halfWidth, axisX, axisY)
       + axisProjectionRadius(b.yawRad ?? 0, halfLength, halfWidth, axisX, axisY);
@@ -49,6 +38,33 @@ export class PlacementIntentEngine {
     this.rotationQuarterTurns = 0;
     this.lastSupport = null;
     this.lastSide = 'M';
+    this.carriedSide = null;
+    this.configureTableFrame({
+      centre: { xMm: settings.matXmm ?? 0, yMm: settings.matYmm ?? 0 },
+      yawRad: (settings.matYawDeg ?? 0) * Math.PI / 180,
+      placementSurfaceZMm: (settings.matThicknessMm ?? 2) + (settings.matStudHeightMm ?? 1.8),
+      widthMm: settings.matWidthMm ?? 640,
+      depthMm: settings.matDepthMm ?? 480
+    });
+  }
+
+  configureTableFrame({ centre, yawRad, placementSurfaceZMm, widthMm, depthMm }) {
+    this.tableFrame = {
+      centre: { ...centre }, yawRad, placementSurfaceZMm, widthMm, depthMm,
+      studCountX: Math.round(widthMm / this.settings.gridPitchMm),
+      studCountY: Math.round(depthMm / this.settings.gridPitchMm),
+      gridOriginX: -widthMm / 2 + this.settings.gridPitchMm / 2,
+      gridOriginY: -depthMm / 2 + this.settings.gridPitchMm / 2
+    };
+  }
+
+  worldToMat(point) {
+    return rotate2(point.xMm - this.tableFrame.centre.xMm, point.yMm - this.tableFrame.centre.yMm, -this.tableFrame.yawRad);
+  }
+
+  matToWorld(x, y, zMm) {
+    const rotated = rotate2(x, y, this.tableFrame.yawRad);
+    return { xMm: this.tableFrame.centre.xMm + rotated.x, yMm: this.tableFrame.centre.yMm + rotated.y, zMm };
   }
 
   rotate(direction = 1) {
@@ -60,17 +76,18 @@ export class PlacementIntentEngine {
     this.rotationQuarterTurns = 0;
     this.lastSupport = null;
     this.lastSide = 'M';
+    this.carriedSide = null;
   }
 
   selectSide(support, hitPoint) {
-    const rawX = localX(hitPoint, support);
+    const local = rotate2(hitPoint.xMm - support.position.xMm, hitPoint.yMm - support.position.yMm, -(support.yawRad ?? 0));
     const band = Math.max(0.1, this.settings.connectionCenterBandMm);
-    let side = rawX < -band ? 'L' : rawX > band ? 'R' : 'M';
+    let side = local.x < -band ? 'L' : local.x > band ? 'R' : 'M';
     if (this.lastSupport === support.id) {
       const hysteresis = Math.max(0, Math.min(0.9, this.settings.connectionSwitchHysteresisPct / 100));
-      if (this.lastSide === 'M' && Math.abs(rawX) <= band * (1 + hysteresis)) side = 'M';
-      if (this.lastSide === 'L' && rawX < -band * (1 - hysteresis)) side = 'L';
-      if (this.lastSide === 'R' && rawX > band * (1 - hysteresis)) side = 'R';
+      if (this.lastSide === 'M' && Math.abs(local.x) <= band * (1 + hysteresis)) side = 'M';
+      if (this.lastSide === 'L' && local.x < -band * (1 - hysteresis)) side = 'L';
+      if (this.lastSide === 'R' && local.x > band * (1 - hysteresis)) side = 'R';
     }
     this.lastSupport = support.id;
     this.lastSide = side;
@@ -78,92 +95,111 @@ export class PlacementIntentEngine {
   }
 
   targetCandidate(target, carried) {
-    const yawRad = Number.isFinite(target.yawRad)
-      ? target.yawRad
-      : Number.isFinite(target.yawDeg) ? target.yawDeg * Math.PI / 180 : 0;
+    const yawRad = Number.isFinite(target.yawRad) ? target.yawRad : Number.isFinite(target.yawDeg) ? target.yawDeg * Math.PI / 180 : 0;
     return {
-      type: 'TARGET',
-      status: target.occupiedBy ? 'BLOCKED' : 'VALID',
-      valid: !target.occupiedBy,
-      blockedReason: target.occupiedBy ? 'TARGET_OCCUPIED' : null,
-      targetId: target.id,
-      placementType: 'blueprint-target',
-      position: { ...target.position },
-      yawRad,
-      carriedBrickId: carried.id,
-      connection: null,
-      side: null,
-      relativeRotationDeg: yawRad * 180 / Math.PI
+      type: 'TARGET', status: target.occupiedBy ? 'BLOCKED' : 'VALID', valid: !target.occupiedBy,
+      blockedReason: target.occupiedBy ? 'TARGET_OCCUPIED' : null, targetId: target.id,
+      placementType: 'blueprint-target', position: { ...target.position }, yawRad,
+      carriedBrickId: carried.id, connection: null, connections: [], side: null,
+      relativeRotationDeg: yawRad * 180 / Math.PI, studCount: 0, overhang: false
     };
   }
 
   matCandidate(point, carried, bricks) {
-    const pitch = this.settings.gridPitchMm;
-    const yawRad = this.rotationQuarterTurns * Math.PI / 2;
-    const position = {
-      xMm: Math.round(point.xMm / pitch) * pitch,
-      yMm: Math.round(point.yMm / pitch) * pitch,
-      zMm: BRICK_SPEC.bodyHeightMm / 2
-    };
+    const orientation = this.rotationQuarterTurns % 2, frame = this.tableFrame;
+    const local = this.worldToMat(point);
+    const grid = gridCandidateLocal(local.x, local.y, orientation, this.settings.gridPitchMm, frame.gridOriginX, frame.gridOriginY);
+    const cells = occupancyCells(grid.ix, grid.iy, orientation);
+    const inBounds = cells.every(([ix, iy]) => ix >= 0 && iy >= 0 && ix < frame.studCountX && iy < frame.studCountY);
+    const occupied = cells.some(([ix, iy]) => { const owner = this.graph.matOwner(ix, iy); return owner !== null && owner !== carried.id; });
+    const inRadius = Math.hypot(grid.x - local.x, grid.y - local.y) <= this.settings.snapSearchRadiusMm;
+    const yawRad = angleWrap(frame.yawRad + this.rotationQuarterTurns * Math.PI / 2);
+    const position = this.matToWorld(grid.x, grid.y, frame.placementSurfaceZMm + this.settings.brickBodyHeightMm / 2);
     const proxy = { id: carried.id, position, yawRad };
-    const blocker = bricks.find((brick) => brick.id !== carried.id && brickObbOverlap(proxy, brick));
+    const blocker = inBounds && inRadius && !occupied
+      ? bricks.find((brick) => brick.id !== carried.id && brickObbOverlap(proxy, brick, 0.1, this.settings)) : null;
+    const valid = inBounds && inRadius && !occupied && !blocker;
     return {
-      type: 'MAT',
-      status: blocker ? 'BLOCKED' : 'VALID',
-      valid: !blocker,
-      blockedReason: blocker ? `COLLISION:${blocker.id}` : null,
-      placementType: 'mat',
-      position,
-      yawRad,
-      carriedBrickId: carried.id,
-      connection: null,
-      side: null,
-      relativeRotationDeg: this.rotationQuarterTurns * 90
+      type: 'MAT', mode: 'MAT', status: !inBounds || !inRadius ? 'NONE' : valid ? 'VALID' : 'BLOCKED', valid,
+      blockedReason: occupied ? 'MAT_OCCUPIED' : blocker ? `COLLISION:${blocker.id}` : !inBounds ? 'OUT_OF_BOUNDS' : !inRadius ? 'OUT_OF_RANGE' : null,
+      placementType: 'mat', position, yawRad, carriedBrickId: carried.id,
+      cells, ix: grid.ix, iy: grid.iy, localX: grid.x, localY: grid.y,
+      connection: null, connections: [], side: null, relativeRotationDeg: this.rotationQuarterTurns * 90,
+      studCount: 0, overhang: false
     };
   }
 
-  connectionCandidate(support, hitPoint, carried, bricks, carriedSide = 'M') {
+  nearestCarriedSide(carried, pivot, supportSide) {
+    let best = 'M', bestDistance = Number.POSITIVE_INFINITY;
+    for (const side of SIDES) {
+      const point = this.graph.connectorWorld(carried, side, false);
+      let distance = (point.xMm - pivot.xMm) ** 2 + (point.yMm - pivot.yMm) ** 2 + (point.zMm - pivot.zMm) ** 2;
+      if (supportSide === 'L' && side === 'R') distance -= 1e-4;
+      if (supportSide === 'R' && side === 'L') distance -= 1e-4;
+      if (distance < bestDistance) { bestDistance = distance; best = side; }
+    }
+    return best;
+  }
+
+  connectionCandidate(support, hitPoint, carried, bricks, requestedCarriedSide = null) {
+    const previousSupport = this.lastSupport;
+    const previousSide = this.lastSide;
     const supportSide = this.selectSide(support, hitPoint);
+    const pivot = this.graph.connectorWorld(support, supportSide, true);
+    if (this.carriedSide === null || requestedCarriedSide || previousSupport !== support.id || previousSide !== supportSide) {
+      this.carriedSide = requestedCarriedSide ?? this.nearestCarriedSide(carried, pivot, supportSide);
+    }
+    const carriedSide = this.carriedSide;
     const supportYaw = support.yawRad ?? 0;
-    const targetYaw = angleWrap(supportYaw + this.rotationQuarterTurns * Math.PI / 2);
-    const supportOffset = rotate2(SIDE_OFFSET[supportSide], 0, supportYaw);
-    const carriedOffset = rotate2(SIDE_OFFSET[carriedSide], 0, targetYaw);
+    const nearestQuarter = Math.round(angleWrap((carried.yawRad ?? 0) - supportYaw) / (Math.PI / 2));
+    const relativeTurns = nearestQuarter + this.rotationQuarterTurns;
+    const targetYaw = supportYaw + relativeTurns * Math.PI / 2;
+    const layer = Number.isInteger(support.stackLayer) ? support.stackLayer + 1
+      : Math.max(1, Math.round((support.position.zMm - (this.tableFrame.placementSurfaceZMm + this.settings.brickBodyHeightMm / 2)) / this.settings.brickBodyHeightMm) + 1);
+    const anchor = this.graph.connectorLocal(carriedSide, false);
+    const carriedAnchor = rotate2(anchor.x, anchor.y, targetYaw);
     const position = {
-      xMm: support.position.xMm + supportOffset.x - carriedOffset.x,
-      yMm: support.position.yMm + supportOffset.y - carriedOffset.y,
-      zMm: support.position.zMm + BRICK_SPEC.bodyHeightMm
+      xMm: pivot.xMm - carriedAnchor.x,
+      yMm: pivot.yMm - carriedAnchor.y,
+      zMm: this.tableFrame.placementSurfaceZMm + this.settings.brickBodyHeightMm / 2 + layer * this.settings.brickBodyHeightMm
     };
-    const proxy = { id: carried.id, position, yawRad: targetYaw };
-    const blocker = bricks.find((brick) => (
-      brick.id !== carried.id
-      && brick.id !== support.id
-      && brickObbOverlap(proxy, brick)
-    ));
-    const connectorFree = this.graph.isConnectorFree(support.id, 'top', supportSide)
-      && this.graph.isConnectorFree(carried.id, 'bottom', carriedSide);
-    const valid = !blocker && connectorFree;
-    const lowerCells = this.graph.connectorCells(supportSide);
+    const placed = bricks.filter((brick) => this.graph.matRoots.has(brick.id) || this.graph.connectionsFor(brick.id).length > 0);
+    if (!placed.some((brick) => brick.id === support.id)) placed.push(support);
+    this.graph.rebuildSpatial(placed);
+    const matches = [];
+    for (let ix = 0; ix < 4; ix += 1) for (let iy = 0; iy < 2; iy += 1) {
+      if (!this.graph.isBottomStudFree(carried.id, ix, iy)) continue;
+      const bottom = this.graph.studLocal(ix, iy, false), rotated = rotate2(bottom.x, bottom.y, targetYaw);
+      const world = { xMm: position.xMm + rotated.x, yMm: position.yMm + rotated.y, zMm: position.zMm + bottom.z };
+      const match = this.graph.findFreeTopStudAt(world, 0.10, carried.id);
+      if (match) matches.push({ upper: { ix, iy }, lower: { ix: match.ix, iy: match.iy }, lowerBrickId: match.brick.id });
+    }
     const upperCells = this.graph.connectorCells(carriedSide);
+    const lowerAllowed = new Set(this.graph.connectorCells(supportSide).map((cell) => `${cell.ix},${cell.iy}`));
+    const selectedGroupValid = upperCells.every((upper) => matches.some((match) => match.upper.ix === upper.ix
+      && match.upper.iy === upper.iy && match.lowerBrickId === support.id && lowerAllowed.has(`${match.lower.ix},${match.lower.iy}`)));
+    const grouped = new Map();
+    if (selectedGroupValid) for (const match of matches) {
+      if (!grouped.has(match.lowerBrickId)) grouped.set(match.lowerBrickId, {
+        lowerBrickId: match.lowerBrickId, lowerConnector: match.lowerBrickId === support.id ? supportSide : 'AUTO',
+        upperConnector: match.lowerBrickId === support.id ? carriedSide : 'AUTO',
+        relativeRotation: ((relativeTurns % 4) + 4) % 4 * 90, studPairs: []
+      });
+      grouped.get(match.lowerBrickId).studPairs.push({ lower: match.lower, upper: match.upper });
+    }
+    const connections = [...grouped.values()], allowedSupports = new Set(connections.map((connection) => connection.lowerBrickId));
+    const proxy = { id: carried.id, position, yawRad: targetYaw };
+    const blocker = bricks.find((brick) => brick.id !== carried.id && !allowedSupports.has(brick.id)
+      && brickObbOverlap(proxy, brick, 0.1, this.settings));
+    const blockedReason = !selectedGroupValid ? 'CONNECTOR_OCCUPIED_OR_MISALIGNED' : blocker ? `COLLISION:${blocker.id}` : null;
+    const valid = blockedReason === null;
     return {
-      type: 'BRICK',
-      status: valid ? 'VALID' : 'BLOCKED',
-      valid,
-      blockedReason: blocker ? `COLLISION:${blocker.id}` : connectorFree ? null : 'CONNECTOR_OCCUPIED',
-      placementType: 'brick-connection',
-      position,
-      yawRad: targetYaw,
-      carriedBrickId: carried.id,
-      supportBrickId: support.id,
-      side: supportSide,
-      carriedSide,
-      relativeRotationDeg: this.rotationQuarterTurns * 90,
-      connection: {
-        lowerBrickId: support.id,
-        lowerConnector: supportSide,
-        upperConnector: carriedSide,
-        relativeRotationDeg: this.rotationQuarterTurns * 90,
-        studPairs: lowerCells.map((lower, index) => ({ lower, upper: upperCells[index] }))
-      }
+      type: 'BRICK', mode: supportSide, status: valid ? 'VALID' : 'BLOCKED', valid, blockedReason,
+      placementType: 'brick-connection', position, previewPosition: { ...position }, yawRad: targetYaw, previewYawRad: targetYaw,
+      pivot: { ...pivot }, carriedBrickId: carried.id, supportBrickId: support.id,
+      side: supportSide, supportSide, carriedSide, relativeRotationDeg: ((relativeTurns % 4) + 4) % 4 * 90,
+      layer, studMatches: matches, studCount: matches.length, overhang: matches.length < 8,
+      connections, connection: connections[0] ?? null
     };
   }
 

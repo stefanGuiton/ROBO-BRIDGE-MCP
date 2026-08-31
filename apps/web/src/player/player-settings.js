@@ -93,8 +93,9 @@ export const PLAYER_FALLBACK_SETTINGS = Object.freeze({
   lutStrength: 1,
   lutName: 'None',
   lutSize: 0,
-  robotMountXmm: -560,
-  robotMountYmm: 0,
+  robotTargetsVisible: false,
+  robotMountXmm: -820,
+  robotMountYmm: 170,
   robotMountZmm: 1200,
   robotMountYawDeg: 0
 });

@@ -18,6 +18,7 @@ import { HeldBrickController, HELD_STATES } from '../../apps/web/src/player/held
 import { LooseBrickPhysics } from '../../apps/web/src/player/loose-brick-physics.js';
 import { PlayerController } from '../../apps/web/src/player/player-controller.js';
 import { PlayerSettingsStore, PLAYER_FALLBACK_SETTINGS, PLAYER_SOURCE_PROVENANCE } from '../../apps/web/src/player/player-settings.js';
+import { makeV8InitialSpawn, makeV8MoreSpawn, V8_BRICK_PALETTE } from '../../apps/web/src/player/v8-spawn.js';
 import { compileImageData } from '../../apps/web/src/logo/compiler.js';
 import { makePattern } from '../../apps/web/src/logo/patterns.js';
 import { challengeBoardLimits, challengeInventoryHasNoOverlap, createChallengeInventory, remapBlueprintToChallenge } from '../../apps/web/src/logo/workcell-adapter.js';
@@ -182,7 +183,9 @@ test('released bricks retain V8 gravity, angular motion, collision, and authorit
 
 test('the visible carried brick is opaque while only placement targets remain translucent', async () => {
   const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
-  assert.match(renderer, /MAIN_DEMO_HELD_BRICK[\s\S]*transparent:\s*false,[\s\S]*opacity:\s*1/);
+  const visual = await readFile(fileURLToPath(new URL('../../apps/web/src/player/v8-brick-visual.js', import.meta.url)), 'utf8');
+  assert.match(renderer, /createV8BrickVisual\(\{ colour: 'green',[\s\S]*MAIN_DEMO_HELD_BRICK/);
+  assert.match(visual, /transparent:\s*ghost,[\s\S]*opacity:\s*ghost \? settings\.ghostOpacity : 1/);
   assert.match(renderer, /heldGhost\.userData\.material\.opacity\s*=\s*1/);
   assert.match(renderer, /heldGhost\.userData\.material\.transparent\s*=\s*false/);
 });
@@ -211,7 +214,7 @@ test('V8 scene exposes all settings plus live robot mount controls in the tucked
   const store = new PlayerSettingsStore({ ...PLAYER_FALLBACK_SETTINGS, tableWidthMm: 1750, matPanelsX: 4 });
   assert.deepEqual(
     ['robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'].map((key) => store.get()[key]),
-    [-560, 0, 1200, 0]
+    [-820, 170, 1200, 0]
   );
   assert.equal(store.setMany({ robotMountXmm: -500, structuralCollapseEnabled: true }).ok, true);
   assert.equal(store.get().robotMountXmm, -500);
@@ -257,6 +260,62 @@ test('240 Hz fixed-step schedule is independent of 60/90/120/144 render cadence'
   assert.deepEqual(totals, [1200, 1200, 1200, 1200]);
 });
 
+test('locked V8 seed reproduces the original immediate 12-brick multicolour spawn', async () => {
+  const supplied = JSON.parse(await readFile(fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url)), 'utf8'));
+  const bricks = makeV8InitialSpawn(supplied);
+  assert.equal(bricks.length, 12);
+  assert.deepEqual(V8_BRICK_PALETTE.map(({ colour }) => colour), [
+    'red', 'blue', 'yellow', 'green', 'orange', 'white', 'black', 'purple', 'teal'
+  ]);
+  assert.deepEqual(bricks.slice(0, 4).map((brick) => ({
+    colour: brick.colour,
+    position: Object.values(brick.position).map((value) => Number(value.toFixed(4))),
+    yawRad: Number(brick.yawRad.toFixed(6))
+  })), [
+    { colour: 'blue', position: [-666.679, -236.6628, 1204.8], yawRad: 0.746199 },
+    { colour: 'white', position: [-619.6378, -237.222, 1204.8], yawRad: 3.673034 },
+    { colour: 'yellow', position: [-572.752, -236.7345, 1204.8], yawRad: 5.891398 },
+    { colour: 'purple', position: [-524.4297, -236.7476, 1204.8], yawRad: 1.774049 }
+  ]);
+  assert.ok(bricks.every((brick) => brick.position.zMm === supplied.tableTopHeightMm + supplied.brickBodyHeightMm / 2));
+});
+
+test('MORE BRICKS deterministically adds ten physical launch records without replacing the initial set', async () => {
+  const supplied = JSON.parse(await readFile(fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url)), 'utf8'));
+  const initial = makeV8InitialSpawn(supplied);
+  const added = makeV8MoreSpawn(supplied, 1, { startIndex: initial.length });
+  assert.equal(added.length, 10);
+  assert.equal(new Set([...initial, ...added].map((brick) => brick.id)).size, 22);
+  assert.deepEqual(added.slice(0, 2).map((brick) => ({
+    colour: brick.colour,
+    position: Object.values(brick.position).map((value) => Number(value.toFixed(4))),
+    velocity: brick.initialVelocityMps.map((value) => Number(value.toFixed(6))),
+    spin: brick.initialAngularVelocityRadS.map((value) => Number(value.toFixed(6)))
+  })), [
+    { colour: 'orange', position: [-645, -192.7218, 1269.8], velocity: [-0.026279, -0.017203, 0.047627], spin: [0.533923, -0.15917, 1.333971] },
+    { colour: 'black', position: [-591, -194.7956, 1291.8], velocity: [0.01161, -0.025243, 0.036362], spin: [-0.818007, -0.340853, 0.838226] }
+  ]);
+});
+
+test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MORE BRICKS action', async () => {
+  const html = await readFile(fileURLToPath(new URL('../../apps/web/index.html', import.meta.url)), 'utf8');
+  const css = await readFile(fileURLToPath(new URL('../../apps/web/logo.css', import.meta.url)), 'utf8');
+  const main = await readFile(fileURLToPath(new URL('../../apps/web/src/logo/main.js', import.meta.url)), 'utf8');
+  const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
+  const workbench = await readFile(fileURLToPath(new URL('../../apps/web/src/render/v8-workbench.js', import.meta.url)), 'utf8');
+  assert.match(html, /LOGO ROBO <span>PLAYER LAB V8 · 120 HZ TARGET<\/span>/);
+  assert.match(html, /W forward · A left · S back · D right · Wheel zoom · Click pick\/release · R rotates around selected studs/);
+  assert.match(html, /data-hud-zone>PHYSICS/);
+  assert.match(html, /id="angle-pill"/);
+  assert.match(html, /data-settings-preset="precise"[\s\S]*data-settings-preset="balanced"[\s\S]*data-settings-preset="fast"/);
+  assert.match(css, /\.panel\.closed\{transform:translateX\(calc\(100% \+ 28px\)\)/);
+  assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
+  assert.match(main, /spawnMoreBricks, runOnePickPlace/);
+  assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
+  assert.match(workbench, /CylinderGeometry\(50, 50, 24, 32\)/);
+  assert.match(workbench, /context\.fillText\('MORE', 256, 205\)[\s\S]*context\.fillText\('BRICKS', 256, 315\)/);
+});
+
 test('fixed-step catch-up is capped after a suspended browser frame', () => {
   const advance = fixedStepAdvance(0, 12, 1 / 240, 8);
   assert.equal(advance.steps, 8);
@@ -285,35 +344,44 @@ test('L/M/R connector masks overlap by two studs and reject duplicate occupancy'
 
 test('placement engine produces exact L/M/R support candidates and blocks collisions', () => {
   const { placementEngine } = makeRuntime();
-  const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 4.8 }, yawRad: 0 };
-  const carried = { id: 'carried', position: { xMm: 0, yMm: 0, zMm: 4.8 }, yawRad: 0 };
+  const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 8.6 }, yawRad: 0 };
+  const carried = { id: 'carried', position: { xMm: 184, yMm: 0, zMm: 18.2 }, yawRad: 0 };
   const left = placementEngine.connectionCandidate(
     support,
-    { xMm: 188, yMm: 0, zMm: 9.6 },
+    { xMm: 188, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(left.side, 'L');
-  assert.equal(left.position.xMm, 192);
-  assert.ok(Math.abs(left.position.zMm - 14.4) < 1e-9);
+  assert.equal(left.carriedSide, 'R');
+  assert.equal(left.position.xMm, 184);
+  assert.ok(Math.abs(left.position.zMm - 18.2) < 1e-9);
+  carried.position.xMm = 200;
   const middle = placementEngine.connectionCandidate(
     support,
-    { xMm: 200, yMm: 0, zMm: 9.6 },
+    { xMm: 200, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(middle.side, 'M');
+  assert.equal(middle.carriedSide, 'M');
+  carried.position.xMm = 216;
   const right = placementEngine.connectionCandidate(
     support,
-    { xMm: 212, yMm: 0, zMm: 9.6 },
+    { xMm: 212, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried]
   );
   assert.equal(right.side, 'R');
-  const blocker = { id: 'blocker', position: { ...right.position }, yawRad: right.yawRad };
+  assert.equal(right.carriedSide, 'L');
+  const blocker = {
+    id: 'blocker',
+    position: { ...right.position, xMm: right.position.xMm + 4, yMm: right.position.yMm + 4 },
+    yawRad: right.yawRad
+  };
   const blocked = placementEngine.connectionCandidate(
     support,
-    { xMm: 212, yMm: 0, zMm: 9.6 },
+    { xMm: 212, yMm: 0, zMm: 13.4 },
     carried,
     [support, carried, blocker]
   );

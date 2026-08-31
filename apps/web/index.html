@@ -2,69 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="data:,">
-  <meta name="description" content="ROBO BRIDGE MCP MAIN_DEMO: the V8 player workbench with one shared-state UR10 robot runtime.">
+  <meta name="description" content="ROBO BRIDGE MCP MAIN_DEMO: the authoritative V8 player lab with one additive shared-state UR10.">
   <title>ROBO BRIDGE MCP — MAIN_DEMO Player V8</title>
   <link rel="stylesheet" href="./logo.css">
 </head>
 <body class="player-mode">
   <main class="main-demo" aria-label="ROBO BRIDGE MCP MAIN_DEMO Player V8">
-    <canvas id="scene" aria-label="V8 player workbench with the shared-state UR10"></canvas>
-    <div class="fps-pill"><span>FPS</span><strong data-fps>—</strong><small data-frame-ms>— ms</small></div>
-    <section class="v8-hud" aria-label="Player telemetry">
-      <h1>ROBO BRIDGE <span>PLAYER LAB V8 · 120 HZ TARGET</span></h1>
-      <dl>
-        <dt>STATUS</dt><dd data-status>READY</dd><dt>XYZ</dt><dd data-tcp>—</dd>
-        <dt>JOINTS</dt><dd data-joints>—</dd><dt>BRICK</dt><dd data-player-held>NONE</dd>
-        <dt>BUILD</dt><dd data-progress>0/0</dd><dt>ROBOT REV</dt><dd data-rrev>0</dd>
-        <dt>WORLD REV</dt><dd data-wrev>0</dd><dt>GRIPPER</dt><dd data-gripper>LOADING</dd>
-      </dl>
+    <canvas id="scene" aria-label="LOGO ROBO first-person player physics demo with shared-state UR10"></canvas>
+    <div id="fps-profiler" class="fps-profiler"><span>FPS</span><b data-fps>—</b><small data-frame-ms>— ms</small></div>
+    <div id="crosshair" aria-hidden="true"><i></i><b></b></div>
+    <div id="angle-pill" class="hidden" data-angle-pill>ANGLE 0°</div>
+    <div id="reticle-status" data-reticle-status></div>
+
+    <section id="hud" class="hud" aria-label="Player telemetry">
+      <div class="brand">LOGO ROBO <span>PLAYER LAB V8 · 120 HZ TARGET</span></div>
+      <div class="hud-grid">
+        <span>FPS</span><b data-hud-fps>—</b><span>FRAME</span><b data-hud-frame>—</b>
+        <span>XYZ</span><b data-hud-pos>—</b><span>BRICK</span><b data-player-held>NONE</b>
+        <span>ZONE</span><b data-hud-zone>PHYSICS</b><span>ORIENT</span><b data-hud-orientation>0°</b>
+        <span>SNAP</span><b data-hud-snap>NONE</b>
+      </div>
     </section>
-    <section class="player-help" aria-label="Player controls">
-      <strong data-player-state>CLICK TO LOCK POINTER</strong>
-      <span>W forward · A left · S back · D right · Mouse free-look · Esc releases UI · Wheel zoom · Click pick/release · R rotates selected studs</span>
+
+    <section id="help" class="help-card" aria-label="Player controls">
+      <b class="desktop-help" data-player-state>CLICK TO LOCK POINTER</b><b class="mobile-help">DRAG BRICKS DIRECTLY</b>
+      <span class="desktop-help">W forward · A left · S back · D right · Wheel zoom · Click pick/release · R rotates around selected studs</span>
+      <span class="mobile-help">Touch a brick and drag · drag empty space to look · arrows move · side rotate buttons turn · pinch zoom</span>
     </section>
-    <div class="player-reticle" aria-hidden="true"><span></span></div>
-    <nav class="bottom-tools" aria-label="Demo panels">
-      <button type="button" data-settings-toggle>SETTINGS <kbd>P</kbd></button>
-      <button type="button" data-debug-toggle>DEBUG <kbd>F2</kbd></button>
-      <button type="button" data-perf-toggle>PERF <kbd>F3</kbd></button>
-      <span>SEED <strong data-seed>424242</strong></span>
-    </nav>
-    <div class="mobile-player-controls" aria-label="Mobile player controls">
-      <button type="button" data-mobile-move="KeyW">▲</button><button type="button" data-mobile-move="KeyA">◀</button>
-      <button type="button" data-mobile-move="KeyS">▼</button><button type="button" data-mobile-move="KeyD">▶</button>
-      <button type="button" data-player-action="rotate">R</button><button type="button" data-player-action="primary">PICK / PLACE</button>
-    </div>
-    <aside class="settings-panel" data-settings-panel aria-hidden="true">
-      <header><div><strong>SETTINGS</strong><span>player · materials · table · robot</span></div><button type="button" data-settings-close aria-label="Close settings">×</button></header>
+
+    <aside id="settings-panel" class="settings-panel panel closed" data-settings-panel aria-hidden="true">
+      <header><div><small>TUNING</small><h1>Player &amp; Physics</h1></div><button type="button" data-settings-close title="Close" aria-label="Close settings">×</button></header>
+      <div class="panel-actions primary-actions"><button type="button" data-settings-preset="precise">Precise</button><button type="button" class="active" data-settings-preset="balanced">Balanced</button><button type="button" data-settings-preset="fast">Fast</button></div>
       <label class="settings-search"><span>FILTER</span><input type="search" data-settings-search placeholder="Find a setting…"></label>
-      <details class="settings-group robot-controls" open>
+      <details class="settings-group robot-controls">
         <summary>Shared UR10 Controls</summary>
-        <div class="settings-group-body">
+        <div class="settings-group-body settings-body">
           <div class="mode-actions"><button type="button" class="primary" data-player-mode="player">PLAYER</button><button type="button" data-player-mode="orbit">ORBIT</button><button type="button" data-build-mode="BUILD">BUILD</button><button type="button" data-build-mode="TEST">TEST LOCK</button></div>
-          <div class="robot-metrics"><span>Held brick</span><strong data-held>NONE</strong><span>Tool yaw</span><strong data-yaw>0.0° AUTO</strong><span>Jaw gap</span><strong data-jaw>46.0 mm</strong><span>WebMCP</span><strong data-webmcp>CHECKING</strong></div>
+          <div class="robot-metrics"><span>Status</span><strong data-status>READY</strong><span>Robot rev</span><strong data-rrev>0</strong><span>World rev</span><strong data-wrev>0</strong><span>Build</span><strong data-progress>0/0</strong><span>TCP</span><strong data-tcp>—</strong><span>Joints</span><strong data-joints>—</strong><span>Held brick</span><strong data-held>NONE</strong><span>Tool yaw</span><strong data-yaw>0.0° AUTO</strong><span>Jaw gap</span><strong data-jaw>46.0 mm</strong><span>Gripper</span><strong data-gripper>LOADING</strong><span>WebMCP</span><strong data-webmcp>CHECKING</strong></div>
           <form class="move-form" data-move-form>
             <label><span>X mm</span><input name="xMm" type="number" step="0.1" value="670" required></label><label><span>Y mm</span><input name="yMm" type="number" step="0.1" value="0" required></label>
-            <label><span>Z mm</span><input name="zMm" type="number" step="0.1" value="145" required></label><label><span>Speed</span><input name="speedMmS" type="number" step="1" min="1" max="650" value="500" required></label>
-            <button type="submit" class="primary">MOVE TOOL</button>
+            <label><span>Z mm</span><input name="zMm" type="number" step="0.1" value="145" required></label><label><span>Speed</span><input name="speedMmS" type="number" step="1" min="1" max="650" value="500" required></label><button type="submit" class="primary">MOVE TOOL</button>
           </form>
           <div class="button-grid quick-targets"><button type="button" data-target="home">LOAD HOME</button><button type="button" data-target="pickup">LOAD PICKUP</button><button type="button" data-target="target">LOAD TARGET</button></div>
           <div class="button-grid robot-actions"><button type="button" class="primary wide" data-action="run">PLACE NEXT BRICK</button><button type="button" class="primary" data-action="round">BUILD FULL ROUND</button><button type="button" data-action="latch">LATCH</button><button type="button" data-action="unlatch">UNLATCH</button><button type="button" data-action="home">HOME</button><button type="button" data-action="reset">RESET</button></div>
           <div class="button-grid views"><button type="button" data-view="hero">HERO</button><button type="button" data-view="top">TOP</button><button type="button" data-view="tray">TRAY</button><button type="button" data-view="target">TARGET</button></div>
-          <div class="tool-list" data-tool-list><span data-status="pending">awaiting secure context</span></div>
-          <div class="event-log" data-log aria-live="polite"><p><time>BOOT</time><span>Runtime ready</span></p></div>
+          <div class="tool-list" data-tool-list><span data-status="pending">awaiting secure context</span></div><div class="event-log" data-log aria-live="polite"><p><time>BOOT</time><span>Runtime ready</span></p></div>
         </div>
       </details>
-      <div data-settings-groups></div>
-      <details class="settings-group"><summary>Settings Files / LUT</summary><div class="settings-group-body file-controls">
-        <label class="toggle-line"><input type="checkbox" data-color-grading> Enable colour grading</label>
-        <label class="file-button">LOAD .CUBE LUT<input type="file" accept=".cube,text/plain" data-lut-file></label><button type="button" data-clear-lut>CLEAR LUT</button>
-        <label class="file-button">IMPORT SETTINGS JSON<input type="file" accept=".json,application/json" data-import-player-settings></label><button type="button" data-export-player-settings>EXPORT SETTINGS JSON</button><button type="button" data-reset-player-settings>RESET ALL SETTINGS</button>
-      </div></details>
+      <div id="settings-sections" data-settings-groups></div>
+      <details class="settings-group"><summary>Settings Files / LUT</summary><div class="settings-group-body settings-body file-controls"><label class="toggle-line"><input type="checkbox" data-color-grading> Enable colour grading</label><label class="file-button">LOAD .CUBE LUT<input type="file" accept=".cube,text/plain" data-lut-file></label><button type="button" data-clear-lut>CLEAR LUT</button></div></details>
+      <div class="panel-actions stack"><button type="button" data-action="reset">Reset Same Seed</button><button type="button" data-new-seed>New Seed</button><button type="button" data-copy-player-settings>Copy Settings JSON</button><button type="button" data-export-player-settings>Download Settings JSON</button><label class="file-button">Load Settings JSON<input type="file" accept=".json,application/json" data-import-player-settings></label><button type="button" data-reset-brick-settings>Reset Real Brick Dimensions</button><button type="button" class="danger" data-reset-player-settings>Reset All</button></div>
     </aside>
+
+    <section id="performance-panel" class="perf-panel hidden"><header><b>PERFORMANCE</b><button type="button" data-perf-close>×</button></header><div id="perf-content" data-perf-content>Collecting…</div></section>
+    <section id="debug-panel" class="debug-panel hidden"><header><b>DEBUG VISUALS</b><button type="button" data-debug-close>×</button></header><div id="debug-controls"><span>Debug settings are available in the tuning panel.</span></div></section>
+
+    <div id="mobile-dpad" class="mobile-dpad" aria-label="Mobile movement controls"><button class="up" data-mobile-move="KeyW" aria-label="Move forward">▲</button><button class="left" data-mobile-move="KeyA" aria-label="Move left">◀</button><button class="right" data-mobile-move="KeyD" aria-label="Move right">▶</button><button class="down" data-mobile-move="KeyS" aria-label="Move backward">▼</button></div>
+    <button class="mobile-rotate mobile-rotate-left" data-player-action="rotate-left" aria-label="Rotate brick left 90 degrees">↶</button><button class="mobile-rotate mobile-rotate-right" data-player-action="rotate" aria-label="Rotate brick right 90 degrees">↷</button>
+    <nav class="bottom-bar" aria-label="Demo panels"><button type="button" data-settings-toggle>SETTINGS <kbd>P</kbd></button><button type="button" data-debug-toggle>DEBUG <kbd>F2</kbd></button><button type="button" data-perf-toggle>PERF <kbd>F3</kbd></button><span id="seed-label">SEED <strong data-seed>—</strong></span></nav>
+    <div id="toast" class="toast"></div><div id="fatal" class="fatal hidden"></div>
   </main>
   <script type="module" src="./src/logo/main.js"></script>
 </body>

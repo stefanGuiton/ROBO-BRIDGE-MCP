@@ -2,7 +2,7 @@ import { createRuntimeBridge } from './runtime-bridge.js';
 import { createLogoRoboToolHandlers } from './tool-handlers.js';
 
 let activeController = null;
-const PALETTE = ['white','black','red','blue','yellow','green'];
+const PALETTE = ['white','black','red','blue','yellow','green','orange','purple','teal'];
 const LIMIT = { type: 'integer', minimum: 1, maximum: 20, default: 12 };
 const REVISION = { type: 'integer', minimum: 0, description: 'Exact worldRevision from the most recent successful read or tool result.' };
 

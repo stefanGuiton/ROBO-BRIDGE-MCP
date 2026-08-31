@@ -14,6 +14,7 @@ import { HumanBuildAdapter } from '../player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
 import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } from '../player/player-settings.js';
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
+import { makeV8InitialSpawn, makeV8MoreSpawn, mapV8SpawnToMachine } from '../player/v8-spawn.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -32,10 +33,11 @@ const blueprint = makeRoundBlueprint();
 const makeRoundBricks = () => createChallengeInventory(blueprint);
 const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
-const controller = new RobotController({ board, bricks: makeRoundBricks(), revisionClock, timeScale: evidenceMode ? 0 : 0.35 });
 const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
-const connectionGraph = new ConnectionGraph();
+const makePlayerBricks = () => mapV8SpawnToMachine(makeV8InitialSpawn(playerSettings), playerSettings);
+const controller = new RobotController({ board, bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(), revisionClock, timeScale: evidenceMode ? 0 : 0.35 });
+const connectionGraph = new ConnectionGraph(playerSettings);
 const placementEngine = new PlacementIntentEngine(playerSettings, board, connectionGraph);
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
@@ -43,7 +45,7 @@ const renderer = new RobotRenderer(document.querySelector('#scene'), controller,
   playerSettings,
   humanBuildAdapter
 });
-const runtime = createLogoRoboRuntime({ controller, board, resetBricks: makeRoundBricks, humanBuildAdapter });
+const runtime = createLogoRoboRuntime({ controller, board, resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks, humanBuildAdapter });
 
 const $ = (selector) => document.querySelector(selector);
 const statusEl = $('[data-status]');
@@ -65,6 +67,18 @@ const moveForm = $('[data-move-form]');
 const moveButton = moveForm?.querySelector('button[type="submit"]');
 const playerStateEl = $('[data-player-state]');
 const playerHeldEl = $('[data-player-held]');
+const hudFpsEl = $('[data-hud-fps]');
+const hudFrameEl = $('[data-hud-frame]');
+const hudPositionEl = $('[data-hud-pos]');
+const hudZoneEl = $('[data-hud-zone]');
+const hudOrientationEl = $('[data-hud-orientation]');
+const hudSnapEl = $('[data-hud-snap]');
+const anglePillEl = $('[data-angle-pill]');
+const reticleStatusEl = $('[data-reticle-status]');
+const crosshairEl = $('#crosshair');
+const performancePanelEl = $('#performance-panel');
+const performanceContentEl = $('[data-perf-content]');
+const debugPanelEl = $('#debug-panel');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -74,7 +88,17 @@ const settingsPanelController = installPlayerSettingsPanel({
   onImportError: (error) => addLog(`Settings import rejected: ${error.message}`, 'bad')
 });
 playerSettingsStore.subscribe((key) => renderer.applySettings(key));
-renderer.setMoreBricksHandler(() => handleAction(null, () => resetScene(), 'Fresh authoritative brick set loaded'));
+let moreBricksBurst = 0;
+function spawnMoreBricks() {
+  const startIndex = controller.getBricks().length;
+  const records = mapV8SpawnToMachine(makeV8MoreSpawn(playerSettings, ++moreBricksBurst, { startIndex }), playerSettings);
+  const result = controller.addLooseBricks(records, { actor: 'human' });
+  if (!result.ok) return result;
+  renderer.launchSpawnedBricks(result.bricks);
+  renderer.workbench.pressMoreBricks();
+  return { ...result, action: 'more_bricks' };
+}
+renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Added 10 V8 physics bricks'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 
@@ -86,12 +110,15 @@ function openSettingsFilter(query = '') {
   search.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-$('[data-debug-toggle]')?.addEventListener('click', () => openSettingsFilter('debug'));
-$('[data-perf-toggle]')?.addEventListener('click', () => document.body.classList.toggle('perf-expanded'));
+const togglePanel = (panel) => panel?.classList.toggle('hidden');
+$('[data-debug-toggle]')?.addEventListener('click', () => togglePanel(debugPanelEl));
+$('[data-perf-toggle]')?.addEventListener('click', () => togglePanel(performancePanelEl));
+$('[data-debug-close]')?.addEventListener('click', () => debugPanelEl?.classList.add('hidden'));
+$('[data-perf-close]')?.addEventListener('click', () => performancePanelEl?.classList.add('hidden'));
 addEventListener('keydown', (event) => {
   if (event.target?.matches?.('input,select,textarea')) return;
-  if (event.code === 'F2') { event.preventDefault(); openSettingsFilter('debug'); }
-  if (event.code === 'F3') { event.preventDefault(); document.body.classList.toggle('perf-expanded'); }
+  if (event.code === 'F2') { event.preventDefault(); togglePanel(debugPanelEl); }
+  if (event.code === 'F3') { event.preventDefault(); togglePanel(performancePanelEl); }
 });
 
 function nowLabel() { return new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
@@ -106,6 +133,15 @@ function addLog(message, kind = '') {
   row.append(time, text);
   logEl.prepend(row);
   while (logEl.children.length > 20) logEl.lastElementChild.remove();
+}
+let toastTimer = 0;
+function showToast(message) {
+  const toast = $('#toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
 }
 function setStatus(value, kind = '') { if (statusEl) { statusEl.textContent = value; statusEl.dataset.kind = kind; } }
 function formatNumber(value) { return Number.isFinite(value) ? value.toFixed(1) : '—'; }
@@ -153,7 +189,10 @@ async function moveTool(input, { signal } = {}) {
 async function latch(input = {}) { return runtime.robot.latch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function unlatch(input = {}) { return runtime.robot.unlatch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function resetScene() {
-  const result = await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision });
+  moreBricksBurst = 0;
+  const result = evidenceMode
+    ? await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision })
+    : controller.setBricks(makePlayerBricks());
   setStatus('READY');
   addLog('Workcell reset');
   return { ok: true, robot: getRobotState(), scene: getSceneState(), result };
@@ -216,8 +255,44 @@ async function runRound({ signal } = {}) {
   return { ok: true, results, progress: board.progress(), scene: getSceneState() };
 }
 
+function stageV8ParityConnection() {
+  const [supportSource, carriedSource] = controller.getBricks();
+  if (!supportSource || !carriedSource) return { ok: false, reason: 'insufficient_bricks' };
+  const frame = placementEngine.tableFrame;
+  const supportPosition = {
+    xMm: frame.centre.xMm - 72,
+    yMm: frame.centre.yMm,
+    zMm: frame.placementSurfaceZMm + playerSettings.brickBodyHeightMm / 2
+  };
+  const carriedPosition = {
+    xMm: supportPosition.xMm - 180,
+    yMm: supportPosition.yMm - 130,
+    zMm: supportPosition.zMm + 120
+  };
+  controller.moveLooseBrick(supportSource.id, supportPosition, { actor: 'parity_diagnostic', yawRad: 0 });
+  controller.moveLooseBrick(carriedSource.id, carriedPosition, { actor: 'parity_diagnostic', yawRad: 0 });
+  connectionGraph.clear();
+  connectionGraph.registerMatRoot(supportSource.id, []);
+  const support = controller.getBricks().find((brick) => brick.id === supportSource.id);
+  const carried = controller.getBricks().find((brick) => brick.id === carriedSource.id);
+  const pickup = humanBuildAdapter.pickup(carried.id);
+  if (!pickup.ok) return pickup;
+  renderer.heldVisual.pickup(carried);
+  const candidate = placementEngine.connectionCandidate(
+    support,
+    { xMm: support.position.xMm - 12, yMm: support.position.yMm, zMm: support.position.zMm + playerSettings.brickBodyHeightMm / 2 },
+    carried,
+    controller.getBricks()
+  );
+  humanBuildAdapter.setPreview(candidate);
+  renderer.heldVisual.setCandidate(candidate);
+  renderer.setView('tray');
+  renderer.render();
+  return { ok: true, candidate };
+}
+
 const actions = {
-  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, runOnePickPlace, runRound,
+  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound,
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 420 }, { signal })
 };
 
@@ -291,7 +366,7 @@ for (const button of document.querySelectorAll('[data-target]')) {
 $('[data-action="run"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => runOnePickPlace(), null));
 $('[data-action="round"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => runRound(), null));
 $('[data-action="home"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => actions.home(), 'Home accepted'));
-$('[data-action="reset"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => resetScene(), null));
+for (const button of document.querySelectorAll('[data-action="reset"]')) button.addEventListener('click', (event) => handleAction(event.currentTarget, () => resetScene(), null));
 $('[data-action="latch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => latch({ actor: 'human' }), 'Latch accepted'));
 $('[data-action="unlatch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => unlatch({ actor: 'human' }), 'Unlatch accepted'));
 for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => renderer.setView(button.dataset.view));
@@ -304,6 +379,35 @@ for (const button of document.querySelectorAll('[data-player-mode]')) {
 }
 $('[data-build-mode="BUILD"]')?.addEventListener('click', () => humanBuildAdapter.setMode('BUILD'));
 $('[data-build-mode="TEST"]')?.addEventListener('click', () => humanBuildAdapter.setMode('TEST'));
+const PLAYER_PRESETS = Object.freeze({
+  precise: { mouseSensitivityRadPerPx: 0.00125, moveSpeedMmS: 900, verticalSpeedMmS: 650, accelerationMmS2: 3800, decelerationMmS2: 5200, maximumSpeedMmS: 2200 },
+  balanced: { mouseSensitivityRadPerPx: 0.00165, moveSpeedMmS: 1500, verticalSpeedMmS: 1000, accelerationMmS2: 5500, decelerationMmS2: 6500, maximumSpeedMmS: 3600 },
+  fast: { mouseSensitivityRadPerPx: 0.00205, moveSpeedMmS: 2300, verticalSpeedMmS: 1500, accelerationMmS2: 7800, decelerationMmS2: 8500, maximumSpeedMmS: 5200 }
+});
+for (const button of document.querySelectorAll('[data-settings-preset]')) button.addEventListener('click', () => {
+  const preset = button.dataset.settingsPreset;
+  playerSettingsStore.setMany(PLAYER_PRESETS[preset]);
+  for (const candidate of document.querySelectorAll('[data-settings-preset]')) candidate.classList.toggle('active', candidate === button);
+  showToast(`${button.textContent} player preset`);
+});
+$('[data-new-seed]')?.addEventListener('click', async () => {
+  playerSettingsStore.set('seed', Math.floor(Math.random() * 0x100000000) >>> 0);
+  if (seedEl) seedEl.textContent = String(playerSettings.seed);
+  await resetScene();
+  showToast('New seed loaded');
+});
+$('[data-copy-player-settings]')?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(playerSettingsStore.exportJSON());
+    showToast('Settings JSON copied');
+  } catch {
+    showToast('Clipboard unavailable');
+  }
+});
+$('[data-reset-brick-settings]')?.addEventListener('click', () => {
+  playerSettingsStore.setMany({ brickLengthMm: 31.8, brickWidthMm: 15.8, brickBodyHeightMm: 9.6, studPitchMm: 8, studDiameterMm: 4.8, studHeightMm: 1.8, brickMassKg: 0.0024 });
+  showToast('Real brick dimensions restored');
+});
 $('[data-export-player-settings]')?.addEventListener('click', () => {
   const blob = new Blob([playerSettingsStore.exportJSON()], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -349,18 +453,43 @@ function updateToolDiagnostics(event) {
 renderer.start();
 setInterval(() => {
   const performance = renderer.getPerformance();
-  if (fpsEl) fpsEl.textContent = performance.fps ? performance.fps.toFixed(0) : '—';
-  if (frameMsEl) frameMsEl.textContent = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
+  const fpsText = performance.fps ? performance.fps.toFixed(0) : '—';
+  const frameText = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
+  if (fpsEl) fpsEl.textContent = fpsText;
+  if (frameMsEl) frameMsEl.textContent = frameText;
+  if (hudFpsEl) hudFpsEl.textContent = fpsText;
+  if (hudFrameEl) hudFrameEl.textContent = frameText;
   if (gripperEl) {
     gripperEl.textContent = performance.gripper.state === 'ready' ? 'REAL GLB READY' : performance.gripper.state.toUpperCase();
     gripperEl.dataset.kind = performance.gripper.state === 'ready' ? 'ok' : 'warning';
   }
   if (playerStateEl) {
     playerStateEl.textContent = performance.player?.enabled
-      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI' : 'PLAYER · CLICK TO LOCK POINTER')
+      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED · ESC FOR UI' : 'CLICK TO LOCK POINTER')
       : 'ORBIT CAMERA';
   }
-  if (playerHeldEl) playerHeldEl.textContent = performance.heldBrick?.brickId ?? 'NONE';
+  const heldId = performance.heldBrick?.brickId ?? performance.interaction.snapBrickId ?? null;
+  if (playerHeldEl) playerHeldEl.textContent = heldId ?? 'NONE';
+  if (hudPositionEl) hudPositionEl.textContent = performance.player?.position?.map((value) => Math.round(value)).join(' ') ?? '—';
+  const preview = performance.interaction.preview;
+  const zone = performance.interaction.snapAnimating ? 'SNAPPING'
+    : performance.heldBrick?.state?.replace(/^HELD_/, '') ?? 'PHYSICS';
+  if (hudZoneEl) hudZoneEl.textContent = zone;
+  const orientation = `${placementEngine.rotationQuarterTurns * 90}°`;
+  if (hudOrientationEl) hudOrientationEl.textContent = orientation;
+  if (anglePillEl) {
+    anglePillEl.textContent = `ANGLE ${orientation}`;
+    anglePillEl.classList.toggle('hidden', !heldId);
+  }
+  const snapStatus = performance.interaction.snapAnimating ? 'SNAPPING' : preview?.status ?? 'NONE';
+  if (hudSnapEl) hudSnapEl.textContent = snapStatus;
+  const aimed = Boolean(performance.interaction.highlightedBrickId || performance.interaction.highlightedMoreBricks || (preview && preview.status !== 'NONE'));
+  crosshairEl?.classList.toggle('target', aimed);
+  if (reticleStatusEl) reticleStatusEl.textContent = performance.interaction.highlightedMoreBricks ? 'MORE BRICKS'
+    : performance.interaction.highlightedBrickId ? 'PICK BRICK'
+      : preview?.status === 'VALID' ? `SNAP ${preview.mode ?? preview.type}`
+        : preview?.status === 'BLOCKED' ? 'BLOCKED' : '';
+  if (performanceContentEl) performanceContentEl.innerHTML = `<span>FPS mean</span><b>${fpsText}</b><span>Frame mean</span><b>${frameText}</b><span>Frame p95</span><b>${performance.p95FrameMs.toFixed(2)} ms</b><span>Frame max</span><b>${performance.maxFrameMs.toFixed(2)} ms</b><span>Physics</span><b>${playerSettings.physicsHz} Hz</b><span>Loose bodies</span><b>${performance.looseBrickPhysics.length}</b>`;
 }, 500);
 window.addEventListener('resize', () => renderer.render());
 
@@ -395,6 +524,11 @@ window.__LOGO_ROBO__ = Object.freeze({
 });
 window.__ROBO_BRIDGE__ = window.__LOGO_ROBO__;
 window.__LOGO_ROBO_RUNTIME__ = runtime;
+
+if (['connection', 'snap'].includes(params.get('parityPreview'))) {
+  setTimeout(() => { window.__LOGO_ROBO_PARITY_PREVIEW__ = stageV8ParityConnection(); }, 80);
+  if (params.get('parityPreview') === 'snap') setTimeout(() => renderer.releaseHeldPlacement(), 3000);
+}
 
 if (evidenceMode) {
   runRound().then((result) => { window.__LOGO_ROBO_EVIDENCE_RESULT__ = result; window.__LOGO_ROBO_EVIDENCE_READY__ = true; });

@@ -1,5 +1,4 @@
 import * as THREE from '../../vendor/three.module.min.js';
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
 
 const finiteArray = (values, length) => Array.isArray(values) && values.length === length && values.every(Number.isFinite);
 const WORLD_UP = new THREE.Vector3(0, 0, 1);
@@ -65,9 +64,9 @@ export class LooseBrickPhysics {
   }
 
   projectionRadius(axes, axis) {
-    const halfLength = BRICK_SPEC.lengthMm / 2;
-    const halfWidth = BRICK_SPEC.widthMm / 2;
-    const halfHeight = BRICK_SPEC.bodyHeightMm / 2;
+    const halfLength = this.settings.brickLengthMm / 2;
+    const halfWidth = this.settings.brickWidthMm / 2;
+    const halfHeight = this.settings.brickBodyHeightMm / 2;
     return halfLength * Math.abs(axes[0].dot(axis))
       + halfWidth * Math.abs(axes[1].dot(axis))
       + halfHeight * Math.abs(axes[2].dot(axis));
@@ -142,9 +141,9 @@ export class LooseBrickPhysics {
 
   averageInertia() {
     const mass = Math.max(1e-6, this.settings.brickMassKg ?? 0.0115);
-    const lengthM = BRICK_SPEC.lengthMm / 1000;
-    const widthM = BRICK_SPEC.widthMm / 1000;
-    const heightM = BRICK_SPEC.bodyHeightMm / 1000;
+    const lengthM = this.settings.brickLengthMm / 1000;
+    const widthM = this.settings.brickWidthMm / 1000;
+    const heightM = this.settings.brickBodyHeightMm / 1000;
     return Math.max(1e-9, mass * (
       widthM * widthM + heightM * heightM
       + lengthM * lengthM + heightM * heightM
@@ -183,7 +182,7 @@ export class LooseBrickPhysics {
   }
 
   resolvePair(a, b, bIsDynamic) {
-    const bound = Math.hypot(BRICK_SPEC.lengthMm, BRICK_SPEC.widthMm, BRICK_SPEC.bodyHeightMm);
+    const bound = Math.hypot(this.settings.brickLengthMm, this.settings.brickWidthMm, this.settings.brickBodyHeightMm);
     if (a.position.distanceToSquared(b.position) > bound * bound || !this.obbContact(a, b)) return false;
     const inverseMassA = 1 / Math.max(1e-6, this.settings.brickMassKg ?? 0.0115);
     const inverseMassB = bIsDynamic ? inverseMassA : 0;

@@ -11,6 +11,14 @@ import { PlacedBrickBatcher } from '../player/placed-brick-batcher.js';
 import { PlayerCapsuleSolver } from '../player/player-collision.js';
 import { PlayerController } from '../player/player-controller.js';
 import { V8Workbench } from './v8-workbench.js';
+import {
+  applyV8BrickGeometry,
+  applyV8BrickMaterial,
+  colourHex,
+  createV8BrickVisual,
+  disposeV8BrickVisual,
+  V8BrickGeometryFactory
+} from '../player/v8-brick-visual.js';
 
 const BRICK_COLOURS = {
   white: 0xf3f5f8, black: 0x151b25, red: 0xef4b4f,
@@ -18,6 +26,7 @@ const BRICK_COLOURS = {
 };
 
 function toneMappingFromSetting(value) {
+  if (value === 'Neutral') return THREE.NeutralToneMapping;
   if (value === 'Linear') return THREE.LinearToneMapping;
   if (value === 'None') return THREE.NoToneMapping;
   return THREE.ACESFilmicToneMapping;
@@ -64,6 +73,7 @@ export class RobotRenderer {
     this.lastPreviewSignature = '';
     this.lastBatchSignature = '';
     this.physicsAccumulator = 0;
+    this.snapAnimation = null;
     this.physicsStepSeconds = 1 / Math.max(30, playerSettings?.physicsHz ?? 240);
     this.maximumSubsteps = Math.max(1, playerSettings?.maximumSubsteps ?? 8);
     this.machineRoot = new THREE.Group();
@@ -72,12 +82,17 @@ export class RobotRenderer {
     this.buildLighting();
     this.buildWorkcell();
     this.applyMachineTransform();
+    this.configurePlacementFrame();
     this.buildRobot();
     this.gripper = new RealGripperVisual(this.machineRoot);
+    this.brickFactory = new V8BrickGeometryFactory(playerSettings ?? {});
     this.batcher = new PlacedBrickBatcher(this.machineRoot, playerSettings ?? {});
     this.loosePhysics = new LooseBrickPhysics(controller, playerSettings ?? {});
     this.controller.subscribe((event) => {
-      if (event.type === 'reset' || event.type === 'world_reset') this.loosePhysics.clear();
+      if (event.type === 'reset' || event.type === 'world_reset') {
+        this.loosePhysics.clear();
+        this.snapAnimation = null;
+      }
     });
     if (playerSettings && humanBuildAdapter) this.installPlayerRuntime();
     this.installCameraControls();
@@ -138,6 +153,22 @@ export class RobotRenderer {
     return this.machineRoot.worldToLocal(point.clone());
   }
 
+  configurePlacementFrame() {
+    const engine = this.humanBuildAdapter?.placementEngine;
+    if (!engine || !this.workbench) return;
+    const settings = this.playerSettings;
+    const surfaceZ = settings.tableTopHeightMm + settings.matThicknessMm + settings.matStudHeightMm;
+    const centre = this.machinePointFromWorld(this.workbench.worldPoint(new THREE.Vector3(settings.matXmm, settings.matYmm, surfaceZ)));
+    const xAxis = this.machinePointFromWorld(this.workbench.worldPoint(new THREE.Vector3(settings.matXmm + 1, settings.matYmm, surfaceZ)));
+    engine.configureTableFrame({
+      centre: { xMm: centre.x, yMm: centre.y },
+      yawRad: Math.atan2(xAxis.y - centre.y, xAxis.x - centre.x),
+      placementSurfaceZMm: centre.z,
+      widthMm: settings.matWidthMm,
+      depthMm: settings.matDepthMm
+    });
+  }
+
   playerObstacles() {
     const s = this.playerSettings;
     return [
@@ -177,6 +208,8 @@ export class RobotRenderer {
     this.ndcCentre = new THREE.Vector2(0, 0);
     this.heldGhost = this.makeHeldGhost();
     this.machineRoot.add(this.heldGhost);
+    this.snapPreview = this.makeSnapPreview();
+    this.machineRoot.add(this.snapPreview.group);
     this.colorGrader = new ColorGrader(this.webgl, this.playerSettings);
     this.player.onPrimary = () => this.primaryPlayerAction();
     this.player.onRotate = () => {
@@ -197,6 +230,10 @@ export class RobotRenderer {
         event.preventDefault();
         const action = button.dataset.playerAction;
         if (action === 'rotate') this.player.onRotate();
+        if (action === 'rotate-left') {
+          const result = this.humanBuildAdapter.rotate(-1);
+          if (result.ok) this.lastPreviewSignature = '';
+        }
         if (action === 'primary') this.primaryPlayerAction();
         if (action === 'drop') this.dropHeldBrick();
       });
@@ -204,48 +241,93 @@ export class RobotRenderer {
   }
 
   makeHeldGhost() {
+    const body = createV8BrickVisual({ colour: 'green', displayHex: 0x22c47a }, this.playerSettings, this.brickFactory);
+    body.name = 'MAIN_DEMO_HELD_BRICK';
+    body.visible = false;
+    return body;
+  }
+
+  makeSnapPreview() {
     const group = new THREE.Group();
-    group.name = 'MAIN_DEMO_HELD_BRICK';
-    const material = new THREE.MeshPhysicalMaterial({
-      color: 0x22c47a,
-      roughness: 0.31,
-      metalness: 0,
-      clearcoat: 0.25,
-      transparent: false,
-      opacity: 1,
-      depthWrite: true
-    });
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(BRICK_SPEC.lengthMm, BRICK_SPEC.widthMm, BRICK_SPEC.bodyHeightMm),
-      material
+    group.name = 'MAIN_DEMO_V8_SNAP_PREVIEW';
+    group.visible = false;
+    const ghost = createV8BrickVisual({ colour: 'green', displayHex: 0x21c77a }, this.playerSettings, this.brickFactory, { ghost: true });
+    group.add(ghost);
+    const markerGeometry = new THREE.CylinderGeometry(3.1, 3.1, 0.75, 12);
+    markerGeometry.rotateX(Math.PI / 2);
+    const supportMarks = new THREE.InstancedMesh(
+      markerGeometry,
+      new THREE.MeshBasicMaterial({ color: 0x35d6ff, transparent: true, opacity: 0.82, depthTest: false }),
+      8
     );
-    body.castShadow = true;
-    group.add(body);
-    const studGeometry = new THREE.CylinderGeometry(
-      BRICK_SPEC.studDiameterMm / 2,
-      BRICK_SPEC.studDiameterMm / 2,
-      BRICK_SPEC.studHeightMm,
-      16
+    const carriedMarks = new THREE.InstancedMesh(
+      markerGeometry,
+      new THREE.MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 0.88, depthTest: false }),
+      8
     );
-    studGeometry.rotateX(Math.PI / 2);
-    const studs = new THREE.InstancedMesh(studGeometry, material, 8);
+    supportMarks.renderOrder = 30;
+    carriedMarks.renderOrder = 30;
+    group.add(supportMarks, carriedMarks);
+    const pivot = new THREE.Mesh(
+      new THREE.RingGeometry(5.4, 7, 18),
+      new THREE.MeshBasicMaterial({ color: 0xffc400, transparent: true, opacity: 0.95, depthTest: false, side: THREE.DoubleSide })
+    );
+    pivot.renderOrder = 31;
+    group.add(pivot);
+    return { group, ghost, supportMarks, carriedMarks, pivot };
+  }
+
+  fillSnapMarkers(mesh, brick, side, top, pose = null) {
+    const graph = this.humanBuildAdapter.placementEngine.graph;
+    const settings = this.playerSettings;
+    const position = pose?.position ?? brick.position;
+    const yawRad = pose?.yawRad ?? brick.yawRad ?? 0;
+    const quaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawRad);
     const matrix = new THREE.Matrix4();
-    const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3(1, 1, 1);
     let index = 0;
-    const z = BRICK_SPEC.bodyHeightMm / 2 + BRICK_SPEC.studHeightMm / 2;
-    for (const x of [-12, -4, 4, 12]) {
-      for (const y of [-4, 4]) {
-        matrix.compose(new THREE.Vector3(x, y, z), quaternion, scale);
-        studs.setMatrixAt(index++, matrix);
-      }
+    for (const cell of graph.connectorCells(side)) {
+      const local = graph.studLocal(cell.ix, cell.iy, top);
+      local.z = top
+        ? settings.brickBodyHeightMm / 2 + settings.studHeightMm + 0.45
+        : -settings.brickBodyHeightMm / 2 - 0.45;
+      const rotated = new THREE.Vector3(local.x, local.y, local.z).applyQuaternion(quaternion);
+      rotated.add(new THREE.Vector3(position.xMm, position.yMm, position.zMm));
+      matrix.compose(rotated, new THREE.Quaternion(), scale);
+      mesh.setMatrixAt(index, matrix);
+      index += 1;
     }
-    studs.instanceMatrix.needsUpdate = true;
-    studs.castShadow = true;
-    group.add(studs);
-    group.visible = false;
-    group.userData.material = material;
-    return group;
+    mesh.count = index;
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  syncSnapPreview() {
+    const preview = this.humanBuildAdapter?.getPreview?.();
+    const visuals = this.snapPreview;
+    if (this.snapAnimation || !preview || preview.type === 'CARRY' || preview.status === 'NONE') {
+      visuals.group.visible = false;
+      return;
+    }
+    visuals.group.visible = true;
+    const position = preview.previewPosition ?? preview.position;
+    const yawRad = preview.previewYawRad ?? preview.yawRad ?? 0;
+    visuals.ghost.position.set(position.xMm, position.yMm, position.zMm);
+    visuals.ghost.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawRad);
+    const overhang = preview.valid && preview.overhang && this.playerSettings.connectionOverhangGhostStyle === 'Yellow';
+    visuals.ghost.userData.material.color.setHex(preview.valid ? (overhang ? 0xe5b72e : 0x21c77a) : 0xe34f45);
+    visuals.ghost.userData.material.opacity = this.playerSettings.ghostOpacity;
+    const connectionVisible = preview.type === 'BRICK';
+    visuals.supportMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
+    visuals.carriedMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
+    visuals.pivot.visible = connectionVisible && this.playerSettings.connectionPivotMarkerEnabled !== false;
+    if (!connectionVisible) return;
+    const bricks = this.controller.getBricks();
+    const support = bricks.find((brick) => brick.id === preview.supportBrickId);
+    const carried = bricks.find((brick) => brick.id === preview.carriedBrickId);
+    if (!support || !carried) { visuals.group.visible = false; return; }
+    this.fillSnapMarkers(visuals.supportMarks, support, preview.supportSide, true);
+    this.fillSnapMarkers(visuals.carriedMarks, carried, preview.carriedSide, false, { position, yawRad });
+    visuals.pivot.position.set(preview.pivot.xMm, preview.pivot.yMm, preview.pivot.zMm + this.playerSettings.studHeightMm + 1.2);
   }
 
   setPlayerMode(enabled) {
@@ -262,14 +344,14 @@ export class RobotRenderer {
         const s = this.playerSettings;
         const radius = Math.max(0, s.playerCollisionDiameterMm * 0.5);
         const spawn = this.workbench.worldPoint(new THREE.Vector3(
-          338,
-          -s.tableDepthMm / 2 - radius - s.playerCollisionSkinMm - s.playerSpawnBehindTableMm - 1250,
+          0,
+          -s.tableDepthMm / 2 - radius - s.playerCollisionSkinMm - Math.max(0, s.playerSpawnBehindTableMm ?? 0),
           s.playerEyeHeightMm
         ));
         const target = this.workbench.worldPoint(new THREE.Vector3(
           s.matXmm,
           s.matYmm,
-          s.tableTopHeightMm + s.matThicknessMm + 220
+          s.tableTopHeightMm + s.matThicknessMm + s.matStudHeightMm + 35
         ));
         this.player.setLookAt(
           spawn,
@@ -291,36 +373,76 @@ export class RobotRenderer {
       this.moreBricksHandler?.();
       return { ok: true, action: 'more_bricks' };
     }
-    if (this.humanBuildAdapter.active) {
-      const pose = this.heldVisual.getVisualPose();
-      let result = this.humanBuildAdapter.release();
-      if (!result.ok && result.keepHolding && pose) {
-        result = this.humanBuildAdapter.drop(pose.position);
-        if (result.ok) this.loosePhysics.launch(result.brick.id, {
-          position: result.brick.position,
-          quaternion: pose.quaternion,
-          velocityMmS: pose.velocityMmS,
-          angularVelocityRadS: pose.angularVelocityRadS,
-          yawRad: pose.yawRad
-        });
-      }
-      if (result.ok) {
-        this.heldVisual.clear();
-        this.heldGhost.visible = false;
-        this.lastPreviewSignature = '';
-      }
-      return result;
-    }
+    if (this.humanBuildAdapter.active) return this.releaseHeldPlacement();
     if (!this.highlightedBrickId) return { ok: false, reason: 'no_pick_target' };
     const brick = this.controller.getBricks().find((candidate) => candidate.id === this.highlightedBrickId);
     const result = this.humanBuildAdapter.pickup(this.highlightedBrickId);
     if (result.ok && brick) {
       this.heldVisual.pickup(brick);
-      this.heldGhost.userData.material.color.setHex(BRICK_COLOURS[brick.colour] ?? BRICK_COLOURS.white);
+      this.heldGhost.userData.material.color.setHex(colourHex(brick));
       this.heldGhost.visible = true;
       this.highlightedBrickId = null;
     }
     return result;
+  }
+
+  releaseHeldPlacement() {
+    const pose = this.heldVisual.getVisualPose();
+    const result = this.humanBuildAdapter.release();
+    if (result.ok) {
+      this.beginSnapAnimation(pose, result.brick);
+      this.heldVisual.clear();
+      this.lastPreviewSignature = '';
+    }
+    return result;
+  }
+
+  beginSnapAnimation(pose, brick) {
+    if (!pose || !brick) {
+      this.snapAnimation = null;
+      this.heldGhost.visible = false;
+      return;
+    }
+    this.snapAnimation = {
+      brickId: brick.id,
+      position: new THREE.Vector3(pose.position.xMm, pose.position.yMm, pose.position.zMm),
+      targetPosition: new THREE.Vector3(brick.position.xMm, brick.position.yMm, brick.position.zMm),
+      velocityMmS: new THREE.Vector3(...(pose.velocityMmS ?? [0, 0, 0])),
+      quaternion: new THREE.Quaternion().fromArray(pose.quaternion),
+      targetQuaternion: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), brick.yawRad ?? 0),
+      elapsed: 0
+    };
+    this.heldGhost.userData.material.color.setHex(colourHex(brick));
+    this.heldGhost.userData.material.emissive.setHex(0x000000);
+    this.heldGhost.userData.material.emissiveIntensity = 0;
+    this.heldGhost.visible = true;
+    this.lastBatchSignature = '';
+  }
+
+  stepSnapAnimation(dt) {
+    const animation = this.snapAnimation;
+    if (!animation) return;
+    const settings = this.playerSettings;
+    animation.elapsed += dt;
+    const omega = 2 * Math.PI * Math.max(0.1, settings.snapNaturalFrequencyHz ?? 13);
+    const error = new THREE.Vector3().copy(animation.position).sub(animation.targetPosition);
+    animation.velocityMmS
+      .addScaledVector(animation.velocityMmS, -2 * (settings.snapDampingRatio ?? 0.74) * omega * dt)
+      .addScaledVector(error, -omega * omega * dt);
+    animation.position.addScaledVector(animation.velocityMmS, dt);
+    if (animation.position.z < animation.targetPosition.z) animation.position.z = animation.targetPosition.z;
+    const duration = Math.max(1e-6, settings.snapDurationS ?? 0.18);
+    const t = Math.max(0, Math.min(1, animation.elapsed / duration));
+    const ease = 1 - Math.pow(1 - t, 3);
+    animation.quaternion.slerp(animation.targetQuaternion, ease).normalize();
+    const bounce = (settings.snapOvershootMm ?? 0.35) * Math.exp(-7 * t) * Math.sin(t * Math.PI * 3);
+    animation.position.z = Math.max(animation.targetPosition.z, animation.position.z + bounce * dt * 8);
+    if (animation.elapsed < duration) return;
+    animation.position.copy(animation.targetPosition);
+    animation.quaternion.copy(animation.targetQuaternion);
+    this.snapAnimation = null;
+    this.heldGhost.visible = false;
+    this.lastBatchSignature = '';
   }
 
   dropHeldBrick() {
@@ -362,6 +484,7 @@ export class RobotRenderer {
       ].filter((mesh) => mesh.visible);
       const hit = this.centreHits(pickMeshes)[0] ?? null;
       this.highlightedMoreBricks = Boolean(hit?.object?.userData?.moreBricks);
+      this.workbench.setMoreBricksHighlighted(this.highlightedMoreBricks);
       this.highlightedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
       for (const [id, mesh] of this.brickMeshes) {
         const highlighted = id === this.highlightedBrickId;
@@ -379,6 +502,7 @@ export class RobotRenderer {
       this.workSurface
     ].filter((mesh) => mesh.visible);
     const hits = this.centreHits(supportMeshes);
+    this.workbench.setMoreBricksHighlighted(false);
     let candidate = null;
     for (const hit of hits) {
       const targetId = hit.object.userData?.targetId;
@@ -434,6 +558,15 @@ export class RobotRenderer {
   }
 
   syncHeldGhost() {
+    document.body.classList.toggle('mobile-carry', Boolean(this.snapAnimation || this.heldVisual?.getVisualPose()));
+    if (this.snapAnimation) {
+      this.heldGhost.visible = true;
+      this.heldGhost.position.copy(this.snapAnimation.position);
+      this.heldGhost.quaternion.copy(this.snapAnimation.quaternion);
+      this.heldGhost.userData.material.opacity = 1;
+      this.heldGhost.userData.material.transparent = false;
+      return;
+    }
     const pose = this.heldVisual?.getVisualPose();
     if (!pose) {
       if (this.heldGhost) this.heldGhost.visible = false;
@@ -467,7 +600,7 @@ export class RobotRenderer {
         this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
-      mesh.visible = !target.occupiedBy;
+      mesh.visible = this.playerSettings.robotTargetsVisible === true && !target.occupiedBy;
       mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
       mesh.rotation.z = target.yawRad ?? 0;
     }
@@ -482,9 +615,11 @@ export class RobotRenderer {
       ...(this.board?.getTargets?.() ?? []).map((target) => target.occupiedBy).filter(Boolean),
       ...(this.board?.getPlacements?.() ?? []).map((placement) => placement.brickId)
     ]);
-    const batchSignature = `${this.controller.getState().worldRevision}:${[...placedIds].sort().join(',')}`;
+    const animatedBrickId = this.snapAnimation?.brickId ?? null;
+    const batchPlacedIds = new Set([...placedIds].filter((id) => id !== animatedBrickId));
+    const batchSignature = `${this.controller.getState().worldRevision}:${animatedBrickId ?? '-'}:${[...batchPlacedIds].sort().join(',')}`;
     if (batchSignature !== this.lastBatchSignature) {
-      this.batcher.rebuild(bricks, placedIds);
+      this.batcher.rebuild(bricks, batchPlacedIds);
       this.lastBatchSignature = batchSignature;
     }
     const seen = new Set();
@@ -492,11 +627,8 @@ export class RobotRenderer {
       seen.add(brick.id);
       let mesh = this.brickMeshes.get(brick.id);
       if (!mesh) {
-        const body = makeBox(
-          { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
-          brick.position,
-          new THREE.MeshPhysicalMaterial({ color: BRICK_COLOURS[brick.colour] ?? BRICK_COLOURS.white, roughness: 0.38, metalness: 0, clearcoat: 0.25 })
-        );
+        const body = createV8BrickVisual(brick, this.playerSettings, this.brickFactory);
+        body.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
         body.name = `BRICK_${brick.id}`;
         body.userData.brickId = brick.id;
         this.machineRoot.add(body);
@@ -506,10 +638,10 @@ export class RobotRenderer {
       mesh.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
       if (Array.isArray(brick.freeQuaternion) && brick.freeQuaternion.length === 4) mesh.quaternion.fromArray(brick.freeQuaternion).normalize();
       else mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), brick.yawRad ?? 0);
-      mesh.visible = !placedIds.has(brick.id) && brick.heldBy !== 'human';
+      mesh.visible = brick.id !== animatedBrickId && !batchPlacedIds.has(brick.id) && brick.heldBy !== 'human';
     }
     for (const [id, mesh] of this.brickMeshes) {
-      if (!seen.has(id)) { this.machineRoot.remove(mesh); this.brickMeshes.delete(id); }
+      if (!seen.has(id)) { this.machineRoot.remove(mesh); disposeV8BrickVisual(mesh); this.brickMeshes.delete(id); }
     }
   }
 
@@ -612,6 +744,7 @@ export class RobotRenderer {
     this.updateRobot();
     this.updatePlayerInteraction();
     this.syncHeldGhost();
+    this.syncSnapPreview();
     if (this.colorGrader && this.playerSettings.colorGradingEnabled) this.colorGrader.render(this.scene, this.camera);
     else this.webgl.render(this.scene, this.camera);
   }
@@ -639,10 +772,12 @@ export class RobotRenderer {
             this.player.physicsStep(this.physicsStepSeconds);
             this.heldVisual.step(this.physicsStepSeconds, this.machinePlayerProxy);
           }
+          this.stepSnapAnimation(this.physicsStepSeconds);
           this.loosePhysics.step(this.physicsStepSeconds);
         }
       }
       this.lastFrame = now;
+      this.workbench.update(now);
       this.render();
       requestAnimationFrame(tick);
     };
@@ -653,17 +788,30 @@ export class RobotRenderer {
 
   setMoreBricksHandler(handler) { this.moreBricksHandler = handler; }
 
+  launchSpawnedBricks(bricks) {
+    for (const brick of bricks ?? []) {
+      this.loosePhysics.launch(brick.id, {
+        position: brick.position,
+        yawRad: brick.yawRad ?? 0,
+        velocityMmS: (brick.initialVelocityMps ?? [0, 0, 0]).map((value) => value * 1000),
+        angularVelocityRadS: brick.initialAngularVelocityRadS ?? [0, 0, 0]
+      });
+    }
+  }
+
   applySettings(key = '*') {
     const tableChanged = key === '*' || /^(table|leg|mat|gridVisible|gridColor|gridOpacity)/.test(key);
     const mountChanged = key === '*' || /^robotMount/.test(key);
     const lightingChanged = key === '*' || /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadow|exposure|toneMapping)/.test(key);
     const collisionChanged = tableChanged || mountChanged || key === '*' || /^playerCollision/.test(key);
+    const brickGeometryChanged = key === '*' || /^(brickLengthMm|brickWidthMm|brickBodyHeightMm|studPitchMm|studDiameterMm|studHeightMm)$/.test(key);
     const brickMaterialChanged = key === '*' || /^(brickRoughness|brickMetalness)$/.test(key);
     if (tableChanged) {
       this.workbench.rebuild();
       this.workSurface = this.workbench.mat;
     }
     if (mountChanged) this.applyMachineTransform();
+    if (tableChanged || mountChanged) this.configurePlacementFrame();
     if (collisionChanged) this.playerCollision?.setObstacles(this.playerObstacles());
     if (lightingChanged) {
       this.scene.background = new THREE.Color(0xe9eef3).multiplyScalar(this.playerSettings.backgroundBrightness);
@@ -672,13 +820,20 @@ export class RobotRenderer {
       this.webgl.shadowMap.enabled = this.playerSettings.shadowsEnabled;
       this.buildLighting();
     }
+    if (brickGeometryChanged) {
+      this.brickFactory.rebuild();
+      this.batcher.rebuildGeometry();
+      applyV8BrickGeometry(this.heldGhost, this.playerSettings, this.brickFactory);
+      applyV8BrickGeometry(this.snapPreview.ghost, this.playerSettings, this.brickFactory);
+      for (const mesh of this.brickMeshes.values()) applyV8BrickGeometry(mesh, this.playerSettings, this.brickFactory);
+      this.lastBatchSignature = '';
+    }
     if (brickMaterialChanged) {
       this.batcher.applyMaterialSettings();
-      for (const mesh of this.looseBrickMeshes.values()) {
-        mesh.material.roughness = this.playerSettings.brickRoughness ?? 0.31;
-        mesh.material.metalness = this.playerSettings.brickMetalness ?? 0;
-        mesh.material.needsUpdate = true;
-      }
+      applyV8BrickMaterial(this.heldGhost, this.playerSettings);
+      applyV8BrickMaterial(this.snapPreview.ghost, this.playerSettings);
+      const bricks = new Map(this.controller.getBricks().map((brick) => [brick.id, brick]));
+      for (const [id, mesh] of this.brickMeshes) applyV8BrickMaterial(mesh, this.playerSettings, bricks.get(id));
     }
     this.physicsStepSeconds = 1 / Math.max(30, this.playerSettings.physicsHz ?? 240);
     this.maximumSubsteps = Math.max(1, this.playerSettings.maximumSubsteps ?? 8);
@@ -706,6 +861,13 @@ export class RobotRenderer {
       ur10: this.ur10.getStatus(),
       player: this.player?.getState() ?? null,
       heldBrick: this.heldVisual?.getVisualPose() ?? null,
+      interaction: {
+        highlightedBrickId: this.highlightedBrickId,
+        highlightedMoreBricks: Boolean(this.highlightedMoreBricks),
+        preview: this.humanBuildAdapter?.getPreview?.() ?? null,
+        snapAnimating: Boolean(this.snapAnimation),
+        snapBrickId: this.snapAnimation?.brickId ?? null
+      },
       looseBrickPhysics: this.loosePhysics?.getState() ?? [],
       placedBatch: this.batcher.getDiagnostics(),
       colorGrading: this.colorGrader?.getDiagnostics() ?? null

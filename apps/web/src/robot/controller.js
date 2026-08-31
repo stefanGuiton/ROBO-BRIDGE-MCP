@@ -171,6 +171,38 @@ export class RobotController {
     return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
   }
 
+  addLooseBricks(bricks, { actor = 'human' } = {}) {
+    if (this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
+      return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    }
+    if (!Array.isArray(bricks) || bricks.length < 1 || bricks.length > 50) {
+      return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+    }
+    const known = new Set(this.bricks.map((brick) => brick.id));
+    const accepted = [];
+    for (const source of bricks) {
+      if (!source || typeof source.id !== 'string' || known.has(source.id)
+        || !source.position || ![source.position.xMm, source.position.yMm, source.position.zMm, source.yawRad].every(isFiniteNumber)) {
+        return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
+      }
+      known.add(source.id);
+      const brick = clone({
+        ...source,
+        heldBy: null,
+        ownership: null,
+        placedTargetId: null,
+        placementType: null,
+        connection: null,
+        snapped: false,
+        graspable: source.graspable !== false
+      });
+      accepted.push(brick);
+    }
+    this.bricks.push(...accepted);
+    this.#bumpRobot('loose_bricks_added', { actor, brickIds: accepted.map((brick) => brick.id) });
+    return { ok: true, bricks: clone(accepted), count: accepted.length, worldRevision: this.worldRevision };
+  }
+
   heldBrick() { return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null; }
 
   moveLooseBrick(brickId, position, { actor = 'human', yawRad = null, freeQuaternion = null } = {}) {

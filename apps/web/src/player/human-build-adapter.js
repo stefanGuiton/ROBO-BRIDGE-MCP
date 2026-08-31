@@ -81,14 +81,16 @@ export class HumanBuildAdapter {
       brickId: this.active.brickId,
       position: preview.position,
       yawRad: preview.yawRad,
-      connection: preview.connection,
+      connection: preview.connections?.length > 1 ? { groups: preview.connections } : preview.connection,
       placementType: preview.placementType
     });
     if (!result.ok) return { ...result, keepHolding: true };
     const brickId = this.active.brickId;
     this.graph.registerPlacement(brickId, {
       placementType: result.snapped ? 'blueprint-target' : preview.placementType,
-      connection: preview.connection
+      cells: preview.cells ?? [],
+      connection: preview.connection,
+      connections: preview.connections ?? []
     });
     this.active = null;
     this.placementEngine.reset();

@@ -1,28 +1,12 @@
 import * as THREE from '../../vendor/three.module.min.js';
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
-
-const COLOURS = Object.freeze({
-  white: 0xf3f5f8,
-  black: 0x151b25,
-  red: 0xef4b4f,
-  blue: 0x3b78ff,
-  yellow: 0xffd447,
-  green: 0x49c47a
-});
+import { colourHex } from './v8-brick-visual.js';
 
 export class PlacedBrickBatcher {
   constructor(scene, settings) {
     this.scene = scene;
     this.settings = settings;
     this.groups = new Map();
-    this.bodyGeometry = new THREE.BoxGeometry(BRICK_SPEC.lengthMm, BRICK_SPEC.widthMm, BRICK_SPEC.bodyHeightMm);
-    this.studGeometry = new THREE.CylinderGeometry(
-      BRICK_SPEC.studDiameterMm / 2,
-      BRICK_SPEC.studDiameterMm / 2,
-      BRICK_SPEC.studHeightMm,
-      16
-    );
-    this.studGeometry.rotateX(Math.PI / 2);
+    this.rebuildGeometry();
     this.matrix = new THREE.Matrix4();
     this.rootMatrix = new THREE.Matrix4();
     this.localMatrix = new THREE.Matrix4();
@@ -42,20 +26,36 @@ export class PlacedBrickBatcher {
     this.groups.clear();
   }
 
-  ensureGroup(colour, count) {
-    const existing = this.groups.get(colour);
+  rebuildGeometry() {
+    this.bodyGeometry?.dispose?.();
+    this.studGeometry?.dispose?.();
+    this.bodyGeometry = new THREE.BoxGeometry(this.settings.brickLengthMm, this.settings.brickWidthMm, this.settings.brickBodyHeightMm);
+    this.studGeometry = new THREE.CylinderGeometry(
+      this.settings.studDiameterMm / 2,
+      this.settings.studDiameterMm / 2,
+      this.settings.studHeightMm,
+      18
+    );
+    this.studGeometry.rotateX(Math.PI / 2);
+    for (const group of this.groups?.values?.() ?? []) {
+      group.body.geometry = this.bodyGeometry;
+      group.studs.geometry = this.studGeometry;
+    }
+  }
+
+  ensureGroup(colourKey, count, sampleBrick) {
+    const existing = this.groups.get(colourKey);
     if (existing && existing.capacity >= count) return existing;
     if (existing) {
       this.scene.remove(existing.body, existing.studs);
       existing.material.dispose();
-      this.groups.delete(colour);
+      this.groups.delete(colourKey);
     }
     const capacity = Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(1, count))));
-    const material = new THREE.MeshPhysicalMaterial({
-      color: COLOURS[colour] ?? COLOURS.white,
+    const material = new THREE.MeshStandardMaterial({
+      color: colourHex(sampleBrick),
       roughness: this.settings.brickRoughness ?? 0.31,
-      metalness: this.settings.brickMetalness ?? 0,
-      clearcoat: 0.25
+      metalness: this.settings.brickMetalness ?? 0
     });
     const body = new THREE.InstancedMesh(this.bodyGeometry, material, capacity);
     const studs = new THREE.InstancedMesh(this.studGeometry, material, capacity * 8);
@@ -65,10 +65,10 @@ export class PlacedBrickBatcher {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.scene.add(mesh);
     }
-    const group = { colour, capacity, material, body, studs, brickIds: [] };
+    const group = { colour: colourKey, capacity, material, body, studs, brickIds: [] };
     body.userData.placedBrickBatch = group;
     studs.userData.placedBrickBatch = group;
-    this.groups.set(colour, group);
+    this.groups.set(colourKey, group);
     return group;
   }
 
@@ -84,8 +84,9 @@ export class PlacedBrickBatcher {
     const grouped = new Map();
     for (const brick of bricks) {
       if (!placedIds.has(brick.id)) continue;
-      if (!grouped.has(brick.colour)) grouped.set(brick.colour, []);
-      grouped.get(brick.colour).push(brick);
+      const colourKey = Number.isInteger(brick.displayHex) ? `hex:${brick.displayHex}` : `name:${brick.colour}`;
+      if (!grouped.has(colourKey)) grouped.set(colourKey, []);
+      grouped.get(colourKey).push(brick);
     }
     for (const [colour, group] of this.groups) {
       if (!grouped.has(colour)) {
@@ -93,10 +94,10 @@ export class PlacedBrickBatcher {
         group.studs.count = 0;
       }
     }
-    const pitch = BRICK_SPEC.studPitchMm;
-    const studZ = BRICK_SPEC.bodyHeightMm / 2 + BRICK_SPEC.studHeightMm / 2;
+    const pitch = this.settings.studPitchMm;
+    const studZ = this.settings.brickBodyHeightMm / 2 + this.settings.studHeightMm / 2;
     for (const [colour, list] of grouped) {
-      const group = this.ensureGroup(colour, list.length);
+      const group = this.ensureGroup(colour, list.length, list[0]);
       group.brickIds = list.map((brick) => brick.id);
       let studIndex = 0;
       for (let index = 0; index < list.length; index += 1) {

@@ -53,6 +53,7 @@ export class PlayerController {
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.canvas;
       document.body.classList.toggle('player-pointer-locked', this.pointerLocked);
+      document.body.classList.toggle('pointer-locked', this.pointerLocked);
       if (!this.pointerLocked) this.keys.clear();
       this.onPointerLock?.(this.pointerLocked);
     });
@@ -107,6 +108,7 @@ export class PlayerController {
     this.mobileMode = configured === 'On'
       || (configured === 'Auto' && Boolean(globalThis.matchMedia?.('(pointer: coarse)')?.matches));
     document.body.classList.toggle('player-mobile', this.mobileMode);
+    document.body.classList.toggle('mobile-mode', this.mobileMode);
   }
 
   requestLock() {

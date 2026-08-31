@@ -2,7 +2,7 @@ import { createObservationService } from '../perception/observation-service.js';
 import { createAgentActivity } from '../ui/agent-activity.js';
 import { machineError } from './runtime-bridge.js';
 
-const COLOURS = new Set(['white','black','red','blue','yellow','green']);
+const COLOURS = new Set(['white','black','red','blue','yellow','green','orange','purple','teal']);
 const TYPES = new Set(['brick','target']);
 const STATUSES = new Set(['unfilled','filled','correct','incorrect']);
 const OWNERS = new Set(['human','agent','none']);
