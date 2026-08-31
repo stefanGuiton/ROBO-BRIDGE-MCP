@@ -10,7 +10,7 @@ Comparison viewport: 1468 × 930
 ## Visual match
 
 - Full-screen light-mode V8 player canvas: passed.
-- FPS pill, top-left HUD, centred pointer-lock help, reticle, and bottom toolbar: passed.
+- FPS pill, top-left HUD, centred pointer-lock/drag-look help, reticle, and bottom toolbar: passed.
 - White 1750 × 690 × 1200 mm workbench and four-leg proportions: passed.
 - 640 × 480 mm build mat with 80 × 60 instanced studs: passed.
 - Red circular MORE BRICKS control and compact authoritative brick supply: passed.

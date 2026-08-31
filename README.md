@@ -32,7 +32,7 @@ NVIDIA Newton and the old duplicate SCARA/physics runtime have been removed. ROB
 ## MAIN_DEMO controls
 
 - `WASD`: move; `Shift`: sprint; `Space` / `Ctrl`: vertical movement.
-- Mouse: look while pointer-locked; wheel: zoom.
+- Mouse: look while pointer-locked; if the browser blocks Pointer Lock, hold and drag to look. Wheel: zoom.
 - Centre click: pick or place; `R`: rotate the held brick by 90 degrees.
 - `PLAYER` / `ORBIT`: switch between player navigation and inspection camera.
 - `BUILD` / `TEST LOCK`: allow or reject player construction edits.

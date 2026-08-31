@@ -357,7 +357,13 @@ setInterval(() => {
   }
   if (playerStateEl) {
     playerStateEl.textContent = performance.player?.enabled
-      ? (performance.player.pointerLocked ? 'PLAYER · LOCKED' : 'PLAYER · CLICK TO LOOK')
+      ? (performance.player.pointerLocked
+          ? 'PLAYER · LOCKED'
+          : performance.player.dragLooking
+            ? 'PLAYER · LOOKING'
+            : performance.player.pointerLockFailed
+              ? 'PLAYER · DRAG TO LOOK'
+              : 'PLAYER · CLICK OR DRAG TO LOOK')
       : 'ORBIT CAMERA';
   }
   if (playerHeldEl) playerHeldEl.textContent = performance.heldBrick?.brickId ?? 'NONE';

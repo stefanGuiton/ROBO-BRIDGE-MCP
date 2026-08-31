@@ -5,7 +5,9 @@ body { background:#e9eef3; }
 button,input,select { font:inherit; color:inherit; }
 button { cursor:pointer; }
 button:disabled { cursor:wait; opacity:.55; }
-#scene { display:block; width:100%; height:100%; }
+#scene { display:block; width:100%; height:100%; cursor:grab; }
+.player-drag-looking #scene { cursor:grabbing; }
+.player-pointer-locked #scene { cursor:none; }
 .main-demo { position:relative; }
 .fps-pill { position:absolute; top:13px; left:12px; display:flex; align-items:center; gap:7px; min-height:29px; padding:0 12px; border-radius:999px; background:rgba(22,22,22,.92); color:#fff; box-shadow:0 8px 18px rgba(15,23,42,.15); font:700 10px ui-monospace,monospace; }
 .fps-pill span { color:#c8c8c8; }

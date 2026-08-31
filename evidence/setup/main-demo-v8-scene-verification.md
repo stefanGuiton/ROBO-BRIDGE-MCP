@@ -8,7 +8,7 @@ Baseline HEAD: `8dfa08ff696bfcbfabac22b9f0b663af392dbe02`
 
 Command: `python scripts/verify.py`
 
-- JavaScript tests: 87 passed, 0 failed, 0 skipped.
+- JavaScript tests: 88 passed, 0 failed, 0 skipped.
 - Persistent production reliability: 20/20 passed.
 - JavaScript syntax: 49 files passed.
 - Python syntax: 4 files passed.
@@ -25,6 +25,7 @@ URL: `http://127.0.0.1:8772/`
 - Visible build state: `0/8` after reset.
 - V8 setting controls: 231.
 - Robot mount controls: 4; live X transform exercised and restored.
+- Mouse look: physical click-drag changed the live camera when the in-app browser rejected Pointer Lock.
 - Place-next-brick control: `0/8 -> 1/8`.
 - Reset control: `1/8 -> 0/8`.
 - Console on fresh final tab: 0 errors, 0 warnings.

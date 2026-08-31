@@ -30,6 +30,12 @@ export class PlayerController {
     this.targetPitch = this.pitch;
     this.enabled = false;
     this.pointerLocked = false;
+    this.pointerLockFailed = false;
+    this.pointerLockTimer = null;
+    this.dragLooking = false;
+    this.dragLookMoved = false;
+    this.dragLastX = 0;
+    this.dragLastY = 0;
     this.mobileMode = false;
     this.touchId = null;
     this.touchX = 0;
@@ -43,11 +49,24 @@ export class PlayerController {
     this.canvas.addEventListener('mousedown', (event) => {
       if (!this.enabled || this.mobileMode || event.button !== 0) return;
       if (document.pointerLockElement !== this.canvas) {
+        this.dragLooking = true;
+        this.dragLookMoved = false;
+        this.dragLastX = event.clientX;
+        this.dragLastY = event.clientY;
+        document.body.classList.add('player-drag-looking');
+        event.preventDefault();
         try {
-          const request = this.canvas.requestPointerLock?.();
-          request?.catch?.(() => this.onPointerLockError?.());
+          if (typeof this.canvas.requestPointerLock !== 'function') this.markPointerLockFailed();
+          else {
+            const request = this.canvas.requestPointerLock();
+            request?.catch?.(() => this.markPointerLockFailed());
+          }
+          clearTimeout(this.pointerLockTimer);
+          this.pointerLockTimer = setTimeout(() => {
+            if (document.pointerLockElement !== this.canvas) this.markPointerLockFailed();
+          }, 250);
         } catch {
-          this.onPointerLockError?.();
+          this.markPointerLockFailed();
         }
       }
       else this.onPrimary?.();
@@ -59,14 +78,38 @@ export class PlayerController {
     }, { passive: false });
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === this.canvas;
+      clearTimeout(this.pointerLockTimer);
+      if (this.pointerLocked) {
+        this.pointerLockFailed = false;
+        this.stopDragLook();
+      }
       document.body.classList.toggle('player-pointer-locked', this.pointerLocked);
       if (!this.pointerLocked) this.keys.clear();
       this.onPointerLock?.(this.pointerLocked);
     });
     document.addEventListener('mousemove', (event) => {
-      if (!this.enabled || this.mobileMode || !this.pointerLocked) return;
-      this.applyLookDelta(event.movementX, event.movementY, this.settings.mouseSensitivityRadPerPx);
+      if (!this.enabled || this.mobileMode) return;
+      if (this.pointerLocked) {
+        this.applyLookDelta(event.movementX, event.movementY, this.settings.mouseSensitivityRadPerPx);
+        return;
+      }
+      if (!this.dragLooking) return;
+      const dx = event.clientX - this.dragLastX;
+      const dy = event.clientY - this.dragLastY;
+      this.dragLastX = event.clientX;
+      this.dragLastY = event.clientY;
+      if (dx || dy) {
+        this.dragLookMoved = true;
+        this.applyLookDelta(dx, dy, this.settings.mouseSensitivityRadPerPx);
+      }
     });
+    document.addEventListener('mouseup', (event) => {
+      if (event.button !== 0 || !this.dragLooking) return;
+      const shouldPrimary = this.pointerLockFailed && !this.dragLookMoved;
+      this.stopDragLook();
+      if (shouldPrimary) this.onPrimary?.();
+    });
+    document.addEventListener('pointerlockerror', () => this.markPointerLockFailed());
     addEventListener('keydown', (event) => {
       if (!this.enabled || event.target?.matches?.('input,select,textarea,button')) return;
       if (MOVEMENT_CODES.has(event.code)) {
@@ -115,6 +158,17 @@ export class PlayerController {
     document.body.classList.toggle('player-mobile', this.mobileMode);
   }
 
+  markPointerLockFailed() {
+    if (document.pointerLockElement === this.canvas) return;
+    this.pointerLockFailed = true;
+    this.onPointerLockError?.();
+  }
+
+  stopDragLook() {
+    this.dragLooking = false;
+    document.body.classList.remove('player-drag-looking');
+  }
+
   touchDown(event) {
     if (!this.enabled || !this.mobileMode || event.pointerType === 'mouse') return;
     if (this.touchId !== null) return;
@@ -154,6 +208,8 @@ export class PlayerController {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (!this.enabled) {
+      clearTimeout(this.pointerLockTimer);
+      this.stopDragLook();
       this.keys.clear();
       this.mobileKeys.clear();
       this.velocity.set(0, 0, 0);
@@ -240,6 +296,8 @@ export class PlayerController {
       enabled: this.enabled,
       mobileMode: this.mobileMode,
       pointerLocked: this.pointerLocked,
+      pointerLockFailed: this.pointerLockFailed,
+      dragLooking: this.dragLooking,
       position: this.position.toArray(),
       velocity: this.velocity.toArray(),
       yaw: this.yaw,

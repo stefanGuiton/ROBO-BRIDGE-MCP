@@ -16,7 +16,7 @@ Human player mutations go through `HumanBuildAdapter`, then `RobotController` an
 
 ## Integrated Player V8 behavior
 
-- desktop WASD, sprint, vertical movement, pointer-lock look, wheel zoom, pick/place, and 90-degree rotation;
+- desktop WASD, sprint, vertical movement, pointer-lock look with a click-drag fallback for embedded browsers, wheel zoom, pick/place, and 90-degree rotation;
 - coarse-pointer mobile look, directional controls, rotate, and pick/place;
 - capsule collision against the worktable and robot-base exclusion volume;
 - fixed 240 Hz player and held-brick updates with bounded catch-up, independent of render cadence;

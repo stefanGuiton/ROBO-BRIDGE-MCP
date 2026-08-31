@@ -14,6 +14,7 @@ import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
 import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { fixedStepAdvance } from '../../apps/web/src/player/math.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
+import { PlayerController } from '../../apps/web/src/player/player-controller.js';
 import { PlayerSettingsStore, PLAYER_FALLBACK_SETTINGS, PLAYER_SOURCE_PROVENANCE } from '../../apps/web/src/player/player-settings.js';
 import { compileImageData } from '../../apps/web/src/logo/compiler.js';
 import { makePattern } from '../../apps/web/src/logo/patterns.js';
@@ -45,6 +46,57 @@ function makeRuntime() {
   const adapter = new HumanBuildAdapter({ controller, board, graph, placementEngine });
   return { clock, board, controller, graph, placementEngine, adapter };
 }
+
+test('mouse drag rotates the player view when pointer lock is unavailable', async () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const classes = new Set();
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: {
+    add: (name) => classes.add(name),
+    remove: (name) => classes.delete(name),
+    toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name)
+  } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  canvas.requestPointerLock = () => Promise.reject(new Error('unsupported'));
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController({}, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, {});
+    player.setEnabled(true);
+    const initialYaw = player.targetYaw;
+    const initialPitch = player.targetPitch;
+    canvas.dispatchEvent(event('mousedown', { button: 0, clientX: 100, clientY: 100 }));
+    documentTarget.dispatchEvent(event('mousemove', { clientX: 140, clientY: 80, movementX: 0, movementY: 0 }));
+    assert.ok(player.targetYaw < initialYaw);
+    assert.ok(player.targetPitch > initialPitch);
+    assert.equal(classes.has('player-drag-looking'), true);
+    documentTarget.dispatchEvent(event('mouseup', { button: 0, clientX: 140, clientY: 80 }));
+    assert.equal(player.dragLooking, false);
+    assert.equal(classes.has('player-drag-looking'), false);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(player.pointerLockFailed, true);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
 
 test('supplied V8 player settings are provenance-locked and production disables collapse', async () => {
   const path = fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url));
