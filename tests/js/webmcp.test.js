@@ -23,6 +23,8 @@ test('registers one bounded primitive production surface with exact controller l
   assert.equal(move.inputSchema.properties.xMm.minimum, 470);
   assert.equal(move.inputSchema.properties.xMm.maximum, 710);
   assert.equal(move.inputSchema.properties.speedMmS.maximum, 650);
+  assert.equal(move.inputSchema.properties.yawDeg.minimum, -360);
+  assert.equal(move.inputSchema.properties.yawDeg.maximum, 360);
   assert.ok(move.inputSchema.required.includes('expectedWorldRevision'));
   assert.deepEqual(observe.inputSchema.properties.cameraId.enum, [
     'tray_camera','canvas_camera','top_camera','left_camera','right_camera','user_camera'

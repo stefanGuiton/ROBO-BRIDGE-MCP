@@ -253,7 +253,11 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       },
       async moveTool(request = {}, options = {}) {
         try {
-          const result = await controller.moveTool({ ...request, signal: options.signal });
+          const result = await controller.moveTool({
+            ...request,
+            yawRad: Number.isFinite(request.yawDeg) ? request.yawDeg * Math.PI / 180 : undefined,
+            signal: options.signal
+          });
           return resultWithState({
             ok: true,
             accepted: result.accepted,
@@ -383,8 +387,22 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           supportSide: request.supportSide ?? 'M',
           carriedSide: request.carriedSide ?? null
         });
-        try { placementPreviewObserver?.(request, result); } catch { /* an optional visual observer cannot invalidate a read-only tool */ }
-        return result;
+        const robotState = controller.getState();
+        const heldYawOffset = robotState.heldBrickId === request.brickId
+          ? robotState.gripper?.brickYawInTcpRad
+          : null;
+        const requiredToolYawDeg = result.ok && Number.isFinite(heldYawOffset)
+          ? (result.candidate.yawRad - heldYawOffset) * 180 / Math.PI
+          : null;
+        const publicResult = Number.isFinite(requiredToolYawDeg) ? {
+          ...result,
+          requiredToolYawDeg,
+          requiredTcp: { ...result.requiredTcp, yawDeg: requiredToolYawDeg },
+          approachTcp: { ...result.approachTcp, yawDeg: requiredToolYawDeg },
+          retreatTcp: { ...result.retreatTcp, yawDeg: requiredToolYawDeg }
+        } : result;
+        try { placementPreviewObserver?.(request, publicResult); } catch { /* an optional visual observer cannot invalidate a read-only tool */ }
+        return publicResult;
       },
       getCamera(cameraId, size = { widthPx: 640, heightPx: 360 }) {
         const widthPx = Number(size.widthPx);

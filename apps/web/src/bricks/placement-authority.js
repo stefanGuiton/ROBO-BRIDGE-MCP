@@ -1,8 +1,10 @@
 import { BRICK_SPEC } from './brick-spec.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
+import { isParallelYaw } from '../player/connector-contract.js';
 
 const clone = (value) => structuredClone(value);
 const SIDES = new Set(['L', 'M', 'R']);
+const PARALLEL_YAW_TOLERANCE_RAD = 2 * Math.PI / 180;
 
 function connectorPoint(graph, support, side) {
   const point = graph.connectorWorld(support, side, true);
@@ -69,6 +71,15 @@ export class PlacementAuthority {
         bricks,
         carriedSide
       );
+      if (!isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
+        candidate = {
+          ...candidate,
+          valid: false,
+          status: 'BLOCKED',
+          blockedReason: 'PERPENDICULAR_CONNECTION_FORBIDDEN',
+          requestedYawRad: yawRad
+        };
+      }
     } else {
       if (!position) return { ok: false, reason: 'invalid_input', worldRevision: this.board.worldRevision };
       const target = engine.nearestTarget(position);
@@ -85,6 +96,15 @@ export class PlacementAuthority {
           : null;
         if (support) {
           candidate = engine.connectionCandidate(support, position, { ...carried, yawRad }, bricks, carriedSide);
+          if (!isParallelYaw(yawRad, support.yawRad ?? 0, PARALLEL_YAW_TOLERANCE_RAD)) {
+            candidate = {
+              ...candidate,
+              valid: false,
+              status: 'BLOCKED',
+              blockedReason: 'PERPENDICULAR_CONNECTION_FORBIDDEN',
+              requestedYawRad: yawRad
+            };
+          }
         } else {
         const frameYaw = engine.tableFrame.yawRad;
         engine.rotationQuarterTurns = ((Math.round((yawRad - frameYaw) / (Math.PI / 2)) % 4) + 4) % 4;

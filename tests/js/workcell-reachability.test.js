@@ -236,6 +236,50 @@ test('human and robot-facing previews share one placement authority and board', 
   assert.equal(graph.snapshot().matRoots.includes(first.id), true, 'preview must rebuild the graph from BuildBoard');
   assert.ok(stacked.requiredTcp.zMm > preview.requiredTcp.zMm);
 
+  const beforeRejectedPreviews = clock.value;
+  const mismatchedPair = authority.preview({
+    brickId: second.id,
+    supportBrickId: first.id,
+    supportSide: 'R',
+    carriedSide: 'M',
+    yawRad: 0
+  });
+  assert.equal(mismatchedPair.ok, false);
+  assert.equal(mismatchedPair.reason, 'connector_pair_mismatch');
+  const perpendicular = authority.preview({
+    brickId: second.id,
+    supportBrickId: first.id,
+    supportSide: 'M',
+    carriedSide: 'M',
+    yawRad: Math.PI / 2
+  });
+  assert.equal(perpendicular.ok, false);
+  assert.equal(perpendicular.reason, 'perpendicular_connection_forbidden');
+  assert.equal(clock.value, beforeRejectedPreviews, 'rejected connector previews must not mutate worldRevision');
+
+  const parallelHalfTurn = authority.preview({
+    brickId: second.id,
+    supportBrickId: first.id,
+    supportSide: 'M',
+    carriedSide: 'M',
+    yawRad: Math.PI
+  });
+  assert.equal(parallelHalfTurn.ok, true, 'a physically equivalent 180 degree input remains parallel');
+  assert.equal(parallelHalfTurn.candidate.yawRad, placed.brick.yawRad, 'parallel half-turn input must canonicalize to the support yaw');
+  assert.equal(parallelHalfTurn.candidate.studCount, 8);
+
+  const human = new HumanBuildAdapter({ controller, board, graph, placementEngine });
+  assert.equal(human.pickup(second.id).ok, true);
+  assert.equal(human.setPreview(mismatchedPair.candidate), true);
+  const beforeRejectedRelease = clock.value;
+  const rejectedRelease = human.release();
+  assert.equal(rejectedRelease.ok, false);
+  assert.equal(rejectedRelease.reason, 'CONNECTOR_PAIR_MISMATCH');
+  assert.equal(rejectedRelease.keepHolding, true);
+  assert.equal(human.getState().heldBrickId, second.id);
+  assert.equal(clock.value, beforeRejectedRelease, 'rejected human release must preserve worldRevision');
+  assert.equal(human.cancel().ok, true);
+
   const runtime = createLogoRoboRuntime({
     controller,
     board,

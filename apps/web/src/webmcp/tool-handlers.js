@@ -97,6 +97,7 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
 
   async function moveTool(input = {}, options = {}) {
     for (const field of ['xMm','yMm','zMm','speedMmS']) if (!finite(input[field])) return inputError(`${field} must be finite.`);
+    if (input.yawDeg !== undefined && !finite(input.yawDeg)) return inputError('yawDeg must be finite.');
     if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
     const before = bridge.getWorldRevision();
     if (before !== input.expectedWorldRevision) return machineError('stale_state', 'World state changed. Read state again before moving.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });

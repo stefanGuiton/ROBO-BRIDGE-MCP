@@ -112,7 +112,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
     },
     {
       name:'move_tool', description:'Move the shared fixed-down TCP. The request must include the latest exact world revision. Motion is cancelled if the call aborts and fails closed if the world changes.',
-      inputSchema:{type:'object',properties:{xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},zMm:{type:'number',minimum:workspace.zMinMm,maximum:workspace.zMaxMm},speedMmS:{type:'number',exclusiveMinimum:0,maximum:workspace.speedLimitMmS ?? 650},expectedWorldRevision:REVISION},required:['xMm','yMm','zMm','speedMmS','expectedWorldRevision'],additionalProperties:false},
+      inputSchema:{type:'object',properties:{xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},zMm:{type:'number',minimum:workspace.zMinMm,maximum:workspace.zMaxMm},yawDeg:{type:'number',minimum:-360,maximum:360,description:'Optional fixed-down tool yaw returned by placement preview.'},speedMmS:{type:'number',exclusiveMinimum:0,maximum:workspace.speedLimitMmS ?? 650},expectedWorldRevision:REVISION},required:['xMm','yMm','zMm','speedMmS','expectedWorldRevision'],additionalProperties:false},
       annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input,options)=>handlers.moveTool(input,options)
     },
     {

@@ -18,10 +18,20 @@ test('Cartesian move reaches target and enforces actual peak speed/acceleration 
   assert.ok(result.diagnostics.estimatedMaxJointAccelerationRadS2 <= controller.jointAccelerationLimitRadS2 + 1e-9);
 });
 
+test('Cartesian move accepts a bounded fixed-down yaw without exposing joint targets', async () => {
+  const { controller } = createLiveHarness();
+  const target = { xMm: 492, yMm: -263, zMm: 400 };
+  const result = await controller.moveTool({ ...target, yawRad: 0.35, speedMmS: 500 });
+  assert.equal(result.ok, true);
+  assert.ok(Math.abs(controller.getState().toolYawRad - 0.35) < 1e-6);
+  assert.equal(controller.getState().toolOrientation, 'fixed-down-auto-yaw');
+});
+
 test('invalid and over-speed requests preserve the accepted pose', async () => {
   const { controller } = createLiveHarness();
   const before = controller.getState();
   await assert.rejects(controller.moveTool({ xMm: NaN, yMm: 0, zMm: 300, speedMmS: 100 }), (error) => error.code === 'invalid_input');
+  await assert.rejects(controller.moveTool({ xMm: 580, yMm: 0, zMm: 300, yawRad: NaN, speedMmS: 100 }), (error) => error.code === 'invalid_input');
   await assert.rejects(controller.moveTool({ xMm: 580, yMm: 0, zMm: 300, speedMmS: 651 }), (error) => error.code === 'speed_limit');
   assert.deepEqual(controller.getState().tcp, before.tcp);
   assert.equal(controller.getState().robotRevision, before.robotRevision);

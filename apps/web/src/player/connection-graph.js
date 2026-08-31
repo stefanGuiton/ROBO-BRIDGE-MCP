@@ -1,6 +1,10 @@
-const SIDES = Object.freeze(['L', 'M', 'R']);
-const COLUMNS = Object.freeze({ L: [0, 1], M: [1, 2], R: [2, 3] });
-const normalizeSide = (side) => side === 'CENTER' ? 'M' : side;
+import {
+  CONNECTION_SIDES,
+  connectorCellsForSide,
+  expectedConnectionCells,
+  normalizeConnectorSide,
+  validateConnectorConnection
+} from './connector-contract.js';
 
 function rotate2(x, y, yawRad) {
   const cosine = Math.cos(yawRad);
@@ -35,8 +39,7 @@ export class ConnectionGraph {
   }
 
   connectorCells(side) {
-    const columns = COLUMNS[normalizeSide(side)] ?? COLUMNS.M;
-    return columns.flatMap((ix) => [0, 1].map((iy) => ({ ix, iy, column: ix, row: iy })));
+    return connectorCellsForSide(side);
   }
 
   studLocal(ix, iy, top = true) {
@@ -45,7 +48,7 @@ export class ConnectionGraph {
   }
 
   connectorLocal(side, top = true) {
-    const normalized = normalizeSide(side);
+    const normalized = normalizeConnectorSide(side) ?? 'M';
     return {
       x: normalized === 'L' ? -this.settings.studPitchMm : normalized === 'R' ? this.settings.studPitchMm : 0,
       y: 0,
@@ -79,17 +82,27 @@ export class ConnectionGraph {
   }
 
   addConnection({ lowerBrickId, lowerConnector, upperBrickId, upperConnector, relativeRotationDeg = 0, relativeRotation = null, studPairs = null }) {
-    const lowerSide = normalizeSide(lowerConnector);
-    const upperSide = normalizeSide(upperConnector);
-    const lowerCells = this.connectorCells(lowerSide);
-    const upperCells = this.connectorCells(upperSide);
+    const lowerSide = normalizeConnectorSide(lowerConnector);
+    const upperSide = normalizeConnectorSide(upperConnector);
+    const expected = expectedConnectionCells(lowerSide, upperSide);
+    if (!expected) return false;
+    const lowerCells = expected.lower;
+    const upperCells = expected.upper;
     const pairs = (studPairs?.length ? studPairs : lowerCells.map((lower, index) => ({ lower, upper: upperCells[index] })))
       .map((pair) => ({ lower: normalizeCell(pair.lower), upper: normalizeCell(pair.upper) }));
+    const rotation = relativeRotation ?? relativeRotationDeg;
+    const contract = validateConnectorConnection({
+      lowerConnector: lowerSide,
+      upperConnector: upperSide,
+      relativeRotationDeg: rotation,
+      studPairs: pairs
+    });
+    if (!contract.valid) return false;
     if (!pairs.length || pairs.some((pair) => !this.isTopStudFree(lowerBrickId, pair.lower.ix, pair.lower.iy)
       || !this.isBottomStudFree(upperBrickId, pair.upper.ix, pair.upper.iy))) return false;
     const edge = {
       lowerBrickId, lowerConnector: lowerSide, upperBrickId, upperConnector: upperSide,
-      relativeRotationDeg: relativeRotation ?? relativeRotationDeg,
+      relativeRotationDeg: contract.relativeRotationDeg,
       studPairs: pairs, studCount: pairs.length, creationSequence: ++this.sequence
     };
     this.edges.push(edge);
@@ -195,4 +208,4 @@ export class ConnectionGraph {
   }
 }
 
-export { SIDES as CONNECTION_SIDES };
+export { CONNECTION_SIDES };

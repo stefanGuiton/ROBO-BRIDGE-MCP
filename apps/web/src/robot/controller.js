@@ -146,7 +146,8 @@ export class RobotController {
         jawState: this.jawState,
         uniformScale: UR10_GRIPPER.uniformScale,
         gripperRootToTcpMm: { ...UR10_GRIPPER.gripperRootToTcpMm },
-        brickInTcp: this.brickInTcp ? { ...this.brickInTcp } : null
+        brickInTcp: this.brickInTcp ? { ...this.brickInTcp } : null,
+        brickYawInTcpRad: this.heldBrickId ? this.brickYawInTcpRad : null
       },
       jointsRad: Array.from(this.jointsRad),
       speedLimitMmS: this.speedLimitMmS,
@@ -449,8 +450,9 @@ export class RobotController {
     brick.yawRad = pose.yawRad;
   }
 
-  validateMoveRequest({ xMm, yMm, zMm, speedMmS, expectedWorldRevision }) {
+  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision }) {
     if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) return { ok: false, reason: 'invalid_input' };
+    if (yawRad !== undefined && !isFiniteNumber(yawRad)) return { ok: false, reason: 'invalid_input' };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (speedMmS > this.speedLimitMmS) return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
     const target = { xMm, yMm, zMm };
@@ -469,14 +471,16 @@ export class RobotController {
     const startTcp = { ...this.tcp };
     const target = validation.target;
     const startYawRad = this.toolYawRad;
-    const targetYawRad = selectAutomaticYaw({
-      currentYawRad: startYawRad,
-      target,
-      heldBrick: this.heldBrick(),
-      heldBrickYawInTcpRad: this.brickYawInTcpRad,
-      bricks: this.bricks,
-      targets: this.board?.getTargets?.() ?? []
-    });
+    const targetYawRad = isFiniteNumber(request.yawRad)
+      ? wrapPi(request.yawRad)
+      : selectAutomaticYaw({
+        currentYawRad: startYawRad,
+        target,
+        heldBrick: this.heldBrick(),
+        heldBrickYawInTcpRad: this.brickYawInTcpRad,
+        bricks: this.bricks,
+        targets: this.board?.getTargets?.() ?? []
+      });
     const yawDeltaRad = shortestHalfTurnDelta(startYawRad, targetYawRad);
     const distanceMm = distance3(startTcp, target);
     const releasedBrick = this.releaseClearanceBrickId ? this.bricks.find((brick) => brick.id === this.releaseClearanceBrickId) : null;

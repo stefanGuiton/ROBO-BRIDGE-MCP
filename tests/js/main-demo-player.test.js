@@ -11,6 +11,11 @@ import { RobotController } from '../../apps/web/src/robot/controller.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { parseCubeLUT } from '../../apps/web/src/player/color-grading.js';
 import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
+import {
+  expectedConnectionCells,
+  isCanonicalConnectorPair,
+  validateConnectorConnection
+} from '../../apps/web/src/player/connector-contract.js';
 import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { fixedStepAdvance } from '../../apps/web/src/player/math.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
@@ -475,6 +480,25 @@ test('L/M/R connector masks overlap by two studs and reject duplicate occupancy'
   assert.equal(graph.validate().pass, true);
 });
 
+test('connector contract permits only AL-BR, AM-BM, and AR-BL with no perpendicular rotation', () => {
+  const sides = ['L', 'M', 'R'];
+  const validPairs = new Set(['L:R', 'M:M', 'R:L']);
+  for (const lowerConnector of sides) for (const upperConnector of sides) {
+    const key = `${lowerConnector}:${upperConnector}`;
+    assert.equal(isCanonicalConnectorPair(lowerConnector, upperConnector), validPairs.has(key), key);
+    const expected = expectedConnectionCells(lowerConnector, upperConnector);
+    if (!validPairs.has(key)) {
+      assert.equal(expected, null);
+      continue;
+    }
+    const studPairs = expected.lower.map((lower, index) => ({ lower, upper: expected.upper[index] }));
+    const parallel = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 0, studPairs });
+    assert.equal(parallel.valid, true, key);
+    assert.equal(parallel.studCount, lowerConnector === 'M' ? 8 : 4);
+    assert.equal(validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 90, studPairs }).reason, 'perpendicular_connection_forbidden');
+  }
+});
+
 test('placement engine produces exact L/M/R support candidates and blocks collisions', () => {
   const { placementEngine } = makeRuntime();
   const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 8.6 }, yawRad: 0 };
@@ -490,6 +514,8 @@ test('placement engine produces exact L/M/R support candidates and blocks collis
   assert.equal(left.position.xMm, 184);
   assert.ok(Math.abs(left.position.zMm - 18.2) < 1e-9);
   carried.position.xMm = 200;
+  carried.yawRad = Math.PI / 2;
+  placementEngine.rotationQuarterTurns = 1;
   const middle = placementEngine.connectionCandidate(
     support,
     { xMm: 200, yMm: 0, zMm: 13.4 },
@@ -498,6 +524,11 @@ test('placement engine produces exact L/M/R support candidates and blocks collis
   );
   assert.equal(middle.side, 'M');
   assert.equal(middle.carriedSide, 'M');
+  assert.equal(middle.position.xMm, support.position.xMm);
+  assert.equal(middle.position.yMm, support.position.yMm);
+  assert.equal(middle.yawRad, support.yawRad, 'brick-on-brick preview must lock parallel despite a perpendicular carried pose');
+  assert.equal(middle.studCount, 8, 'AM-BM must engage all eight studs');
+  assert.equal(middle.overhang, false);
   carried.position.xMm = 216;
   const right = placementEngine.connectionCandidate(
     support,
@@ -507,6 +538,17 @@ test('placement engine produces exact L/M/R support candidates and blocks collis
   );
   assert.equal(right.side, 'R');
   assert.equal(right.carriedSide, 'L');
+  assert.equal(right.studCount, 4);
+  const mismatched = placementEngine.connectionCandidate(
+    support,
+    { xMm: 212, yMm: 0, zMm: 13.4 },
+    carried,
+    [support, carried],
+    'M'
+  );
+  assert.equal(mismatched.valid, false);
+  assert.equal(mismatched.blockedReason, 'CONNECTOR_PAIR_MISMATCH');
+  assert.equal(mismatched.carriedSide, 'L', 'invalid BM-AR requests must still preview the canonical BR-AL alignment');
   const blocker = {
     id: 'blocker',
     position: { ...right.position, xMm: right.position.xMm + 4, yMm: right.position.yMm + 4 },

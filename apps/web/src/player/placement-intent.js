@@ -1,7 +1,12 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { angleWrap, gridCandidateLocal, occupancyCells } from './math.js';
-
-const SIDES = Object.freeze(['L', 'M', 'R']);
+import {
+  CONNECTION_SIDES,
+  canonicalParallelYaw,
+  connectorSideForCells,
+  requiredCarriedSide,
+  validateConnectorConnection
+} from './connector-contract.js';
 
 function rotate2(x, y, yawRad) {
   const cosine = Math.cos(yawRad), sine = Math.sin(yawRad);
@@ -129,31 +134,14 @@ export class PlacementIntentEngine {
     };
   }
 
-  nearestCarriedSide(carried, pivot, supportSide) {
-    let best = 'M', bestDistance = Number.POSITIVE_INFINITY;
-    for (const side of SIDES) {
-      const point = this.graph.connectorWorld(carried, side, false);
-      let distance = (point.xMm - pivot.xMm) ** 2 + (point.yMm - pivot.yMm) ** 2 + (point.zMm - pivot.zMm) ** 2;
-      if (supportSide === 'L' && side === 'R') distance -= 1e-4;
-      if (supportSide === 'R' && side === 'L') distance -= 1e-4;
-      if (distance < bestDistance) { bestDistance = distance; best = side; }
-    }
-    return best;
-  }
-
   connectionCandidate(support, hitPoint, carried, bricks, requestedCarriedSide = null) {
-    const previousSupport = this.lastSupport;
-    const previousSide = this.lastSide;
     const supportSide = this.selectSide(support, hitPoint);
     const pivot = this.graph.connectorWorld(support, supportSide, true);
-    if (this.carriedSide === null || requestedCarriedSide || previousSupport !== support.id || previousSide !== supportSide) {
-      this.carriedSide = requestedCarriedSide ?? this.nearestCarriedSide(carried, pivot, supportSide);
-    }
-    const carriedSide = this.carriedSide;
+    const carriedSide = requiredCarriedSide(supportSide);
+    const connectorPairMismatch = requestedCarriedSide !== null && requestedCarriedSide !== carriedSide;
+    this.carriedSide = carriedSide;
     const supportYaw = support.yawRad ?? 0;
-    const nearestQuarter = Math.round(angleWrap((carried.yawRad ?? 0) - supportYaw) / (Math.PI / 2));
-    const relativeTurns = nearestQuarter + this.rotationQuarterTurns;
-    const targetYaw = supportYaw + relativeTurns * Math.PI / 2;
+    const targetYaw = canonicalParallelYaw(supportYaw);
     const layer = Number.isInteger(support.stackLayer) ? support.stackLayer + 1
       : Math.max(1, Math.round((support.position.zMm - (this.tableFrame.placementSurfaceZMm + this.settings.brickBodyHeightMm / 2)) / this.settings.brickBodyHeightMm) + 1);
     const anchor = this.graph.connectorLocal(carriedSide, false);
@@ -174,31 +162,49 @@ export class PlacementIntentEngine {
       const match = this.graph.findFreeTopStudAt(world, 0.10, carried.id);
       if (match) matches.push({ upper: { ix, iy }, lower: { ix: match.ix, iy: match.iy }, lowerBrickId: match.brick.id });
     }
-    const upperCells = this.graph.connectorCells(carriedSide);
-    const lowerAllowed = new Set(this.graph.connectorCells(supportSide).map((cell) => `${cell.ix},${cell.iy}`));
-    const selectedGroupValid = upperCells.every((upper) => matches.some((match) => match.upper.ix === upper.ix
-      && match.upper.iy === upper.iy && match.lowerBrickId === support.id && lowerAllowed.has(`${match.lower.ix},${match.lower.iy}`)));
-    const grouped = new Map();
-    if (selectedGroupValid) for (const match of matches) {
-      if (!grouped.has(match.lowerBrickId)) grouped.set(match.lowerBrickId, {
-        lowerBrickId: match.lowerBrickId, lowerConnector: match.lowerBrickId === support.id ? supportSide : 'AUTO',
-        upperConnector: match.lowerBrickId === support.id ? carriedSide : 'AUTO',
-        relativeRotation: ((relativeTurns % 4) + 4) % 4 * 90, studPairs: []
-      });
-      grouped.get(match.lowerBrickId).studPairs.push({ lower: match.lower, upper: match.upper });
+    const groupedPairs = new Map();
+    for (const match of matches) {
+      if (!groupedPairs.has(match.lowerBrickId)) groupedPairs.set(match.lowerBrickId, []);
+      groupedPairs.get(match.lowerBrickId).push({ lower: match.lower, upper: match.upper });
     }
-    const connections = [...grouped.values()], allowedSupports = new Set(connections.map((connection) => connection.lowerBrickId));
+    const connections = [];
+    for (const [lowerBrickId, studPairs] of groupedPairs) {
+      const lowerConnector = lowerBrickId === support.id
+        ? supportSide
+        : connectorSideForCells(studPairs.map((pair) => pair.lower));
+      const upperConnector = lowerBrickId === support.id
+        ? carriedSide
+        : connectorSideForCells(studPairs.map((pair) => pair.upper));
+      const contract = validateConnectorConnection({ lowerConnector, upperConnector, relativeRotationDeg: 0, studPairs });
+      if (contract.valid) connections.push({
+        lowerBrickId,
+        lowerConnector: contract.lowerConnector,
+        upperConnector: contract.upperConnector,
+        relativeRotation: contract.relativeRotationDeg,
+        studPairs
+      });
+    }
+    const selectedGroupValid = connections.some((connection) => connection.lowerBrickId === support.id
+      && connection.lowerConnector === supportSide && connection.upperConnector === carriedSide);
+    const allowedSupports = new Set(connections.map((connection) => connection.lowerBrickId));
     const proxy = { id: carried.id, position, yawRad: targetYaw };
     const blocker = bricks.find((brick) => brick.id !== carried.id && !allowedSupports.has(brick.id)
       && brickObbOverlap(proxy, brick, 0.1, this.settings));
-    const blockedReason = !selectedGroupValid ? 'CONNECTOR_OCCUPIED_OR_MISALIGNED' : blocker ? `COLLISION:${blocker.id}` : null;
+    const blockedReason = connectorPairMismatch ? 'CONNECTOR_PAIR_MISMATCH'
+      : !selectedGroupValid ? 'CONNECTOR_OCCUPIED_OR_MISALIGNED'
+        : blocker ? `COLLISION:${blocker.id}` : null;
     const valid = blockedReason === null;
+    const acceptedMatches = connections.flatMap((connection) => connection.studPairs.map((pair) => ({
+      lowerBrickId: connection.lowerBrickId,
+      lower: pair.lower,
+      upper: pair.upper
+    })));
     return {
       type: 'BRICK', mode: supportSide, status: valid ? 'VALID' : 'BLOCKED', valid, blockedReason,
       placementType: 'brick-connection', position, previewPosition: { ...position }, yawRad: targetYaw, previewYawRad: targetYaw,
       pivot: { ...pivot }, carriedBrickId: carried.id, supportBrickId: support.id,
-      side: supportSide, supportSide, carriedSide, relativeRotationDeg: ((relativeTurns % 4) + 4) % 4 * 90,
-      layer, studMatches: matches, studCount: matches.length, overhang: matches.length < 8,
+      side: supportSide, supportSide, carriedSide, requestedCarriedSide, relativeRotationDeg: 0,
+      layer, studMatches: acceptedMatches, studCount: acceptedMatches.length, overhang: acceptedMatches.length < 8,
       connections, connection: connections[0] ?? null
     };
   }
@@ -214,4 +220,4 @@ export class PlacementIntentEngine {
   }
 }
 
-export { SIDES as CONNECTION_SIDES };
+export { CONNECTION_SIDES };

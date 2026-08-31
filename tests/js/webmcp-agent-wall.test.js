@@ -57,6 +57,7 @@ async function currentRevision(handlers) {
 async function move(handlers, tcp) {
   const result = await handlers.moveTool({
     xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm,
+    ...(Number.isFinite(tcp.yawDeg) ? { yawDeg: tcp.yawDeg } : {}),
     speedMmS: 650, expectedWorldRevision: await currentRevision(handlers)
   });
   assert.equal(result.ok, true, `move failed: ${result.reason ?? 'unknown'}`);
@@ -130,6 +131,29 @@ test('an agent builds an interlocked three-brick wall using only primitive WebMC
   const baseZ = profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2;
   const first = await placeBrick(handlers, available[0], { xMm: 700, yMm: -220, zMm: baseZ, yawDeg: 0 });
   const second = await placeBrick(handlers, available[1], { xMm: 732, yMm: -220, zMm: baseZ, yawDeg: 0 });
+  assert.ok(Number.isFinite(first.preview.requiredTcp.yawDeg), 'placement preview must return the fixed-down tool yaw needed to honour brick yaw');
+  const beforeRejectedPreview = await currentRevision(handlers);
+  const mismatched = await handlers.previewPlacement({
+    brickId: available[2].id,
+    supportBrickId: available[0].id,
+    supportSide: 'R',
+    carriedSide: 'M',
+    yawDeg: 0,
+    expectedWorldRevision: beforeRejectedPreview
+  });
+  assert.equal(mismatched.ok, false);
+  assert.equal(mismatched.reason, 'connector_pair_mismatch');
+  const perpendicular = await handlers.previewPlacement({
+    brickId: available[2].id,
+    supportBrickId: available[0].id,
+    supportSide: 'R',
+    carriedSide: 'L',
+    yawDeg: 90,
+    expectedWorldRevision: beforeRejectedPreview
+  });
+  assert.equal(perpendicular.ok, false);
+  assert.equal(perpendicular.reason, 'perpendicular_connection_forbidden');
+  assert.equal(await currentRevision(handlers), beforeRejectedPreview, 'rejected WebMCP previews must remain read-only');
   const top = await placeBrick(handlers, available[2], {
     supportBrickId: available[0].id, supportSide: 'R', carriedSide: 'L', yawDeg: 0
   });
@@ -137,6 +161,7 @@ test('an agent builds an interlocked three-brick wall using only primitive WebMC
   assert.equal(first.unlatch.placementType, 'mat');
   assert.equal(second.unlatch.placementType, 'mat');
   assert.equal(top.unlatch.placementType, 'brick-connection');
+  assert.equal(top.preview.candidate.relativeRotationDeg, 0);
   assert.equal(board.getPlacements().length, 3);
   const graphState = graph.snapshot();
   assert.equal(graphState.validation.pass, true);
