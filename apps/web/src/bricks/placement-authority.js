@@ -157,6 +157,7 @@ export class PlacementAuthority {
       yawRad: targetSnap.ok ? targetSnap.transform.yawRad : candidate.yawRad,
       placementType: targetSnap.ok ? 'blueprint-target' : candidate.placementType,
       connection: candidate.connection ? clone(candidate.connection) : null,
+      connections: clone(candidate.connections ?? []),
       placement: targetSnap.ok ? null : clone(accepted.placement),
       worldRevision: this.board.worldRevision
     };

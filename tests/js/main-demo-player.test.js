@@ -310,6 +310,8 @@ test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MOR
   assert.match(html, /data-settings-preset="precise"[\s\S]*data-settings-preset="balanced"[\s\S]*data-settings-preset="fast"/);
   assert.match(html, /data-camera-capture="top_camera"[\s\S]*data-camera-capture="left_camera"[\s\S]*data-camera-capture="right_camera"[\s\S]*data-camera-capture="user_camera"/);
   assert.match(css, /\.panel\.closed\{transform:translateX\(calc\(100% \+ 28px\)\)/);
+  assert.match(css, /#angle-pill\{bottom:calc\(78px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css, /#reticle-status\{bottom:calc\(46px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
   assert.match(main, /spawnMoreBricks, runOnePickPlace/);
   assert.match(main, /getUserCamera: \(\) => renderer\.getUserCameraConfig\(\)[\s\S]*captureCamera: \(descriptor, options\) => renderer\.captureInspectionCamera\(descriptor, options\)/);
@@ -317,7 +319,8 @@ test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MOR
   assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
   assert.match(renderer, /captureInspectionCamera\([\s\S]*WebGLRenderTarget[\s\S]*readRenderTargetPixels/);
   assert.match(workbench, /CylinderGeometry\(50, 50, 24, 32\)/);
-  assert.match(workbench, /context\.fillText\('MORE', 256, 205\)[\s\S]*context\.fillText\('BRICKS', 256, 315\)/);
+  assert.match(workbench, /context\.rotate\(-Math\.PI \/ 2\)/);
+  assert.match(workbench, /Impact[\s\S]*context\.fillText\('MORE', 0, -56\)[\s\S]*context\.fillText\('BRICKS', 0, 56\)/);
 });
 
 test('fixed-step catch-up is capped after a suspended browser frame', () => {

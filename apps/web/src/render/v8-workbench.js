@@ -28,9 +28,11 @@ function moreBricksTexture() {
   context.fillStyle = '#fff';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.font = '900 112px system-ui, sans-serif';
-  context.fillText('MORE', 256, 205);
-  context.fillText('BRICKS', 256, 315);
+  context.translate(256, 256);
+  context.rotate(-Math.PI / 2);
+  context.font = "900 104px Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif";
+  context.fillText('MORE', 0, -56);
+  context.fillText('BRICKS', 0, 56);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;

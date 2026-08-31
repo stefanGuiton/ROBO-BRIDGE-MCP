@@ -82,6 +82,9 @@ export class HumanBuildAdapter {
       position: preview.position,
       yawRad: preview.yawRad,
       connection: preview.connections?.length > 1 ? { groups: preview.connections } : preview.connection,
+      supportBrickId: preview.supportBrickId ?? null,
+      supportSide: preview.supportSide ?? 'M',
+      carriedSide: preview.carriedSide ?? null,
       placementType: preview.placementType
     });
     if (!result.ok) return { ...result, keepHolding: true };

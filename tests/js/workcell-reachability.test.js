@@ -8,10 +8,11 @@ import { createV8WorkcellProfile, pointInsideZone } from '../../apps/web/src/wor
 import { BuildBoard } from '../../apps/web/src/bricks/build-board.js';
 import { PlacementAuthority } from '../../apps/web/src/bricks/placement-authority.js';
 import { ConnectionGraph } from '../../apps/web/src/player/connection-graph.js';
+import { HumanBuildAdapter } from '../../apps/web/src/player/human-build-adapter.js';
 import { PlacementIntentEngine } from '../../apps/web/src/player/placement-intent.js';
 import { RobotController } from '../../apps/web/src/robot/controller.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
-import { createLogoRoboRuntime } from '../../apps/web/src/logo/runtime.js';
+import { createLogoRoboRuntime, placedBuildBounds } from '../../apps/web/src/logo/runtime.js';
 import { createObservationService } from '../../apps/web/src/perception/observation-service.js';
 import { createRuntimeBridge } from '../../apps/web/src/webmcp/runtime-bridge.js';
 import { projectObjectBounds } from '../../apps/web/src/perception/projection.js';
@@ -168,12 +169,8 @@ test('human and robot-facing previews share one placement authority and board', 
   });
   for (const cameraId of ['tray_camera', 'canvas_camera', 'top_camera', 'left_camera', 'right_camera', 'user_camera']) {
     const camera = runtime.world.getCamera(cameraId, { widthPx: 640, heightPx: 360 });
-    const probePosition = cameraId === 'canvas_camera'
-      ? {
-          xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
-          yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
-          zMm: profile.placementSurfaceZMm + 4.8
-        }
+    const probePosition = ['canvas_camera', 'top_camera', 'left_camera', 'right_camera'].includes(cameraId)
+      ? placed.brick.position
       : generated.records[1].position;
     assert.equal(camera.id, cameraId);
     assert.equal(camera.worldRevision, clock.value);
@@ -194,4 +191,87 @@ test('human and robot-facing previews share one placement authority and board', 
   assert.equal(humanObservation.ok, true);
   assert.ok(humanObservation.detections.length > 0);
   assert.equal(humanObservation.snapshotRevision, clock.value);
+});
+
+test('human bridge placement preserves its preview anchor and both support connections', () => {
+  const profile = createV8WorkcellProfile(settings);
+  const generated = makeReachableV8Spawn(settings, profile);
+  const clock = new RevisionClock();
+  const board = new BuildBoard([], { revisionClock: clock, mode: 'co-build' });
+  const controller = new RobotController({
+    board,
+    bricks: generated.records,
+    revisionClock: clock,
+    workspace: profile.workspace,
+    layout: profile.layout,
+    timeScale: 0
+  });
+  const graph = new ConnectionGraph(settings);
+  const placementEngine = new PlacementIntentEngine(settings, board, graph);
+  placementEngine.configureTableFrame({
+    centre: {
+      xMm: (profile.matBounds.minX + profile.matBounds.maxX) / 2,
+      yMm: (profile.matBounds.minY + profile.matBounds.maxY) / 2
+    },
+    yawRad: 0,
+    placementSurfaceZMm: profile.placementSurfaceZMm,
+    widthMm: settings.matWidthMm,
+    depthMm: settings.matDepthMm
+  });
+  const authority = new PlacementAuthority({
+    board, graph, placementEngine, settings,
+    getBricks: () => controller.getBricks(), profile
+  });
+  assert.equal(controller.setPlacementAuthority(authority), true);
+  const adapter = new HumanBuildAdapter({ controller, board, graph, placementEngine });
+  const [left, right, bridge] = generated.records;
+  const baseZ = profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2;
+
+  for (const [brick, xMm] of [[left, 700], [right, 732]]) {
+    const preview = authority.preview({ brickId: brick.id, position: { xMm, yMm: -220, zMm: baseZ }, yawRad: 0 });
+    assert.equal(preview.ok, true);
+    assert.equal(controller.beginHumanCarry(brick.id).ok, true);
+    const result = controller.commitHumanPlacement({
+      brickId: brick.id,
+      position: preview.candidate.position,
+      yawRad: preview.candidate.yawRad,
+      placementType: preview.candidate.placementType
+    });
+    assert.equal(result.ok, true);
+  }
+
+  const bridgePreview = authority.preview({
+    brickId: bridge.id,
+    supportBrickId: left.id,
+    supportSide: 'R',
+    carriedSide: 'L',
+    yawRad: 0
+  });
+  assert.equal(bridgePreview.ok, true);
+  assert.ok(bridgePreview.candidate.connections.length >= 2, 'preview must span both base bricks');
+  assert.equal(adapter.pickup(bridge.id).ok, true);
+  assert.equal(adapter.setPreview(bridgePreview.candidate), true);
+  const released = adapter.release();
+  assert.equal(released.ok, true);
+  assert.deepEqual(released.position, bridgePreview.candidate.position, 'commit must preserve the previewed bridge centre');
+  assert.equal(released.yawRad, bridgePreview.candidate.yawRad);
+
+  const placement = board.getPlacements().find((candidate) => candidate.brickId === bridge.id);
+  assert.ok(placement.connections.length >= 2, 'BuildBoard must retain both bridge supports');
+  assert.ok(controller.getBricks().find((brick) => brick.id === bridge.id).connection.groups.length >= 2);
+  assert.ok(graph.snapshot().edges.length >= 2);
+
+  const runtime = createLogoRoboRuntime({ controller, board, placementAuthority: authority, workcellProfile: profile });
+  const placedObjects = runtime.world.getSnapshotData().objects.filter((object) => [left.id, right.id, bridge.id].includes(object.id));
+  const bounds = placedBuildBounds(placedObjects);
+  const expectedTarget = [
+    (bounds.minX + bounds.maxX) / 2,
+    (bounds.minY + bounds.maxY) / 2,
+    (bounds.minZ + bounds.maxZ) / 2
+  ];
+  for (const cameraId of ['canvas_camera', 'top_camera', 'left_camera', 'right_camera']) {
+    const camera = runtime.world.getCamera(cameraId, { widthPx: 640, heightPx: 360 });
+    assert.ok(camera.target.every((value, index) => Math.abs(value - expectedTarget[index]) < 0.01), `${cameraId} must target the placed-build centroid`);
+    assert.ok(placedObjects.every((object) => projectObjectBounds(object, camera)), `${cameraId} must fit every placed brick`);
+  }
 });

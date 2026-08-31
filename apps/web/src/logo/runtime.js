@@ -1,5 +1,6 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { createCameraRig } from '../perception/camera-rig.js';
+import { objectWorldCorners } from '../perception/projection.js';
 import { forwardKinematics } from '../robot/kinematics.js';
 import { CHALLENGE_LAYOUT } from '../robot/ur10-definition.js';
 
@@ -9,44 +10,87 @@ const PRODUCTION_CAMERA_CONFIGS = Object.freeze({
   canvas_camera: Object.freeze({ position: [655, 220, 680], target: [655, 220, 0], halfWidth: 92 })
 });
 
-function overheadCameraForBounds(bounds, size, heightMm = 680) {
-  const centreX = (bounds.minX + bounds.maxX) / 2;
-  const centreY = (bounds.minY + bounds.maxY) / 2;
-  const aspect = size.widthPx / size.heightPx;
-  const halfWidth = Math.max(
-    (bounds.maxX - bounds.minX) / 2 + 32,
-    ((bounds.maxY - bounds.minY) / 2 + 32) * aspect
-  );
-  return { position: [centreX, centreY, heightMm], target: [centreX, centreY, 0], up: [0, 1, 0], halfWidth };
+function boundsWithHeight(bounds, minZ = 0, maxZ = minZ + BRICK_SPEC.bodyHeightMm) {
+  return { ...bounds, minZ, maxZ };
 }
 
-function sideCameraForBounds(bounds, size, side, tableFrame = null) {
-  const centreX = (bounds.minX + bounds.maxX) / 2;
-  const centreY = (bounds.minY + bounds.maxY) / 2;
-  const aspect = size.widthPx / size.heightPx;
-  const halfWidth = Math.max((tableFrame?.depthMm ?? (bounds.maxY - bounds.minY)) / 2 + 48, 360 * aspect);
-  const offsetX = Math.max(900, bounds.maxX - bounds.minX + 360);
-  const xAxis = tableFrame?.xAxis ?? [1, 0, 0];
-  const direction = side === 'left' ? -1 : 1;
+export function placedBuildBounds(objects = []) {
+  const points = objects
+    .filter((object) => object?.type === 'brick' && ['placed', 'snapped'].includes(object.state))
+    .flatMap((object) => objectWorldCorners(object));
+  if (!points.length) return null;
+  const axes = [0, 1, 2].map((axis) => points.map((point) => point[axis]));
   return {
-    position: [centreX + xAxis[0] * offsetX * direction, centreY + xAxis[1] * offsetX * direction, 320],
-    target: [centreX, centreY, 120],
-    up: [0, 0, 1],
-    halfWidth,
-    farMm: 2600
+    minX: Math.min(...axes[0]), maxX: Math.max(...axes[0]),
+    minY: Math.min(...axes[1]), maxY: Math.max(...axes[1]),
+    minZ: Math.min(...axes[2]), maxZ: Math.max(...axes[2])
   };
 }
 
-export function cameraConfigsForWorkcell(profile, size = { widthPx: 640, heightPx: 360 }) {
+function boundsCentre(bounds) {
+  return [
+    (bounds.minX + bounds.maxX) / 2,
+    (bounds.minY + bounds.maxY) / 2,
+    ((bounds.minZ ?? 0) + (bounds.maxZ ?? 0)) / 2
+  ];
+}
+
+function spanAlong(bounds, axis) {
+  const values = [];
+  for (const x of [bounds.minX, bounds.maxX]) for (const y of [bounds.minY, bounds.maxY]) {
+    values.push(x * axis[0] + y * axis[1]);
+  }
+  return Math.max(...values) - Math.min(...values);
+}
+
+function overheadCameraForBounds(bounds, size, heightMm = 680, marginMm = 40) {
+  const centreX = (bounds.minX + bounds.maxX) / 2;
+  const centreY = (bounds.minY + bounds.maxY) / 2;
+  const centreZ = ((bounds.minZ ?? 0) + (bounds.maxZ ?? 0)) / 2;
+  const aspect = size.widthPx / size.heightPx;
+  const halfWidth = Math.max(
+    (bounds.maxX - bounds.minX) / 2 + marginMm,
+    ((bounds.maxY - bounds.minY) / 2 + marginMm) * aspect,
+    72
+  );
+  const positionZ = Math.max((bounds.maxZ ?? centreZ) + heightMm, centreZ + heightMm);
+  return { position: [centreX, centreY, positionZ], target: [centreX, centreY, centreZ], up: [0, 1, 0], halfWidth, farMm: heightMm * 2 + 600 };
+}
+
+function sideCameraForBounds(bounds, size, side, tableFrame = null) {
+  const [centreX, centreY, centreZ] = boundsCentre(bounds);
+  const aspect = size.widthPx / size.heightPx;
+  const xAxis = tableFrame?.xAxis ?? [1, 0, 0];
+  const yAxis = tableFrame?.yAxis ?? [0, 1, 0];
+  const horizontalSpan = spanAlong(bounds, yAxis);
+  const verticalSpan = (bounds.maxZ ?? centreZ) - (bounds.minZ ?? centreZ);
+  const halfWidth = Math.max(horizontalSpan / 2 + 48, (verticalSpan / 2 + 48) * aspect, 120);
+  const offsetX = Math.max(760, spanAlong(bounds, xAxis) + 520);
+  const direction = side === 'left' ? -1 : 1;
+  return {
+    position: [centreX + xAxis[0] * offsetX * direction, centreY + xAxis[1] * offsetX * direction, centreZ],
+    target: [centreX, centreY, centreZ],
+    up: [0, 0, 1],
+    halfWidth,
+    farMm: offsetX * 2 + 800
+  };
+}
+
+export function cameraConfigsForWorkcell(profile, size = { widthPx: 640, heightPx: 360 }, focusBounds = null) {
   if (!profile?.supplyZone || !profile?.buildZone) return PRODUCTION_CAMERA_CONFIGS;
-  const topCamera = overheadCameraForBounds(profile.tableBounds, size, 1000);
+  const buildBounds = focusBounds ?? boundsWithHeight(
+    profile.buildZone,
+    profile.placementSurfaceZMm,
+    profile.placementSurfaceZMm + BRICK_SPEC.bodyHeightMm
+  );
+  const topCamera = overheadCameraForBounds(buildBounds, size, 900, 56);
   topCamera.up = profile.tableFrame?.yAxis ?? [0, 1, 0];
   return {
-    tray_camera: overheadCameraForBounds(profile.supplyZone, size),
-    canvas_camera: overheadCameraForBounds(profile.buildZone, size),
+    tray_camera: overheadCameraForBounds(boundsWithHeight(profile.supplyZone, profile.tableSurfaceZMm, profile.tableSurfaceZMm + BRICK_SPEC.bodyHeightMm), size),
+    canvas_camera: overheadCameraForBounds(buildBounds, size, 680, 40),
     top_camera: topCamera,
-    left_camera: sideCameraForBounds(profile.tableBounds, size, 'left', profile.tableFrame),
-    right_camera: sideCameraForBounds(profile.tableBounds, size, 'right', profile.tableFrame)
+    left_camera: sideCameraForBounds(buildBounds, size, 'left', profile.tableFrame),
+    right_camera: sideCameraForBounds(buildBounds, size, 'right', profile.tableFrame)
   };
 }
 
@@ -267,7 +311,8 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
         const widthPx = Number(size.widthPx);
         const heightPx = Number(size.heightPx);
         if (!Number.isFinite(widthPx) || !Number.isFinite(heightPx)) return null;
-        const cameraConfigs = { ...cameraConfigsForWorkcell(workcellProfile, { widthPx, heightPx }) };
+        const focusBounds = placedBuildBounds(currentObjects());
+        const cameraConfigs = { ...cameraConfigsForWorkcell(workcellProfile, { widthPx, heightPx }, focusBounds) };
         if (cameraId === 'user_camera') {
           const userCamera = getUserCamera?.({ widthPx, heightPx, worldRevision: worldRevision() });
           if (!userCamera) return null;

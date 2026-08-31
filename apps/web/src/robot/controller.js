@@ -262,7 +262,10 @@ export class RobotController {
     return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 
-  commitHumanPlacement({ brickId, position, yawRad = 0, connection = null, placementType = 'free-build' } = {}) {
+  commitHumanPlacement({
+    brickId, position, yawRad = 0, connection = null, placementType = 'free-build',
+    supportBrickId = null, supportSide = null, carriedSide = null
+  } = {}) {
     if (this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
@@ -279,9 +282,9 @@ export class RobotController {
         position,
         yawRad,
         actor: 'human',
-        supportBrickId: connection?.lowerBrickId ?? null,
-        supportSide: connection?.lowerConnector ?? 'M',
-        carriedSide: connection?.upperConnector ?? null
+        supportBrickId: supportBrickId ?? connection?.lowerBrickId ?? connection?.groups?.[0]?.lowerBrickId ?? null,
+        supportSide: supportSide ?? connection?.lowerConnector ?? connection?.groups?.[0]?.lowerConnector ?? 'M',
+        carriedSide: carriedSide ?? connection?.upperConnector ?? connection?.groups?.[0]?.upperConnector ?? null
       });
       if (!authoritative.ok) return authoritative;
       brick.position = { ...authoritative.position };
@@ -292,7 +295,9 @@ export class RobotController {
       brick.snapped = authoritative.snapped;
       brick.placedTargetId = authoritative.targetId;
       brick.placementType = authoritative.placementType;
-      brick.connection = authoritative.connection ? clone(authoritative.connection) : null;
+      brick.connection = authoritative.connections?.length > 1
+        ? { groups: clone(authoritative.connections) }
+        : authoritative.connection ? clone(authoritative.connection) : null;
       this.#bumpRobot('human_placement', {
         brickId,
         actor: 'human',
