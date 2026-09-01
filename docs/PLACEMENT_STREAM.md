@@ -11,7 +11,7 @@
 - After `finalChunk: true`, exact retries remain idempotent but new placement IDs are rejected.
 - At most five proposals and visible ghosts are active at once.
 - `get_placement_stream_status` returns at most 50 entries per page and is read-only.
-- `execute_next_placement` executes one proposal through the shared controller and requires the latest exact `worldRevision`.
+- `execute_next_placement` executes one proposal through the shared controller and requires the latest exact `worldRevision`. Its optional `maxExecutionWallMs` (50-120,000 ms) applies an in-page abort deadline through the same cancellation path.
 - Mutating tools forward the WebMCP abort signal. Reset invalidates the current stream.
 
 Lifecycle states are `PENDING`, `PLANNED`, `EXECUTING`, `COMPLETED`, `ADOPTED`, `BLOCKED`, `WAITING_SOURCE`, `WAITING_DEPENDENCY`, and `CANCELLED`.
@@ -22,7 +22,7 @@ Human reconciliation adopts compatible occupancy, blocks incompatible footprint/
 
 The 2026-09-01 checkpoint passed:
 
-- 136/136 JavaScript tests;
+- 137/137 JavaScript tests;
 - 20/20 persistent reliability rounds;
 - 59 JavaScript syntax checks;
 - 4 Python syntax checks;
@@ -53,7 +53,9 @@ The native UI also placed a red brick as a human. Planning its exact occupied po
 
 After explicit approval, native `reset_workcell` advanced the world revision from 8 to 10, restored all twelve bricks to free state, left zero placed bricks, and made the prior stream return `stream_not_found`.
 
-## Remaining native gates
+The native production-origin `execute_next_placement` tool was also called with `maxExecutionWallMs: 250`. It returned `reason: "cancelled"`; stream status reported `counts: { CANCELLED: 1 }`, zero active and remaining placements, and the robot was idle with no held brick. TCP and `worldRevision: 2` remained identical across two reads separated by 1.5 seconds, providing native no-late-sample evidence for the in-page deadline path.
 
-- Native cancellation is not accepted. A browser-host call with a 50 ms timeout ran to normal completion instead of aborting, so the automated abort/no-late-sample proof cannot be promoted to native proof.
+## Remaining native limitation
+
+- Browser-host cancellation propagation is not accepted. Both a WebMCP client timeout and interruption of the outer browser-control session allowed an active placement call to continue. The production in-page `maxExecutionWallMs` path is the accepted operational fallback; it does not prove that the host forwards its own abort signal.
 - The simulator does not claim exact calibrated moving-link/table collision fidelity.

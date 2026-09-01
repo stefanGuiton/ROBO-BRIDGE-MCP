@@ -683,7 +683,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
         remainingPlacements: this.summary().remainingPlacements
       };
     }
-    this.setEntryStatus(entry, result.reason === 'cancelled' ? 'PENDING' : 'BLOCKED', result.reason ?? 'execution_failed', {
+    this.setEntryStatus(entry, result.reason === 'cancelled' ? 'CANCELLED' : 'BLOCKED', result.reason ?? 'execution_failed', {
       proposalId: next.proposalId,
       worldRevision: result.worldRevision
     });

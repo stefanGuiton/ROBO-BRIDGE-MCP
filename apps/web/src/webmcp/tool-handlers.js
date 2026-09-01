@@ -8,11 +8,35 @@ const STATUSES = new Set(['unfilled','filled','correct','incorrect']);
 const OWNERS = new Set(['human','agent','none']);
 const STREAM_STATUSES = new Set(['PENDING','PLANNED','EXECUTING','COMPLETED','ADOPTED','BLOCKED','WAITING_SOURCE','WAITING_DEPENDENCY','CANCELLED']);
 const SAFE_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
+const MIN_EXECUTION_WALL_MS = 50;
+const MAX_EXECUTION_WALL_MS = 120000;
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const inputError = (message) => machineError('invalid_input', message);
 
 function validateRevision(value) {
   return Number.isSafeInteger(value) && value >= 0;
+}
+
+function boundedExecutionSignal(externalSignal, maxExecutionWallMs) {
+  if (maxExecutionWallMs === undefined) {
+    return { signal: externalSignal, dispose() {} };
+  }
+  const controller = new AbortController();
+  const forwardAbort = () => {
+    if (!controller.signal.aborted) controller.abort(externalSignal?.reason);
+  };
+  if (externalSignal?.aborted) forwardAbort();
+  else externalSignal?.addEventListener?.('abort', forwardAbort, { once: true });
+  const timer = setTimeout(() => {
+    if (!controller.signal.aborted) controller.abort();
+  }, maxExecutionWallMs);
+  return {
+    signal: controller.signal,
+    dispose() {
+      clearTimeout(timer);
+      externalSignal?.removeEventListener?.('abort', forwardAbort);
+    }
+  };
 }
 
 export function createLogoRoboToolHandlers({ bridge, observationService = createObservationService({ bridge }), activity = createAgentActivity() }) {
@@ -113,11 +137,22 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
 
   async function executeNextPlacement(input = {}, options = {}) {
     if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
+    if (input.maxExecutionWallMs !== undefined && (
+      !Number.isInteger(input.maxExecutionWallMs)
+      || input.maxExecutionWallMs < MIN_EXECUTION_WALL_MS
+      || input.maxExecutionWallMs > MAX_EXECUTION_WALL_MS
+    )) return inputError(`maxExecutionWallMs must be an integer from ${MIN_EXECUTION_WALL_MS} to ${MAX_EXECUTION_WALL_MS}.`);
     const before = bridge.getWorldRevision();
     if (before !== input.expectedWorldRevision) {
       return machineError('stale_state', 'World state changed. Read state again before executing.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
     }
-    const result = await bridge.placement.executeNext(input, { signal: options.signal });
+    const bounded = boundedExecutionSignal(options.signal, input.maxExecutionWallMs);
+    let result;
+    try {
+      result = await bridge.placement.executeNext(input, { signal: bounded.signal });
+    } finally {
+      bounded.dispose();
+    }
     if (result?.ok === false) activity.push('RECOVER', `PLACE ${result.reason}`, { proposalId: input.proposalId });
     else activity.push('PLACE', `executed ${result.proposalId}`, { brickId: result.brickId, playbackDurationMs: result.playbackDurationMs, worldRevision: result.worldRevision });
     return result;

@@ -20,14 +20,14 @@ import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell
 const supplied = JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url), 'utf8'));
 const settings = { ...PLAYER_FALLBACK_SETTINGS, ...supplied };
 
-function makeToolOnlyWorkcell() {
+function makeToolOnlyWorkcell({ timeScale = 0 } = {}) {
   const profile = createV8WorkcellProfile(settings);
   const generated = makeReachableV8Spawn(settings, profile);
   const clock = new RevisionClock();
   const board = new BuildBoard([], { revisionClock: clock, mode: 'co-build' });
   const controller = new RobotController({
     board, bricks: generated.records, revisionClock: clock,
-    workspace: profile.workspace, layout: profile.layout, timeScale: 0
+    workspace: profile.workspace, layout: profile.layout, timeScale
   });
   const graph = new ConnectionGraph(settings);
   const placementEngine = new PlacementIntentEngine(settings, board, graph);
@@ -154,6 +154,48 @@ test('WebMCP streams bounded chunks and returns bounded paginated status without
   assert.ok(page.entries.length <= 50);
   assert.ok(JSON.stringify(page).length <= 12000);
   assert.equal(controller.getState().worldRevision, before);
+});
+
+test('production WebMCP execution deadline cancels the logical placement without late robot samples', async () => {
+  const registered = [];
+  globalThis.document = { modelContext: { async registerTool(tool, options) { registered.push({ tool, options }); } } };
+  const { runtime, controller, profile } = makeToolOnlyWorkcell({ timeScale: 0.25 });
+  assert.equal((await registerWebMcpTools(runtime)).ok, true);
+  const plan = registered.find(({ tool }) => tool.name === 'plan_placement_queue').tool;
+  const execute = registered.find(({ tool }) => tool.name === 'execute_next_placement').tool;
+  const status = registered.find(({ tool }) => tool.name === 'get_placement_stream_status').tool;
+  assert.equal(execute.inputSchema.properties.maxExecutionWallMs.minimum, 50);
+  assert.equal(execute.inputSchema.properties.maxExecutionWallMs.maximum, 120000);
+  const before = controller.getState().worldRevision;
+  const planned = JSON.parse(await plan.execute({
+    streamId: 'deadline-stream', mode: 'replace', finalChunk: true,
+    placements: [{
+      placementId: 'deadline-placement',
+      xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
+      yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
+      zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2,
+      yawDeg: 0
+    }],
+    expectedWorldRevision: before
+  }));
+  assert.equal(planned.ok, true, planned.reason);
+  const cancelled = JSON.parse(await execute.execute({
+    proposalId: planned.queue[0].proposalId,
+    physicalSpeedMmS: 80,
+    playbackMultiplier: 1,
+    maxExecutionWallMs: 50,
+    expectedWorldRevision: before
+  }));
+  assert.equal(cancelled.ok, false);
+  assert.equal(cancelled.reason, 'cancelled');
+  const page = JSON.parse(await status.execute({ streamId: 'deadline-stream', cursor: 0, limit: 20 }));
+  assert.equal(page.counts.CANCELLED, 1);
+  assert.equal(page.entries[0].status, 'CANCELLED');
+  assert.equal(page.activeQueue.length, 0);
+  const stopped = controller.getState();
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.deepEqual(controller.getState().tcp, stopped.tcp);
+  assert.equal(controller.getState().worldRevision, stopped.worldRevision);
 });
 
 test('an agent builds an interlocked three-brick wall using only primitive WebMCP handlers', async () => {

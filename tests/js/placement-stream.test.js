@@ -342,6 +342,11 @@ test('reset invalidates the stream and abort cancellation leaves no late robot s
   const cancelled = await execution;
   assert.equal(cancelled.ok, false);
   assert.equal(cancelled.reason, 'cancelled');
+  const cancelledStatus = harness.lookahead.getStreamStatus({ streamId: 'reset-stream', limit: 20 });
+  assert.equal(cancelledStatus.counts.CANCELLED, 1);
+  assert.equal(cancelledStatus.entries[0].status, 'CANCELLED');
+  assert.equal(cancelledStatus.activeQueue.length, 0);
+  assert.equal(cancelledStatus.remainingPlacements, 0);
   const stoppedTcp = harness.controller.getState().tcp;
   await sleep(30);
   assert.deepEqual(harness.controller.getState().tcp, stoppedTcp);

@@ -129,11 +129,12 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
       })
     },
     {
-      name:'execute_next_placement', description:'Execute only the next accepted cached placement through the shared RobotController. This is one bounded pick/place, not a multi-brick build shortcut; exact revision and cancellation are required.',
+      name:'execute_next_placement', description:'Execute only the next accepted cached placement through the shared RobotController. This is one bounded pick/place, not a multi-brick build shortcut; exact revision and cancellation are required. maxExecutionWallMs optionally enforces a local abort deadline.',
       inputSchema:{type:'object',properties:{
         proposalId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
         physicalSpeedMmS:{type:'number',exclusiveMinimum:0,maximum:workspace.speedLimitMmS??650,default:650},
         playbackMultiplier:{type:'number',minimum:1,maximum:40,default:20},
+        maxExecutionWallMs:{type:'integer',minimum:50,maximum:120000,description:'Optional in-page execution deadline that aborts this placement through the shared cancellation signal.'},
         expectedWorldRevision:REVISION
       },required:['proposalId','physicalSpeedMmS','playbackMultiplier','expectedWorldRevision'],additionalProperties:false},
       annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input,options)=>handlers.executeNextPlacement(input,options)
