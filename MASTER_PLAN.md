@@ -1,1316 +1,1068 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** Final submission sprint  
-**Date:** 2026-09-01  
-**Submission target:** Submission-ready demonstration by 2026-09-02  
-**Project:** ROBO BRIDGE MCP  
+**Status:** FINAL SUBMISSION SPRINT  
+**Audit date:** 2026-09-01  
+**Submission deadline:** 2026-09-03 13:00 PDT  
+**Internal target:** submission-ready demo by 2026-09-02  
 **Canonical runtime:** `MAIN_DEMO` Player V8  
-**Main vehicle:** Train  
-**Main rule:** Preserve the proven build systems. Integrate only what is required for the complete hero demonstration.
+**Main vehicle:** pre-assembled three-part train  
+**Primary goal:** top-10-calibre WebMCP submission through one complete, reliable human-agent experience
 
 ---
 
-# 0. Authority and priority
+# 0. Authority
 
-This file is the current authoritative execution plan for the submission sprint.
+This file is the current authoritative execution plan.
 
-The previous broad V3 roadmap remains available in Git history. Where that older roadmap conflicts with this file, **this submission plan wins**.
+If an older V3 plan, prototype README, chat instruction, or experimental branch conflicts with this file, **this file wins for the submission sprint**.
 
-The priority is not to integrate every V3 prototype.
+The project is not trying to integrate every prototype before submission.
 
-The priority is to make this exact loop reliable:
+The project is trying to make this exact loop work reliably:
 
-`CURATED TERRAIN -> BRIDGE DESIGN -> HOLOGRAM -> HUMAN + CODEX + UR10 BUILD -> TRAIN TEST -> SUCCESS/FAILURE -> MISSION COMPLETE`
+`CURATED TERRAIN -> CODEX CO-DESIGN -> REAL HOLOGRAM -> HUMAN + CODEX/UR10 CO-BUILD -> EARLY TRAIN FAILURE -> FINISH -> TRAIN SUCCESS -> MISSION COMPLETE -> TRY AGAIN`
 
-A short complete demonstration is more valuable than a large set of disconnected features.
+The judging priority is:
 
----
+1. WebMCP Leverage.
+2. Execution.
+3. Potential Impact.
+4. Creativity & Ambition.
 
-# 1. Demonstration north star
-
-ROBO BRIDGE MCP is a browser-based collaborative building game.
-
-The human and Codex design a bridge together. The human and a simulated UR10 build it together. A train then proves whether the bridge works.
-
-The demonstration must make Codex visibly useful without making Codex perform repetitive low-level motion planning.
-
-Use this division:
-
-**Codex = intent, design, planning, decisions and live control.**
-
-**Deterministic runtime = exact geometry, source-brick allocation, motion execution, snapping, validation, physics and statistics.**
-
-The demonstration must prove that Codex is not only triggering a prerecorded animation.
+All four are equally weighted. WebMCP Leverage is the first tie-break criterion.
 
 ---
 
-# 2. Proven foundation — preserve it
+# 1. Competition constraints that are release blockers
 
-`MAIN_DEMO` is the canonical root application.
+Before submission, the project must have:
 
-It already provides the main systems required for the submission:
+- a working live URL accessible in ChatGPT's in-app browser or WebMCP-enabled Chrome;
+- a public code repository;
+- a visible open-source licence;
+- all source, required assets, and clear run/test instructions;
+- a public YouTube demo with audio under three minutes;
+- clear documentation that distinguishes pre-existing work from WebMCP work added during the challenge;
+- cleared rights for every asset shipped in the public submission;
+- a frozen submitted site/repository after the deadline during judging.
 
-- polished Player V8 table/workbench;
-- good lighting and materials;
-- desktop/mobile player movement;
-- intuitive player brick pickup and placement;
-- brick rotation and snapping;
-- MORE BRICKS supply;
-- UR10 visual/runtime;
-- animated real-gripper model;
-- reliable robot brick pickup and placement;
-- one authoritative `RevisionClock`;
-- one authoritative `BuildBoard`;
-- one authoritative robot controller;
-- shared player/robot world state;
-- WebMCP primitive robot control;
-- browser camera/perception tools;
-- deterministic placement validation;
-- revision-safe state changes;
-- short placement lookahead;
-- dynamic replacement of a source brick if the human takes the brick that Codex intended to use.
+Current repository audit notes:
 
-Do not replace these systems during the final sprint.
+- GitHub repository visibility is still **private**.
+- Apache-2.0 licence is already present.
+- `PREEXISTING_WORK.md` still records unresolved redistribution confirmation for the supplied gripper/contribution material.
+- GitHub About text is stale and still mentions Newton physics, although Newton was removed.
+- Public-release/IP review must happen before changing repository visibility.
 
-Use adapters at integration boundaries.
+---
 
-The repository safety rule remains mandatory:
+# 2. Critical repository audit — current truth
+
+## 2.1 Proven and integrated in `MAIN_DEMO`
+
+These are strong assets. Do not rewrite them.
+
+- Player V8 workbench, table, lighting, HUD, controls, and settings.
+- Human first-person movement.
+- Human brick pickup, rotation, snapping, and placement.
+- MORE BRICKS supply.
+- UR10 visual/runtime.
+- Animated calibrated gripper.
+- Reliable robot pickup and placement.
+- One authoritative `RevisionClock`.
+- One authoritative `BuildBoard`.
+- One authoritative `RobotController`.
+- Shared player/agent placement authority.
+- Revision-safe mutations.
+- Cancellation and fail-closed robot execution.
+- Six simulated camera views.
+- Native WebMCP browser acceptance evidence.
+- Placement preview.
+- Five-placement lookahead.
+- Dynamic source-brick reassignment when the world changes.
+- Revision-safe undo/placement behaviour.
+
+The latest integrated MAIN_DEMO merge reported 124/124 JavaScript tests plus 20/20 reliability trials.
+
+## 2.2 Current WebMCP surface
+
+The implementation now exposes **13 tools**, not 11:
+
+- `get_scene_state`
+- `get_build_state`
+- `get_robot_state`
+- `get_workspace`
+- `observe_camera`
+- `preview_placement`
+- `plan_placement_queue`
+- `execute_next_placement`
+- `move_tool`
+- `latch`
+- `unlatch`
+- `claim_target`
+- `reset_workcell`
+
+`README.md` is stale and must be updated before public submission.
+
+## 2.3 Proven but isolated prototypes
+
+These are useful source modules, not integrated product features yet.
+
+### Bridge generator
+
+`PROTOTYPES/02_Bridge_Generator_2D/`
+
+- deterministic bridge generation exists;
+- a `viaduct` fixture exists;
+- schemas and tests exist;
+- it remains isolated from `MAIN_DEMO`.
+
+**Important:** the audited repository does not contain an Aqueduct-specific submission implementation under that name. The latest working two-family Aqueduct/Viaduct generator described in the submission plan must be committed/imported as an authoritative source module before it can be integrated.
+
+### Bridge-to-bricks compiler
+
+`PROTOTYPES/03_Bridge_To_Bricks/`
+
+- deterministic candidate BuildPlans exist;
+- dependency graph and member mapping exist;
+- it remains isolated from `MAIN_DEMO`;
+- it is not automatically the same as the newest custom-arch submission bridge generator.
+
+### Structural solver
+
+`PROTOTYPES/04_Structural_Solver/`
+
+- useful future TEST logic exists;
+- do not integrate it before the simpler fail/pass train path works.
+
+### Train/Rapier
+
+`PROTOTYPES/05_Train_Rapier/`
+
+- supported crossing is proven;
+- lost support causing derail/fall is proven;
+- reset is proven in the isolated prototype;
+- it remains isolated from `MAIN_DEMO`.
+
+## 2.4 Assets already in repository
+
+`Scene_and_3D_Files/Terrain_Optimised_10k.glb` is backed up through Git LFS.
+
+The asset is not yet loaded by `apps/web`.
+
+## 2.5 Missing integrated submission systems
+
+There is no committed integrated proof yet for:
+
+- curated terrain inside MAIN_DEMO;
+- EASY/CHALLENGING challenge presets in MAIN_DEMO;
+- authoritative two-family Aqueduct/Viaduct submission generator in MAIN_DEMO;
+- bridge BuildPlan -> MAIN_DEMO adapter;
+- bridge design WebMCP tools;
+- bridge hologram from the submission BuildPlan;
+- train/test runtime inside MAIN_DEMO;
+- MISSION COMPLETE;
+- submission event/statistics log;
+- public live deployment;
+- public-repository release readiness.
+
+These are the real submission gaps.
+
+---
+
+# 3. Locked scope cuts
+
+These features are **not submission blockers** and must not consume time until P0 is complete.
+
+## Cut now
+
+- new interior room;
+- sofas/furniture;
+- custom HDRI workflow;
+- major environment redesign;
+- procedural terrain integration;
+- terrain voxelisation;
+- Codex picking up and assembling all three train vehicles;
+- train magnetic coupling engineering;
+- realistic robot/train contact dynamics;
+- train recovery with the robot;
+- individual brick painting;
+- camera pickup/photo framing/ImageGen feature;
+- full structural-solver integration;
+- progressive bridge collapse;
+- suspension/cable systems;
+- extra bridge families;
+- general robot task-and-motion planning.
+
+## Locked train simplification
+
+The train starts **already assembled and positioned on the ENTRY track**.
+
+When TEST starts:
+
+1. the assembled train is reset to its deterministic start pose;
+2. optionally the UR10 performs a short visible push if this is trivial and reliable;
+3. the train simulation runs;
+4. on failure, train pieces may fall and separate visually;
+5. TEST reset respawns the assembled train at ENTRY.
+
+Robot loading of train parts is no longer part of P0.
+
+## Locked colour strategy
+
+Do not build a paint system.
+
+Bridge colours remain generated by the selected bridge palette.
+
+If time remains, Codex may switch a small set of validated palettes such as sandstone, grey stone, red/blue, or custom predefined colours. Palette control is P1.
+
+---
+
+# 4. Hero WebMCP story
+
+The final submission must show a visible chain that cannot be mistaken for scripted playback:
+
+1. User asks Codex for a bridge design.
+2. Codex changes structured bridge parameters.
+3. Deterministic generator creates the real BuildPlan.
+4. Exact hologram updates.
+5. User changes one design parameter through natural language.
+6. Hologram updates again.
+7. User and Codex/UR10 build the same accepted structure.
+8. Human deliberately takes a source brick Codex planned to use.
+9. Lookahead automatically reassigns another valid brick.
+10. User can ask Codex to build faster.
+11. TEST runs before completion and the train visibly fails at unsupported track.
+12. Build continues.
+13. TEST runs again after completion.
+14. Train reaches EXIT.
+15. MISSION COMPLETE and human/Codex contribution statistics appear.
+16. TRY AGAIN returns to a clean state.
+
+This is the P0 product.
+
+---
+
+# 5. Architecture boundary
+
+Keep the existing authority chain:
 
 `RevisionClock -> BuildBoard + RobotController -> Runtime -> Perception/WebMCP + Renderer`
 
-Do not create a second robot authority, board authority, physics truth or hidden build state.
+New submission modules must be adapters around this chain.
 
-This repository remains simulation-only. Do not connect it to physical robotics hardware.
+Do not create:
 
----
+- a second robot controller;
+- a second placement board;
+- a second accepted inventory truth;
+- a hidden instant-build state;
+- a fake TEST success function.
 
-# 3. What has changed from the older V3 plan
+Codex controls intent and data.
 
-The submission path is now deliberately smaller.
+Deterministic code controls exact repetitive execution.
 
-## 3.1 Procedural terrain is not on the submission critical path
+Expected design pipeline:
 
-Do not integrate the procedural terrain generator for the hero demonstration.
+`natural language -> BridgeSpec -> deterministic bridge generator -> BuildPlan -> validation -> hologram -> accepted build execution`
 
-Do not voxelise the terrain.
+Expected TEST pipeline:
 
-Do not rebuild the terrain system.
-
-Use the curated two-mountain/valley 3D asset supplied for the demonstration.
-
-The existing procedural terrain prototype can remain in `PROTOTYPES/01_Terrain_Challenge/` as research and future work.
-
-## 3.2 Only two bridge families are required
-
-The submission bridge selector uses:
-
-1. **Roman Aqueduct**
-2. **Viaduct**
-
-Do not restore the large bridge-family catalogue before submission.
-
-A future Custom mode can use the same generic plan pipeline.
-
-## 3.3 Full structural-solver integration is not required before the hero loop works
-
-The standalone structural solver remains useful future work.
-
-For submission, an incomplete rail support path causing the train to fall is enough to prove a meaningful TEST loop.
-
-Integrate advanced structural collapse only after the complete hero path is reliable.
+`accepted build state -> rail support map -> TEST -> supported train guidance OR unsupported dynamic fall -> result`
 
 ---
 
-# 4. Curated terrain strategy
+# 6. Parallel execution model
 
-Use one curated 3D terrain asset with two mountains/banks and a valley between them.
+Use separate branches/worktrees. Parallel agents must not repeatedly edit the same central files.
 
-The terrain is part of `MAIN_DEMO`.
+## Central integration files — ONE OWNER ONLY
 
-It must have deterministic placement, scale and bridge anchor locations.
+Only the integration owner should make final edits to:
 
-## 4.1 EASY preset
+- `apps/web/src/logo/main.js`
+- `apps/web/index.html`
+- `apps/web/src/webmcp/register-tools.js`
+- root `package.json` script wiring
 
-Purpose:
+All other workstreams must export self-contained modules and tests. The integration owner wires them together.
 
-- short build;
-- low terrain;
-- fast live demonstration;
-- best match for the Roman Aqueduct.
+Recommended branches:
 
-Use approximately `0.3-0.4` of the full vertical terrain scale, subject to visual acceptance.
-
-Reduce the effective crossing width so the bridge requires fewer parts.
-
-This is the default submission mode.
-
-## 4.2 CHALLENGING preset
-
-Purpose:
-
-- full visual mountain height;
-- deeper valley;
-- taller bridge;
-- best match for the Viaduct.
-
-Use full or near-full terrain height.
-
-This is the secondary hero mode after EASY passes.
-
-## 4.3 ENTRY and EXIT
-
-Each preset owns deterministic ENTRY and EXIT transforms.
-
-They define:
-
-- bridge start;
-- bridge end;
-- track start/end alignment;
-- bridge generator span;
-- train route.
-
-Use simple visible markers in design/debug mode.
-
-Do not require runtime terrain analysis to find these points for submission.
+- `codex/submission-integration`
+- `codex/submission-a-terrain`
+- `codex/submission-b-bridge`
+- `codex/submission-c-webmcp`
+- `codex/submission-d-train`
+- `codex/submission-e-mission`
+- `codex/submission-f-public-release`
+- `codex/submission-g-qa`
 
 ---
 
-# 5. Bridge design system
+# 7. PARALLEL WORKSTREAM 0 — Integration owner
 
-The bridge system must remain parametric and deterministic.
+**Priority:** P0 / critical path  
+**Start:** immediately  
+**Goal:** own the one integrated application and merge contract
 
-The expected pipeline is:
+## Owns
 
-`natural language -> BridgeSpec -> deterministic bridge generator -> brick placements -> BuildPlan -> hologram`
+- central files listed above;
+- top-level submission state machine;
+- bridge/challenge/train module wiring;
+- final WebMCP tool registration;
+- merge order;
+- final end-to-end acceptance.
 
-Codex changes design intent and parameters.
+## Steps
 
-Deterministic code calculates exact bridge geometry and placements.
+1. Freeze the current working MAIN_DEMO behaviour as regression baseline.
+2. Define minimal public APIs expected from A-E before those agents start.
+3. Add no feature implementation that another workstream owns.
+4. Create a small submission state object:
+   - challenge preset;
+   - BridgeSpec;
+   - design revision;
+   - BuildPlan ID/checksum;
+   - mode `DESIGN|BUILD|TEST|RESULT`;
+   - train result;
+   - session/event state.
+5. Merge terrain module first with no bridge logic.
+6. Merge bridge module and render exact hologram.
+7. Merge WebMCP design tools.
+8. Connect approved BuildPlan to existing BuildBoard/placement authority.
+9. Merge train/test module.
+10. Merge mission/stats module.
+11. Run existing MAIN_DEMO regression after every merge.
+12. Reject any merge that breaks human placement or primitive WebMCP robot control.
 
-## 5.1 Roman Aqueduct
+## Acceptance
 
-Use for lower/shorter crossings.
-
-Required controls include the tested generator parameters, including where applicable:
-
-- tier count;
-- top arch count;
-- middle arch count;
-- bottom arch count;
-- arch dimensions;
-- pier dimensions;
-- deck dimensions;
-- bridge height;
-- colour/material family.
-
-Use tested defaults when the user does not give a value.
-
-## 5.2 Viaduct
-
-Use for taller/deeper crossings.
-
-Required controls include:
-
-- arch count;
-- arch dimensions;
-- pier height/width;
-- deck dimensions;
-- bridge height;
-- colour/material family.
-
-Use tested defaults when the user does not give a value.
-
-## 5.3 Fixed bridge width
-
-Keep the submission bridge width constrained.
-
-Do not allow arbitrary bridge width to increase build time or collision risk.
-
-## 5.4 Custom arch pieces
-
-Keep the custom clean arch components.
-
-Use them to reduce placement count and improve the appearance of the bridge.
-
-Rectangular bricks can form:
-
-- piers;
-- courses;
-- spandrels;
-- deck support;
-- top structure.
-
-## 5.5 BuildPlan
-
-The generator must produce one generic ordered BuildPlan.
-
-Each placement must contain enough information for the existing runtime to know:
-
-- placement ID;
-- part type;
-- colour/material;
-- target transform/grid position;
-- orientation;
-- dependencies/build order;
-- optional structural group/member ID.
-
-The bridge generator must not execute robot motion directly.
-
-The existing MAIN_DEMO build path remains the execution authority.
+- all subsystem modules can be enabled/disabled independently;
+- original player/robot demo still works;
+- no second state authority exists.
 
 ---
 
-# 6. Hologram and conversational co-design
+# 8. PARALLEL WORKSTREAM A — Curated terrain + challenge presets
 
-The hologram is the main bridge-design feedback surface.
+**Priority:** P0  
+**Can run in parallel with:** B, C, D, E, F
 
-It must come from the same BuildPlan that can be approved for construction.
+## Owns
 
-Do not render a fake artistic preview that differs from the real plan.
+Suggested new area:
 
-Example interaction:
+- `apps/web/src/challenge/`
+- `apps/web/assets/terrain/`
+- challenge-focused tests
 
-> Codex, make this a Roman aqueduct with ten arches at the top, six in the middle and three at the bottom.
+Do not edit `logo/main.js`.
 
-Codex updates BridgeSpec.
+## Steps
 
-The deterministic generator recompiles the bridge.
+1. Bring the cleared runtime terrain GLB into the runtime asset path.
+2. Load it with the existing Three.js stack.
+3. Define one canonical terrain local transform.
+4. Define EASY preset:
+   - reduced vertical scale around 0.3-0.4;
+   - reduced effective crossing span;
+   - fixed ENTRY transform;
+   - fixed EXIT transform;
+   - fixed rail corridor.
+5. Define CHALLENGING preset:
+   - full/near-full height;
+   - larger span;
+   - fixed ENTRY/EXIT;
+   - fixed rail corridor.
+6. Keep terrain scaling deterministic and data-driven.
+7. Use a cheap collision representation; do not use terrain voxelisation.
+8. Export API such as:
+   - `createChallengePreset(name)`
+   - `mountChallenge(scene, preset)`
+   - `getEntryExit()`
+   - `getTrackCorridor()`
+   - `resetChallenge()`
+9. Add tests for deterministic transforms and ENTRY/EXIT values.
+10. Produce one screenshot for EASY and one for CHALLENGING.
 
-The hologram updates.
+## Acceptance
 
-The user can then say:
-
-> Change the top to eight arches and the bottom to four.
-
-Or:
-
-> Make it taller.
-
-Or:
-
-> Use fewer bricks.
-
-Or:
-
-> Actually, change it to a viaduct.
-
-Only the requested parameters change. Unspecified values retain valid defaults.
-
-No construction starts until the current plan is accepted.
-
----
-
-# 7. Codex / WebMCP strategy
-
-The impressive part is not the number of MCP tools.
-
-The impressive part is the visible chain:
-
-`natural language -> Codex decision -> live state change -> generated plan -> robot action -> human interference -> automatic adaptation -> TEST -> success/failure`
-
-## 7.1 Do not create MCP tool bloat
-
-Do not expose one MCP tool for every UI slider.
-
-Use a small composable control surface.
-
-Recommended logical groups:
-
-### Scene
-
-- inspect scene;
-- inspect settings;
-- update an allow-listed setting;
-- inspect inventory;
-- inspect build state;
-- inspect robot state.
-
-A generic setting tool can support requests such as:
-
-> Make the table 20% wider.
-
-> Increase the background brightness by 10%.
-
-The setting path must be allow-listed and validated.
-
-### Design
-
-- get current BridgeSpec;
-- set/update BridgeSpec;
-- validate design;
-- compile/update preview;
-- inspect current BuildPlan;
-- submit a validated custom BuildPlan.
-
-### Construction
-
-- start/pause collaborative construction;
-- control build speed;
-- reserve/claim build targets where needed;
-- keep the existing primitive move/latch/unlatch path available for direct proof.
-
-### TEST
-
-- prepare/reset train;
-- start TEST;
-- inspect TEST state/result;
-- reset challenge.
-
-## 7.2 Codex must not perform repetitive Cartesian reasoning
-
-Codex should not spend one reasoning cycle calculating every millimetre of every pick-and-place action.
-
-Codex chooses **what** to build.
-
-The deterministic runtime decides **how** to execute the repeated placements safely and quickly.
-
-## 7.3 Keep primitive control visible
-
-The generic planner does not replace the existing primitive WebMCP tools.
-
-The repository must still show that Codex can inspect real state and drive the UR10 through the accepted primitive controller path.
-
-This is important evidence that the robot action is genuine application control.
+- terrain loads every time;
+- no large performance regression;
+- ENTRY/EXIT are stable;
+- bridge span data is available without terrain analysis;
+- no changes to player/robot authority.
 
 ---
 
-# 8. Small autonomous-build proof
+# 9. PARALLEL WORKSTREAM B — Authoritative submission bridge generator
 
-Before the bridge hero sequence, use one short example to prove that Codex can create structures that are not the bridge preset.
+**Priority:** P0 / highest feature priority  
+**Can run in parallel with:** A, C, D, E, F
 
-The wall is the preferred submission proof because it is short and easy to read visually.
+## Owns
 
-## 8.1 Single brick
+Suggested new area:
 
-Possible opening proof:
+- `apps/web/src/bridge/`
+- `apps/web/assets/bridge/`
+- bridge schemas/tests
 
-> Codex, place a red brick on the table.
+Do not edit `logo/main.js` or `register-tools.js`.
 
-Codex selects a legal target and a suitable available red brick.
+## First action — mandatory
 
-The generic executor performs the placement.
+Locate and commit/import the **latest working two-family Aqueduct/Viaduct generator** that currently exists outside audited `main`.
 
-## 8.2 Wall
+Do not assume `PROTOTYPES/02` is the same implementation.
 
-User:
+Preserve the newest working visual rules:
 
-> Codex, build a small wall.
+- Aqueduct family;
+- Viaduct family;
+- custom clean arch pieces;
+- fixed practical width;
+- rail deck visible above masonry;
+- deck height kept compact;
+- arch material/colour matching surrounding structure;
+- ordered BuildPlan output.
 
-Codex creates a small BuildPlan.
+## Steps
 
-Example bonded pattern:
+1. Freeze a known-good visual fixture for Aqueduct.
+2. Freeze a known-good visual fixture for Viaduct.
+3. Define strict submission `BridgeSpec` with only parameters needed by these families.
+4. Define tested defaults.
+5. Make ENTRY/EXIT span an explicit input.
+6. Produce deterministic local bridge placements.
+7. Keep custom arch components as legal part types.
+8. Emit one generic BuildPlan shape compatible with an adapter.
+9. Emit stable design revision/checksum.
+10. Ensure the hologram can use the exact same placements.
+11. Add bridge-local -> MAIN_DEMO world transform helper, but do not mutate MAIN_DEMO state directly.
+12. Add tests:
+    - same spec -> same plan;
+    - changed arch count -> changed plan;
+    - family switch -> changed plan;
+    - track deck remains above masonry;
+    - bridge width remains bounded;
+    - all placement IDs stable/deterministic.
+13. Produce screenshot evidence for both families.
 
-- layer 1: four bricks;
-- layer 2: three offset bricks;
-- layer 3: four bricks;
-- layer 4: three offset bricks.
+## Acceptance
 
-The exact dimensions can change with the request.
-
-The important requirement is that the plan enters the same generic validation and execution path as other custom plans.
-
-## 8.3 Tower
-
-Secondary example:
-
-> Codex, build a tower.
-
-Codex can create an alternating/interlocking plan with courses rotated by 90 degrees.
-
-Do not make the tower a submission blocker if the wall already proves the generic planner.
-
----
-
-# 9. Anti-scripting requirement
-
-Reviewers may inspect the repository.
-
-The implementation must make it clear that Codex is controlling real data and generic systems.
-
-Do not add hidden replay functions such as:
-
-- `buildWallDemo()` with fixed transforms;
-- `buildTowerDemo()` with fixed transforms;
-- `playAqueductDemo()`;
-- `instantBuildBridge()`;
-- `fakeTrainSuccess()`.
-
-The correct architecture is:
-
-`request -> Codex plan/parameters -> strict schema validation -> generic BuildPlan/BridgeSpec -> generic executor -> accepted runtime state`
-
-Deterministic generation is allowed and preferred.
-
-A deterministic generator is not a prerecorded demonstration if Codex controls its valid input parameters and the generated output is real application state.
-
-For authenticity evidence, log at least:
-
-- request/intent category where available;
-- design revision;
-- BuildPlan checksum/ID;
-- actor for each accepted brick placement;
-- source-brick reassignment events;
-- TEST start/result;
-- world revision.
+- both hero families exist in source;
+- generator is not hidden playback;
+- same BuildPlan drives preview and execution;
+- output can be consumed without rewriting robot code.
 
 ---
 
-# 10. Collaborative build execution
+# 10. PARALLEL WORKSTREAM C — Submission WebMCP design/control tools
 
-Human and Codex/UR10 must build the same plan and the same accepted world.
+**Priority:** P0  
+**Can run in parallel with:** A, B, D, E, F
 
-## 10.1 Human
+## Owns
 
-The human can:
+Suggested module:
 
-- move around;
-- pick bricks up;
-- rotate them;
-- snap them into legal targets;
-- add more bricks;
-- work on any valid available section.
+- `apps/web/src/webmcp/submission-tools.js`
+- tool handler tests
 
-## 10.2 Codex/UR10
+Do not directly edit `register-tools.js`; integration owner registers the final definitions.
 
-Codex chooses a useful unbuilt region.
+## Keep existing 13 tools
 
-The runtime then streams upcoming placements to the robot.
+Do not remove or weaken primitive robot tools.
 
-Use the existing short lookahead, approximately five placements where appropriate.
+## Add only a small high-value surface
 
-Each upcoming item contains:
+Recommended submission additions:
 
-- target placement;
-- required part type/colour;
-- current source-brick assignment.
+- `get_challenge_state`
+- `get_bridge_spec`
+- `set_bridge_spec`
+- `get_bridge_plan`
+- `start_build` or equivalent mode transition
+- `set_build_speed` if a dedicated speed profile is useful
+- `start_bridge_test`
+- `get_bridge_test_result`
+- `reset_challenge`
 
-## 10.3 Build away from the human
+Do not expose every UI setting as a separate tool.
 
-Prefer an unbuilt region away from recent player construction activity.
+## Steps
 
-A simple spatial rule is sufficient for submission:
+1. Create strict JSON schemas.
+2. Require exact latest world/design revision for mutations where applicable.
+3. Return small bounded structured results.
+4. Make bridge edits call the real B generator through an injected adapter.
+5. Make TEST call the real D module through an injected adapter.
+6. Do not add `instant_build_bridge` or any playback shortcut.
+7. Add one optional allow-listed generic settings tool only after P0.
+8. Add tests for:
+   - unknown parameter rejection;
+   - stale revision rejection;
+   - family change;
+   - arch-count change;
+   - TEST intent;
+   - reset;
+   - tool result size.
 
-**prefer the legal unbuilt region farthest from the player's active build area.**
+## Acceptance
 
-This reduces interference and makes collaboration easy to understand visually.
+A WebMCP agent can:
 
-Do not implement a general multi-agent task scheduler before submission.
-
-## 10.4 Dynamic source-brick reassignment
-
-Do not permanently bind a target to one physical source brick.
-
-For each upcoming target:
-
-1. determine the required part type/colour;
-2. rank suitable available source bricks;
-3. assign one source brick;
-4. invalidate the assignment if the human takes that brick;
-5. select the next valid source brick automatically.
-
-Codex must not need to replan the whole structure because one source brick moved.
-
----
-
-# 11. Robot build speed control
-
-Natural-language speed changes are a useful MCP demonstration.
-
-Examples:
-
-> Build a bit faster.
-
-> Go much faster.
-
-> Slow down.
-
-> Use maximum demo speed.
-
-Map vague language onto a small deterministic set of speed profiles.
-
-Suggested intent mapping:
-
-| Intent | Relative profile |
-|---|---:|
-| Slow | 0.5x |
-| Normal | 1.0x |
-| Faster | 1.5x |
-| Very fast | 2.0x |
-| Maximum | capped tested demo maximum |
-
-The final maximum is set by reliability testing.
-
-Aim for about a one-second complete pick/place cycle at the fastest profile if the current motion system can do this reliably.
-
-Do not sacrifice reliability only to hit this number.
+- inspect challenge;
+- create/update bridge design;
+- cause the real hologram to change;
+- start build/test;
+- inspect real result.
 
 ---
 
-# 12. Railway and train
+# 11. PARALLEL WORKSTREAM D — Train + TEST integration
 
-The objective is to move a train from ENTRY to EXIT.
+**Priority:** P0  
+**Can run in parallel with:** A, B, C, E, F
 
-The railway must visibly sit above the bridge deck.
+## Owns
 
-It must not be buried inside bridge geometry.
+Suggested new area:
 
-The railway can be generated as part of the challenge/bridge route. It does not need to be built brick-by-brick for submission.
+- `apps/web/src/train/`
+- train/test tests
 
-## 12.1 Train composition
+Adapt from `PROTOTYPES/05_Train_Rapier/`.
 
-Use three train elements:
+Do not edit central MAIN_DEMO files.
 
-1. locomotive/steam engine;
-2. carriage 1;
-3. carriage 2.
+## Locked simplification
 
-When placed in the valid starting track zones, adjacent train elements automatically couple.
+Use one pre-assembled three-part train at ENTRY.
 
-## 12.2 Codex train setup
+Do not implement UR10 train loading.
 
-Preferred visual sequence:
+## Steps
 
-1. UR10 places the locomotive;
-2. UR10 places carriage 1;
-3. UR10 places carriage 2;
-4. the pieces automatically couple;
-5. the UR10 moves behind the rear train;
-6. the UR10 performs a short visual push, about 50 mm;
-7. the train simulation receives its start trigger/velocity.
+1. Extract the smallest supported-route/fall-on-missing-support logic from Prototype 05.
+2. Adapt to MAIN_DEMO's coordinate frame through an injected route definition.
+3. Create deterministic train reset pose behind ENTRY.
+4. Keep the train guided/analytic while route support exists.
+5. Define rail support in simple discrete segments.
+6. Determine support from accepted bridge/track completion.
+7. When required support disappears:
+   - release the train into Rapier/dynamic physics;
+   - preserve velocity;
+   - allow visible fall/collision.
+8. Complete route reaches EXIT and returns `CROSSED`.
+9. Missing route returns `TRAIN_FELL` or equivalent.
+10. TEST reset reconstructs/respawns the assembled train.
+11. Optional P1: short UR10 visual push to start.
+12. Add deterministic tests for:
+    - complete support -> CROSSED;
+    - centre support missing -> falls;
+    - reset returns same pose;
+    - repeated tests do not leak bodies.
 
-The push does not require calibrated contact dynamics.
+## Acceptance
 
-The robot action is a visual start trigger. The train simulation becomes autonomous after release.
-
-## 12.3 Fast fallback
-
-If robot placement of all train pieces threatens reliability, use this fallback:
-
-- reset/spawn the assembled train on the start track;
-- let the UR10 perform only the visible starting push.
-
-The bridge TEST is more important than robot train assembly.
-
-## 12.4 Supported route
-
-If rail support is valid, the train follows the route and can reach EXIT.
-
-## 12.5 Missing route support
-
-If the bridge/track is incomplete, the train loses support and becomes dynamic.
-
-It can:
-
-- derail;
-- fall;
-- collide with bridge pieces;
-- collide with terrain.
-
-A fully calibrated wheel/rail simulation is not required.
-
-## 12.6 Recovery
-
-After a failed test, make train pieces easy to reuse.
-
-Allowed gameplay recovery methods include:
-
-- automatic self-right after settling;
-- known pickup pose after failure;
-- deterministic reset to start.
-
-Do not spend submission time on realistic overturned-train recovery.
+- early incomplete bridge visibly fails;
+- complete route visibly succeeds;
+- train is immediately reusable after reset;
+- no robot train assembly is required.
 
 ---
 
-# 13. TEST through natural language
+# 12. PARALLEL WORKSTREAM E — Session events, MISSION COMPLETE, stats, reset
 
-The TEST action must accept broad natural language intent through Codex.
+**Priority:** P0  
+**Can run in parallel with:** A-D, F
 
-Examples:
+## Owns
 
-> Test the bridge.
+Suggested new area:
 
-> Try the train.
+- `apps/web/src/game/submission-session.js`
+- `apps/web/src/ui/mission-complete.js`
+- focused UI/session tests
 
-> See if it works.
+Avoid central file edits; export mount/update functions.
 
-> Run the train across it.
+## Steps
 
-> Test what we have built.
+1. Add append-only session event log.
+2. Record:
+   - session start;
+   - challenge selected;
+   - design generated/changed;
+   - build start;
+   - accepted human placement;
+   - accepted Codex placement;
+   - source-brick reassignment;
+   - speed change;
+   - TEST start;
+   - train failure;
+   - train crossed;
+   - mission complete;
+   - reset.
+3. Use accepted placement authority events, not duplicate counters.
+4. Compute minimum final stats:
+   - total elapsed time;
+   - total bricks;
+   - human bricks;
+   - Codex bricks;
+   - human/Codex percentages;
+   - average placement interval for each actor;
+   - test attempts;
+   - successful tests.
+5. Implement MISSION COMPLETE overlay.
+6. Implement TRY AGAIN action.
+7. Reset event/session data without leaving stale subscriptions.
+8. Add tests that compare stats to synthetic accepted events.
 
-These all map to the same validated TEST operation.
+## Acceptance
 
-TEST can run before the bridge is complete.
-
-This is important because an early failed test proves that success is not a prerecorded animation.
-
----
-
-# 14. Mission Complete
-
-When the complete train reaches EXIT, show a large:
-
-# MISSION COMPLETE
-
-Then show collaboration statistics.
-
-At minimum record:
-
-- total session/build time;
-- total bricks placed;
-- player bricks placed;
-- Codex bricks placed;
-- player percentage;
-- Codex percentage;
-- average player placement interval;
-- average Codex placement interval;
-- train tests attempted;
-- successful train tests.
-
-Useful optional metrics:
-
-- bridge family;
-- design revisions;
-- arch counts;
-- source-brick reassignments;
-- fastest placement;
-- failed tests before success.
-
----
-
-# 15. Event log
-
-Use simple append-only session events.
-
-Recommended event types:
-
-```text
-session_started
-challenge_selected
-design_generated
-design_changed
-build_started
-brick_placed_player
-brick_placed_codex
-source_brick_reassigned
-build_speed_changed
-train_test_started
-train_failed
-train_crossed
-mission_complete
-session_reset
-```
-
-Each event should contain:
-
-- monotonic timestamp or elapsed session time;
-- actor (`player`, `codex`, `system`);
-- current world revision where relevant;
-- relevant placement/design/test IDs;
-- small metadata object where needed.
-
-Calculate final statistics from the event log.
-
-Do not create a separate statistics truth that can disagree with accepted placement events.
+- MISSION COMPLETE only fires when train reaches EXIT;
+- counts match accepted board events;
+- TRY AGAIN produces a clean new session.
 
 ---
 
-# 16. TRY AGAIN and reset
+# 13. PARALLEL WORKSTREAM F — Public submission, IP, deployment, documentation
 
-MISSION COMPLETE exposes **TRY AGAIN**.
+**Priority:** P0 release blocker  
+**Can run entirely in parallel with:** A-E
 
-Reset must return the application to a known deterministic start state.
+## Owns
 
-Reset:
+- public-release documentation;
+- asset/IP inventory;
+- deployment setup;
+- challenge provenance;
+- Devpost materials draft.
 
-- bridge design;
-- placed bridge pieces;
-- hologram;
-- train;
-- robot;
-- reservations/lookahead;
-- TEST state;
-- statistics/event session;
-- challenge preset state as required.
+## Steps
 
-The user can then select another preset or make another custom design.
+1. Resolve redistribution status of the supplied gripper and other user/Oracle assets.
+2. Remove or replace anything that cannot be publicly redistributed.
+3. Review Git LFS files before public release.
+4. Update `PREEXISTING_WORK.md` with a clear final provenance boundary.
+5. Create `CHALLENGE_WORK.md`:
+   - pre-Aug-25 foundation;
+   - WebMCP work added during challenge;
+   - dated key commits;
+   - current architecture.
+6. Update README:
+   - ROBO BRIDGE submission story;
+   - current **13** base WebMCP tools plus final submission tools;
+   - how to run;
+   - how to test WebMCP;
+   - demo prompts;
+   - simulation-only boundary.
+7. Update GitHub About description; remove stale Newton reference.
+8. Verify Apache-2.0 is visible.
+9. Prepare working hosted URL.
+10. Test live URL in ChatGPT in-app browser.
+11. Test live URL in WebMCP-enabled Chrome if available.
+12. Prepare public-repository transition only after IP audit.
+13. Draft Devpost description around:
+    - agent-native collaborative construction;
+    - robotics/STEM/maker audience;
+    - what human + agent can do together;
+    - why WebMCP is necessary.
+14. Draft <3-minute video script.
+15. Do not add copyrighted music/trademarks without permission.
 
----
+## Acceptance
 
-# 17. General custom building
-
-The architecture must not artificially limit Codex to the two bridge families.
-
-Support this generic future path:
-
-`user idea -> Codex creates BuildPlan -> validation -> hologram -> construction`
-
-Example:
-
-> Build a small boat.
-
-Codex can design a legal plan, preview it and iterate with the user.
-
-This general path does not need extensive submission polish.
-
-The wall example is enough to prove that the executor is generic.
-
----
-
-# 18. LEGO construction skill
-
-Add a project skill/instruction file for Codex building knowledge.
-
-Suggested location/name:
-
-`skills/lego-building/SKILL.md`
-
-or another repository-local equivalent that fits the runtime/tooling architecture.
-
-It should define:
-
-- available part types;
-- dimensions;
-- stud spacing;
-- layer height;
-- coordinate system;
-- supported orientations;
-- valid connections;
-- support rules;
-- collision rules;
-- bonding/overlap rules;
-- practical build-size limits;
-- wall example;
-- tower example;
-- BuildPlan schema;
-- validation procedure;
-- how to avoid creating inaccessible placements.
-
-This is Codex's construction handbook, not a library of prerecorded finished structures.
+- public repo is legally/technically safe;
+- live URL works without developer machine assumptions;
+- a judge can understand the project from README/video alone.
 
 ---
 
-# 19. Final submission user flow
+# 14. PARALLEL WORKSTREAM G — QA, native WebMCP evidence, performance
 
-Keep the visible UI small.
+**Priority:** P0 after interfaces exist; start test scaffolding early  
+**Can run in parallel with:** all streams
 
-Minimum challenge controls:
+## Owns
 
-- EASY;
-- CHALLENGING;
-- AQUEDUCT;
-- VIADUCT;
-- GENERATE/UPDATE;
-- BUILD;
-- TEST;
-- RESET / TRY AGAIN.
+- new integration tests;
+- reliability trials;
+- evidence documents/screenshots;
+- visual/browser acceptance;
+- performance regression checks.
 
-Detailed bridge parameters can remain in Settings and be controllable through Codex.
+## Steps
 
-The preferred complete flow is:
+1. Preserve all existing test commands.
+2. Add focused tests for each new module without modifying central implementations.
+3. Add one end-to-end submission acceptance test/harness where practical.
+4. After each merge wave run:
+   - `npm run test:js`
+   - `npm run test:webmcp`
+   - `npm run test:robot`
+   - `npm run test:player`
+   - `npm run test:reliability`
+   - `npm run verify`
+5. Repeat native WebMCP discovery in the final submission browser.
+6. Prove at least once:
+   - design parameter change through WebMCP;
+   - visible hologram change;
+   - robot placement;
+   - human steals planned source brick;
+   - automatic reassignment;
+   - early failed TEST;
+   - final successful TEST.
+7. Run the complete EASY hero loop at least three consecutive times.
+8. Prefer 10 consecutive loops if time allows.
+9. Record console errors/warnings.
+10. Record FPS/frame time during the final bridge scene.
+11. Reject environment polish that causes material frame-rate regression.
 
-1. Start `MAIN_DEMO`.
-2. Show one direct Codex scene-setting change.
-3. Optionally ask Codex to build a small wall.
-4. Load/select the curated terrain challenge.
-5. Select EASY by default.
-6. Ask Codex for an Aqueduct or Viaduct.
-7. Show the generated hologram.
-8. Change one or more bridge parameters through natural language.
-9. Accept the design.
-10. Human starts one region.
-11. Codex/UR10 starts a distant region.
-12. Change robot build speed through natural language.
-13. Run an early TEST if useful.
-14. Incomplete bridge causes a visible train failure.
-15. Continue building.
-16. Run TEST again.
-17. Train reaches EXIT.
-18. Show MISSION COMPLETE and collaboration statistics.
-19. TRY AGAIN resets the application.
+## Acceptance
+
+- no regression in original MAIN_DEMO controls;
+- complete hero loop is repeatable;
+- evidence matches what is claimed in submission.
 
 ---
 
-# 20. Suggested submission demonstration sequence
+# 15. Merge waves — do not wait for every stream to finish
 
-Use a short sequence that proves progressively more intelligence.
+## Wave 0 — Contracts
 
-## Part A — Direct MCP control
+Integration owner freezes minimal APIs for A-E.
 
-Example:
+## Wave 1 — Terrain
 
-> Make the table 20% wider.
+Merge A.
 
-Then:
+Required result:
 
-> Increase the background brightness by 10%.
+`MAIN_DEMO + curated terrain + EASY/CHALLENGING + ENTRY/EXIT`
 
-This proves that Codex controls live application state.
+Do not wait for bridge/train.
 
-Keep this section short.
+## Wave 2 — Bridge preview
 
-## Part B — Generic autonomous build
+Merge B.
 
-Example:
+Required result:
 
-> Build a small wall.
+`preset -> BridgeSpec -> Aqueduct/Viaduct -> exact hologram`
 
-Codex creates a generic BuildPlan and the UR10 builds it.
+This is the most important early visual milestone.
 
-This proves that the system is not only a bridge playback tool.
+## Wave 3 — WebMCP co-design
 
-## Part C — Conversational bridge design
+Merge C.
 
-Example:
+Required result:
 
-> Make a Roman aqueduct with ten arches at the top, six in the middle and three at the bottom.
+`voice/agent -> set BridgeSpec -> hologram changes`
+
+At this point record a backup demo video. This alone is already meaningful WebMCP evidence.
+
+## Wave 4 — Collaborative build
+
+Connect B BuildPlan to existing placement authority/lookahead.
+
+Required result:
+
+`human + UR10 build same plan -> human moves source brick -> queue repairs`
+
+Record another backup video.
+
+## Wave 5 — Train TEST
+
+Merge D.
+
+Required result:
+
+`incomplete route -> train falls`  
+`complete route -> train crosses`
+
+Record another backup video.
+
+## Wave 6 — Mission/result
+
+Merge E.
+
+Required result:
+
+`CROSSED -> MISSION COMPLETE -> stats -> TRY AGAIN`
+
+## Wave 7 — Public/release
+
+F finalises public-safe repo and live deployment.
+
+## Wave 8 — Freeze
+
+G runs final reliability and native WebMCP evidence.
+
+After freeze, no new features unless they fix a demonstrated blocker.
+
+---
+
+# 16. What the user can do in parallel outside coding
+
+These tasks can run while agents implement A-E.
+
+1. **Terrain asset:** finalise only the existing terrain GLB/materials. Do not create a new room.
+2. **Bridge assets:** provide the latest custom arch meshes and latest working bridge-generator demo/source to the bridge workstream.
+3. **Train assets:** provide final locomotive + two carriage meshes as one known assembled layout. Do not engineer robot grasping.
+4. **Visual identity:** choose one clean ROBO BRIDGE logo/title treatment and remove third-party branding.
+5. **Palette:** choose 2-4 fixed bridge palettes; no paint system.
+6. **IP audit:** confirm rights for gripper, terrain, train, textures, robot visual, and any audio.
+7. **Hosting:** prepare the deployment account/domain now.
+8. **Devpost:** create/save the draft submission now; do not wait for final video.
+9. **Video:** draft a 2:30-2:50 script now.
+10. **Demo prompts:** prepare exact natural-language prompts and backup wording.
+11. **Screenshots:** prepare one clean hero screenshot after each merge milestone.
+12. **Submission copy:** explain audience as robotics/STEM/maker collaborative design, not only a toy bridge game.
+
+---
+
+# 17. Strict P0 must-have list
+
+A top-10-calibre attempt needs these before optional polish:
+
+1. MAIN_DEMO still works.
+2. Curated terrain loads.
+3. EASY preset works.
+4. One hero bridge family works completely; Aqueduct is preferred.
+5. Second family Viaduct works if it does not threaten #4.
+6. Codex can create/change bridge parameters through real WebMCP.
+7. Exact real BuildPlan drives hologram.
+8. Human can build the same plan.
+9. UR10/Codex can build the same plan.
+10. Five-placement lookahead remains active.
+11. Human can take a planned source brick and automatic reassignment works.
+12. Build speed can be changed without breaking reliability.
+13. Pre-assembled train is on/reset to ENTRY.
+14. Incomplete route produces visible train failure.
+15. Complete route produces train crossing.
+16. MISSION COMPLETE fires on EXIT.
+17. Human/Codex contribution stats are correct.
+18. TRY AGAIN/reset works.
+19. Native WebMCP works on hosted app.
+20. Public repo, cleared assets, licence, README, provenance, and <3-minute video are ready.
+
+If time collapses, prioritise one perfect EASY + Aqueduct path over two unreliable bridge modes.
+
+---
+
+# 18. P1 only after P0 works repeatedly
+
+Ranked by judge value versus effort:
+
+1. One generic Codex wall BuildPlan demonstration.
+2. One allow-listed generic scene-setting tool.
+3. Fixed bridge palette control through Codex.
+4. Visible short UR10 push to start the pre-assembled train.
+5. CHALLENGING + Viaduct if EASY is already reliable.
+6. Richer mission statistics.
+7. LEGO/toy-brick construction skill document.
+8. Better camera framing and modest lighting polish.
+
+Do not do P1 until the full P0 loop has passed three consecutive times.
+
+---
+
+# 19. P2 / post-submission
+
+- interior room/sofas;
+- custom HDRI;
+- camera pickup + ImageGen photo workflow;
+- individual brick painting;
+- robot train loading/coupling;
+- train self-righting robotics;
+- procedural terrain;
+- terrain voxelisation;
+- full structural solver/collapse integration;
+- arbitrary bridge catalogue;
+- suspension/cables;
+- roads/cars;
+- general arbitrary-object building UX;
+- general motion planning.
+
+---
+
+# 20. Submission demo sequence — target under 3 minutes
+
+Target video length: approximately 2:30-2:50.
+
+## 0:00-0:15 — premise
+
+Show terrain, human, UR10, bridge gap.
+
+State that human and Codex design and build in one shared WebMCP world.
+
+## 0:15-0:40 — conversational design
+
+> Make a Roman aqueduct...
 
 Hologram appears.
 
-Then:
+> Change the top arches to eight...
 
-> Change the top to eight and the bottom to four.
+Hologram visibly updates.
 
-Hologram updates.
+## 0:40-1:25 — co-build
 
-Then optionally:
+Human builds one region.
 
-> Change it to a viaduct and use fewer bricks.
+Codex/UR10 builds another.
 
-This is the strongest co-design moment.
+Deliberately take a brick Codex planned to use.
 
-## Part D — Collaborative build
-
-Example:
-
-> Great. Let's build it. I will work on this side.
-
-Codex chooses a distant valid build region.
-
-Human and UR10 build at the same time.
-
-Then:
+Show automatic source reassignment and continued robot build.
 
 > Build faster.
 
-The runtime changes the robot speed profile.
+## 1:25-1:45 — early TEST
 
-## Part E — Early failure
+> Test the bridge.
 
-Example:
+Train runs and falls at missing support.
 
-> Test it.
+## 1:45-2:20 — finish + retest
 
-The train runs before the bridge is ready and falls at missing support.
+Complete enough remaining placements quickly.
 
-This proves the TEST result is live.
+TEST again.
 
-## Part F — Final success
+Train crosses.
 
-Finish the bridge.
+## 2:20-2:35 — result
 
-Run TEST again.
+MISSION COMPLETE + human/Codex stats.
 
-The train crosses.
+## 2:35-2:50 — WebMCP proof
 
-Show MISSION COMPLETE and statistics.
+Briefly show or state:
 
----
+- native `document.modelContext.registerTool`;
+- shared authoritative revisions;
+- no hidden instant-build shortcut;
+- agent adapts to real human state changes.
 
-# 21. Submission P0 — must work
-
-Do these before optional features.
-
-## P0.1 Terrain integration
-
-- import curated terrain into `MAIN_DEMO`;
-- correct scale and position;
-- good material/lighting integration;
-- player collision as required;
-- stable UR10/table relationship.
-
-## P0.2 Challenge presets
-
-- EASY;
-- CHALLENGING;
-- deterministic ENTRY/EXIT;
-- deterministic track route;
-- bounded bridge dimensions.
-
-## P0.3 Two bridge families
-
-- Roman Aqueduct;
-- Viaduct;
-- tested defaults;
-- fixed practical width;
-- custom arch pieces;
-- deterministic BuildPlan output.
-
-## P0.4 MAIN_DEMO bridge adapter
-
-Connect generated local bridge coordinates to the canonical live machine/world frame.
-
-No duplicate board or controller.
-
-## P0.5 Hologram
-
-The exact generated BuildPlan appears as a preview.
-
-Design changes update it reliably.
-
-## P0.6 MCP bridge design control
-
-Codex can:
-
-- select family;
-- change arch/tier parameters;
-- change supported bridge dimensions;
-- request fewer/more parts within bounded limits;
-- regenerate the real hologram.
-
-## P0.7 Collaborative build
-
-- human placement works unchanged;
-- UR10 placement works unchanged;
-- source-brick reassignment works;
-- short lookahead works;
-- Codex can select a build region away from the player.
-
-## P0.8 Train route and TEST
-
-- visible track above deck;
-- train resets at ENTRY;
-- train crosses a complete supported route;
-- train falls on missing support;
-- TEST can be started through Codex.
-
-## P0.9 Mission result
-
-- EXIT triggers MISSION COMPLETE;
-- basic collaboration statistics appear;
-- TRY AGAIN/reset works.
-
-## P0.10 Reliability
-
-Run the complete EASY hero path repeatedly before adding more scope.
-
-Freeze feature work after the hero path is reliable.
-
-Only fix demonstrated blockers after the freeze.
+Do not spend video time on sofas, ImageGen, train assembly, or many settings.
 
 ---
 
-# 22. Submission P1 — valuable after P0
+# 21. Main risks and locked fallbacks
 
-Implement only after the complete P0 loop works.
+## Aqueduct source not yet in repo
 
-- generic scene-setting MCP tool;
-- small wall autonomous-build proof;
-- tower autonomous-build proof;
-- robot train-piece placement;
-- visible robot push start;
-- richer train collision/derail presentation;
-- automatic train self-right;
-- richer mission statistics;
-- project LEGO building skill;
-- Custom BuildPlan import/preview UX;
-- more robust Codex work-area allocation.
+Fallback:
 
-The wall proof and scene-setting MCP tool are especially valuable if they can be added without risking the hero path.
+- immediately import the latest working generator;
+- if only Viaduct is stable, use Viaduct as the hero family;
+- one reliable family is better than two incomplete families.
+
+## Terrain collision causes trouble
+
+Fallback:
+
+- use visual terrain plus simple conservative collision boxes/planes;
+- do not voxelise.
+
+## Bridge adapter takes too long
+
+Fallback:
+
+- adapt the latest generator's direct BuildPlan JSON output;
+- do not force it through every older prototype layer.
+
+## Human cannot manually complete custom arch pieces
+
+Fallback:
+
+- make arch pieces robot/system-target placements while human builds standard rectangular sections;
+- preserve one accepted board state.
+
+## Train dynamics unstable
+
+Fallback:
+
+- analytic/kinematic guidance while supported;
+- dynamic Rapier only when support is lost.
+
+## Train push is unreliable
+
+Fallback:
+
+- TEST starts train velocity directly;
+- keep the train visibly present at ENTRY.
+
+## Too many bricks / demo too slow
+
+Fallback:
+
+- reduce EASY span;
+- reduce arch count;
+- use larger/custom parts;
+- accelerate playback only to a tested stable level;
+- do not try to build the full dramatic CHALLENGING bridge live.
+
+## Public IP uncertainty
+
+Fallback:
+
+- remove/replace uncertain asset before public release;
+- do not make a private-history asset public until rights are confirmed.
+
+## Hosted WebMCP fails
+
+Fallback:
+
+- treat hosted native WebMCP testing as P0, not final-day polish;
+- verify secure-context requirements and exact deployment before recording final video.
 
 ---
 
-# 23. Post-submission / P2
+# 22. Final acceptance gate
 
-Do not allow these items to block the submission:
+The submission is ready when this passes repeatedly on the hosted build:
 
-- procedural terrain integration;
-- terrain voxelisation;
-- automatic arbitrary terrain analysis;
-- full structural solver integration;
-- progressive brick/member collapse;
-- advanced debris physics;
-- full truss catalogue;
-- suspension bridges;
-- cable systems;
-- roads/cars/trucks;
-- general optimal brick packing;
-- full robot task-and-motion planning;
-- engineering-grade train/rail contact;
-- physical robot control.
-
-The existing standalone prototypes remain useful references for this later work.
-
----
-
-# 24. Acceptance gates
-
-## Gate A — MAIN_DEMO preserved
-
-Pass when:
-
-- player movement still works;
-- human brick building still works;
-- MORE BRICKS still works;
-- UR10 pickup/placement still works;
-- existing WebMCP primitive tools still work;
-- no duplicate world authority exists.
-
-## Gate B — Curated challenge
-
-Pass when:
-
-- terrain loads every time;
-- EASY/CHALLENGING are deterministic;
-- ENTRY/EXIT and track align correctly;
-- bridge corridor is visually clear.
-
-## Gate C — Conversational bridge design
-
-Pass when:
-
-- Codex can create an Aqueduct;
-- Codex can create a Viaduct;
-- natural-language parameter changes update BridgeSpec;
-- the same BuildPlan drives hologram and construction.
-
-## Gate D — Collaborative BUILD
-
-Pass when:
-
-- human and UR10 build one accepted plan;
-- source-brick replacement handles human interference;
-- Codex can work away from the player;
-- speed changes do not break placement reliability.
-
-## Gate E — TEST
-
-Pass when:
-
-- train can run at any build stage;
-- missing support creates a visible failure;
-- complete route reaches EXIT;
-- TEST is not a fake success trigger.
-
-## Gate F — Mission flow
-
-Pass when:
-
-- MISSION COMPLETE is correct;
-- stats match accepted events;
-- TRY AGAIN gives a clean deterministic reset.
+1. App loads without console-breaking errors.
+2. WebMCP tools register natively.
+3. Curated EASY challenge is visible.
+4. ENTRY/EXIT are correct.
+5. Codex creates a bridge design.
+6. Exact hologram appears.
+7. Codex changes one parameter and hologram changes.
+8. Build starts.
+9. Human places a valid bridge part.
+10. UR10 places a valid bridge part.
+11. Human takes a source brick from the lookahead.
+12. Source reassigns automatically.
+13. Robot continues.
+14. Early TEST runs.
+15. Train fails visibly on incomplete support.
+16. Train resets at ENTRY.
+17. Bridge is completed enough for route support.
+18. TEST runs again.
+19. Train reaches EXIT.
+20. MISSION COMPLETE appears.
+21. Stats are correct.
+22. TRY AGAIN produces clean state.
+23. The complete sequence works three consecutive times minimum.
+24. Public repo and live URL match what the video claims.
+25. Final video is under three minutes and contains audio.
 
 ---
 
-# 25. Definition of done for tomorrow's submission
+# 23. Final principle
 
-The application is submission-ready when this sequence works repeatedly:
+**Do not optimise for feature count. Optimise for one undeniable WebMCP collaboration story.**
 
-1. Launch `MAIN_DEMO`.
-2. Curated terrain loads correctly.
-3. Select EASY.
-4. Ask Codex for a Roman Aqueduct.
-5. Correct hologram appears between ENTRY and EXIT.
-6. Ask Codex to change one bridge parameter.
-7. Correct hologram updates.
-8. Start BUILD.
-9. Human places valid bridge parts.
-10. Codex/UR10 places valid bridge parts.
-11. Human can take a source brick without breaking Codex's build stream.
-12. Codex can change build speed.
-13. TEST can run before completion and produce a real visible failure.
-14. Construction can continue/reset after the failed test as required by the submission flow.
-15. Complete bridge supports the route.
-16. TEST runs again.
-17. Train reaches EXIT.
-18. MISSION COMPLETE appears.
-19. Player/Codex brick counts and timing statistics are correct.
-20. TRY AGAIN restores a clean state.
-
-After this passes, repeat the same acceptance with CHALLENGING + Viaduct if time permits.
-
----
-
-# 26. Authenticity checks for repository review
-
-The repository must make the real agent boundary easy to inspect.
-
-Reviewers should be able to see:
-
-- `MAIN_DEMO` is the one canonical world;
-- WebMCP reads accepted live state;
-- mutating calls respect world revisions;
-- Codex controls BridgeSpec or generic BuildPlan data;
-- generators are deterministic but not hidden playback;
-- the same generated plan drives the hologram and build executor;
-- player and Codex placements enter the same accepted board;
-- source-brick reassignment reacts to real inventory state;
-- early TEST can fail;
-- successful TEST depends on valid route support;
-- statistics come from accepted events.
-
-Do not claim a capability that is only represented by a prerecorded video or fixed hidden placement list.
-
----
-
-# 27. Main risks and fast fallbacks
-
-## Risk: Curated terrain creates integration/collision problems
-
-Fallback:
-
-- simplify collision mesh;
-- use conservative fixed collision regions;
-- keep bridge zone and player/robot work zone simple.
-
-Do not return to procedural terrain during the sprint.
-
-## Risk: Bridge generator integration becomes brittle
-
-Fallback:
-
-- preserve the deterministic generator as a self-contained module;
-- adapt its JSON BuildPlan output into MAIN_DEMO;
-- do not rewrite the bridge maths inside the runtime.
-
-## Risk: Tall Viaduct build is too slow or risky
-
-Fallback:
-
-- use EASY + Aqueduct as the official hero demonstration;
-- keep CHALLENGING + Viaduct as optional evidence.
-
-## Risk: Too many bricks make the demo too long
-
-Fallback:
-
-- constrain bridge dimensions;
-- use larger legal pieces/custom arch pieces;
-- reduce preset arch counts;
-- cap Custom values;
-- use the fastest tested robot profile.
-
-## Risk: Robot train assembly is unreliable
-
-Fallback:
-
-- reset the assembled train directly on the start track;
-- keep the robot push as the visible TEST start.
-
-## Risk: Dynamic train guidance is unstable
-
-Fallback:
-
-- guide train deterministically while support exists;
-- switch to dynamic physics when support disappears.
-
-## Risk: Full structural failure takes too long
-
-Fallback:
-
-- use route-support state as the TEST condition;
-- unsupported route releases the train and causes the visible failure.
-
-## Risk: MCP setting surface becomes too large
-
-Fallback:
-
-- one generic allow-listed `set_setting(path, value)` style interface;
-- expose only useful settings for submission.
-
-## Risk: Custom building becomes a distraction
-
-Fallback:
-
-- prove generic planning with one wall;
-- keep boat/other arbitrary builds as documented future capability.
-
----
-
-# 28. Final development rules
-
-1. **Do not replace working MAIN_DEMO systems.**
-2. **Do not integrate every prototype because it exists.**
-3. **Do not add a second state authority.**
-4. **Do not let Codex calculate repetitive low-level motion.**
-5. **Do let Codex make visible design and planning decisions.**
-6. **Do not fake build or TEST outcomes.**
-7. **Use deterministic generators for reliability.**
-8. **Use generic BuildPlan execution for extensibility.**
-9. **Keep the hero bridge small enough to finish live.**
-10. **Make EASY + Aqueduct reliable before expanding scope.**
-11. **Test failure before success to prove the simulation is live.**
-12. **Freeze new features once the complete hero loop passes.**
-13. **Keep simulation-only safety boundaries.**
-14. **Run tests read-only by default.**
-15. **Optimise for a clear, inspectable MCP story.**
-
----
-
-# 29. Final architecture summary
-
-```text
-CURATED TERRAIN ASSET
-        |
-        v
-EASY / CHALLENGING PRESET
-        |
-        v
-ENTRY + EXIT + TRACK CORRIDOR
-        |
-        v
-USER VOICE / CODEX
-        |
-        v
-BRIDGE SPEC
-AQUEDUCT / VIADUCT
-        |
-        v
-DETERMINISTIC BRIDGE GENERATOR
-        |
-        v
-GENERIC BUILDPLAN
-        |
-        +--------------------+
-        |                    |
-        v                    v
-   HOLOGRAM             EVENT / DESIGN LOG
-        |
-        v
-MAIN_DEMO SHARED BUILD WORLD
-        |
-        +-------------------------------+
-        |                               |
-        v                               v
-     HUMAN                         CODEX / UR10
-manual brick building         plan + short lookahead
-        |                               |
-        +---------------+---------------+
-                        |
-                        v
-                 ONE BUILD BOARD
-                        |
-                        v
-                      TEST
-                        |
-              +---------+---------+
-              |                   |
-              v                   v
-       MISSING SUPPORT       COMPLETE ROUTE
-              |                   |
-              v                   v
-       TRAIN FALLS/FAILS     TRAIN REACHES EXIT
-                                  |
-                                  v
-                           MISSION COMPLETE
-                                  |
-                                  v
-                              STATISTICS
-                                  |
-                                  v
-                               TRY AGAIN
-```
-
-## Submission principle
-
-**Codex decides. Deterministic systems execute. The human can interfere. The runtime adapts. The train proves the result.**
+**Codex decides. Deterministic systems execute. The human can interfere. The system adapts. The train proves the result.**
