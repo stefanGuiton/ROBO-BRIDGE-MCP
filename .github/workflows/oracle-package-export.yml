@@ -33,11 +33,18 @@ jobs:
           for part in 00 01 02 03 04; do
             git show "origin/oracle/bridge-core-main-demo-v1:ORACLE_BRIDGE_CORE_MAIN_DEMO_V1/archive/oracle_bridge_core_no_png.tar.gz.b64.part${part}"
           done > /tmp/bridge-core.tar.gz.b64
-          base64 -d /tmp/bridge-core.tar.gz.b64 > /tmp/bridge-core.tar.gz
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import re
+          source = Path('/tmp/bridge-core.tar.gz.b64').read_bytes()
+          cleaned = re.sub(rb'[^A-Za-z0-9+/=]', b'', source)
+          Path('/tmp/bridge-core.tar.gz').write_bytes(base64.b64decode(cleaned, validate=False))
+          PY
           tar -xzf /tmp/bridge-core.tar.gz -C /tmp/oracle-export/bridge-core
           git archive --format=tar origin/oracle/webmcp-bridge-design-v1 ORACLE_WEBMCP_BRIDGE_DESIGN_V1 \
             | tar -xf - -C /tmp/oracle-export/webmcp-design
-          find /tmp/oracle-export -maxdepth 5 -type f | sort > /tmp/oracle-export/FILES.txt
+          find /tmp/oracle-export -maxdepth 8 -type f | sort > /tmp/oracle-export/FILES.txt
       - name: Upload accepted package sources
         uses: actions/upload-artifact@v4
         with:
