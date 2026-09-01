@@ -1,0 +1,87 @@
+name: Oracle Mega Merge Bootstrap
+
+on:
+  push:
+    branches:
+      - oracle/mega-merge-p0-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact starting main
+        uses: actions/checkout@v4
+        with:
+          ref: 9f10590e50b9b6fd3b9b6c18a6a6543a1928d22d
+          fetch-depth: 1
+          lfs: true
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Record environment
+        run: |
+          mkdir -p evidence/bootstrap-baseline
+          {
+            echo "base_sha=9f10590e50b9b6fd3b9b6c18a6a6543a1928d22d"
+            node --version
+            npm --version
+            python --version
+          } | tee evidence/bootstrap-baseline/environment.txt
+      - name: Run baseline test suites
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence/bootstrap-baseline
+          status=0
+          for command in \
+            "npm run test:js" \
+            "npm run test:webmcp" \
+            "npm run test:robot" \
+            "npm run test:player" \
+            "npm run test:reliability" \
+            "npm run verify"; do
+            name=$(printf '%s' "$command" | tr ' :/' '___')
+            echo "===== $command =====" | tee "evidence/bootstrap-baseline/${name}.log"
+            bash -lc "$command" 2>&1 | tee -a "evidence/bootstrap-baseline/${name}.log" || status=1
+          done
+          exit "$status"
+      - name: Upload baseline evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-baseline
+          path: evidence/bootstrap-baseline
+          if-no-files-found: error
+
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: oracle/mega-merge-p0-v1
+          fetch-depth: 0
+          lfs: true
+      - name: Create repository snapshot
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude='*.tar.gz' \
+            -czf /tmp/robo-bridge-mcp-snapshot.tar.gz .
+          sha256sum /tmp/robo-bridge-mcp-snapshot.tar.gz > /tmp/robo-bridge-mcp-snapshot.sha256
+      - name: Upload repository snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-snapshot
+          path: |
+            /tmp/robo-bridge-mcp-snapshot.tar.gz
+            /tmp/robo-bridge-mcp-snapshot.sha256
+          if-no-files-found: error
