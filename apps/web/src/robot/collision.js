@@ -111,15 +111,25 @@ function workcellAabbs(layout) {
   };
 }
 
+function brickPlanarBounds(yawRad = 0) {
+  const cosine = Math.abs(Math.cos(yawRad));
+  const sine = Math.abs(Math.sin(yawRad));
+  return {
+    xMm: cosine * BRICK_SPEC.lengthMm + sine * BRICK_SPEC.widthMm,
+    yMm: sine * BRICK_SPEC.lengthMm + cosine * BRICK_SPEC.widthMm,
+    zMm: BRICK_SPEC.bodyHeightMm
+  };
+}
+
 function brickAabb(brick) {
-  return aabbFromCenter(brick.position, { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm }, `brick:${brick.id}`);
+  return aabbFromCenter(brick.position, brickPlanarBounds(brick.yawRad ?? 0), `brick:${brick.id}`);
 }
 
 function movingBodyAabb(tcp, heldBrick) {
   if (heldBrick) {
     return aabbFromCenter(
       { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm - BRICK_SPEC.capture.tcpAboveCentreMm },
-      { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
+      brickPlanarBounds(heldBrick.yawRad ?? 0),
       `held:${heldBrick.id}`
     );
   }

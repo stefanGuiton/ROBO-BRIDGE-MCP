@@ -31,7 +31,11 @@ test('registers one bounded primitive production surface with exact controller l
     'tray_camera','canvas_camera','top_camera','left_camera','right_camera','user_camera'
   ]);
   assert.equal(queue.inputSchema.properties.placements.maxItems, 50);
+  assert.equal(queue.inputSchema.properties.placements.items.properties.dependsOnPlacementIds.maxItems, 20);
+  assert.equal(queue.inputSchema.properties.placements.items.properties.dependsOnPlacementIds.uniqueItems, true);
   assert.equal(queue.inputSchema.properties.mode.enum.length, 2);
+  assert.equal(queue.inputSchema.properties.cycleTimeMs.default, 1000);
+  assert.equal(queue.inputSchema.properties.cycleTimeMs.minimum, 250);
   assert.equal(queue.annotations.readOnlyHint, true);
   assert.equal(streamStatus.inputSchema.properties.limit.maximum, 50);
   assert.equal(streamStatus.annotations.readOnlyHint, true);

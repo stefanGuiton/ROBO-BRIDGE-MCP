@@ -98,6 +98,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
               yawDeg:{type:'number',minimum:-360,maximum:360,default:0},
               supportBrickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
               supportPlacementId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+              dependsOnPlacementIds:{type:'array',maxItems:20,uniqueItems:true,items:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'}},
               supportSide:{type:'string',enum:['L','M','R'],default:'M'},
               carriedSide:{type:'string',enum:['L','M','R']}
             },additionalProperties:false}
@@ -105,6 +106,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           streamId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
           mode:{type:'string',enum:['replace','append']},
           finalChunk:{type:'boolean'},
+          cycleTimeMs:{type:'integer',minimum:250,maximum:60000,default:1000,description:'Requested simulator start-to-start cycle time for the separately human-started planned-cycle runner.'},
           expectedWorldRevision:REVISION
         },required:['placements','expectedWorldRevision'],additionalProperties:false
       },
@@ -113,6 +115,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
         ...(input.streamId===undefined?{}:{streamId:input.streamId}),
         ...(input.mode===undefined?{}:{mode:input.mode}),
         ...(input.finalChunk===undefined?{}:{finalChunk:input.finalChunk}),
+        ...(input.cycleTimeMs===undefined?{}:{cycleTimeMs:input.cycleTimeMs}),
         placements:input.placements.map((placement)=>({
           placementId:placement.placementId??null,
           brickId:placement.brickId??null,
@@ -123,6 +126,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           yawRad:Number(placement.yawDeg??0)*Math.PI/180,
           supportBrickId:placement.supportBrickId??null,
           supportPlacementId:placement.supportPlacementId??null,
+          dependsOnPlacementIds:placement.dependsOnPlacementIds??[],
           supportSide:placement.supportSide??'M',
           carriedSide:placement.carriedSide??null
         }))

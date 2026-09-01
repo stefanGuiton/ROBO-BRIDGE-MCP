@@ -4,6 +4,8 @@ import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { RobotRenderer } from '../render/robot-renderer.js';
 import { RobotController, RobotError } from '../robot/controller.js';
 import { PlacementLookaheadCoordinator } from '../robot/placement-lookahead.js';
+import { PlannedPlacementCycleRunner } from '../robot/placement-cycle-runner.js';
+import { createSimpleStructurePlan, ROBOT_SHOWCASE_INVENTORY, toWebMcpPlacements } from '../robot/simple-structure-planner.js';
 import { CHALLENGE_LAYOUT, UR10_DEFINITION } from '../robot/ur10-definition.js';
 import { RevisionClock } from '../state/revision-clock.js';
 import { compileImageData } from './compiler.js';
@@ -21,6 +23,7 @@ import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
+const robotShowcaseMode = params.get('showcase') === 'robot-basics';
 
 function makeRoundBlueprint() {
   const compiled = compileImageData(makePattern('diagonal', 64), {
@@ -40,7 +43,10 @@ const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
 const workcellProfile = createV8WorkcellProfile(playerSettings);
 const makePlayerBricks = () => {
-  const generated = makeReachableV8Spawn(playerSettings, workcellProfile);
+  const generated = makeReachableV8Spawn(playerSettings, workcellProfile, robotShowcaseMode ? {
+    count: ROBOT_SHOWCASE_INVENTORY.length,
+    colours: ROBOT_SHOWCASE_INVENTORY
+  } : {});
   if (!generated.ok) throw new Error(`V8 reachable scene generation failed: ${generated.reason}`);
   return generated.records;
 };
@@ -66,6 +72,7 @@ if (placementAuthority && !controller.setPlacementAuthority(placementAuthority))
   throw new Error('Unable to attach the shared V8 placement authority');
 }
 const fastPlacement = placementAuthority ? new PlacementLookaheadCoordinator({ controller, placementAuthority, workcellProfile }) : null;
+const placementCycleRunner = fastPlacement ? new PlannedPlacementCycleRunner({ coordinator: fastPlacement, controller }) : null;
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
@@ -137,6 +144,10 @@ const physicalSpeedOutput = $('[data-physical-speed]');
 const playbackRateInput = $('[data-playback-rate-input]');
 const playbackRateOutput = $('[data-playback-rate]');
 const fastAcceptButton = $('[data-fast-accept]');
+const cycleTimeInput = $('[data-cycle-time-input]');
+const cycleTimeOutput = $('[data-cycle-time]');
+const cycleStartButton = $('[data-cycle-start]');
+const cycleStopButton = $('[data-cycle-stop]');
 const undoButtonEl = $('[data-undo]');
 
 const settingsPanelController = installPlayerSettingsPanel({
@@ -264,6 +275,7 @@ async function latch(input = {}) { return runtime.robot.latch({ actor: input.act
 async function unlatch(input = {}) { return runtime.robot.unlatch({ actor: input.actor ?? 'human', expectedWorldRevision: input.expectedWorldRevision }); }
 async function resetScene() {
   moreBricksBurst = 0;
+  placementCycleRunner?.cancel('workcell_reset');
   fastPlacement?.cancel();
   const result = await runtime.robot.reset({ expectedWorldRevision: controller.getState().worldRevision });
   setStatus('READY');
@@ -391,6 +403,31 @@ async function executeFastPlacement({ signal } = {}) {
   return result;
 }
 
+async function runPlannedCycle({ signal = null } = {}) {
+  if (!placementCycleRunner || !fastPlacement) return { ok: false, reason: 'runtime_unavailable' };
+  const state = fastPlacement.getState();
+  const cycleTimeMs = Number(cycleTimeInput?.value ?? state.stream?.cycleTimeMs ?? 1000);
+  setStatus('CYCLING');
+  addLog(`Planned cycle started at ${cycleTimeMs} ms per brick`, 'ok');
+  const result = await placementCycleRunner.run({
+    cycleTimeMs,
+    physicalSpeedMmS: Number(physicalSpeedInput?.value ?? 650),
+    maximumPlacements: 50,
+    signal
+  });
+  if (result.ok) {
+    setStatus('CYCLE COMPLETE', 'ok');
+    const meanCycle = Number.isFinite(result.meanStartIntervalMs) ? `${Math.round(result.meanStartIntervalMs)} ms mean` : 'single placement';
+    addLog(`Cycle completed ${result.completedPlacements} placements · ${meanCycle} · ${result.overruns} overruns`, 'ok');
+    refreshFastBrickChoices();
+  } else {
+    const cancelled = result.reason === 'cancelled';
+    setStatus(cancelled ? 'CYCLE STOPPED' : 'CYCLE BLOCKED', cancelled ? '' : 'bad');
+    addLog(`Cycle stopped: ${result.reason}`, cancelled ? '' : 'bad');
+  }
+  return result;
+}
+
 function captureCamera(cameraId = 'user_camera', options = {}) {
   return runtime.world.captureCamera({ cameraId, ...options });
 }
@@ -451,7 +488,17 @@ function stageV8ParityConnection() {
 
 const actions = {
   getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
-  previewFastPlacement, executeFastPlacement, cancelFastPlacement: () => fastPlacement?.cancel() ?? { ok: false, reason: 'runtime_unavailable' },
+  planSimpleStructure: (spec = {}) => {
+    const availableColourCounts = {};
+    for (const brick of fastPlacement?.availableBricks?.() ?? []) {
+      availableColourCounts[brick.colour] = (availableColourCounts[brick.colour] ?? 0) + 1;
+    }
+    const plan = createSimpleStructurePlan(spec, { profile: workcellProfile, availableColourCounts });
+    return { ...plan, webMcpPlacements: toWebMcpPlacements(plan) };
+  },
+  previewFastPlacement, executeFastPlacement, runPlannedCycle,
+  cancelFastPlacement: () => fastPlacement?.cancel() ?? { ok: false, reason: 'runtime_unavailable' },
+  cancelPlannedCycle: () => placementCycleRunner?.cancel() ?? { ok: false, reason: 'runtime_unavailable' },
   home: ({ signal } = {}) => moveTool({ ...UR10_DEFINITION.homeTcp, speedMmS: 420 }, { signal })
 };
 
@@ -531,6 +578,8 @@ $('[data-action="home"]')?.addEventListener('click', (event) => handleAction(eve
 for (const button of document.querySelectorAll('[data-action="reset"]')) button.addEventListener('click', (event) => handleAction(event.currentTarget, () => resetScene(), null));
 $('[data-action="latch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => latch({ actor: 'human' }), 'Latch accepted'));
 $('[data-action="unlatch"]')?.addEventListener('click', (event) => handleAction(event.currentTarget, () => unlatch({ actor: 'human' }), 'Unlatch accepted'));
+cycleStartButton?.addEventListener('click', (event) => handleAction(event.currentTarget, () => runPlannedCycle(), null));
+cycleStopButton?.addEventListener('click', () => placementCycleRunner?.cancel());
 for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => renderer.setView(button.dataset.view));
 for (const button of document.querySelectorAll('[data-player-mode]')) {
   button.addEventListener('click', () => {
@@ -598,7 +647,15 @@ if (fastPlacementForm && fastPlacement) {
   };
   syncRange(physicalSpeedInput, physicalSpeedOutput, ' mm/s');
   syncRange(playbackRateInput, playbackRateOutput, '×');
+  syncRange(cycleTimeInput, cycleTimeOutput, ' ms');
   fastPlacement.subscribe((state) => {
+    const cycleRunning = placementCycleRunner?.getState().running ?? false;
+    if (cycleTimeInput && !cycleRunning && state.stream?.cycleTimeMs) {
+      cycleTimeInput.value = String(state.stream.cycleTimeMs);
+      if (cycleTimeOutput) cycleTimeOutput.textContent = `${state.stream.cycleTimeMs} ms`;
+    }
+    if (cycleStartButton) cycleStartButton.disabled = cycleRunning || (state.stream?.remainingPlacements ?? 0) === 0;
+    if (cycleStopButton) cycleStopButton.disabled = !cycleRunning;
     if (fastStatusEl) fastStatusEl.textContent = state.status.replace('_', ' ');
     if (fastAcceptButton) fastAcceptButton.disabled = state.status !== 'VALID';
     if (fastEstimateEl) {
@@ -760,6 +817,7 @@ const publicRuntime = Object.freeze({
   robotController: controller,
   humanBuildAdapter,
   fastPlacement,
+  placementCycleRunner,
   connectionGraph,
   playerSettingsStore,
   playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,
@@ -776,6 +834,7 @@ if (Object.isExtensible(window)) {
   window.__ROBO_BRIDGE__ = publicRuntime;
   window.__LOGO_ROBO_RUNTIME__ = runtime;
 }
+document.documentElement.dataset.robotShowcase = robotShowcaseMode ? 'true' : 'false';
 document.documentElement.dataset.runtimeReady = 'true';
 
 if (['connection', 'snap'].includes(params.get('parityPreview'))) {

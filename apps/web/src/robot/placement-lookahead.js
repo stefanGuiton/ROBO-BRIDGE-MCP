@@ -1,5 +1,6 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { FastPlacementCoordinator } from './fast-placement.js';
+import { DEFAULT_PLACEMENT_CYCLE_MS, MAX_PLACEMENT_CYCLE_MS, MIN_PLACEMENT_CYCLE_MS } from './placement-cycle-runner.js';
 
 const clone = (value) => structuredClone(value);
 const MAX_LOOKAHEAD = 5;
@@ -35,6 +36,7 @@ function normalizeDestination(source, fallbackId = null) {
     yawRad: Number(source?.yawRad ?? 0),
     supportBrickId: source?.supportBrickId ?? null,
     supportPlacementId: source?.supportPlacementId ?? null,
+    dependsOnPlacementIds: Array.isArray(source?.dependsOnPlacementIds) ? [...source.dependsOnPlacementIds] : [],
     supportSide: source?.supportSide ?? 'M',
     carriedSide: source?.carriedSide ?? null
   };
@@ -50,6 +52,9 @@ function validateDestination(destination, { requirePlacementId = true } = {}) {
   if (destination.supportBrickId !== null && !PLACEMENT_ID.test(destination.supportBrickId)) return 'invalid_support_brick_id';
   if (destination.supportPlacementId !== null && !PLACEMENT_ID.test(destination.supportPlacementId)) return 'invalid_support_placement_id';
   if (destination.supportPlacementId === destination.placementId) return 'dependency_cycle';
+  if (!Array.isArray(destination.dependsOnPlacementIds) || destination.dependsOnPlacementIds.length > 20) return 'invalid_dependencies';
+  if (destination.dependsOnPlacementIds.some((placementId) => !PLACEMENT_ID.test(placementId) || placementId === destination.placementId)) return 'invalid_dependency_id';
+  if (new Set(destination.dependsOnPlacementIds).size !== destination.dependsOnPlacementIds.length) return 'duplicate_dependency_id';
   if (!['L', 'M', 'R'].includes(destination.supportSide)) return 'invalid_support_side';
   if (destination.carriedSide !== null && !['L', 'M', 'R'].includes(destination.carriedSide)) return 'invalid_carried_side';
   return null;
@@ -136,6 +141,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       streamId: this.stream?.streamId ?? null,
       streamRevision: this.stream?.streamRevision ?? this.streamRevision,
       finalChunk: Boolean(this.stream?.finalChunk),
+      cycleTimeMs: this.stream?.cycleTimeMs ?? DEFAULT_PLACEMENT_CYCLE_MS,
       totalPlacements: total,
       satisfiedPlacements: satisfied,
       remainingPlacements: Math.max(0, total - satisfied - (counts.CANCELLED ?? 0)),
@@ -350,6 +356,18 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
 
   resolveDependency(entry) {
     entry.resolvedSupportBrickId = entry.request.supportBrickId ?? null;
+    for (const placementId of entry.request.dependsOnPlacementIds ?? []) {
+      const dependency = this.stream.byId.get(placementId);
+      if (!dependency) return { ok: false, status: this.stream.finalChunk ? 'BLOCKED' : 'WAITING_DEPENDENCY', reason: 'unknown_dependency' };
+      if (!SATISFIED.has(dependency.status) || !dependency.actualBrickId) {
+        return {
+          ok: false,
+          status: 'WAITING_DEPENDENCY',
+          reason: dependency.status === 'BLOCKED' ? 'dependency_blocked' : 'dependency_pending',
+          details: { dependsOnPlacementId: dependency.placementId, dependencyStatus: dependency.status }
+        };
+      }
+    }
     if (entry.request.supportPlacementId) {
       const dependency = this.stream.byId.get(entry.request.supportPlacementId);
       if (!dependency) return { ok: false, status: this.stream.finalChunk ? 'BLOCKED' : 'WAITING_DEPENDENCY', reason: 'unknown_dependency' };
@@ -432,11 +450,15 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     return this.getState();
   }
 
-  appendToStream(placements, { streamId, mode = 'append', finalChunk = false } = {}) {
+  appendToStream(placements, { streamId, mode = 'append', finalChunk = false, cycleTimeMs = null } = {}) {
     if (!PLACEMENT_ID.test(streamId ?? '')) return { ...this.getState(), ok: false, reason: 'invalid_stream_id' };
     if (!['replace', 'append'].includes(mode)) return { ...this.getState(), ok: false, reason: 'invalid_mode' };
     if (!Array.isArray(placements) || placements.length < 1 || placements.length > MAX_STREAM_BATCH) {
       return { ...this.getState(), ok: false, reason: 'invalid_input', maximumStreamBatch: MAX_STREAM_BATCH };
+    }
+    const normalizedCycleTimeMs = cycleTimeMs ?? (mode === 'append' ? this.stream?.cycleTimeMs : null) ?? DEFAULT_PLACEMENT_CYCLE_MS;
+    if (!Number.isInteger(normalizedCycleTimeMs) || normalizedCycleTimeMs < MIN_PLACEMENT_CYCLE_MS || normalizedCycleTimeMs > MAX_PLACEMENT_CYCLE_MS) {
+      return { ...this.getState(), ok: false, reason: 'invalid_cycle_time', minimumCycleTimeMs: MIN_PLACEMENT_CYCLE_MS, maximumCycleTimeMs: MAX_PLACEMENT_CYCLE_MS };
     }
     const normalized = placements.map((placement) => normalizeDestination(placement));
     for (const destination of normalized) {
@@ -455,6 +477,9 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       return { ...this.getState(), ok: false, reason: 'stream_not_found', streamId };
     }
     const existing = mode === 'append' ? this.stream : null;
+    if (existing && cycleTimeMs !== null && existing.cycleTimeMs !== normalizedCycleTimeMs) {
+      return { ...this.getState(), ok: false, reason: 'cycle_time_conflict', cycleTimeMs: existing.cycleTimeMs };
+    }
     if (existing && existing.entries.length + normalized.filter((destination) => !existing.byId.has(destination.placementId)).length > MAX_STREAM_SIZE) {
       return { ...this.getState(), ok: false, reason: 'stream_capacity', maximumStreamSize: MAX_STREAM_SIZE };
     }
@@ -472,7 +497,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     }
     if (mode === 'replace') {
       this.executionGeneration += 1;
-      this.stream = { streamId, finalChunk: Boolean(finalChunk), entries: [], byId: new Map(), streamRevision: this.streamRevision };
+      this.stream = { streamId, finalChunk: Boolean(finalChunk), cycleTimeMs: normalizedCycleTimeMs, entries: [], byId: new Map(), streamRevision: this.streamRevision };
       this.queue = [];
       this.proposal = null;
       this.cacheId = streamId;
@@ -510,7 +535,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     return { ok: true, ...state, appendedCount, duplicateCount, idempotent: appendedCount === 0 };
   }
 
-  planQueue(placements, { expectedWorldRevision = undefined, streamId = null, mode = null, finalChunk = undefined } = {}) {
+  planQueue(placements, { expectedWorldRevision = undefined, streamId = null, mode = null, finalChunk = undefined, cycleTimeMs = null } = {}) {
     const worldRevision = this.controller.getState().worldRevision;
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== worldRevision) {
       return { ...this.getState(), ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision };
@@ -522,12 +547,13 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       }
       const legacyStreamId = `lookahead-${++this.cacheSequence}`;
       const normalized = placements.map((placement) => normalizeDestination(placement, `placement-${++this.proposalSequence}`));
-      return this.appendToStream(normalized, { streamId: legacyStreamId, mode: 'replace', finalChunk: true });
+      return this.appendToStream(normalized, { streamId: legacyStreamId, mode: 'replace', finalChunk: true, cycleTimeMs });
     }
     return this.appendToStream(placements, {
       streamId,
       mode: mode ?? (this.stream?.streamId === streamId ? 'append' : 'replace'),
-      finalChunk: Boolean(finalChunk)
+      finalChunk: Boolean(finalChunk),
+      cycleTimeMs
     });
   }
 
@@ -550,6 +576,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       targetPosition: this.expectedTarget(entry) ? clone(this.expectedTarget(entry)) : null,
       targetYawDeg: Number(entry.request.yawRad ?? 0) * 180 / Math.PI,
       supportPlacementId: entry.request.supportPlacementId,
+      dependsOnPlacementIds: [...(entry.request.dependsOnPlacementIds ?? [])],
       supportBrickId: entry.resolvedSupportBrickId ?? entry.request.supportBrickId
     }));
     return {

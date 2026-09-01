@@ -698,18 +698,40 @@ export class RobotController {
     return { success: true, ok: true, brickId: brick.id, captureOffset: candidate.captureOffset, yawErrorRad, robotRevision: this.robotRevision, worldRevision: this.worldRevision, reason: null };
   }
 
-  async unlatch({ expectedWorldRevision, actor = 'agent', operationToken = null } = {}) {
+  async unlatch({
+    expectedWorldRevision,
+    actor = 'agent',
+    operationToken = null,
+    supportBrickId = null,
+    supportSide = 'M',
+    carriedSide = null,
+    placementPosition = null,
+    placementYawRad = null
+  } = {}) {
     if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0) return { success: false, ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { success: false, ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (!this.heldBrickId) return { success: false, ok: false, reason: 'not_holding', robotRevision: this.robotRevision, worldRevision: this.worldRevision };
     const brick = this.heldBrick();
     const position = { ...brick.position };
+    const requestedPosition = placementPosition && [placementPosition.xMm, placementPosition.yMm, placementPosition.zMm].every(isFiniteNumber)
+      ? { ...placementPosition }
+      : position;
+    const requestedYawRad = isFiniteNumber(placementYawRad) ? placementYawRad : brick.yawRad;
+    if (placementPosition && distance3(position, requestedPosition) > 2) {
+      return { success: false, ok: false, reason: 'placement_pose_mismatch', heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+    }
+    if (isFiniteNumber(placementYawRad) && Math.abs(shortestHalfTurnDelta(brick.yawRad, requestedYawRad)) > 2 * Math.PI / 180) {
+      return { success: false, ok: false, reason: 'placement_pose_mismatch', heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
+    }
     if (this.placementAuthority) {
       const placement = this.placementAuthority.commit({
         brickId: brick.id,
-        position,
-        yawRad: brick.yawRad,
-        actor
+        position: requestedPosition,
+        yawRad: requestedYawRad,
+        actor,
+        supportBrickId,
+        supportSide,
+        carriedSide
       });
       if (!placement.ok) {
         return { success: false, ok: false, reason: placement.reason, heldBrickId: brick.id, robotRevision: this.robotRevision, worldRevision: this.worldRevision };
@@ -722,7 +744,9 @@ export class RobotController {
       brick.snapped = placement.snapped;
       brick.placedTargetId = placement.targetId;
       brick.placementType = placement.placementType;
-      brick.connection = placement.connection ? clone(placement.connection) : null;
+      brick.connection = placement.connections?.length > 1
+        ? { groups: clone(placement.connections) }
+        : placement.connection ? clone(placement.connection) : null;
       this.heldBrickId = null;
       this.jawGapMm = UR10_GRIPPER.openGapMm;
       this.jawState = 'open';
@@ -739,7 +763,7 @@ export class RobotController {
         targetId: placement.targetId,
         correctness: placement.correctness,
         placementType: placement.placementType,
-        connection: placement.connection,
+        connection: brick.connection ? clone(brick.connection) : null,
         reason: null,
         robotRevision: this.robotRevision,
         worldRevision: this.worldRevision

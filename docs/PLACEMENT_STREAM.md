@@ -12,6 +12,8 @@
 - At most five proposals and visible ghosts are active at once.
 - `get_placement_stream_status` returns at most 50 entries per page and is read-only.
 - `execute_next_placement` executes one proposal through the shared controller and requires the latest exact `worldRevision`. Its optional `maxExecutionWallMs` (50-120,000 ms) applies an in-page abort deadline through the same cancellation path.
+- A streamed plan may carry a simulator `cycleTimeMs` from 250 to 60,000 ms. Successful single-placement results include the next proposal and exact revision for polling-free primitive chaining.
+- The page UI may continuously consume an already planned stream with **RUN PLANNED CYCLE**. This bounded, cancellable simulator runner is not a WebMCP tool and does not change the primitive fourteen-tool surface.
 - Mutating tools forward the WebMCP abort signal. Reset invalidates the current stream.
 
 Lifecycle states are `PENDING`, `PLANNED`, `EXECUTING`, `COMPLETED`, `ADOPTED`, `BLOCKED`, `WAITING_SOURCE`, `WAITING_DEPENDENCY`, and `CANCELLED`.

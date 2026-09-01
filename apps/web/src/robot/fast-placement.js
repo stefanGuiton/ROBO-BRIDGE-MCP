@@ -202,7 +202,12 @@ export class FastPlacementCoordinator {
       const release = await this.controller.unlatch({
         actor: 'agent',
         expectedWorldRevision: this.controller.getState().worldRevision,
-        operationToken: lease.token
+        operationToken: lease.token,
+        supportBrickId: proposal.supportBrickId ?? proposal.candidate?.supportBrickId ?? null,
+        supportSide: proposal.supportSide ?? proposal.candidate?.supportSide ?? 'M',
+        carriedSide: proposal.carriedSide ?? proposal.candidate?.carriedSide ?? null,
+        placementPosition: proposal.candidate?.position ?? null,
+        placementYawRad: proposal.candidate?.yawRad ?? proposal.yawRad ?? null
       });
       if (!release.ok) throw new RobotError(release.reason, release);
       stages.push({ stage: 'unlatch', placementType: release.placementType, targetId: release.targetId });

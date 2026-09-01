@@ -340,7 +340,8 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           expectedWorldRevision: request.expectedWorldRevision,
           streamId: request.streamId ?? null,
           mode: request.mode ?? null,
-          finalChunk: request.finalChunk
+          finalChunk: request.finalChunk,
+          cycleTimeMs: request.cycleTimeMs ?? null
         }));
       },
       async executeNext(request = {}, options = {}) {
@@ -370,6 +371,11 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           stages: (result.stages ?? []).map((stage) => ({ stage: stage.stage, durationMs: stage.durationMs ?? null, brickId: stage.brickId ?? null })),
           remainingQueued: result.remainingQueued ?? fastPlacement.getState().queueLength,
           remainingPlacements: result.remainingPlacements ?? fastPlacement.getState().stream?.remainingPlacements ?? null,
+          nextProposal: fastPlacement.getState().queue[0] ? {
+            proposalId: fastPlacement.getState().queue[0].proposalId,
+            placementId: fastPlacement.getState().queue[0].placementId,
+            expectedWorldRevision: fastPlacement.getState().queue[0].expectedWorldRevision
+          } : null,
           worldRevision: result.worldRevision ?? worldRevision()
         };
       }

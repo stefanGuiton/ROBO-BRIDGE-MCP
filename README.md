@@ -108,9 +108,13 @@ Every mutation requires the exact latest `worldRevision`. WebMCP is progressive 
 
 Placement streams accept stable `placementId` values in `replace` or `append` chunks of at most 50 placements, with a logical-stream ceiling of 5,000. At most five proposals are materialized as active ghosts at once. Status is paged in bounded groups of at most 50 and reports deterministic lifecycle states including `PLANNED`, `COMPLETED`, `ADOPTED`, `BLOCKED`, `WAITING_SOURCE`, `WAITING_DEPENDENCY`, and `CANCELLED`. Exact append retries are idempotent; reuse of a placement ID with different content is rejected.
 
+Plans may request a simulator `cycleTimeMs` (250-60,000 ms). **RUN PLANNED CYCLE** in the page UI consumes the already validated Cartesian stream locally, avoiding browser-host thinking gaps while keeping the WebMCP surface primitive. The default showcase cadence is one second per brick and remains accelerated simulation, not a one-second physical-robot claim.
+
 Page-side registration and the tool contract are tested locally. On 2026-09-01, the Codex in-app browser natively enumerated all fourteen production-origin tools, planned a ten-placement stream in two chunks, and completed all ten placements through `execute_next_placement`. The same session verified UI-created human occupancy reconciliation as `ADOPTED`, structured incompatible-colour blocking without moving the human brick, source reassignment after a human moved a reserved brick, and live reset invalidation of the active stream. Native production cancellation also passed using the optional `maxExecutionWallMs` deadline: the placement became terminal `CANCELLED`, the active queue emptied, and TCP/revision remained stable during the late-sample check. Browser-host timeout or control-session interruption still does not propagate an abort into an active call; callers that require a hard bound must provide `maxExecutionWallMs`.
 
 See `docs/PLACEMENT_STREAM.md` for the stream contract, verification coverage, timing categories, and current native acceptance boundary.
+
+For the deterministic red-brick, 3-by-4 wall, and five-layer cross-laminated tower demonstrations, open the demo with `?showcase=robot-basics` and see `docs/SIMPLE_STRUCTURE_SHOWCASE.md`. Codex expands these requests into explicit Cartesian placement streams; the production WebMCP surface remains primitive and contains no instant-build tool.
 
 ## Safety scope
 

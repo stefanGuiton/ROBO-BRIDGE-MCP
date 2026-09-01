@@ -182,9 +182,10 @@ function validatePickupSequence(record, accepted, profile) {
   };
 }
 
-function colourForReachableIndex(index, rng) {
+function colourForReachableIndex(index, rng, colours = null) {
   const guaranteed = ['red', 'blue', 'red', 'blue'];
-  const colour = guaranteed[index] ?? V8_BRICK_PALETTE[Math.floor(rng() * V8_BRICK_PALETTE.length)].colour;
+  const requested = Array.isArray(colours) ? colours[index] : null;
+  const colour = requested ?? guaranteed[index] ?? V8_BRICK_PALETTE[Math.floor(rng() * V8_BRICK_PALETTE.length)].colour;
   return V8_BRICK_PALETTE.find((entry) => entry.colour === colour);
 }
 
@@ -193,13 +194,17 @@ export function makeReachableV8Spawn(settings, profile, {
   startIndex = 0,
   count: requestedCount = settings.spawnCount,
   occupied = [],
-  seed = settings.seed
+  seed = settings.seed,
+  colours = null
 } = {}) {
   if (!profile?.supplyZone || !profile?.workspace || !profile?.layout) {
     return { ok: false, reason: 'invalid_workcell_profile', records: [], diagnostics: { rejected: [] } };
   }
   const rng = seededRng(seed);
-  const count = Math.max(1, Math.min(20, Math.round(requestedCount)));
+  const count = Math.max(1, Math.min(50, Math.round(requestedCount)));
+  if (Array.isArray(colours) && (colours.length < count || colours.slice(0, count).some((colour) => !V8_BRICK_PALETTE.some((entry) => entry.colour === colour)))) {
+    return { ok: false, reason: 'invalid_colour_sequence', records: [], diagnostics: { requestedCount: count } };
+  }
   const zone = profile.supplyZone;
   const spacingX = 48;
   const spacingY = 42;
@@ -219,7 +224,7 @@ export function makeReachableV8Spawn(settings, profile, {
     const xMm = zone.minX + 24 + column * spacingX + (rng() - 0.5) * 3;
     const yMm = zone.minY + 24 + row * spacingY + (rng() - 0.5) * 3;
     if (xMm > zone.maxX - 20 || yMm > zone.maxY - 20) continue;
-    const palette = colourForReachableIndex(index, rng);
+    const palette = colourForReachableIndex(index, rng, colours);
     const record = makeRecord(
       `${idPrefix}-${startIndex + index}`,
       palette,
