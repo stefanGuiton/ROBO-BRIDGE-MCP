@@ -13,12 +13,13 @@ test('registers one bounded primitive production surface with exact controller l
   const { runtime, handlers } = createLiveHarness();
   const result = await registerWebMcpTools(runtime);
   assert.equal(result.ok, true);
-  assert.deepEqual(result.toolNames, ['get_scene_state','get_build_state','get_robot_state','get_workspace','observe_camera','preview_placement','plan_placement_queue','execute_next_placement','move_tool','latch','unlatch','claim_target','reset_workcell']);
-  assert.equal(registered.length, 13);
+  assert.deepEqual(result.toolNames, ['get_scene_state','get_build_state','get_robot_state','get_workspace','observe_camera','preview_placement','get_placement_stream_status','plan_placement_queue','execute_next_placement','move_tool','latch','unlatch','claim_target','reset_workcell']);
+  assert.equal(registered.length, 14);
   const definitions = getLogoRoboToolDefinitions(handlers);
   const move = definitions.find((tool) => tool.name === 'move_tool');
   const observe = definitions.find((tool) => tool.name === 'observe_camera');
   const queue = definitions.find((tool) => tool.name === 'plan_placement_queue');
+  const streamStatus = definitions.find((tool) => tool.name === 'get_placement_stream_status');
   const execute = definitions.find((tool) => tool.name === 'execute_next_placement');
   assert.equal(move.inputSchema.properties.xMm.minimum, 470);
   assert.equal(move.inputSchema.properties.xMm.maximum, 710);
@@ -29,8 +30,11 @@ test('registers one bounded primitive production surface with exact controller l
   assert.deepEqual(observe.inputSchema.properties.cameraId.enum, [
     'tray_camera','canvas_camera','top_camera','left_camera','right_camera','user_camera'
   ]);
-  assert.equal(queue.inputSchema.properties.placements.maxItems, 5);
+  assert.equal(queue.inputSchema.properties.placements.maxItems, 50);
+  assert.equal(queue.inputSchema.properties.mode.enum.length, 2);
   assert.equal(queue.annotations.readOnlyHint, true);
+  assert.equal(streamStatus.inputSchema.properties.limit.maximum, 50);
+  assert.equal(streamStatus.annotations.readOnlyHint, true);
   assert.equal(execute.annotations.readOnlyHint, false);
   assert.ok(execute.inputSchema.required.includes('expectedWorldRevision'));
   for (const { tool, options } of registered) {

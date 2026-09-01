@@ -11,7 +11,7 @@ function boundedJson(value, maxChars = 12000) {
   let truncated = false;
   let totalAvailable = null;
   let returnedCount = null;
-  for (const key of ['targets', 'detections', 'objects']) {
+  for (const key of ['targets', 'detections', 'objects', 'entries']) {
     if (!Array.isArray(candidate?.[key])) continue;
     const originalCount = candidate[key].length;
     totalAvailable = Math.max(totalAvailable ?? 0, originalCount);
@@ -72,31 +72,59 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.previewPlacement(input)
     },
     {
-      name:'plan_placement_queue', description:'Read-only planning of one to five ghost placements. Reserves distinct reachable source bricks and returns cached up-across-down Cartesian trajectory templates without moving the robot or changing worldRevision.',
+      name:'get_placement_stream_status', description:'Read one bounded page of logical placement-stream status plus the active five-slot execution window. This never changes worldRevision.',
+      inputSchema:{type:'object',properties:{
+        streamId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+        cursor:{type:'integer',minimum:0,default:0},
+        limit:{type:'integer',minimum:1,maximum:50,default:20},
+        status:{type:'string',enum:['PENDING','PLANNED','EXECUTING','COMPLETED','ADOPTED','BLOCKED','WAITING_SOURCE','WAITING_DEPENDENCY','CANCELLED']}
+      },required:['streamId'],additionalProperties:false},
+      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getPlacementStreamStatus(input)
+    },
+    {
+      name:'plan_placement_queue', description:'Read-only logical placement planning. Stream mode accepts bounded replace/append chunks with stable placementId values while materializing at most five ghost proposals. Omit stream fields for the legacy one-to-five replacement form.',
       inputSchema:{
         type:'object',
         properties:{
           placements:{
-            type:'array',minItems:1,maxItems:5,
+            type:'array',minItems:1,maxItems:50,
             items:{type:'object',properties:{
+              placementId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
               brickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
               colour:{type:'string',enum:PALETTE},
               xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},
               yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},
               zMm:{type:'number',minimum:0,maximum:workspace.zMaxMm},
-              yawDeg:{type:'number',minimum:-360,maximum:360,default:0}
-            },required:['xMm','yMm','zMm'],additionalProperties:false}
+              yawDeg:{type:'number',minimum:-360,maximum:360,default:0},
+              supportBrickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+              supportPlacementId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+              supportSide:{type:'string',enum:['L','M','R'],default:'M'},
+              carriedSide:{type:'string',enum:['L','M','R']}
+            },additionalProperties:false}
           },
+          streamId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
+          mode:{type:'string',enum:['replace','append']},
+          finalChunk:{type:'boolean'},
           expectedWorldRevision:REVISION
         },required:['placements','expectedWorldRevision'],additionalProperties:false
       },
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
         expectedWorldRevision:input.expectedWorldRevision,
+        ...(input.streamId===undefined?{}:{streamId:input.streamId}),
+        ...(input.mode===undefined?{}:{mode:input.mode}),
+        ...(input.finalChunk===undefined?{}:{finalChunk:input.finalChunk}),
         placements:input.placements.map((placement)=>({
+          placementId:placement.placementId??null,
           brickId:placement.brickId??null,
           colour:placement.colour??null,
-          position:{xMm:placement.xMm,yMm:placement.yMm,zMm:placement.zMm},
-          yawRad:Number(placement.yawDeg??0)*Math.PI/180
+          position:[placement.xMm,placement.yMm,placement.zMm].every(Number.isFinite)
+            ? {xMm:placement.xMm,yMm:placement.yMm,zMm:placement.zMm}
+            : null,
+          yawRad:Number(placement.yawDeg??0)*Math.PI/180,
+          supportBrickId:placement.supportBrickId??null,
+          supportPlacementId:placement.supportPlacementId??null,
+          supportSide:placement.supportSide??'M',
+          carriedSide:placement.carriedSide??null
         }))
       })
     },

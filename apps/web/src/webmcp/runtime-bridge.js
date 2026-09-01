@@ -5,7 +5,7 @@ export const STABLE_ERRORS = Object.freeze([
   'no_brick_in_capture','already_holding','not_holding','target_occupied','wrong_colour','no_snap_target',
   'unknown_target','claim_conflict','wrong_mode','stale_state','operation_in_progress','invalid_input'
   ,'unknown_brick','unknown_support','placement_unavailable','out_of_bounds','out_of_range','mat_occupied','connector_occupied_or_misaligned'
-  ,'no_reachable_brick','proposal_required'
+  ,'no_reachable_brick','proposal_required','stream_not_found','stream_capacity','duplicate_placement_conflict'
 ]);
 
 export function machineError(reason, message, extra = {}) {
@@ -63,6 +63,7 @@ export function createRuntimeBridge(runtime = null) {
     },
     placement: {
       getQueue: () => call(runtime?.placement?.getQueue?.bind(runtime.placement)),
+      getStreamStatus: (request) => call(runtime?.placement?.getStreamStatus?.bind(runtime.placement), request),
       planQueue: (request) => call(runtime?.placement?.planQueue?.bind(runtime.placement), request),
       executeNext: (request, options) => call(runtime?.placement?.executeNext?.bind(runtime.placement), request, options)
     },

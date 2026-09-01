@@ -13,6 +13,7 @@ import { RobotController } from '../../apps/web/src/robot/controller.js';
 import { PlacementLookaheadCoordinator } from '../../apps/web/src/robot/placement-lookahead.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { createLogoRoboToolHandlers } from '../../apps/web/src/webmcp/tool-handlers.js';
+import { registerWebMcpTools } from '../../apps/web/src/webmcp/register-tools.js';
 import { createRuntimeBridge } from '../../apps/web/src/webmcp/runtime-bridge.js';
 import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell-profile.js';
 
@@ -47,7 +48,7 @@ function makeToolOnlyWorkcell() {
   assert.equal(controller.setPlacementAuthority(authority), true);
   const fastPlacement = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
   const runtime = createLogoRoboRuntime({ controller, board, placementAuthority: authority, fastPlacement, workcellProfile: profile });
-  return { handlers: createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) }), board, graph, profile, fastPlacement, controller };
+  return { handlers: createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) }), runtime, board, graph, profile, fastPlacement, controller };
 }
 
 async function currentRevision(handlers) {
@@ -118,6 +119,41 @@ test('WebMCP plans five ghosts read-only and executes one accepted placement in 
   assert.ok(performance.now() - startedAt < 2500);
   assert.equal(placed.remainingQueued, 4);
   assert.equal(board.getPlacements().length, 1);
+});
+
+test('WebMCP streams bounded chunks and returns bounded paginated status without changing worldRevision', async () => {
+  const registered = [];
+  globalThis.document = { modelContext: { async registerTool(tool, options) { registered.push({ tool, options }); } } };
+  const { runtime, controller, profile } = makeToolOnlyWorkcell();
+  const registration = await registerWebMcpTools(runtime);
+  assert.equal(registration.ok, true);
+  const plan = registered.find(({ tool }) => tool.name === 'plan_placement_queue').tool;
+  const status = registered.find(({ tool }) => tool.name === 'get_placement_stream_status').tool;
+  const before = controller.getState().worldRevision;
+  const centre = {
+    xMm: (profile.buildZone.minX + profile.buildZone.maxX) / 2,
+    yMm: (profile.buildZone.minY + profile.buildZone.maxY) / 2,
+    zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2
+  };
+  const placements = Array.from({ length: 50 }, (_, index) => ({
+    placementId: `native-${String(index).padStart(3, '0')}`,
+    xMm: centre.xMm + ((index % 5) - 2) * 40,
+    yMm: centre.yMm,
+    zMm: centre.zMm,
+    yawDeg: 0
+  }));
+  const planned = JSON.parse(await plan.execute({
+    streamId: 'native-stream', mode: 'replace', finalChunk: true,
+    placements, expectedWorldRevision: before
+  }));
+  assert.equal(planned.ok, true, planned.reason);
+  assert.equal(planned.stream.totalPlacements, 50);
+  assert.ok(planned.queue.length <= 5);
+  const page = JSON.parse(await status.execute({ streamId: 'native-stream', cursor: 0, limit: 50 }));
+  assert.equal(page.ok, true, page.reason);
+  assert.ok(page.entries.length <= 50);
+  assert.ok(JSON.stringify(page).length <= 12000);
+  assert.equal(controller.getState().worldRevision, before);
 });
 
 test('an agent builds an interlocked three-brick wall using only primitive WebMCP handlers', async () => {

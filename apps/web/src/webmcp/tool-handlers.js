@@ -6,6 +6,8 @@ const COLOURS = new Set(['white','black','red','blue','yellow','green','orange',
 const TYPES = new Set(['brick','target']);
 const STATUSES = new Set(['unfilled','filled','correct','incorrect']);
 const OWNERS = new Set(['human','agent','none']);
+const STREAM_STATUSES = new Set(['PENDING','PLANNED','EXECUTING','COMPLETED','ADOPTED','BLOCKED','WAITING_SOURCE','WAITING_DEPENDENCY','CANCELLED']);
+const SAFE_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const inputError = (message) => machineError('invalid_input', message);
 
@@ -68,16 +70,42 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return bridge.world.previewPlacement(input);
   }
 
+  async function getPlacementStreamStatus(input = {}) {
+    if (typeof input.streamId !== 'string' || !SAFE_ID.test(input.streamId)) return inputError('streamId is invalid.');
+    const cursor = input.cursor ?? 0;
+    const limit = input.limit ?? 20;
+    if (!Number.isInteger(cursor) || cursor < 0) return inputError('cursor must be a non-negative integer.');
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) return inputError('limit must be an integer from 1 to 50.');
+    if (input.status !== undefined && !STREAM_STATUSES.has(input.status)) return inputError('Unknown placement stream status.');
+    const before = bridge.getWorldRevision();
+    const result = await bridge.placement.getStreamStatus({ streamId: input.streamId, cursor, limit, status: input.status ?? null });
+    const after = bridge.getWorldRevision();
+    if (after !== before) return machineError('internal_error', 'Placement status read changed world state.', { worldRevision: after });
+    return result;
+  }
+
   async function planPlacementQueue(input = {}) {
     if (!validateRevision(input.expectedWorldRevision)) return inputError('expectedWorldRevision must be a non-negative safe integer.');
-    if (!Array.isArray(input.placements) || input.placements.length < 1 || input.placements.length > 5) {
-      return inputError('placements must contain between one and five destinations.');
+    const streamed = input.streamId !== undefined || input.mode !== undefined || input.finalChunk !== undefined;
+    const maximum = streamed ? 50 : 5;
+    if (!Array.isArray(input.placements) || input.placements.length < 1 || input.placements.length > maximum) {
+      return inputError(`placements must contain between one and ${maximum} destinations.`);
+    }
+    if (streamed) {
+      if (typeof input.streamId !== 'string' || !SAFE_ID.test(input.streamId)) return inputError('streamId is invalid.');
+      if (!['replace', 'append'].includes(input.mode)) return inputError('mode must be replace or append.');
+      if (typeof input.finalChunk !== 'boolean') return inputError('finalChunk must be boolean.');
+      if (input.placements.some((placement) => typeof placement?.placementId !== 'string' || !SAFE_ID.test(placement.placementId))) {
+        return inputError('Every streamed placement requires a stable placementId.');
+      }
     }
     const before = bridge.getWorldRevision();
     if (before !== input.expectedWorldRevision) {
       return machineError('stale_state', 'World state changed. Read state again before planning.', { expectedWorldRevision: input.expectedWorldRevision, worldRevision: before });
     }
     const result = await bridge.placement.planQueue(input);
+    const after = bridge.getWorldRevision();
+    if (after !== before) return machineError('internal_error', 'Placement planning changed world state.', { worldRevision: after });
     if (result?.ok === false && result.reason !== undefined) activity.push('RECOVER', `PLAN ${result.reason}`);
     else activity.push('TARGET', `cached ${result.queueLength ?? 0} placement proposals`, { cacheId: result.cacheId, worldRevision: before });
     return result;
@@ -146,5 +174,5 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     return result;
   }
 
-  return Object.freeze({ getSceneState, getBuildState, getRobotState, getWorkspace, observeCamera, previewPlacement, planPlacementQueue, executeNextPlacement, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
+  return Object.freeze({ getSceneState, getBuildState, getRobotState, getWorkspace, observeCamera, previewPlacement, getPlacementStreamStatus, planPlacementQueue, executeNextPlacement, moveTool, latch, unlatch, claimTarget, resetWorkcell, observationService, activity });
 }

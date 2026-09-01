@@ -199,11 +199,20 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       planningDurationMs: state.planningDurationMs ?? null,
       running: Boolean(state.running),
       worldRevision: state.worldRevision ?? worldRevision(),
+      stream: state.stream ? clone(state.stream) : null,
+      maximumStreamBatch: state.maximumStreamBatch ?? 50,
+      maximumStreamSize: state.maximumStreamSize ?? 5000,
+      appendedCount: state.appendedCount ?? null,
+      duplicateCount: state.duplicateCount ?? null,
+      idempotent: Boolean(state.idempotent),
       queue: (state.queue ?? []).map((proposal) => ({
         proposalId: proposal.proposalId,
+        placementId: proposal.placementId,
+        streamId: proposal.streamId ?? state.stream?.streamId ?? null,
         slotIndex: proposal.slotIndex,
         slotLabel: proposal.slotLabel,
         status: proposal.status,
+        logicalStatus: proposal.logicalStatus ?? 'PLANNED',
         reason: proposal.reason ?? null,
         expectedWorldRevision: proposal.expectedWorldRevision,
         brickId: proposal.brickId,
@@ -298,6 +307,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       },
       async reset(request = {}) {
         const state = await controller.reset({ bricks: resetBricks ? resetBricks() : controller.getBricks() });
+        fastPlacement?.invalidateStream?.('reset');
         return { ok: true, state, worldRevision: state.worldRevision, expectedWorldRevision: request.expectedWorldRevision };
       }
     },
@@ -319,9 +329,19 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           ? publicPlacementState({ ok: true, ...fastPlacement.getState() })
           : { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
       },
+      getStreamStatus(request = {}) {
+        return fastPlacement
+          ? fastPlacement.getStreamStatus(request)
+          : { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
+      },
       planQueue(request = {}) {
         if (!fastPlacement) return { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
-        return publicPlacementState(fastPlacement.planQueue(request.placements, { expectedWorldRevision: request.expectedWorldRevision }));
+        return publicPlacementState(fastPlacement.planQueue(request.placements, {
+          expectedWorldRevision: request.expectedWorldRevision,
+          streamId: request.streamId ?? null,
+          mode: request.mode ?? null,
+          finalChunk: request.finalChunk
+        }));
       },
       async executeNext(request = {}, options = {}) {
         if (!fastPlacement) return { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
@@ -335,6 +355,8 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           ok: result.ok,
           reason: result.reason ?? null,
           cacheId: result.cacheId ?? fastPlacement.getState().cacheId,
+          streamId: result.streamId ?? fastPlacement.getState().stream?.streamId ?? null,
+          placementId: result.placementId ?? null,
           proposalId: result.proposalId ?? request.proposalId,
           brickId: result.brickId ?? null,
           finalPosition: result.finalPosition ? clone(result.finalPosition) : null,
@@ -347,6 +369,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           physicalSpeedMmS: result.physicalSpeedMmS ?? request.physicalSpeedMmS,
           stages: (result.stages ?? []).map((stage) => ({ stage: stage.stage, durationMs: stage.durationMs ?? null, brickId: stage.brickId ?? null })),
           remainingQueued: result.remainingQueued ?? fastPlacement.getState().queueLength,
+          remainingPlacements: result.remainingPlacements ?? fastPlacement.getState().stream?.remainingPlacements ?? null,
           worldRevision: result.worldRevision ?? worldRevision()
         };
       }

@@ -27,7 +27,7 @@
 - compiler-generated red/blue tray inventory;
 - an eight-brick deterministic red/blue MAIN_DEMO round;
 - simulator-native bounded perception with actionable `recommendedTcp` coordinates;
-- one eleven-tool primitive WebMCP surface, including bounded scene reads and read-only placement preview;
+- one fourteen-tool primitive WebMCP surface, including bounded scene reads, read-only placement preview, and bounded logical placement streaming;
 - production red/blue build tests and persistent reliability tests.
 
 NVIDIA Newton and the old duplicate SCARA/physics service have been removed. The browser includes the bounded Player V8 brick solver described above; it is not a general-purpose or calibrated industrial physics engine.
@@ -95,6 +95,9 @@ The current primitive tools are:
 - `get_workspace`
 - `observe_camera` (`tray`, `canvas`, hidden `top`/`left`/`right`, or the human's current view)
 - `preview_placement`
+- `get_placement_stream_status`
+- `plan_placement_queue`
+- `execute_next_placement`
 - `move_tool`
 - `latch`
 - `unlatch`
@@ -103,7 +106,11 @@ The current primitive tools are:
 
 Every mutation requires the exact latest `worldRevision`. WebMCP is progressive enhancement. The manual browser demo still works when `document.modelContext` is not available.
 
-Page-side registration and the tool contract are tested locally. On 2026-08-31, the Codex in-app browser natively enumerated all eleven tools and used only the primitive scene/read, placement-preview, move, latch, and unlatch tools to build an interlocked three-brick wall with the live UR10. Native cancellation remains covered by the controller/WebMCP automated tests and should be repeated in the final challenge-browser submission session.
+Placement streams accept stable `placementId` values in `replace` or `append` chunks of at most 50 placements, with a logical-stream ceiling of 5,000. At most five proposals are materialized as active ghosts at once. Status is paged in bounded groups of at most 50 and reports deterministic lifecycle states including `PLANNED`, `COMPLETED`, `ADOPTED`, `BLOCKED`, `WAITING_SOURCE`, `WAITING_DEPENDENCY`, and `CANCELLED`. Exact append retries are idempotent; reuse of a placement ID with different content is rejected.
+
+Page-side registration and the tool contract are tested locally. On 2026-09-01, the Codex in-app browser natively enumerated all fourteen production-origin tools, planned a ten-placement stream in two chunks, and completed all ten placements through `execute_next_placement`. The same session verified UI-created human occupancy reconciliation as `ADOPTED`, structured incompatible-colour blocking without moving the human brick, source reassignment after a human moved a reserved brick, and live reset invalidation of the active stream. Controller/WebMCP automated tests cover abort propagation; native host cancellation still requires a repeatable host control path because the in-app client's timeout did not abort an active call.
+
+See `docs/PLACEMENT_STREAM.md` for the stream contract, verification coverage, timing categories, and current native acceptance boundary.
 
 ## Safety scope
 

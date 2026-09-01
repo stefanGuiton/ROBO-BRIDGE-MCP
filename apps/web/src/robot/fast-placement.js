@@ -187,9 +187,18 @@ export class FastPlacementCoordinator {
       });
       if (!capture.ok) throw new RobotError(capture.reason, capture);
       stages.push({ stage: 'latch', brickId: capture.brickId });
+      const heldYawOffset = this.controller.getState().gripper?.brickYawInTcpRad;
+      const desiredBrickYawRad = proposal.candidate?.yawRad ?? proposal.yawRad ?? 0;
+      const targetToolYawRad = Number.isFinite(heldYawOffset) ? desiredBrickYawRad - heldYawOffset : undefined;
+      const orientedTargetApproach = Number.isFinite(targetToolYawRad)
+        ? { ...targetApproach, yawRad: targetToolYawRad }
+        : targetApproach;
+      const orientedTargetTcp = Number.isFinite(targetToolYawRad)
+        ? { ...targetTcp, yawRad: targetToolYawRad }
+        : targetTcp;
       await move('pickup_lift', pickupApproach);
-      await move('target_transfer', targetApproach);
-      await move('target_descend', targetTcp, Math.min(physicalSpeedMmS, 420));
+      await move('target_transfer', orientedTargetApproach);
+      await move('target_descend', orientedTargetTcp, Math.min(physicalSpeedMmS, 420));
       const release = await this.controller.unlatch({
         actor: 'agent',
         expectedWorldRevision: this.controller.getState().worldRevision,
@@ -197,7 +206,7 @@ export class FastPlacementCoordinator {
       });
       if (!release.ok) throw new RobotError(release.reason, release);
       stages.push({ stage: 'unlatch', placementType: release.placementType, targetId: release.targetId });
-      await move('target_retreat', targetApproach);
+      await move('target_retreat', orientedTargetApproach);
       this.proposal = null;
       this.emit();
       return {
