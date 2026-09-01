@@ -1,1 +1,27 @@
 apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json -text
+Scene_and_3D_Files/**.obj filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.glb filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.jpeg filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.hdr filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.exr filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.tif filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.blend1 filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.png filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.jpg filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.JPG filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.tiff filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.blend filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**.max filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.png filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.JPG filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.glb filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.hdr filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.exr filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.tif filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.tiff filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.blend filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.blend1 filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.max filter=lfs diff=lfs merge=lfs -text
+Scene_and_3D_Files/**/*.obj filter=lfs diff=lfs merge=lfs -text
