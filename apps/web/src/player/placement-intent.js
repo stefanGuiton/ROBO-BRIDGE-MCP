@@ -76,6 +76,30 @@ export class PlacementIntentEngine {
     return this.rotationQuarterTurns * 90;
   }
 
+  rotateToNextValid(direction = 1, evaluateCandidate = null) {
+    if (typeof evaluateCandidate !== 'function') {
+      return { degrees: this.rotate(direction), candidate: null, attempts: 1, skipped: 0 };
+    }
+    const start = this.rotationQuarterTurns;
+    const step = direction < 0 ? -1 : 1;
+    const requested = ((start + step) % 4 + 4) % 4;
+    for (let offset = 1; offset <= 3; offset += 1) {
+      this.rotationQuarterTurns = ((start + step * offset) % 4 + 4) % 4;
+      const candidate = evaluateCandidate(this.rotationQuarterTurns);
+      if (candidate?.valid) {
+        return {
+          degrees: this.rotationQuarterTurns * 90,
+          candidate,
+          attempts: offset,
+          skipped: offset - 1
+        };
+      }
+    }
+    this.rotationQuarterTurns = requested;
+    const candidate = evaluateCandidate(this.rotationQuarterTurns);
+    return { degrees: requested * 90, candidate, attempts: 3, skipped: 0 };
+  }
+
   reset() {
     this.rotationQuarterTurns = 0;
     this.lastSupport = null;

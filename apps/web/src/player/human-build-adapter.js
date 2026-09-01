@@ -91,11 +91,16 @@ export class HumanBuildAdapter {
     return true;
   }
 
-  rotate(direction = 1) {
+  rotate(direction = 1, evaluateCandidate = null) {
     if (!this.active) return { ok: false, reason: 'not_holding' };
-    const degrees = this.placementEngine.rotate(direction);
-    this.emit('rotated', { degrees });
-    return { ok: true, degrees };
+    const rotation = this.placementEngine.rotateToNextValid(direction, evaluateCandidate);
+    if (rotation.candidate) this.active.preview = clone(rotation.candidate);
+    this.emit('rotated', {
+      degrees: rotation.degrees,
+      attempts: rotation.attempts,
+      skipped: rotation.skipped
+    });
+    return { ok: true, ...rotation };
   }
 
   release() {

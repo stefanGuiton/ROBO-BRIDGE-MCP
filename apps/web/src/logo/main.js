@@ -734,7 +734,7 @@ setInterval(() => {
   if (reticleStatusEl) reticleStatusEl.textContent = performance.interaction.highlightedMoreBricks ? 'MORE BRICKS'
     : performance.interaction.protectedBrickId ? 'SUPPORTING BRICK'
       : performance.interaction.highlightedBrickId ? 'PICK BRICK'
-      : preview?.status === 'VALID' ? `SNAP ${preview.mode ?? preview.type}`
+      : preview?.status === 'VALID' ? ''
         : preview?.status === 'BLOCKED' ? 'BLOCKED' : '';
   if (undoButtonEl) undoButtonEl.disabled = !humanBuildAdapter.canUndo();
   if (performanceContentEl) performanceContentEl.innerHTML = `<span>FPS mean</span><b>${fpsText}</b><span>Frame mean</span><b>${frameText}</b><span>Frame p95</span><b>${performance.p95FrameMs.toFixed(2)} ms</b><span>Frame max</span><b>${performance.maxFrameMs.toFixed(2)} ms</b><span>Physics</span><b>${playerSettings.physicsHz} Hz</b><span>Loose bodies</span><b>${performance.looseBrickPhysics.length}</b>`;

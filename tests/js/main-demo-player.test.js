@@ -445,6 +445,7 @@ test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MOR
   assert.match(css, /#reticle-status\{bottom:calc\(46px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
   assert.match(main, /spawnMoreBricks, runOnePickPlace/);
+  assert.doesNotMatch(main, /SNAP \$\{preview\.mode/);
   assert.match(main, /getUserCamera: \(\) => renderer\.getUserCameraConfig\(\)[\s\S]*captureCamera: \(descriptor, options\) => renderer\.captureInspectionCamera\(descriptor, options\)/);
   assert.match(main, /function captureCamera\([\s\S]*runtime\.world\.captureCamera/);
   assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
@@ -577,6 +578,27 @@ test('placement engine produces exact L/M/R support candidates and blocks collis
   );
   assert.equal(blocked.valid, false);
   assert.equal(blocked.blockedReason, 'COLLISION:blocker');
+});
+
+test('rotation skips a wall-clipping quarter turn and selects the next valid orientation', () => {
+  const { placementEngine } = makeRuntime();
+  const support = { id: 'support', position: { xMm: 200, yMm: 0, zMm: 8.6 }, yawRad: 0 };
+  const carried = { id: 'carried', position: { xMm: 200, yMm: 0, zMm: 18.2 }, yawRad: 0 };
+  const blocker = { id: 'wall', position: { xMm: 208, yMm: 22, zMm: 18.2 }, yawRad: 0 };
+  const hitPoint = { xMm: 212, yMm: 0, zMm: 13.4 };
+
+  const rotation = placementEngine.rotateToNextValid(1, () => placementEngine.connectionCandidate(
+    support,
+    hitPoint,
+    carried,
+    [support, carried, blocker]
+  ));
+
+  assert.equal(rotation.degrees, 180);
+  assert.equal(rotation.skipped, 1);
+  assert.equal(rotation.attempts, 2);
+  assert.equal(rotation.candidate.valid, true);
+  assert.equal(placementEngine.rotationQuarterTurns, 2);
 });
 
 test('human pickup and placement use controller, board, ownership, and one revision clock', () => {

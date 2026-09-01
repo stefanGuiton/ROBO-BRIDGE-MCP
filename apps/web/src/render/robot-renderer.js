@@ -256,10 +256,7 @@ export class RobotRenderer {
     }
     this.colorGrader = new ColorGrader(this.webgl, this.playerSettings);
     this.player.onPrimary = () => this.primaryPlayerAction();
-    this.player.onRotate = () => {
-      const result = this.humanBuildAdapter.rotate(1);
-      if (result.ok) this.lastPreviewSignature = '';
-    };
+    this.player.onRotate = () => this.rotateHeldToNextValid(1);
     this.player.onWheel = (deltaY) => {
       const step = this.playerSettings.cameraZoomWheelStep;
       this.playerSettings.cameraZoom = Math.max(
@@ -274,14 +271,42 @@ export class RobotRenderer {
         event.preventDefault();
         const action = button.dataset.playerAction;
         if (action === 'rotate') this.player.onRotate();
-        if (action === 'rotate-left') {
-          const result = this.humanBuildAdapter.rotate(-1);
-          if (result.ok) this.lastPreviewSignature = '';
-        }
+        if (action === 'rotate-left') this.rotateHeldToNextValid(-1);
         if (action === 'primary') this.primaryPlayerAction();
         if (action === 'drop') this.dropHeldBrick();
       });
     }
+  }
+
+  rotateHeldToNextValid(direction = 1) {
+    const active = this.humanBuildAdapter.active;
+    const carried = active ? this.frameBricks.find((brick) => brick.id === active.brickId) : null;
+    const preview = active?.preview ?? null;
+    let evaluateCandidate = null;
+    if (carried && preview?.type === 'BRICK') {
+      const support = this.frameBricks.find((brick) => brick.id === preview.supportBrickId);
+      if (support) {
+        const hitPoint = preview.pivot ?? this.humanBuildAdapter.graph.connectorWorld(support, preview.supportSide ?? 'M', true);
+        evaluateCandidate = () => this.humanBuildAdapter.placementEngine.connectionCandidate(
+          support,
+          hitPoint,
+          carried,
+          this.frameBricks
+        );
+      }
+    } else if (carried && preview?.type === 'MAT') {
+      const point = preview.position;
+      evaluateCandidate = () => this.humanBuildAdapter.placementEngine.matCandidate(point, carried, this.frameBricks);
+    }
+    const result = this.humanBuildAdapter.rotate(direction, evaluateCandidate);
+    if (!result.ok) return result;
+    if (result.candidate) {
+      this.heldVisual.setCandidate(result.candidate);
+      this.lastPreviewSignature = JSON.stringify(result.candidate);
+    } else {
+      this.lastPreviewSignature = '';
+    }
+    return result;
   }
 
   makeHeldGhost() {
