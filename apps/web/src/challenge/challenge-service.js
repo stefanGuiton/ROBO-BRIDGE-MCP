@@ -2,7 +2,7 @@ import { CHALLENGE_PRESETS, DEFAULT_PRESET_ID, buildPreset } from './challenge-p
 import { MAIN_DEMO_MACHINE_MOUNT, deepClone } from './challenge-transforms.js';
 import { applyTerrainTransform, loadTerrainAsset } from './terrain-loader.js';
 
-export function createChallengeService({ THREE = null, terrainUrl = null, fetchImpl = globalThis.fetch, machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {} } = {}) {
+export function createChallengeService({ THREE = null, terrainUrl = null, fetchImpl = globalThis.fetch, machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0 } = {}) {
   let presetId = DEFAULT_PRESET_ID;
   let loaded = false;
   let terrainRoot = null;
@@ -10,12 +10,12 @@ export function createChallengeService({ THREE = null, terrainUrl = null, fetchI
   const canonicalOffset = Number(displayOffset?.x ?? 0) === 0
     && Number(displayOffset?.y ?? 0) === 0
     && Number(displayOffset?.z ?? 0) === 0;
-  const useCanonicalPresets = machineMount === MAIN_DEMO_MACHINE_MOUNT && canonicalOffset;
+  const useCanonicalPresets = machineMount === MAIN_DEMO_MACHINE_MOUNT && canonicalOffset && challengeYawDeg === 0;
   const presets = useCanonicalPresets
     ? CHALLENGE_PRESETS
     : Object.freeze({
-      EASY: buildPreset('EASY', { machineMount, displayOffset }),
-      CHALLENGING: buildPreset('CHALLENGING', { machineMount, displayOffset })
+      EASY: buildPreset('EASY', { machineMount, displayOffset, challengeYawDeg }),
+      CHALLENGING: buildPreset('CHALLENGING', { machineMount, displayOffset, challengeYawDeg })
     });
 
   const current = () => presets[presetId];

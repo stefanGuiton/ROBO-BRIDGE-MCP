@@ -48,6 +48,15 @@ export const TERRAIN_SOURCE_BOUNDS = Object.freeze({
 
 export const ASSET_TO_WORLD_QUATERNION = Object.freeze({ x: 0.5, y: 0.5, z: 0.5, w: 0.5 });
 
+function multiplyQuaternion(a, b) {
+  return {
+    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+  };
+}
+
 export function deepClone(value) {
   return value === undefined ? undefined : structuredClone(value);
 }
@@ -113,25 +122,50 @@ export function displayBoundsToMachine(bounds, mount = MAIN_DEMO_MACHINE_MOUNT) 
 export function sourceToDisplay(source, terrainTransform) {
   const s = terrainTransform.scale;
   const p = terrainTransform.position;
+  const horizontal = rotateXY({ x: source.z * s.z, y: source.x * s.x, z: 0 }, terrainTransform.yawRad ?? 0);
   return {
-    x: p.x + source.z * s.z,
-    y: p.y + source.x * s.x,
+    x: p.x + horizontal.x,
+    y: p.y + horizontal.y,
     z: p.z + source.y * s.y
   };
 }
 
 export const sourceToWorld = sourceToDisplay;
 
-export function makeTerrainTransform({ horizontalScale, verticalScale, worldX, worldY, tableTopZ }) {
+export function makeTerrainTransform({
+  horizontalScale,
+  verticalScale,
+  worldX,
+  worldY,
+  tableTopZ,
+  yawDeg = 0,
+  sourcePivot = { x: 0, y: 0, z: 0 },
+  displayPivot = null
+}) {
+  const yawRad = yawDeg * Math.PI / 180;
+  if (![horizontalScale, verticalScale, worldX, worldY, tableTopZ, yawDeg, sourcePivot.x, sourcePivot.y, sourcePivot.z].every(Number.isFinite)) {
+    throw new Error('invalid_terrain_transform');
+  }
+  const targetPivot = displayPivot ?? { x: worldX, y: worldY };
+  if (![targetPivot.x, targetPivot.y].every(Number.isFinite)) throw new Error('invalid_terrain_display_pivot');
+  const scaledPivot = { x: sourcePivot.z * horizontalScale, y: sourcePivot.x * horizontalScale, z: 0 };
+  const rotatedPivot = rotateXY(scaledPivot, yawRad);
+  const halfYaw = yawRad / 2;
+  const quaternion = multiplyQuaternion(
+    { x: 0, y: 0, z: Math.sin(halfYaw), w: Math.cos(halfYaw) },
+    ASSET_TO_WORLD_QUATERNION
+  );
   return Object.freeze({
     coordinateFrame: MAIN_DEMO_DISPLAY_FRAME.id,
     position: Object.freeze({
-      x: worldX,
-      y: worldY,
+      x: targetPivot.x - rotatedPivot.x,
+      y: targetPivot.y - rotatedPivot.y,
       z: tableTopZ - TERRAIN_SOURCE_BOUNDS.min.y * verticalScale
     }),
-    quaternion: ASSET_TO_WORLD_QUATERNION,
+    quaternion: Object.freeze(quaternion),
     scale: Object.freeze({ x: horizontalScale, y: verticalScale, z: horizontalScale }),
+    yawRad,
+    yawDeg,
     sourceUnit: 'm',
     worldUnit: 'mm'
   });
@@ -140,16 +174,20 @@ export function makeTerrainTransform({ horizontalScale, verticalScale, worldX, w
 export function transformedTerrainBounds(transform) {
   const min = TERRAIN_SOURCE_BOUNDS.min;
   const max = TERRAIN_SOURCE_BOUNDS.max;
+  const points = [];
+  for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) {
+    points.push(sourceToDisplay({ x, y, z }, transform));
+  }
   return Object.freeze({
     min: Object.freeze({
-      x: transform.position.x + min.z * transform.scale.z,
-      y: transform.position.y + min.x * transform.scale.x,
-      z: transform.position.z + min.y * transform.scale.y
+      x: Math.min(...points.map((point) => point.x)),
+      y: Math.min(...points.map((point) => point.y)),
+      z: Math.min(...points.map((point) => point.z))
     }),
     max: Object.freeze({
-      x: transform.position.x + max.z * transform.scale.z,
-      y: transform.position.y + max.x * transform.scale.x,
-      z: transform.position.z + max.y * transform.scale.y
+      x: Math.max(...points.map((point) => point.x)),
+      y: Math.max(...points.map((point) => point.y)),
+      z: Math.max(...points.map((point) => point.z))
     })
   });
 }

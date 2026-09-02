@@ -9,6 +9,7 @@ import {
 import { createChallengeService } from '../../apps/web/src/challenge/challenge-service.js';
 import {
   createEasyBridgeChallenge,
+  MAIN_DEMO_EASY_CHALLENGE_YAW_DEG,
   MAIN_DEMO_EASY_DISPLAY_OFFSET
 } from '../../apps/web/src/challenge/main-demo-easy.js';
 import { MAIN_DEMO_MACHINE_MOUNT } from '../../apps/web/src/challenge/challenge-transforms.js';
@@ -18,7 +19,8 @@ import { createLiveHarness } from '../helpers/live-harness.js';
 async function makeBridgePackage() {
   const challengeService = createChallengeService({
     machineMount: MAIN_DEMO_MACHINE_MOUNT,
-    displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET
+    displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET,
+    challengeYawDeg: MAIN_DEMO_EASY_CHALLENGE_YAW_DEG
   });
   await challengeService.load();
   const host = await createBridgeHost({
@@ -67,7 +69,7 @@ test('V4.6 Aqueduct design updates atomically and the exact hologram follows the
   assert.ok(hologram.placements.some((item) => item.partClass === 'STANDARD_BRICK'));
   assert.ok(hologram.placements.some((item) => item.partClass === 'ARCH_A' || item.partClass === 'ARCH_B'));
   assert.ok(hologram.placements.some((item) => item.partClass === 'TRACK_SEGMENT'));
-  assert.ok(hologram.entryExit.entry.innerFace.yMm < hologram.entryExit.exit.innerFace.yMm);
+  assert.ok(hologram.entryExit.entry.innerFace.xMm < hologram.entryExit.exit.innerFace.xMm);
   const mainDemoBrick = hologram.placements.find((item) => item.partType === '1x2x1');
   assert.deepEqual(mainDemoBrick.sizeMm, { xMm: 32, yMm: 16, zMm: 9.6 });
 });

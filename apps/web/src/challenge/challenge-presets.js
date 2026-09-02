@@ -94,18 +94,31 @@ function makeSegments(start, end) {
   ]);
 }
 
-export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {} } = {}) {
+export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0 } = {}) {
   machineMount = normalizeMachineMount(machineMount);
   displayOffset = normalizeDisplayOffset(displayOffset);
   const raw = RAW[id];
   if (!raw) throw new Error(`unknown_preset:${id}`);
   const verticalScale = COMMON.horizontalScale * raw.verticalRatio;
-  const terrainTransform = makeTerrainTransform({
+  const terrainOrigin = {
     horizontalScale: COMMON.horizontalScale,
     verticalScale,
     worldX: COMMON.displayX + displayOffset.x,
     worldY: COMMON.displayY + displayOffset.y,
     tableTopZ: COMMON.tableTopDisplayZ + displayOffset.z
+  };
+  const unrotatedTerrainTransform = makeTerrainTransform(terrainOrigin);
+  const sourcePivot = {
+    x: (raw.entrySourceX + raw.exitSourceX) / 2,
+    y: 0,
+    z: COMMON.corridorSourceZ
+  };
+  const displayPivot = sourceToDisplay(sourcePivot, unrotatedTerrainTransform);
+  const terrainTransform = makeTerrainTransform({
+    ...terrainOrigin,
+    yawDeg: challengeYawDeg,
+    sourcePivot,
+    displayPivot
   });
   const terrainBoundsDisplay = transformedTerrainBounds(terrainTransform);
   const terrainBoundsMachine = displayBoundsToMachine(terrainBoundsDisplay, machineMount);
@@ -115,10 +128,20 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
   exitDisplay.z = raw.deckDisplayZ + displayOffset.z;
   const entryMachine = displayToMachine(entryDisplay, machineMount);
   const exitMachine = displayToMachine(exitDisplay, machineMount);
-  const routeDirection = Object.freeze({ x: 0, y: 1, z: 0 });
-  const entry = endpoint(entryMachine, entryDisplay, routeDirection, raw.corridorWidthMm);
-  const exit = endpoint(exitMachine, exitDisplay, { x: 0, y: -1, z: 0 }, raw.corridorWidthMm);
   const routeLength = Math.hypot(exitMachine.x - entryMachine.x, exitMachine.y - entryMachine.y);
+  const displayRouteLength = Math.hypot(exitDisplay.x - entryDisplay.x, exitDisplay.y - entryDisplay.y);
+  const routeDirection = Object.freeze({
+    x: (exitMachine.x - entryMachine.x) / routeLength,
+    y: (exitMachine.y - entryMachine.y) / routeLength,
+    z: 0
+  });
+  const displayRouteDirection = Object.freeze({
+    x: (exitDisplay.x - entryDisplay.x) / displayRouteLength,
+    y: (exitDisplay.y - entryDisplay.y) / displayRouteLength,
+    z: 0
+  });
+  const entry = endpoint(entryMachine, entryDisplay, routeDirection, raw.corridorWidthMm);
+  const exit = endpoint(exitMachine, exitDisplay, { x: -routeDirection.x, y: -routeDirection.y, z: 0 }, raw.corridorWidthMm);
   const bridgeTransform = makeBridgeCoreTransform(entryMachine, exitMachine);
   const displayBridgeTransform = makeDisplayBridgeTransform(entryDisplay, exitDisplay);
   const bridgeCorridor = Object.freeze({
@@ -152,11 +175,22 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
     tableTopZ: COMMON.tableTopDisplayZ + displayOffset.z,
     deckDisplayZ: raw.deckDisplayZ + displayOffset.z,
     protectedHalfWidthMm: raw.protectedHalfWidthMm,
+    displayRouteDirection,
     machineMount
   });
+  const halfWidthX = Math.abs(routeDirection.y) * raw.corridorWidthMm / 2;
+  const halfWidthY = Math.abs(routeDirection.x) * raw.corridorWidthMm / 2;
   const bridgeMachineBounds = Object.freeze({
-    min: Object.freeze({ x: bridgeCorridor.centre.x - raw.corridorWidthMm / 2, y: entryMachine.y, z: 0 }),
-    max: Object.freeze({ x: bridgeCorridor.centre.x + raw.corridorWidthMm / 2, y: exitMachine.y, z: entryMachine.z + 160 })
+    min: Object.freeze({
+      x: Math.min(entryMachine.x, exitMachine.x) - halfWidthX,
+      y: Math.min(entryMachine.y, exitMachine.y) - halfWidthY,
+      z: 0
+    }),
+    max: Object.freeze({
+      x: Math.max(entryMachine.x, exitMachine.x) + halfWidthX,
+      y: Math.max(entryMachine.y, exitMachine.y) + halfWidthY,
+      z: entryMachine.z + 160
+    })
   });
   return Object.freeze({
     schemaVersion: 'robo-bridge.challenge.v1',
@@ -199,7 +233,8 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
       verticalScaleMmPerSourceMetre: verticalScale,
       corridorSourceZ: COMMON.corridorSourceZ,
       tableTopDisplayZMm: COMMON.tableTopDisplayZ + displayOffset.z,
-      displayOffset
+      displayOffset,
+      challengeYawDeg
     })
   });
 }

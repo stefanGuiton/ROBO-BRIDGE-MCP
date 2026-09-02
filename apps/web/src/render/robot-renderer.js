@@ -231,11 +231,6 @@ export class RobotRenderer {
 
   buildRobot() {
     this.ur10 = new Ur10Visual(this.machineRoot, this.playerSettings);
-    this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(7, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
-    this.machineRoot.add(this.tcpMarker);
-    this.tcpRing = new THREE.Mesh(new THREE.TorusGeometry(15, 1.4, 8, 32), new THREE.MeshBasicMaterial({ color: 0x59e1ff }));
-    this.tcpRing.rotation.x = Math.PI / 2;
-    this.machineRoot.add(this.tcpRing);
   }
 
   installPlayerRuntime() {
@@ -458,6 +453,12 @@ export class RobotRenderer {
       this.setView('hero');
     }
     return true;
+  }
+
+  updatePlayerFixedHeight() {
+    if (!this.player || !this.playerInitialized) return;
+    const worldHeight = this.workbench.worldPoint(new THREE.Vector3(0, 0, this.playerSettings.playerEyeHeightMm)).z;
+    this.player.setFixedHeight(worldHeight);
   }
 
   primaryPlayerAction() {
@@ -762,8 +763,6 @@ export class RobotRenderer {
     const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
     if (!fk.ok) return;
     this.ur10.update(state.jointsRad, fk.frames);
-    this.tcpMarker.position.set(fk.tcp.xMm, fk.tcp.yMm, fk.tcp.zMm);
-    this.tcpRing.position.copy(this.tcpMarker.position);
     this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
   }
 
@@ -1026,6 +1025,7 @@ export class RobotRenderer {
     const collisionChanged = tableChanged || mountChanged || key === '*' || /^playerCollision/.test(key);
     const brickGeometryChanged = key === '*' || /^(brickLengthMm|brickWidthMm|brickBodyHeightMm|studPitchMm|studDiameterMm|studHeightMm)$/.test(key);
     const brickMaterialChanged = key === '*' || /^(brickRoughness|brickMetalness)$/.test(key);
+    const playerHeightChanged = key === '*' || key === 'playerEyeHeightMm';
     if (tableChanged) {
       this.workbench.rebuild();
       this.workSurface = this.workbench.mat;
@@ -1046,6 +1046,7 @@ export class RobotRenderer {
       this.floor.material.metalness = this.playerSettings.floorMetalness;
       this.floor.material.needsUpdate = true;
     }
+    if (playerHeightChanged) this.updatePlayerFixedHeight();
     this.gripper?.applySettings?.(key);
     if (brickGeometryChanged) {
       this.brickFactory.rebuild();

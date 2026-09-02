@@ -8,6 +8,7 @@ export const MAIN_DEMO_EASY_PRESET = 'EASY';
 // Z clears the existing 3.8 mm build-mat/stud envelope without moving any
 // terrain, ENTRY/EXIT, route, collision, or bridge subsystem independently.
 export const MAIN_DEMO_EASY_DISPLAY_OFFSET = Object.freeze({ x: -170, y: 0, z: 4 });
+export const MAIN_DEMO_EASY_CHALLENGE_YAW_DEG = -90;
 export const MAIN_DEMO_BRIDGE_MODEL_SCALE = 2;
 
 function machineMountFromSettings(settings) {
@@ -73,7 +74,8 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
     THREE,
     terrainUrl: new URL('../../assets/terrain/Terrain_Optimised_10k.glb', import.meta.url),
     machineMount: machineMountFromSettings(playerSettings),
-    displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET
+    displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET,
+    challengeYawDeg: MAIN_DEMO_EASY_CHALLENGE_YAW_DEG
   });
   await service.load();
   service.setPreset(MAIN_DEMO_EASY_PRESET);
