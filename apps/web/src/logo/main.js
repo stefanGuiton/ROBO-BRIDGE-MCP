@@ -1,3 +1,5 @@
+import { prepareBridgeBuild } from '../bridge-construction/bridge-build-session.js';
+import { createConstructionService, physicalBuildReport } from '../bridge-construction/construction-service.js';
 import { BuildBoard } from '../bricks/build-board.js';
 import { PlacementAuthority } from '../bricks/placement-authority.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
@@ -22,6 +24,7 @@ import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spa
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
+import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -85,6 +88,7 @@ const renderer = new RobotRenderer(document.querySelector('#scene'), controller,
 const runtime = createLogoRoboRuntime({
   controller,
   board,
+  beforeReset: () => mainDemoConstruction?.preparedBuild ? mainDemoConstruction.reset({ expectedWorldRevision: controller.worldRevision }) : null,
   resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
   humanBuildAdapter,
   placementAuthority,
@@ -775,6 +779,7 @@ function updateToolDiagnostics(event) {
 
 let mainDemoChallenge = null;
 let mainDemoBridge = null;
+let mainDemoConstruction = null;
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -785,6 +790,36 @@ try {
     challenge: mainDemoChallenge.bridgeChallenge,
     onHologramChanged: updateBridgeHologramStatus
   });
+  if (!evidenceMode) {
+    const initial = prepareBridgeBuild({ host: mainDemoBridge.host, workspace: controller.workspace });
+    const bottom = physicalBuildReport(initial).physicalBoundsMm.min.zMm;
+    if (bottom < workcellProfile.placementSurfaceZMm) {
+      const elevation = mainDemoChallenge.getActiveChallenge().tuning.buildElevationMm + 4 - bottom;
+      await mainDemoChallenge.elevateForConstruction(mainDemoBridge.host, elevation);
+      addLog('Challenge elevation corrected from live physical bounds: ' + elevation.toFixed(2) + ' mm', 'ok');
+    }
+    mainDemoConstruction = createConstructionService({ bridgeHost: mainDemoBridge.host, challenge: mainDemoChallenge,
+      buildBoard: board, controller, placementAuthority, placementCoordinator: fastPlacement, cycleRunner: placementCycleRunner,
+      onPrepared: prepared => {
+        renderer.brickFactory.partRegistry = prepared?.registry ?? null;
+        mainDemoBridge.setConstructionBoard(prepared ? board : null);
+      }
+    });
+    controller.subscribe(event => {
+      if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup'].includes(event.type)) mainDemoBridge.refreshHologram();
+    });
+    const endpointPanel = await installEndpointSettings({ groups: document.querySelector('[data-settings-groups]'), challenge: mainDemoChallenge,
+      bridgeHost: mainDemoBridge.host, getSettings: () => playerSettingsStore.get(),
+      beforeApply: () => {
+        if (mainDemoConstruction.preparedBuild) throw new Error('Reset BUILD before moving ENTRY or EXIT.');
+        if (controller.operationState !== 'idle' || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy)) throw new Error('Finish or cancel the current movement before moving endpoints.');
+      }
+    });
+    if (params.get('settings') === 'bridge-endpoints') {
+      settingsPanelController?.setOpen(true);
+      requestAnimationFrame(() => endpointPanel?.section.scrollIntoView({ block: 'start' }));
+    }
+  }
   const bridgeState = mainDemoBridge.host.getCompileState();
   addLog(`V4.6 ${mainDemoBridge.host.settings.family} ready: ${bridgeState.planId}`, 'ok');
 } catch (error) {
@@ -796,6 +831,18 @@ try {
   addLog(`V4.6 bridge unavailable: ${error?.code ?? error?.message ?? 'compile failed'}`, 'bad');
 }
 
+for (const button of document.querySelectorAll('[data-construction-action]')) button.addEventListener('click', async () => {
+  const action = button.dataset.constructionAction;
+  try {
+    if (!mainDemoConstruction) throw new Error('construction_unavailable');
+    const options = { expectedWorldRevision: controller.worldRevision };
+    const result = action === 'start' ? mainDemoConstruction.startBuild(options)
+      : action === 'next' ? await mainDemoConstruction.buildNextParts(Number($('[data-construction-count]').value), options)
+      : action === 'cancel' ? mainDemoConstruction.cancelBuild(options) : mainDemoConstruction.reset(options);
+    const progress = mainDemoConstruction.getBuildProgress();
+    $('[data-construction-status]').textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
+  } catch (error) { $('[data-construction-status]').textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
+});
 renderer.start();
 setInterval(() => {
   const performance = renderer.getPerformance();
@@ -870,6 +917,7 @@ const publicRuntime = Object.freeze({
   blueprint,
   renderer,
   challenge: mainDemoChallenge,
+  construction: mainDemoConstruction,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

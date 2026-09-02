@@ -27,6 +27,14 @@
       </div>
     </section>
 
+    <section style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
+      <button type="button" data-construction-action="start">BUILD BRIDGE</button>
+      <select data-construction-count aria-label="Parts per batch"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+      <button type="button" data-construction-action="next">PLACE NEXT</button>
+      <button type="button" data-construction-action="cancel">CANCEL</button>
+      <button type="button" data-construction-action="reset">RESET BUILD</button>
+      <small data-construction-status>Design · shared Human + Codex parts</small>
+    </section>
     <section id="bridge-hud" class="bridge-hud" data-bridge-hud data-state="compiling" aria-label="V4.6 bridge hologram status">
       <b data-bridge-family>V4.6 AQUEDUCT</b>
       <span data-bridge-revision>COMPILING EXACT BUILDPLAN</span>

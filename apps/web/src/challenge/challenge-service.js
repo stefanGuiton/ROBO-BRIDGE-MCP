@@ -11,7 +11,7 @@ export function createChallengeService({ THREE = null, terrainUrl = null, fetchI
     && Number(displayOffset?.y ?? 0) === 0
     && Number(displayOffset?.z ?? 0) === 0;
   const useCanonicalPresets = machineMount === MAIN_DEMO_MACHINE_MOUNT && canonicalOffset && challengeYawDeg === 0;
-  const presets = useCanonicalPresets
+  let presets = useCanonicalPresets
     ? CHALLENGE_PRESETS
     : Object.freeze({
       EASY: buildPreset('EASY', { machineMount, displayOffset, challengeYawDeg }),
@@ -25,6 +25,24 @@ export function createChallengeService({ THREE = null, terrainUrl = null, fetchI
   };
 
   return Object.freeze({
+    previewEndpoints(endpoints) {
+      return deepClone(buildPreset(presetId, { machineMount, displayOffset, challengeYawDeg, endpoints }));
+    },
+    setEndpoints(endpoints) {
+      const next = buildPreset(presetId, { machineMount, displayOffset, challengeYawDeg, endpoints });
+      presets = Object.freeze({ ...presets, [presetId]: next });
+      if (terrainRoot) applyTerrainTransform(terrainRoot, next.terrainTransform);
+      return this.getState();
+    },
+    previewBuildElevation(buildElevationMm) {
+      return deepClone(buildPreset(presetId, { machineMount, displayOffset, challengeYawDeg, buildElevationMm }));
+    },
+    setBuildElevation(buildElevationMm) {
+      const next = buildPreset(presetId, { machineMount, displayOffset, challengeYawDeg, buildElevationMm });
+      presets = Object.freeze({ ...presets, [presetId]: next });
+      if (terrainRoot) applyTerrainTransform(terrainRoot, next.terrainTransform);
+      return this.getState();
+    },
     async load() {
       if (loaded) return this.getState();
       if (THREE && terrainUrl) {

@@ -25,6 +25,7 @@ export class BridgeHost {
     this._lastError = null;
     this._listeners = new Set();
     this.renderer = null;
+    this._constructionLock = null;
   }
 
   get ready() { return Boolean(this._compiled && this._buildPlan && this._state !== 'uninitialised'); }
@@ -34,6 +35,15 @@ export class BridgeHost {
   get compileCount() { return this._compileCount; }
   get designRevision() { return this._designRevision; }
   get worldTransform() { return this._compiled?.worldTransform ? cloneValue(this._compiled.worldTransform) : cloneValue(this.challenge?.worldTransform ?? null); }
+
+  lockConstruction(planId) {
+    if (this._mutationActive || planId !== this._buildPlan?.planId || this._constructionLock) {
+      throw new BridgeCoreError('OPERATION_IN_PROGRESS', 'Cannot freeze this bridge while its design is changing or already frozen.');
+    }
+    const token = Object.freeze({ planId });
+    this._constructionLock = token;
+    return () => { if (this._constructionLock === token) this._constructionLock = null; };
+  }
 
   subscribe(listener) {
     if (typeof listener !== 'function') throw new TypeError('listener must be a function');
@@ -118,7 +128,7 @@ export class BridgeHost {
     }
   }
 
-  async applySettingsBatch(candidateSettings, expectedDesignRevision, { signal = null, terrainHeightAt = null } = {}) {
+  async applySettingsBatch(candidateSettings, expectedDesignRevision, { signal = null, terrainHeightAt = null, challenge = this.challenge } = {}) {
     validateExactDesignRevision(expectedDesignRevision);
     if (!this.ready) throw new BridgeCoreError('BUILDPLAN_UNAVAILABLE', 'Initialise the bridge host before mutation.');
     if (expectedDesignRevision !== this._designRevision) {
@@ -128,21 +138,23 @@ export class BridgeHost {
       });
     }
     if (this._mutationActive) throw new BridgeCoreError('OPERATION_IN_PROGRESS', 'A bridge mutation is already active.');
+    if (this._constructionLock) throw new BridgeCoreError('OPERATION_IN_PROGRESS', 'Reset construction before changing the frozen bridge design.');
+    const candidateChallenge = challenge ? normalizeChallengeInput(challenge) : null;
     this._mutationActive = true;
     this._state = 'compiling';
     this._emit('compile_started', { expectedDesignRevision });
     try {
       assertNotAborted(signal);
       let candidate = normalizeCompilerSettings(candidateSettings);
-      if (this.challengePolicy === 'locked' && this.challenge) {
-        candidate = this._settingsForChallenge(candidate, true);
+      if (this.challengePolicy === 'locked' && candidateChallenge) {
+        candidate = normalizeCompilerSettings(applyChallengeToSettings(candidate, candidateChallenge).settings);
       }
       const nextRevision = expectedDesignRevision + 1;
       const candidateResult = await this.compiler.compile({
         settings: candidate,
-        supportProfile: this.challenge?.supportProfile ?? { type: 'flat', heightY: 0 },
+        supportProfile: candidateChallenge?.supportProfile ?? { type: 'flat', heightY: 0 },
         terrainHeightAt,
-        worldTransform: this.challenge?.worldTransform ?? this._compiled.worldTransform ?? {},
+        worldTransform: candidateChallenge?.worldTransform ?? this._compiled.worldTransform ?? {},
         designRevision: nextRevision,
         signal
       });
@@ -154,6 +166,7 @@ export class BridgeHost {
         });
       }
       this._settings = candidate;
+      this.challenge = candidateChallenge;
       this._compiled = candidateResult;
       this._buildPlan = candidateResult.buildPlan;
       this._designRevision = nextRevision;

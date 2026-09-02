@@ -50,10 +50,15 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
 
   let hologramGroup = null;
   let hologramSnapshot = null;
+  let constructionBoard = null;
 
   function refreshHologram() {
     const buildPlan = host.buildPlan;
     const snapshot = createHologramSnapshot(buildPlan, host.worldTransform, { limit: 5000 });
+    if (constructionBoard) {
+      const accepted = new Set(constructionBoard.getTargets().filter(t => t.occupiedBy).map(t => t.id));
+      snapshot.placements = snapshot.placements.filter(p => !accepted.has(p.placementId));
+    }
     const nextGroup = createThreeBridgeHologram({
       THREE,
       snapshot,
@@ -97,6 +102,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     host,
     bridgeDesign,
     refreshHologram,
+    setConstructionBoard(board) { constructionBoard = board; refreshHologram(); },
     get hologramGroup() { return hologramGroup; },
     get hologramSnapshot() { return structuredClone(hologramSnapshot); },
     dispose() {

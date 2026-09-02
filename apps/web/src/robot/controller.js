@@ -509,7 +509,7 @@ export class RobotController {
       maxJointStepRad = Math.max(maxJointStepRad, jointStep);
       if (jointStep > 0.55) return { ok: false, reason: 'joint_limit', diagnostics: { cause: 'continuity', jointStepRad: jointStep } };
       const fk = forwardKinematics(ik.jointsRad, this.definition);
-      const collision = validateCollision({ tcp: point, jointPositions: [...fk.jointPositions, fk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds }, this.layout);
+      const collision = validateCollision({ tcp: point, jointPositions: [...fk.jointPositions, fk.tcp], heldBrick: this.heldBrick() ? { ...this.heldBrick(), yawRad: wrapPi(yawRad + this.brickYawInTcpRad) } : null, bricks: this.bricks, board: this.board, ignoreBrickIds }, this.layout);
       if (!collision.ok) return collision;
       points.push({ t, tcp: { ...fk.tcp }, yawRad, jointsRad: ik.jointsRad, jointPositions: [...fk.jointPositions, fk.tcp] });
       priorJoints = ik.jointsRad;
@@ -639,7 +639,7 @@ export class RobotController {
             }
           }
           const currentFk = forwardKinematics(point.jointsRad, this.definition);
-          const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick(), bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
+          const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick() ? { ...this.heldBrick(), yawRad: wrapPi(point.yawRad + this.brickYawInTcpRad) } : null, bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
           if (!liveCollision.ok) throw new RobotError(liveCollision.reason, liveCollision);
           this.tcp = { ...point.tcp };
           this.toolYawRad = point.yawRad;

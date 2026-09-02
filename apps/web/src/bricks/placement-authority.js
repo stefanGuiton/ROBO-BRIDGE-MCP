@@ -1,4 +1,4 @@
-import { BRICK_SPEC } from './brick-spec.js';
+import { captureOffset, partBounds, boundsOverlap, partsOverlap } from './part-spec.js';
 import { PlacementIntentEngine } from '../player/placement-intent.js';
 import { isParallelYaw } from '../player/connector-contract.js';
 
@@ -114,6 +114,15 @@ export class PlacementAuthority {
         }
       }
     }
+    if (carried.bridgePart) {
+      if (candidate?.type !== 'TARGET') return { ok: false, reason: 'bridge_target_required', worldRevision: this.board.worldRevision };
+      const bounds = partBounds(carried, candidate.position, candidate.yawRad);
+      const obstacle = bounds.min.zMm < (this.constructionTableZMm ?? 0) - 0.1 ? 'table'
+        : this.constructionObstacles?.find(box => boundsOverlap(bounds, box))?.id;
+      const brickObstacle = bricks.find(b => b.id !== carried.id && !b.heldBy && partsOverlap({ ...carried, position: candidate.position, yawRad: candidate.yawRad }, b));
+      if (brickObstacle) return { ok: false, reason: 'collision', obstacle: brickObstacle.id, worldRevision: this.board.worldRevision };
+      if (obstacle) return { ok: false, reason: 'collision', obstacle, worldRevision: this.board.worldRevision };
+    }
     if (!candidate?.valid) {
       return {
         ok: false,
@@ -125,7 +134,7 @@ export class PlacementAuthority {
     const requiredTcp = {
       xMm: candidate.position.xMm,
       yMm: candidate.position.yMm,
-      zMm: candidate.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+      zMm: candidate.position.zMm + captureOffset(carried)
     };
     const clearanceZMm = this.profile?.safeClearanceZMm ?? 400;
     return {
@@ -148,13 +157,14 @@ export class PlacementAuthority {
     const targetSnap = this.board.trySnapBrick({
       brickId,
       colour: brick.colour,
+      targetId: candidate.targetId,
       position: candidate.position,
       yawRad: candidate.yawRad,
       actor
     });
     let accepted = targetSnap;
     if (!targetSnap.ok) {
-      if (['target_occupied', 'wrong_colour'].includes(targetSnap.reason)) return targetSnap;
+      if (brick.bridgePart || ['target_occupied', 'wrong_colour'].includes(targetSnap.reason)) return targetSnap;
       accepted = this.board.acceptPlacement({
         brickId,
         colour: brick.colour,

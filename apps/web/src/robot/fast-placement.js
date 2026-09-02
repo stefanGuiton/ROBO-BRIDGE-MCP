@@ -1,4 +1,4 @@
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
+import { captureOffset } from '../bricks/part-spec.js';
 import { RobotError } from './controller.js';
 
 const clone = (value) => structuredClone(value);
@@ -39,7 +39,7 @@ export class FastPlacementCoordinator {
     return this.controller.getBricks()
       .filter((brick) => !brick.heldBy && !brick.snapped && !brick.placedTargetId && !brick.placementType && brick.graspable !== false)
       .filter((brick) => brick.reachability?.reachable !== false)
-      .map((brick) => ({ id: brick.id, colour: brick.colour, position: clone(brick.position), yawRad: brick.yawRad ?? 0 }));
+      .map((brick) => clone(brick));
   }
 
   preview({ brickId = null, position = null, yawRad = 0, supportBrickId = null, supportSide = 'M', carriedSide = null } = {}) {
@@ -66,12 +66,12 @@ export class FastPlacementCoordinator {
     const pickupTcp = {
       xMm: brick.position.xMm,
       yMm: brick.position.yMm,
-      zMm: brick.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+      zMm: brick.position.zMm + captureOffset(brick)
     };
     const requiredTcp = preview.requiredTcp ?? {
       xMm: candidatePosition.xMm,
       yMm: candidatePosition.yMm,
-      zMm: candidatePosition.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+      zMm: candidatePosition.zMm + captureOffset(brick)
     };
     const clearanceZMm = this.workcellProfile.safeClearanceZMm;
     const currentTcp = this.controller.getState().tcp;

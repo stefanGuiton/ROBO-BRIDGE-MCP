@@ -1,4 +1,4 @@
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
+import { captureOffset, partBounds, partCollisionBounds, boundsOverlap } from '../bricks/part-spec.js';
 import { CHALLENGE_LAYOUT } from './ur10-definition.js';
 
 const LINK_RADII_MM = Object.freeze([24, 28, 26, 22, 16, 8, 4]);
@@ -111,27 +111,13 @@ function workcellAabbs(layout) {
   };
 }
 
-function brickPlanarBounds(yawRad = 0) {
-  const cosine = Math.abs(Math.cos(yawRad));
-  const sine = Math.abs(Math.sin(yawRad));
-  return {
-    xMm: cosine * BRICK_SPEC.lengthMm + sine * BRICK_SPEC.widthMm,
-    yMm: sine * BRICK_SPEC.lengthMm + cosine * BRICK_SPEC.widthMm,
-    zMm: BRICK_SPEC.bodyHeightMm
-  };
-}
-
 function brickAabb(brick) {
-  return aabbFromCenter(brick.position, brickPlanarBounds(brick.yawRad ?? 0), `brick:${brick.id}`);
+  return { ...partBounds(brick), id: 'brick:' + brick.id };
 }
 
 function movingBodyAabb(tcp, heldBrick) {
   if (heldBrick) {
-    return aabbFromCenter(
-      { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm - BRICK_SPEC.capture.tcpAboveCentreMm },
-      brickPlanarBounds(heldBrick.yawRad ?? 0),
-      `held:${heldBrick.id}`
-    );
+    return { ...partBounds(heldBrick, { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm - captureOffset(heldBrick) }), id: 'held:' + heldBrick.id };
   }
   return aabbFromCenter({ xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm + 16 }, { xMm: 24, yMm: 24, zMm: 36 }, 'tool');
 }
@@ -160,14 +146,15 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
   const ignored = new Set(ignoreBrickIds);
   const targetContext = board?.nearestTarget?.(tcp, 24) ?? null;
   const allowBoardContact = Boolean(targetContext && !targetContext.target.occupiedBy && Math.abs(tcp.xMm - targetContext.target.position.xMm) <= 12 && Math.abs(tcp.yMm - targetContext.target.position.yMm) <= 12);
-  const occupiedTargetDescent = Boolean(heldBrick && targetContext?.target?.occupiedBy && tcp.zMm <= targetContext.target.position.zMm + 20);
+  const occupiedTargetDescent = Boolean(heldBrick && !targetContext?.target?.bridgeConstruction && targetContext?.target?.occupiedBy && tcp.zMm <= targetContext.target.position.zMm + 20);
   if (occupiedTargetDescent) return { ok: false, reason: 'collision', obstacle: 'target:' + targetContext.target.id + ':occupied' };
   const pickup = !heldBrick
     ? bricks.filter((brick) => !brick.heldBy && !brick.snapped).map((brick) => ({ brick, distance: Math.hypot(tcp.xMm - brick.position.xMm, tcp.yMm - brick.position.yMm) })).sort((a, b) => a.distance - b.distance)[0]
     : null;
-  const intendedPickupId = pickup && pickup.distance <= 8 && Math.abs(tcp.zMm - (pickup.brick.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm)) <= 12 ? pickup.brick.id : null;
+  const intendedPickupId = pickup && pickup.distance <= 8 && Math.abs(tcp.zMm - (pickup.brick.position.zMm + captureOffset(pickup.brick))) <= 12 ? pickup.brick.id : null;
   const workcell = workcellAabbs(layout);
   const moving = movingBodyAabb(tcp, heldBrick);
+  const movingBoxes = heldBrick ? partCollisionBounds(heldBrick, { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm - captureOffset(heldBrick) }) : [moving];
 
   if (moving.min.zMm < layout.tableZMm - 0.1) return { ok: false, reason: 'collision', obstacle: 'table' };
   if (workcell.board && !allowBoardContact && aabbOverlap(moving, workcell.board)) return { ok: false, reason: 'collision', obstacle: 'board' };
@@ -177,7 +164,7 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
 
   for (const brick of bricks) {
     if (ignored.has(brick.id) || brick.id === heldBrick?.id || brick.id === intendedPickupId) continue;
-    if (aabbOverlap(moving, brickAabb(brick))) return { ok: false, reason: 'collision', obstacle: `brick:${brick.id}` };
+    if (aabbOverlap(moving, brickAabb(brick)) && movingBoxes.some(a => partCollisionBounds(brick).some(b => boundsOverlap(a, b)))) return { ok: false, reason: 'collision', obstacle: `brick:${brick.id}` };
   }
 
   if (jointPositions?.length >= 2) {
@@ -198,7 +185,7 @@ export function validateCollision({ tcp, jointPositions = null, heldBrick = null
       for (const brick of bricks) {
         if (ignored.has(brick.id) || brick.id === heldBrick?.id) continue;
         if (brick.id === intendedPickupId && i >= jointPositions.length - 3) continue;
-        if (segmentIntersectsAabb(a, b, brickAabb(brick), radius)) return { ok: false, reason: 'collision', obstacle: `brick:${brick.id}:link${i}` };
+        if (partCollisionBounds(brick).some(box => segmentIntersectsAabb(a, b, box, radius))) return { ok: false, reason: 'collision', obstacle: `brick:${brick.id}:link${i}` };
       }
     }
   }

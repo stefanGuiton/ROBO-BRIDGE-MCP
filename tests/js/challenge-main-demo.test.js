@@ -10,6 +10,8 @@ import {
 } from '../../apps/web/src/challenge/main-demo-easy.js';
 import { MAIN_DEMO_MACHINE_MOUNT } from '../../apps/web/src/challenge/challenge-transforms.js';
 import { transformPointToMainDemo } from '../../apps/web/src/bridge-core/world-transform.js';
+import { endpointToMachine, endpointToTable } from '../../apps/web/src/challenge/endpoint-settings.js';
+import { sourceToDisplay } from '../../apps/web/src/challenge/challenge-transforms.js';
 
 function makeService() {
   return createChallengeService({
@@ -73,4 +75,42 @@ test('rotated terrain collision banks stay in the display frame when the machine
   const route = service.getTrackRoute();
   assert.ok(Math.abs(route.direction.x) < 1e-9);
   assert.ok(Math.abs(route.direction.y + 1) < 1e-9);
+});
+
+test('editable endpoint XYZ moves the bridge, terrain anchors and route through one transform', () => {
+  const service = makeService();
+  const points = { entry: { x: 450, y: -160, z: 180 }, exit: { x: 810, y: 80, z: 180 } };
+  const before = service.getState();
+  service.previewEndpoints(points);
+  assert.deepEqual(service.getState(), before, 'preview must not mutate challenge');
+  service.setEndpoints(points);
+  const challenge = createEasyBridgeChallenge(service), state = service.getState();
+  for (const [name, sourceX] of [['entry', -0.30], ['exit', 0.46]]) {
+    const p = transformPointToMainDemo(challenge[name], challenge.worldTransform);
+    for (const a of ['x', 'y', 'z']) assert.ok(Math.abs(p[a + 'Mm'] - points[name][a]) < 1e-7);
+    const terrainAnchor = sourceToDisplay({ x: sourceX, y: 0, z: -0.2 }, state.terrainTransform);
+    assert.ok(Math.abs(terrainAnchor.x - state[name].displayPosition.x) < 1e-7);
+    assert.ok(Math.abs(terrainAnchor.y - state[name].displayPosition.y) < 1e-7);
+  }
+  assert.deepEqual(service.getTrackRoute().start, service.getEntry().position);
+  assert.deepEqual(service.getTrackRoute().end, service.getExit().position);
+  assert.equal(challenge.worldTransform.scale, 2);
+});
+
+test('invalid or sloping endpoint requests preserve the active challenge', () => {
+  const service = makeService(), before = service.getState();
+  const entry = service.getEntry().position, exit = service.getExit().position;
+  assert.throws(() => service.setEndpoints({ entry, exit: { ...exit, z: entry.z + 10 } }), /level/);
+  assert.throws(() => service.setEndpoints({ entry, exit: entry }), /distance/);
+  assert.throws(() => service.setEndpoints({ entry: { ...entry, x: NaN }, exit }), /finite/);
+  assert.deepEqual(service.getState(), before);
+});
+
+test('endpoint controls use table-centred XY and height above tabletop with rotated mounts', () => {
+  const settings = { tableXmm: 35, tableYmm: -20, tableYawDeg: 30, tableTopHeightMm: 1200,
+    robotMountXmm: -820, robotMountYmm: 170, robotMountZmm: 1150, robotMountYawDeg: 80 };
+  const table = { x: -230, y: 95, z: 180 };
+  const machine = endpointToMachine(table, settings), roundtrip = endpointToTable(machine, settings);
+  for (const axis of ['x', 'y', 'z']) assert.ok(Math.abs(roundtrip[axis] - table[axis]) < 1e-7);
+  assert.equal(machine.z, 230);
 });

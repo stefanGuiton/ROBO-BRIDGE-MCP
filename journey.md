@@ -80,3 +80,42 @@ Browser evidence is under `output/playwright/p0-final-integration/`. The most us
 ## Publication boundary
 
 Only production integration files, tests, the exact GLB, and this journey are intended for the commit. Existing Blender/terrain experiments and the supplied `Downloads/` artifacts are user-owned and must remain unstaged.
+
+## 2026-09-02 — P0 construction integration (in progress)
+
+- Base: `main` / `ec3c9237c224210112acd0ba71ddc06ea95f9f91`.
+- Working branch: `codex/p0-construction-integration`; one agent, no subagents.
+- Input: `ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_V1(3).zip`, SHA-256 `BF179F9887097141393BF71E94F78D13175181E0A43813EFBB423C76FABAD631`; the D:/Downloads and repository Downloads copies are identical.
+- Read latest `MASTER_PLAN.md` and package README, integration guide, acceptance, provenance, and reachability documents. Task-specific current-plan/shared-actor requirements override stale package actor restrictions and the master plan's older geometry coordinates.
+- Imported only the ten production `bridge-construction` modules. Did not import the stale 476-part fixture/BOM, old transform, standalone shell, test authority doubles, or duplicate bridge-core.
+- Baseline: JavaScript **155/155**, reliability **20/20**, repository verification **PASS**, at the exact base SHA.
+- Current live hero before physical correction: `bp_0d7627b1` / checksum `0d7627b1`, **131 parts** (87 `1x1x1`, 15 `1x2x1`, 27 custom arches, 2 tracks). All counts are derived, not production constants.
+- Important correction: normal MAIN_DEMO already uses `V8_WORKSPACE` (X 250..1050, Y -450..450, Z 10..600 mm). The old 470..710 / -275..275 / 40..470 limits apply to the evidence-workcell default, not normal MAIN_DEMO. Construction must consume the supplied live controller workspace and must not widen it.
+- Concrete physical blocker: current exact geometry reaches Z about -96 mm (custom proxy bottom about -96.2 mm), below the tabletop. A coherent challenge-owned elevation correction is required before physical BUILD; no hologram-only offset or collision bypass will count as acceptance.
+- Next: adapt per-part capture/collision/render metadata through existing authorities, freeze/load the one BuildBoard, shared source feeder, bounded existing-cycle execution, then production tests and browser acceptance.
+
+### Construction checkpoint — acceptance blocked by exact V4.6 part intersections
+
+- Local WIP only on `codex/p0-construction-integration`; HEAD remains `ec3c9237c224210112acd0ba71ddc06ea95f9f91`. No commit/push/merge because the requested complete acceptance gate has not passed.
+- Implemented dynamic shared parts/inventory, frozen design lock, existing board target loading, typed capture/collision/visuals, existing placement-stream execution, and local MAIN_DEMO construction controls.
+- Tabletop blocker corrected coherently through ChallengeService: computed +100 mm elevation, unchanged XY/yaw/scale. Workspace limits unchanged. Exact terrain mesh/support acceptance remains partial.
+- Actual controller run: 15 accepted parts, then collision blocked the next tier. Exact triangle audit confirms 21 intersecting part pairs in current plan `bp_0d7627b1` (9 arch/arch, 12 brick/arch), not just conservative-proxy false positives. Compiler repair requires explicit scope decision; no collision bypass used.
+- Browser on repository server port 8773: human 1 + robot 3 on the same BuildBoard; planned-source reassignment and target adoption verified through the real service path. Zero console errors/warnings. Mean custom-part cycle start interval 3608.55 ms, not one second. Mouse-only interaction/all-part-class acceptance incomplete.
+- `npm run verify`: PASS, JS 160/160, reliability 20/20, syntax 109 JS / 4 Python. Robot 30/30 and compiler 26/26 pass. Native WebMCP not claimed: test Chrome exposes navigator.modelContext but unchanged registrar expects document.modelContext; 19-tool contract remains covered by tests.
+- Full handoff and reproduction commands: `docs/P0_CONSTRUCTION_INTEGRATION_WIP.md`. Local explicit evidence: `output/playwright/construction/`.
+- Dedicated totals confirmed: WebMCP 15/15, player 26/26. Current PartRegistry `pr_767a6c8c`, frozen identity `freeze_5c084eff`.
+
+### User-requested ENTRY / EXIT settings controls
+
+- Added six XYZ fields under Settings > Bridge ENTRY / EXIT, with Apply (also Enter) and Reset. Coordinates are millimetres in the table frame: X right, Y back, XY zero at table centre, Z above tabletop. Both Z fields are linked because the current Aqueduct is level.
+- Endpoint edits compile atomically through the existing BridgeHost and ChallengeService. Terrain, bridge, endpoints and route use the same derived transform; brick scale is unchanged. Frozen BUILD and active movement block edits. Successful values persist in local browser storage.
+- Targeted challenge, bridge and construction tests: **16/16 PASS**. Real Chrome browser checks passed for linked height, applied coordinates, reload persistence, invalid endpoint rejection and reset, with **zero console errors/warnings**.
+- Explicit browser evidence: `output/playwright/construction/04-endpoint-controls.png`. User test URL: `http://127.0.0.1:8773/?settings=bridge-endpoints`.
+- This positioning UI does not fix the compiler's internal part intersections. Construction remains partial and uncommitted/unpushed; no compiler repair or new subagent work was started.
+
+### User-requested WIP publication checkpoint
+
+- The user subsequently requested pushing the current work. This authorizes a WIP checkpoint on `codex/p0-construction-integration`, not acceptance or a merge to main.
+- Refreshed pre-push `npm run verify`: **163/163 JavaScript**, **20/20 reliability**, **110 JavaScript / 4 Python syntax files**, required-file and removed-legacy checks all PASS.
+- Publication scope is the construction integration, endpoint controls, tests/audit scripts and handoff documentation. Downloads, browser evidence, Blender files and other unrelated scene assets are excluded.
+- The handoff remains explicitly blocked on the documented compiler geometry and remaining physical/native-browser acceptance gates. Draft PR only; main remains untouched.

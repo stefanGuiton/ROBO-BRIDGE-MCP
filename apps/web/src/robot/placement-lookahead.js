@@ -286,6 +286,11 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
   }
 
   evaluateOccupancy(entry, placed = this.authoritativePlacements()) {
+    const boardTarget = this.placementAuthority.board.getTarget(entry.placementId);
+    if (boardTarget?.bridgeConstruction) {
+      const brick = placed.find(b => b.id === boardTarget.occupiedBy);
+      return { compatible: brick ?? null, conflict: null };
+    }
     const target = this.expectedTarget(entry);
     if (!target) return { compatible: null, conflict: null };
     const expected = { position: target, yawRad: entry.request.yawRad ?? 0 };

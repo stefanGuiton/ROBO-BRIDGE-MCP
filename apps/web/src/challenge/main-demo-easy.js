@@ -86,12 +86,30 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
   renderer.webgl.shadowMap.needsUpdate = true;
   renderer.render();
 
-  const bridgeChallenge = createEasyBridgeChallenge(service);
   return Object.freeze({
-    bridgeChallenge,
+    get bridgeChallenge() { return createEasyBridgeChallenge(service); },
     terrainGroup,
+    async updateEndpoints(bridgeHost, endpoints, { expectedDesignRevision = bridgeHost.designRevision, signal = null } = {}) {
+      const candidate = service.previewEndpoints(endpoints);
+      const challenge = createEasyBridgeChallenge({ getBridgeTransform: () => candidate.bridgeTransform });
+      await bridgeHost.applySettingsBatch(bridgeHost.settings, expectedDesignRevision, { signal, challenge });
+      service.setEndpoints(endpoints);
+      renderer.setEnvironmentCollisionProxies?.(playerCollisionBoxes(service));
+      renderer.webgl.shadowMap.needsUpdate = true;
+      renderer.render();
+      return service.getState();
+    },
+    async elevateForConstruction(bridgeHost, buildElevationMm, options = {}) {
+      const candidate = service.previewBuildElevation(buildElevationMm);
+      const challenge = createEasyBridgeChallenge({ getBridgeTransform: () => candidate.bridgeTransform });
+      await bridgeHost.applySettingsBatch(bridgeHost.settings, bridgeHost.designRevision, { ...options, challenge });
+      service.setBuildElevation(buildElevationMm);
+      renderer.setEnvironmentCollisionProxies?.(playerCollisionBoxes(service));
+      renderer.webgl.shadowMap.needsUpdate = true;
+      return service.getState();
+    },
     getActiveChallenge: () => service.getState(),
-    getBridgeTransform: () => structuredClone(bridgeChallenge.worldTransform),
+    getBridgeTransform: () => structuredClone(createEasyBridgeChallenge(service).worldTransform),
     getEntry: () => service.getEntry(),
     getExit: () => service.getExit(),
     getTrainRoute: () => service.getTrackRoute(),

@@ -377,6 +377,13 @@ export class RobotRenderer {
       visuals.group.visible = false;
       return;
     }
+    const previewBrick = this.frameBricks.find(b => b.id === (preview.carriedBrickId ?? preview.brickId));
+    const visualKey = previewBrick?.bridgePart?.registryKey ?? 'generic';
+    if (visuals.partKey !== visualKey) {
+      visuals.ghost.removeFromParent(); disposeV8BrickVisual(visuals.ghost);
+      visuals.ghost = createV8BrickVisual(previewBrick ?? { colour: 'green' }, this.playerSettings, this.brickFactory, { ghost: true });
+      visuals.group.add(visuals.ghost); visuals.partKey = visualKey;
+    }
     visuals.group.visible = true;
     const position = preview.previewPosition ?? preview.position;
     const yawRad = preview.previewYawRad ?? preview.yawRad ?? 0;
@@ -474,7 +481,9 @@ export class RobotRenderer {
     const result = this.humanBuildAdapter.pickup(this.highlightedBrickId);
     if (result.ok && brick) {
       this.heldVisual.pickup(brick);
-      this.heldGhost.userData.material.color.setHex(colourHex(brick));
+      this.heldGhost.removeFromParent(); disposeV8BrickVisual(this.heldGhost);
+      this.heldGhost = createV8BrickVisual(brick, this.playerSettings, this.brickFactory);
+      this.machineRoot.add(this.heldGhost);
       this.heldGhost.visible = true;
       this.highlightedBrickId = null;
     }
@@ -598,8 +607,8 @@ export class RobotRenderer {
       for (const [id, mesh] of this.brickMeshes) {
         const highlighted = id === this.highlightedBrickId;
         const protectedBrick = id === this.protectedBrickId;
-        mesh.material.emissive?.setHex(protectedBrick ? 0xff8a24 : highlighted ? 0xffffff : 0x000000);
-        mesh.material.emissiveIntensity = protectedBrick ? 0.24 : highlighted ? 0.28 : 0;
+        mesh.userData.material?.emissive?.setHex(protectedBrick ? 0xff8a24 : highlighted ? 0xffffff : 0x000000);
+        mesh.userData.material.emissiveIntensity = protectedBrick ? 0.24 : highlighted ? 0.28 : 0;
       }
       return;
     }
@@ -659,6 +668,10 @@ export class RobotRenderer {
         connection: null
       };
     }
+    if (carried.bridgePart && candidate?.type === 'TARGET') {
+      const verified = this.controller.placementAuthority.preview({ brickId: carried.id, position: candidate.position, yawRad: candidate.yawRad });
+      if (!verified.ok) candidate = { ...candidate, valid: false, status: 'BLOCKED', blockedReason: verified.reason };
+    }
     const signature = JSON.stringify(candidate);
     if (signature !== this.lastPreviewSignature) {
       this.humanBuildAdapter.setPreview(candidate);
@@ -699,6 +712,11 @@ export class RobotRenderer {
     for (const target of targets) {
       seen.add(target.id);
       let mesh = this.targetMeshes.get(target.id);
+      if (!mesh && target.bridgeConstruction && this.brickFactory.partRegistry) {
+        mesh = createV8BrickVisual({ bridgePart: { registryKey: target.registryKey, material: target.displayMaterial }, displayColour: target.displayMaterial.colourHex }, this.playerSettings, this.brickFactory, { ghost: true });
+        mesh.traverse(o => { o.userData.targetId = target.id; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m) m.opacity = 0; }); });
+        this.machineRoot.add(mesh); this.targetMeshes.set(target.id, mesh);
+      }
       if (!mesh) {
         const colour = BRICK_COLOURS[target.colour] ?? BRICK_COLOURS.white;
         mesh = makeBox(
@@ -710,7 +728,7 @@ export class RobotRenderer {
         this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
-      mesh.visible = this.playerSettings.robotTargetsVisible === true && !target.occupiedBy;
+      mesh.visible = (target.bridgeConstruction || this.playerSettings.robotTargetsVisible === true) && !target.occupiedBy;
       mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
       mesh.rotation.z = target.yawRad ?? 0;
     }
@@ -725,7 +743,8 @@ export class RobotRenderer {
       ...(this.board?.getPlacements?.() ?? []).map((placement) => placement.brickId)
     ]);
     const animatedBrickId = this.snapAnimation?.brickId ?? null;
-    const batchPlacedIds = new Set([...placedIds].filter((id) => id !== animatedBrickId));
+    const bridgeIds = new Set(bricks.filter(b => b.bridgePart).map(b => b.id));
+    const batchPlacedIds = new Set([...placedIds].filter((id) => id !== animatedBrickId && !bridgeIds.has(id)));
     const brickById = new Map(bricks.map((brick) => [brick.id, brick]));
     const batchSignature = `${animatedBrickId ?? '-'}:${[...batchPlacedIds].sort().map((id) => {
       const brick = brickById.get(id);
