@@ -1,0 +1,75 @@
+{
+  "minimum": {
+    "minimum": 19,
+    "requiredNames": [
+      "get_scene_state",
+      "get_build_state",
+      "get_robot_state",
+      "get_workspace",
+      "observe_camera",
+      "preview_placement",
+      "get_placement_stream_status",
+      "plan_placement_queue",
+      "execute_next_placement",
+      "move_tool",
+      "latch",
+      "unlatch",
+      "claim_target",
+      "reset_workcell",
+      "get_bridge_design",
+      "get_bridge_capabilities",
+      "update_bridge_design",
+      "get_bridge_build_plan",
+      "reset_bridge_design"
+    ]
+  },
+  "current": {
+    "minimum": 19,
+    "exact": 19,
+    "requiredNames": [
+      "get_scene_state",
+      "get_build_state",
+      "get_robot_state",
+      "get_workspace",
+      "observe_camera",
+      "preview_placement",
+      "get_placement_stream_status",
+      "plan_placement_queue",
+      "execute_next_placement",
+      "move_tool",
+      "latch",
+      "unlatch",
+      "claim_target",
+      "reset_workcell",
+      "get_bridge_design",
+      "get_bridge_capabilities",
+      "update_bridge_design",
+      "get_bridge_build_plan",
+      "reset_bridge_design"
+    ]
+  },
+  "final": {
+    "minimum": 19,
+    "requiredNames": [
+      "get_scene_state",
+      "get_build_state",
+      "get_robot_state",
+      "get_workspace",
+      "observe_camera",
+      "preview_placement",
+      "get_placement_stream_status",
+      "plan_placement_queue",
+      "execute_next_placement",
+      "move_tool",
+      "latch",
+      "unlatch",
+      "claim_target",
+      "reset_workcell",
+      "get_bridge_design",
+      "get_bridge_capabilities",
+      "update_bridge_design",
+      "get_bridge_build_plan",
+      "reset_bridge_design"
+    ]
+  }
+}
