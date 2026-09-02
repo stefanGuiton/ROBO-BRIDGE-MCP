@@ -27,6 +27,7 @@ import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
 import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
+import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acceptance.js';
 import { THREE } from '../render/real-gripper-visual.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
@@ -951,6 +952,23 @@ try {
   addLog('WebMCP registration failed', 'bad');
 }
 
+const submissionAcceptance = params.get('submissionGate') === '1' && mainDemoBridge && mainDemoConstruction && mainDemoTrain && mainDemoMission
+  ? createMainDemoSubmissionAcceptance({
+    bridgeHost: mainDemoBridge.host,
+    board,
+    controller,
+    placementAuthority,
+    placementCoordinator: fastPlacement,
+    cycleRunner: placementCycleRunner,
+    humanBuildAdapter,
+    construction: mainDemoConstruction,
+    train: mainDemoTrain,
+    mission: mainDemoMission.service,
+    renderer,
+    getLeakSnapshot: () => window.__ROBO_BRIDGE_QA__?.leakSnapshot?.() ?? null
+  })
+  : null;
+
 const publicRuntime = Object.freeze({
   version: '3.1.0-main-demo-player-v8',
   product: 'ROBO BRIDGE MCP MAIN_DEMO',
@@ -971,6 +989,7 @@ const publicRuntime = Object.freeze({
   train: mainDemoTrain,
   mission: mainDemoMission?.service ?? null,
   missionRuntime: mainDemoMission,
+  submissionAcceptance,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

@@ -85,7 +85,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getPlacementStreamStatus(input)
     },
     {
-      name:'plan_placement_queue', description:'Read-only logical placement planning. Stream mode accepts bounded replace/append chunks with stable placementId values while materializing at most five ghost proposals. Omit stream fields for the legacy one-to-five replacement form.',
+      name:'plan_placement_queue', description:'Create or update bounded logical placement-stream and ghost proposal state. Stream mode accepts replace/append chunks with stable placementId values while materializing at most five ghost proposals. Omit stream fields for the legacy one-to-five replacement form.',
       inputSchema:{
         type:'object',
         properties:{
@@ -113,7 +113,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           expectedWorldRevision:REVISION
         },required:['placements','expectedWorldRevision'],additionalProperties:false
       },
-      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
+      annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
         expectedWorldRevision:input.expectedWorldRevision,
         ...(input.streamId===undefined?{}:{streamId:input.streamId}),
         ...(input.mode===undefined?{}:{mode:input.mode}),
@@ -170,9 +170,17 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
   ];
 }
 
+export function resolveWebMcpModelContext(root = globalThis) {
+  const documentContext = root?.document?.modelContext;
+  if (documentContext?.registerTool) return documentContext;
+  const navigatorContext = root?.navigator?.modelContext;
+  if (navigatorContext?.registerTool) return navigatorContext;
+  return null;
+}
+
 export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}, additionalTools = []) {
-  const modelContext = globalThis.document?.modelContext;
-  if (!modelContext?.registerTool) return { ok:false, reason:'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
+  const modelContext = resolveWebMcpModelContext();
+  if (!modelContext) return { ok:false, reason:'WebMCP modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
   const bridge = createRuntimeBridge(runtime ?? globalThis.__LOGO_ROBO_RUNTIME__ ?? null);
   if (!bridge.availability.ok) return { ok:false, reason:'runtime_unavailable', missing:bridge.availability.missing };
   if (!Array.isArray(additionalTools)) return { ok:false, reason:'invalid_additional_tools' };

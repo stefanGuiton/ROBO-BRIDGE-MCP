@@ -28,7 +28,6 @@ Verification:
 
 ## Remaining checkpoints
 
-- C: current-runtime Submission Gate and native WebMCP hardening.
 - D: non-geometry Construction acceptance hardening.
 
 ## Checkpoint B — Mission overlay and semantic WebMCP
@@ -47,3 +46,26 @@ Verification:
 - Current MAIN_DEMO Mission/Construction/Train integration: **1/1 PASS**.
 - Real Chrome: exact 27-name composition, current 131-part frozen identity shared across Mission/Construction/Train, BUILD mutation guard, `TRAIN_FELL -> BUILD`, clean new DESIGN reset, zero console errors/warnings.
 - Evidence: `output/playwright/mission/01-mission-build.png`, `02-mission-train-fell.png`, `03-mission-reset.png`, and `acceptance.json`.
+
+## Checkpoint C — Current Submission Gate and native WebMCP
+
+Status: **PASS for integration; final hero remains blocked by the documented geometry**
+
+- Imported only the production files marked for repository use by `ORACLE_SUBMISSION_GATE_CURRENT_RUNTIME_V1(1)(1).zip` (SHA-256 `5190F4F2277A15C9170911019295F8432971689AF0E66C0A4B5B1486576C58EC`). Historical package evidence was not copied.
+- Safely merged all eight requested npm commands without deleting existing scripts.
+- Corrected `plan_placement_queue` to `readOnlyHint: false`; its behavior is unchanged and still requires the exact current `worldRevision`.
+- The one existing registrar now resolves the real `document.modelContext` or `navigator.modelContext` surface without installing a shim or creating a second registrar.
+- Added an explicit `?submissionGate=1` read-and-drive facade. It owns no state: every probe drives and reads the existing BridgeHost, BuildBoard, RevisionClock, RobotController, placement stream, Construction, Train, and Mission authorities.
+- Facade Construction proof uses the current `bp_0d7627b1` / `0d7627b1` / 131-part freeze and current PartRegistry `pr_767a6c8c`. One Human and one Codex placement are accepted by the same BuildBoard; source theft reassigns and the Human target is adopted without reset.
+- Train-failure proof reads the real partial BuildBoard and returns `TRAIN_FELL` at unsupported segment `0`. Integrated repeated reset/leak acceptance passes.
+- The gate keeps final Train success, Mission COMPLETE, and flagship success red because the current full bridge is not constructible through the known 21 V4.6 part intersections. No direct completion flag, collision bypass, geometry edit, or fake accepted board was introduced.
+
+Verification:
+
+- Submission unit suite: **11/11 PASS**.
+- WebMCP regression: **16/16 PASS**.
+- Smoke gate: **65 PASS / 4 FAIL / 0 NOT_AVAILABLE / 1 SKIPPED_WITH_REASON**. Three failures are the expected geometry-dependent completion checks. The fourth is `source.no_tracked_worktree_changes`, caused by the user's pre-existing modified terrain `.blend` files, which remain untouched and unstaged.
+- All nine adversarial facade cases: **PASS**.
+- Supported Chrome 148 with experimental Web Platform features exposes real `navigator.modelContext.registerTool`; `document.modelContext` is absent. The production HUD and lifecycle elements prove **27 unique native tools**, exact to the Mission composition, with zero console errors/warnings.
+- Native evidence: `output/playwright/native-webmcp/01-native-27-tools.png` and `acceptance.json`.
+- Gate evidence: `artifacts/submission-evidence/submission-gate-report.json`, `.md`, screenshots, runtime metadata, WebMCP audit, and console log.
