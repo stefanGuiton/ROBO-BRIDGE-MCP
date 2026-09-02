@@ -10,6 +10,13 @@ e1e52a57970a2868a60b6d7d7a43c3b9b4eec3e397868c7a51efcc68d8a0eb22
 
 The small source files in `tools/submission/` are reviewable launch adapters. They preserve the normal commands and named module exports.
 
+After extraction, the launcher applies two deterministic compatibility patches:
+
+- resolve the real repository root for build, test, and evidence paths;
+- infer the active catalogue name from the captured WebMCP metadata.
+
+A missing patch point is a hard failure.
+
 To create a readable source copy for audit:
 
 ```bash

@@ -19,6 +19,15 @@ async function patchRepositoryRoot(runtimeRoot) {
     if (updated === source) throw new Error(`Repository-root patch point is missing: ${relative}`);
     await writeFile(target, updated, 'utf8');
   }
+
+  const acceptanceTarget = path.join(runtimeRoot, 'tools', 'submission', 'current-acceptance.mjs');
+  const acceptanceSource = await readFile(acceptanceTarget, 'utf8');
+  const acceptanceUpdated = acceptanceSource.replace(
+    '  let webmcp = initialWebMcp;\n',
+    "  let webmcp = initialWebMcp;\n  const catalogueName = initialWebMcp?.catalogueName ?? 'minimum';\n"
+  );
+  if (acceptanceUpdated === acceptanceSource) throw new Error('Catalogue-name patch point is missing: tools/submission/current-acceptance.mjs');
+  await writeFile(acceptanceTarget, acceptanceUpdated, 'utf8');
 }
 
 export function repositoryRoot() {
