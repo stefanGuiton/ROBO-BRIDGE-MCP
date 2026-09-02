@@ -25,6 +25,8 @@ import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
+import { createMainDemoTrainIntegration } from '../train-integration/index.js';
+import { THREE } from '../render/real-gripper-visual.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -780,6 +782,7 @@ function updateToolDiagnostics(event) {
 let mainDemoChallenge = null;
 let mainDemoBridge = null;
 let mainDemoConstruction = null;
+let mainDemoTrain = null;
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -798,11 +801,26 @@ try {
       await mainDemoChallenge.elevateForConstruction(mainDemoBridge.host, elevation);
       addLog('Challenge elevation corrected from live physical bounds: ' + elevation.toFixed(2) + ' mm', 'ok');
     }
+    mainDemoTrain = createMainDemoTrainIntegration({
+      challengeService: mainDemoChallenge,
+      THREE,
+      machineRoot: renderer.machineRoot,
+      requestRender: () => renderer.render(),
+      pusher: { mode: 'placeholder' },
+      preconditions: {
+        isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
+        isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
+        isGripperHoldingPart: () => Boolean(controller.heldBrick())
+      }
+    });
+    renderer.addFrameListener(deltaSeconds => mainDemoTrain.updateFrame(deltaSeconds));
     mainDemoConstruction = createConstructionService({ bridgeHost: mainDemoBridge.host, challenge: mainDemoChallenge,
       buildBoard: board, controller, placementAuthority, placementCoordinator: fastPlacement, cycleRunner: placementCycleRunner,
       onPrepared: prepared => {
         renderer.brickFactory.partRegistry = prepared?.registry ?? null;
         mainDemoBridge.setConstructionBoard(prepared ? board : null);
+        if (prepared) mainDemoTrain.prepare({ preparedBuild: prepared, buildBoard: board });
+        else if (mainDemoTrain.getState().configured) mainDemoTrain.reset({ instant: true, reason: 'construction_reset' });
       }
     });
     controller.subscribe(event => {
@@ -918,6 +936,7 @@ const publicRuntime = Object.freeze({
   renderer,
   challenge: mainDemoChallenge,
   construction: mainDemoConstruction,
+  train: mainDemoTrain,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

@@ -119,3 +119,13 @@ Only production integration files, tests, the exact GLB, and this journey are in
 - Refreshed pre-push `npm run verify`: **163/163 JavaScript**, **20/20 reliability**, **110 JavaScript / 4 Python syntax files**, required-file and removed-legacy checks all PASS.
 - Publication scope is the construction integration, endpoint controls, tests/audit scripts and handoff documentation. Downloads, browser evidence, Blender files and other unrelated scene assets are excluded.
 - The handoff remains explicitly blocked on the documented compiler geometry and remaining physical/native-browser acceptance gates. Draft PR only; main remains untouched.
+
+## 2026-09-02 — P0 downstream integration preparation
+
+- Authoritative plan: repository `MASTER_PLAN.md` version `2026-09-02-G` at `149f72bff680e484449da37d0a5348850caa2abf`, plus `Downloads/SOL_HIGH_P0_DOWNSTREAM_INTEGRATION_PREP.md`.
+- Working branch: `codex/p0-downstream-integration-prep`, created from the unmerged Construction WIP `d6154a58d97f52b3058d04c50eeb3ab5066de70c`. The intended PR base remains `codex/p0-construction-integration`, never `main`.
+- Checkpoint A imported the current Train V2.2 production modules and adapters. One Train instance is attached to the existing MAIN_DEMO scene and existing renderer frame loop.
+- The current ChallengeService route is specified at the bridge road plane while the live V4.6 track is exactly 6.048 mm higher after scale. The adapter now derives that offset from the current BuildPlan anchors and track placement; no challenge transform or tolerance was changed.
+- Real production-authority outcomes: current partial BuildBoard gives `TRAIN_FELL / SUPPORT_LOSS`; the same current 131-target BuildBoard completed through accepted board events gives `CROSSED` in integration tests.
+- Train-focused tests: **49/49 PASS**. Full repository verification: **212/212 JavaScript**, **20/20 reliability**, overall PASS.
+- Real Chrome acceptance: one Train scene root, existing frame-loop listener, `READY -> TRAIN_FELL -> READY` reset, zero console errors/warnings. Local evidence is under `output/playwright/train/`.

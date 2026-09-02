@@ -83,6 +83,7 @@ export class RobotRenderer {
     this.lastFrame = 0;
     this.fps = 0;
     this.frameTimes = [];
+    this.frameListeners = new Set();
     this.drag = null;
     this.brickMeshes = new Map();
     this.targetMeshes = new Map();
@@ -1011,6 +1012,7 @@ export class RobotRenderer {
           this.stepSnapAnimation(this.physicsStepSeconds);
           this.loosePhysics.step(this.physicsStepSeconds);
         }
+        for (const listener of this.frameListeners) listener(delta / 1000);
       }
       this.lastFrame = now;
       this.workbench.update(now);
@@ -1021,6 +1023,12 @@ export class RobotRenderer {
   }
 
   stop() { this.running = false; }
+
+  addFrameListener(listener) {
+    if (typeof listener !== 'function') throw new TypeError('frame listener must be a function');
+    this.frameListeners.add(listener);
+    return () => this.frameListeners.delete(listener);
+  }
 
   setMoreBricksHandler(handler) { this.moreBricksHandler = handler; }
 
