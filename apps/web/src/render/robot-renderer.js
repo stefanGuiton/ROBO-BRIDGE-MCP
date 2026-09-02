@@ -95,6 +95,7 @@ export class RobotRenderer {
     this.lastShadowUpdateAt = -Infinity;
     this.resizeDirty = true;
     this.lastPixelRatio = null;
+    this.environmentCollisionProxies = [];
     this.snapAnimation = null;
     this.physicsStepSeconds = 1 / Math.max(30, playerSettings?.physicsHz ?? 240);
     this.maximumSubsteps = Math.max(1, playerSettings?.maximumSubsteps ?? 8);
@@ -210,6 +211,7 @@ export class RobotRenderer {
     const s = this.playerSettings;
     return [
       ...this.workbench.collisionBoxes(),
+      ...this.environmentCollisionProxies,
       {
         kind: 'ROBOT_BASE',
         minX: s.robotMountXmm - 125,
@@ -220,6 +222,11 @@ export class RobotRenderer {
         maxZ: s.robotMountZmm + 310
       }
     ];
+  }
+
+  setEnvironmentCollisionProxies(proxies = []) {
+    this.environmentCollisionProxies = proxies.map((box) => ({ ...box }));
+    this.playerCollision?.setObstacles(this.playerObstacles());
   }
 
   buildRobot() {

@@ -9,28 +9,13 @@ import {
 } from '../bridge-core/index.js';
 import { createBridgeDesignPackage } from '../bridge-design/create-bridge-design-package.js';
 
-export const MAIN_DEMO_BRIDGE_WORLD_TRANSFORM = Object.freeze({
-  id: 'v46-bridge-local-to-main-demo-machine',
-  translationMm: Object.freeze({ xMm: 900, yMm: -120, zMm: -53.8 }),
-  yawDeg: 0,
-  scale: 2
-});
-
-export const MAIN_DEMO_BRIDGE_CHALLENGE = Object.freeze({
-  id: 'main-demo-aqueduct-mvp',
-  span: 320,
-  roadY: 128,
-  worldTransform: MAIN_DEMO_BRIDGE_WORLD_TRANSFORM,
-  supportProfile: Object.freeze({ type: 'flat', heightY: 0 })
-});
-
 export const MAIN_DEMO_BRIDGE_INITIAL_SETTINGS = Object.freeze({
   family: 'aqueduct',
   voxelSize: 8,
   brickHeightRatio: 0.6,
-  aqTopCount: 8,
-  aqMiddleCount: 6,
-  aqBottomCount: 4
+  aqTopCount: 4,
+  aqMiddleCount: 3,
+  aqBottomCount: 2
 });
 
 function alignThreeYUpHologramToMachineZUp(group) {
@@ -50,14 +35,15 @@ function alignThreeYUpHologramToMachineZUp(group) {
   return group;
 }
 
-export async function createMainDemoBridge({ renderer, onHologramChanged = () => {} } = {}) {
+export async function createMainDemoBridge({ renderer, challenge, onHologramChanged = () => {} } = {}) {
   if (!renderer?.machineRoot?.add || typeof renderer.render !== 'function') {
     throw new TypeError('The MAIN_DEMO renderer machine frame is required.');
   }
+  if (!challenge) throw new TypeError('The authoritative EASY bridge challenge is required.');
 
   const host = await createBridgeHost({
     initialSettings: MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
-    challenge: MAIN_DEMO_BRIDGE_CHALLENGE,
+    challenge,
     challengePolicy: 'locked',
     compilerOptions: { preferWorker: true }
   });

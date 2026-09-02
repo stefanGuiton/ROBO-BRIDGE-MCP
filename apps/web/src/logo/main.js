@@ -21,6 +21,7 @@ import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
 import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
+import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -772,9 +773,18 @@ function updateToolDiagnostics(event) {
   if (event.status === 'rejected') addLog(`WebMCP rejected: ${event.toolName} (${event.reason ?? 'invalid request'})`, 'bad');
 }
 
+let mainDemoChallenge = null;
 let mainDemoBridge = null;
 try {
-  mainDemoBridge = await createMainDemoBridge({ renderer, onHologramChanged: updateBridgeHologramStatus });
+  mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
+  const entry = mainDemoChallenge.getEntry().position;
+  const exit = mainDemoChallenge.getExit().position;
+  addLog(`EASY terrain ready: ${entry.x.toFixed(0)},${entry.y.toFixed(0)} → ${exit.x.toFixed(0)},${exit.y.toFixed(0)} mm`, 'ok');
+  mainDemoBridge = await createMainDemoBridge({
+    renderer,
+    challenge: mainDemoChallenge.bridgeChallenge,
+    onHologramChanged: updateBridgeHologramStatus
+  });
   const bridgeState = mainDemoBridge.host.getCompileState();
   addLog(`V4.6 ${mainDemoBridge.host.settings.family} ready: ${bridgeState.planId}`, 'ok');
 } catch (error) {
@@ -859,6 +869,7 @@ const publicRuntime = Object.freeze({
   board,
   blueprint,
   renderer,
+  challenge: mainDemoChallenge,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

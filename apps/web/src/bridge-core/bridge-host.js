@@ -54,7 +54,10 @@ export class BridgeHost {
   }
 
   getFamilyPreset(family) {
-    const preset = getV46DefaultSettings(family);
+    const initialFamily = this.initialSettings.family ?? 'aqueduct';
+    const preset = family === initialFamily
+      ? { ...getV46DefaultSettings(family), ...this.initialSettings, family }
+      : getV46DefaultSettings(family);
     return this._settingsForChallenge(preset, Boolean(this.challenge));
   }
 

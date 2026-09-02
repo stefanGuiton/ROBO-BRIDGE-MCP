@@ -4,16 +4,26 @@ import assert from 'node:assert/strict';
 import { createBridgeHost, createHologramSnapshot } from '../../apps/web/src/bridge-core/index.js';
 import { createBridgeDesignPackage } from '../../apps/web/src/bridge-design/create-bridge-design-package.js';
 import {
-  MAIN_DEMO_BRIDGE_CHALLENGE,
   MAIN_DEMO_BRIDGE_INITIAL_SETTINGS
 } from '../../apps/web/src/bridge/main-demo-bridge.js';
+import { createChallengeService } from '../../apps/web/src/challenge/challenge-service.js';
+import {
+  createEasyBridgeChallenge,
+  MAIN_DEMO_EASY_DISPLAY_OFFSET
+} from '../../apps/web/src/challenge/main-demo-easy.js';
+import { MAIN_DEMO_MACHINE_MOUNT } from '../../apps/web/src/challenge/challenge-transforms.js';
 import { registerWebMcpTools } from '../../apps/web/src/webmcp/register-tools.js';
 import { createLiveHarness } from '../helpers/live-harness.js';
 
 async function makeBridgePackage() {
+  const challengeService = createChallengeService({
+    machineMount: MAIN_DEMO_MACHINE_MOUNT,
+    displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET
+  });
+  await challengeService.load();
   const host = await createBridgeHost({
     initialSettings: MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
-    challenge: MAIN_DEMO_BRIDGE_CHALLENGE,
+    challenge: createEasyBridgeChallenge(challengeService),
     challengePolicy: 'locked',
     compilerOptions: { preferWorker: false }
   });
@@ -31,7 +41,7 @@ test('V4.6 Aqueduct design updates atomically and the exact hologram follows the
 
   const first = await bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: initial.designRevision,
-    patch: { aqueduct: { topArchCount: 10, middleArchCount: 6, bottomArchCount: 3 } }
+    patch: { aqueduct: { topArchCount: 3, middleArchCount: 3, bottomArchCount: 2 } }
   });
   assert.equal(first.ok, true);
   assert.equal(first.designRevision, 2);
@@ -40,13 +50,13 @@ test('V4.6 Aqueduct design updates atomically and the exact hologram follows the
 
   const partial = await bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: first.designRevision,
-    patch: { aqueduct: { topArchCount: 8, bottomArchCount: 4 } }
+    patch: { aqueduct: { topArchCount: 4, bottomArchCount: 2 } }
   });
   assert.equal(partial.ok, true);
   assert.equal(partial.designRevision, 3);
-  assert.equal(partial.bridgeSpec.aqueduct.topArchCount, 8);
-  assert.equal(partial.bridgeSpec.aqueduct.middleArchCount, 6);
-  assert.equal(partial.bridgeSpec.aqueduct.bottomArchCount, 4);
+  assert.equal(partial.bridgeSpec.aqueduct.topArchCount, 4);
+  assert.equal(partial.bridgeSpec.aqueduct.middleArchCount, 3);
+  assert.equal(partial.bridgeSpec.aqueduct.bottomArchCount, 2);
 
   const committed = host.buildPlan;
   const hologram = createHologramSnapshot(committed, host.worldTransform, { limit: 5000 });
@@ -57,7 +67,7 @@ test('V4.6 Aqueduct design updates atomically and the exact hologram follows the
   assert.ok(hologram.placements.some((item) => item.partClass === 'STANDARD_BRICK'));
   assert.ok(hologram.placements.some((item) => item.partClass === 'ARCH_A' || item.partClass === 'ARCH_B'));
   assert.ok(hologram.placements.some((item) => item.partClass === 'TRACK_SEGMENT'));
-  assert.ok(hologram.entryExit.entry.innerFace.xMm < hologram.entryExit.exit.innerFace.xMm);
+  assert.ok(hologram.entryExit.entry.innerFace.yMm < hologram.entryExit.exit.innerFace.yMm);
   const mainDemoBrick = hologram.placements.find((item) => item.partType === '1x2x1');
   assert.deepEqual(mainDemoBrick.sizeMm, { xMm: 32, yMm: 16, zMm: 9.6 });
 });
@@ -67,7 +77,7 @@ test('stale and invalid bridge patches reject without changing design or hologra
   const initial = await bridgeDesign.invoke('get_bridge_design', { includeCapabilities: false });
   const committed = await bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: initial.designRevision,
-    patch: { aqueduct: { topArchCount: 10, middleArchCount: 6, bottomArchCount: 3 } }
+    patch: { aqueduct: { topArchCount: 3, middleArchCount: 3, bottomArchCount: 2 } }
   });
   const before = {
     revision: host.designRevision,
@@ -78,7 +88,7 @@ test('stale and invalid bridge patches reject without changing design or hologra
 
   const stale = await bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: initial.designRevision,
-    patch: { aqueduct: { topArchCount: 8 } }
+    patch: { aqueduct: { topArchCount: 4 } }
   });
   assert.equal(stale.ok, false);
   assert.equal(stale.error.code, 'STALE_DESIGN_REVISION');
@@ -93,6 +103,26 @@ test('stale and invalid bridge patches reject without changing design or hologra
   assert.equal(host.buildPlan.planId, before.planId);
   assert.equal(host.buildPlan.designChecksum, before.checksum);
   assert.deepEqual(host.settings, before.settings);
+});
+
+test('reset returns EASY Aqueduct to its calibrated MAIN_DEMO preset', async () => {
+  const { host, bridgeDesign } = await makeBridgePackage();
+  const changed = await bridgeDesign.invoke('update_bridge_design', {
+    expectedDesignRevision: host.designRevision,
+    patch: { aqueduct: { topArchCount: 3 } }
+  });
+  assert.equal(changed.ok, true);
+
+  const reset = await bridgeDesign.invoke('reset_bridge_design', {
+    expectedDesignRevision: changed.designRevision
+  });
+  assert.equal(reset.ok, true);
+  assert.equal(reset.reset, true);
+  assert.equal(reset.bridgeSpec.aqueduct.topArchCount, 4);
+  assert.equal(reset.bridgeSpec.aqueduct.middleArchCount, 3);
+  assert.equal(reset.bridgeSpec.aqueduct.bottomArchCount, 2);
+  assert.equal(host.settings.voxelSize, 8);
+  assert.equal(host.settings.brickHeightRatio, 0.6);
 });
 
 test('one native registrar preserves fourteen base tools and adds exactly five bounded bridge tools', async () => {
