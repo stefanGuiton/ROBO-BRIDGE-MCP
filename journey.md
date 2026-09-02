@@ -52,15 +52,15 @@ The X offset moves the accepted bridge centre from X=820 mm to X=650 mm. The +4 
 - Native browser tools: `19` total (`14` existing + `5` bridge)
 - Browser console warnings/errors: `0`
 - Native WebMCP visual mutation:
-  - initial `4/3/2`, revision 5, `bp_6a45b6bc`, 131 parts
-  - changed `3/3/2`, revision 6, `bp_1b886868`, 137 parts
-  - reset `4/3/2`, revision 7, `bp_6a45b6bc`, 131 parts
+  - initial `4/3/2`, revision 1, `bp_6a45b6bc`, 131 parts
+  - changed `3/3/2`, revision 2, `bp_1b886868`, 137 parts
+  - reset `4/3/2`, revision 3, `bp_6a45b6bc`, 131 parts
 
 Browser evidence is under `output/playwright/p0-final-integration/`. The most useful views are:
 
-- `05-easy-bridge-top.png`
-- `06-easy-bridge-top-changed.png`
-- `07-easy-bridge-top-restored.png`
+- `08-easy-unobscured-hologram.png`
+- `10-easy-unobscured-changed.png`
+- `11-easy-unobscured-restored.png`
 
 ## Acceptance observations
 
@@ -68,7 +68,7 @@ Browser evidence is under `output/playwright/p0-final-integration/`. The most us
 - The bridge remains Z-up and uses the production MAIN_DEMO brick dimensions.
 - The bridge centre, ENTRY, and EXIT fall within the approximate Cartesian bounds supplied by Oracle. This is a positioning observation, not proof that every future physical BuildPlan placement is robot-reachable.
 - Player UI and the existing robot/build controls remain present; the player and robot suites pass unchanged.
-- The accepted EASY deck is low relative to the full three-tier Aqueduct at MAIN_DEMO brick scale, so lower hologram tiers extend below the tabletop/terrain. Physical bridge construction remains intentionally unimplemented and must validate support/elevation in the next task.
+- The accepted EASY deck is low relative to the full three-tier Aqueduct at MAIN_DEMO brick scale, so lower tiers extend below the existing solid tabletop. The exact hologram is therefore rendered as an unobscured translucent overlay for this visual-design MVP. Physical bridge construction remains intentionally unimplemented and must validate support/elevation in the next task.
 
 ## Publication boundary
 

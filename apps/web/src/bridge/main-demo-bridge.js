@@ -68,6 +68,10 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       for (const material of materials) {
         if (!material) continue;
+        // This MVP is an exact design hologram, not physical construction.
+        // Keep every BuildPlan tier readable through the low EASY ravine and
+        // existing solid workbench top until physical support is integrated.
+        material.depthTest = false;
         material.depthWrite = false;
       }
     });
