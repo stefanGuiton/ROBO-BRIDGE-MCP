@@ -109,6 +109,9 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
       return service.getState();
     },
     getActiveChallenge: () => service.getState(),
+    getState: () => service.getState(),
+    setPreset: (presetId) => service.setPreset(presetId),
+    reset: () => service.reset(),
     getBridgeTransform: () => structuredClone(createEasyBridgeChallenge(service).worldTransform),
     getEntry: () => service.getEntry(),
     getExit: () => service.getExit(),

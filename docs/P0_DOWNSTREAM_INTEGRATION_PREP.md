@@ -28,6 +28,22 @@ Verification:
 
 ## Remaining checkpoints
 
-- B: Mission overlay and eight Mission WebMCP tools through the existing registrar.
 - C: current-runtime Submission Gate and native WebMCP hardening.
 - D: non-geometry Construction acceptance hardening.
+
+## Checkpoint B — Mission overlay and semantic WebMCP
+
+Status: **PASS**
+
+- Imported the accepted Mission production overlay from `ORACLE_MISSION_INTEGRATION_ADAPTERS_V1(1)(1).zip` (SHA-256 `C77DE5F6D8CE43F34E8673F4BD67DB3EE0AAA970EF1B85F4BA5EA5A0A23EC5BD`).
+- MissionService is orchestration only. It injects the existing BridgeHost, bridge-design package, current ConstructionService/BuildBoard, current ChallengeService, RobotController/runtime, and the semantic `createMissionTrainAdapter(trainIntegration)` seam.
+- The MAIN_DEMO UI and WebMCP share one Mission instance. Bridge mutations are guarded after BUILD freeze.
+- The one existing registrar receives exactly 13 additional tools: five guarded bridge tools plus eight Mission tools, yielding 27 unique names with the existing 14 primitives.
+- Current-authority test: `DESIGN -> BUILD -> TEST -> BUILD` on real `TRAIN_FELL`; authoritative completion of the same current board then `TEST -> COMPLETE` only on real `CROSSED`; reset creates a new DESIGN mission ID and clears the board.
+
+Verification:
+
+- Supplied Mission suite against repository paths: **114/114 PASS**.
+- Current MAIN_DEMO Mission/Construction/Train integration: **1/1 PASS**.
+- Real Chrome: exact 27-name composition, current 131-part frozen identity shared across Mission/Construction/Train, BUILD mutation guard, `TRAIN_FELL -> BUILD`, clean new DESIGN reset, zero console errors/warnings.
+- Evidence: `output/playwright/mission/01-mission-build.png`, `02-mission-train-fell.png`, `03-mission-reset.png`, and `acceptance.json`.

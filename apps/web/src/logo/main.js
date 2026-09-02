@@ -26,6 +26,7 @@ import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
+import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
 import { THREE } from '../render/real-gripper-visual.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
@@ -783,6 +784,7 @@ let mainDemoChallenge = null;
 let mainDemoBridge = null;
 let mainDemoConstruction = null;
 let mainDemoTrain = null;
+let mainDemoMission = null;
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -823,6 +825,20 @@ try {
         else if (mainDemoTrain.getState().configured) mainDemoTrain.reset({ instant: true, reason: 'construction_reset' });
       }
     });
+    mainDemoMission = await createProductionMissionRuntime({
+      bridgeHost: mainDemoBridge.host,
+      bridgeDesignPackage: mainDemoBridge.bridgeDesign,
+      challengeService: mainDemoChallenge,
+      challengeMetadata: {
+        EASY: { label: 'Curated EASY', bridgeChallengeId: mainDemoChallenge.bridgeChallenge.id }
+      },
+      constructionSession: createMainDemoConstructionSession(mainDemoConstruction, () => controller.worldRevision),
+      getAcceptedBuildBoardSnapshot: () => board,
+      trainIntegration: mainDemoTrain,
+      robotController: controller,
+      runtime,
+      eventSink: event => addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok')
+    });
     controller.subscribe(event => {
       if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup'].includes(event.type)) mainDemoBridge.refreshHologram();
     });
@@ -854,7 +870,22 @@ for (const button of document.querySelectorAll('[data-construction-action]')) bu
   try {
     if (!mainDemoConstruction) throw new Error('construction_unavailable');
     const options = { expectedWorldRevision: controller.worldRevision };
-    const result = action === 'start' ? mainDemoConstruction.startBuild(options)
+    const state = mainDemoMission ? await mainDemoMission.service.getMissionState() : null;
+    const missionInput = state?.ok ? {
+      expectedMissionId: state.missionId,
+      expectedMissionRevision: state.revisions.missionRevision,
+      expectedWorldRevision: state.revisions.worldRevision
+    } : null;
+    const result = action === 'start' && mainDemoMission ? await mainDemoMission.service.startBridgeBuild({
+      ...missionInput,
+      expectedDesignRevision: mainDemoBridge.host.designRevision
+    }) : action === 'next' && mainDemoMission ? await mainDemoMission.service.buildNextParts({
+      ...missionInput,
+      count: Number($('[data-construction-count]').value)
+    }) : action === 'reset' && mainDemoMission ? await mainDemoMission.service.resetMission({
+      ...missionInput,
+      confirm: true
+    }) : action === 'start' ? mainDemoConstruction.startBuild(options)
       : action === 'next' ? await mainDemoConstruction.buildNextParts(Number($('[data-construction-count]').value), options)
       : action === 'cancel' ? mainDemoConstruction.cancelBuild(options) : mainDemoConstruction.reset(options);
     const progress = mainDemoConstruction.getBuildProgress();
@@ -909,7 +940,8 @@ setInterval(() => {
 window.addEventListener('resize', () => renderer.render());
 
 try {
-  const result = await registerWebMcpTools(runtime, updateToolDiagnostics, mainDemoBridge?.bridgeDesign.tools ?? []);
+  const additionalTools = mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? [];
+  const result = await registerWebMcpTools(runtime, updateToolDiagnostics, additionalTools);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
     else { webmcpEl.textContent = 'WEBMCP UNAVAILABLE'; webmcpEl.dataset.kind = 'warning'; addLog(`WebMCP unavailable: ${result.reason}`, 'bad'); }
@@ -937,6 +969,8 @@ const publicRuntime = Object.freeze({
   challenge: mainDemoChallenge,
   construction: mainDemoConstruction,
   train: mainDemoTrain,
+  mission: mainDemoMission?.service ?? null,
+  missionRuntime: mainDemoMission,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

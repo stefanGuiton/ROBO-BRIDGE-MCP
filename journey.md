@@ -129,3 +129,7 @@ Only production integration files, tests, the exact GLB, and this journey are in
 - Real production-authority outcomes: current partial BuildBoard gives `TRAIN_FELL / SUPPORT_LOSS`; the same current 131-target BuildBoard completed through accepted board events gives `CROSSED` in integration tests.
 - Train-focused tests: **49/49 PASS**. Full repository verification: **212/212 JavaScript**, **20/20 reliability**, overall PASS.
 - Real Chrome acceptance: one Train scene root, existing frame-loop listener, `READY -> TRAIN_FELL -> READY` reset, zero console errors/warnings. Local evidence is under `output/playwright/train/`.
+- Checkpoint B imported the accepted Mission overlay and added only compatibility seams: the current ConstructionService is presented without a second progress ledger, while `createMissionTrainAdapter(trainIntegration)` refreshes the real BuildBoard-derived Train evidence before TEST.
+- The MAIN_DEMO now composes exactly **27 unique tools** through the existing registrar: 14 primitives + 5 guarded bridge tools + 8 Mission tools. Mission owns phase/freeze/event orchestration, not brick, support, occupancy, or train truth.
+- Repository Mission tests: package **114/114 PASS** plus a current-authority integration test proving `DESIGN -> BUILD -> TEST -> BUILD` on `TRAIN_FELL`, `COMPLETE` only on `CROSSED`, and reset to a new mission ID.
+- Real Chrome Mission acceptance passed the same partial-board failure path and mutation guard with zero console errors/warnings. Local evidence is under `output/playwright/mission/`.
