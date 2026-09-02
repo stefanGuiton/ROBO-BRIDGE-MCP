@@ -1,12 +1,10 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** FINAL SUBMISSION DAY INTEGRATION SPRINT  
-**Plan version:** 2026-09-02-F  
-**Main checkpoint before this plan update:** `4f2114260a3fdee4bb5c16f236de4d0e92d4b4ac`  
-**Latest verified integrated runtime checkpoint:** `dc062cfa8f986b4a05228fe5c48f7b82c5d6bb6a` on `codex/p0-final-integration`  
-**Required next integration base:** `dc062cfa8f986b4a05228fe5c48f7b82c5d6bb6a`  
+**Status:** FINAL SUBMISSION DAY — GEOMETRY CALIBRATION + INTEGRATION SPRINT  
+**Plan version:** 2026-09-02-G  
+**Authoritative production `main`:** `ec3c9237c224210112acd0ba71ddc06ea95f9f91`  
+**Active Construction WIP:** draft PR #5, `codex/p0-construction-integration` at `d6154a58d97f52b3058d04c50eeb3ab5066de70c`  
 **Submission deadline:** 2026-09-03 13:00 PDT / 21:00 BST  
-**Internal goal:** fully working hero demo and submission package today  
 **Canonical runtime:** `MAIN_DEMO` Player V8  
 **Canonical authority:** `RevisionClock` + `BuildBoard` + `PlacementAuthority` + `RobotController`  
 **Primary goal:** one complete, reliable, judge-visible WebMCP collaboration journey
@@ -19,331 +17,442 @@ This file is the authoritative submission execution plan.
 
 If an older plan, prototype README, Oracle report, standalone package, experimental branch, or chat instruction conflicts with this file, **this file wins for the submission sprint**.
 
-Oracle ZIPs may contain production-quality code, but a ZIP is not counted as integrated until its MAIN_DEMO integration gate passes.
+A standalone Oracle ZIP can be package-complete without being production-integrated. A draft PR can contain valuable integration work without being accepted for `main`.
 
 Required hero loop:
 
-`CURATED EASY TERRAIN -> CODEX CO-DESIGN -> V4.6 BUILDPLAN -> EXACT HOLOGRAM -> FREEZE -> HUMAN + CODEX/UR10 BUILD -> EARLY TRAIN FAILURE -> CONTINUE/REPAIR -> TRAIN SUCCESS -> MISSION COMPLETE -> TRY AGAIN`
+`CURATED TERRAIN -> CODEX CO-DESIGN -> V4.6 BUILDPLAN -> EXACT HOLOGRAM -> FREEZE -> HUMAN + CODEX/UR10 BUILD -> EARLY TRAIN FAILURE -> CONTINUE/REPAIR -> TRAIN SUCCESS -> MISSION COMPLETE -> TRY AGAIN`
 
 Central narrative:
 
 **Codex decides. Deterministic systems execute. Human actions change the shared world. The runtime adapts. BuildBoard controls TEST. The train proves the result.**
 
-Judging priority:
+Hard architecture rule:
 
-1. WebMCP Leverage
-2. Execution
-3. Potential Impact
-4. Creativity & Ambition
+`RevisionClock -> BuildBoard + PlacementAuthority + RobotController -> Runtime -> Renderer / Player / Perception / WebMCP`
 
-All are equally weighted. WebMCP Leverage is the first tie-break criterion.
+Never create:
 
----
+- a second BuildBoard;
+- a second accepted inventory/occupancy truth;
+- a second RobotController;
+- a second RevisionClock;
+- a WebMCP-only bridge state;
+- a train-owned bridge-complete Boolean;
+- a mission-owned physical-part truth;
+- an instant-build shortcut;
+- direct mission/support completion setters;
+- joint-level WebMCP controls.
 
-# 1. Completion tracking contract
-
-Every major deliverable uses:
-
-```yaml
-id: unique-stable-id
-completed: true | false
-status: COMPLETE | IN_PROGRESS | READY | BLOCKED | NEEDS_FIX | DEFERRED
-last_verified: YYYY-MM-DD or null
-evidence: commit / branch / test result / screenshot / audit / package
-```
-
-Rules:
-
-1. `completed: true` means the acceptance gate for that exact deliverable has been demonstrated.
-2. A standalone/package implementation may be complete while its MAIN_DEMO integration remains incomplete.
-3. Do not infer dependent completion automatically.
-4. If a later change breaks an accepted feature, set it back to `completed: false`.
-5. Simulator timing is never evidence of physical-robot timing.
-6. This dashboard is the sprint status source of truth.
+Do not restore NVIDIA Newton.
 
 ---
 
-# 2. Current executive status
+# 1. Executive status
 
-Two progress numbers are now required:
+Three progress numbers are now useful:
 
-- **Code/components available:** approximately **94–95%** of the P0 implementation needed for the final demo now exists either in production or in verified integration packages.
-- **Actually integrated in MAIN_DEMO:** approximately **81–82%**. The remaining risk is overwhelmingly integration, physical bridge placement/reachability, hero-loop reliability, and release evidence rather than invention of new subsystems.
+- **Required P0 code/components available:** approximately **98%**. Bridge, Construction, Train, Mission adapters and the Submission Gate all exist as production-oriented implementations/packages.
+- **Accepted production `main` integration:** approximately **82%**. `main` remains intentionally stable while Construction geometry is unresolved.
+- **Construction integration branch maturity:** approximately **88–90% of the integration path is demonstrated**, but PR #5 remains BLOCKED and MUST NOT merge until geometry acceptance passes.
 
-The project has moved from:
+The project is no longer missing major software subsystems.
 
-`BUILD MISSING SUBSYSTEMS`
+The remaining critical problem is now:
 
-into:
+`FINAL CHALLENGE/SUPPORT GEOMETRY -> CLEAN V4.6 BUILDPLAN -> COMPLETE CONSTRUCTION ACCEPTANCE -> WIRE TRAIN -> WIRE MISSION -> QA -> RELEASE`
 
-`INTEGRATE COMPLETED SUBSYSTEMS -> FIX PHYSICAL BUILD FRAME -> RUN HERO GATE -> RELEASE`
+Do not start another large subsystem from scratch.
 
-Current verified production baseline `dc062cfa...` already proves:
+---
 
-- curated EASY terrain in the real MAIN_DEMO;
-- one production ChallengeService/transform authority;
-- bridge rebased into the usable robot area;
-- bridge span rotated 90 degrees along MAIN_DEMO Y;
+# 2. Current production main — accepted checkpoint
+
+Production `main`:
+
+`ec3c9237c224210112acd0ba71ddc06ea95f9f91`
+
+This merged PR #4 and currently proves:
+
 - authoritative V4.6 BridgeHost;
 - exact BuildPlan-derived Aqueduct hologram;
-- atomic WebMCP bridge design mutation;
-- 19 native WebMCP tools;
-- 0 browser console warnings/errors in the accepted browser run;
-- current regression checkpoint: JavaScript 153/153, WebMCP 15/15, Robot 30/30, Player 25/25, Compiler 26/26, Reliability 20/20, `npm run verify` PASS.
+- five bridge-design WebMCP tools;
+- existing fourteen low-level robot/build WebMCP tools;
+- 19 total production tools;
+- curated EASY terrain integration;
+- unified challenge-owned bridge / ENTRY / EXIT transform;
+- final old-terrain orientation across the worktable;
+- corrected display-frame collision proxies;
+- player navigation cleanup;
+- no TCP indicator;
+- reliability 20/20.
+
+This old terrain remains the accepted production fallback until the new terrain/support-floor challenge is validated.
+
+Do not destabilise `main` while the calibration work is still exploratory.
 
 ---
 
-# 3. Current completion dashboard
+# 3. Construction WIP — preserve, do not merge yet
 
-| ID | Deliverable | completed | status | Evidence / current truth |
-|---|---|---:|---|---|
-| FND-01 | MAIN_DEMO Player V8 foundation | true | COMPLETE | Production foundation |
-| FND-02 | Human pickup/rotate/snap/place | true | COMPLETE | Integrated + regression coverage |
-| FND-03 | UR10 + calibrated animated gripper | true | COMPLETE | Integrated simulator runtime |
-| FND-04 | One RevisionClock + BuildBoard + RobotController authority | true | COMPLETE | Current architecture |
-| MCP-BASE-01 | Native WebMCP base execution surface | true | COMPLETE | Existing 14-tool surface |
-| MCP-BASE-02 | Camera perception + placement preview | true | COMPLETE | Existing evidence/tests |
-| MCP-BASE-03 | Scalable logical placement stream | true | COMPLETE | Existing production runtime |
-| MCP-BASE-04 | Five-slot active execution window | true | COMPLETE | Current planner |
-| MCP-BASE-05 | Automatic source-part reassignment | true | COMPLETE | Current runtime |
-| MCP-BASE-06 | Bounded placement cancellation | true | COMPLETE | Current runtime |
-| BUILD-DEMO-01 | Deterministic generic structure planner | true | COMPLETE | `4a9b88ac...` |
-| BUILD-DEMO-02 | Single-brick Codex/UR10 demo | true | COMPLETE | Browser verified 1/1 |
-| BUILD-DEMO-03 | 3×4 wall Codex/UR10 demo | true | COMPLETE | Browser verified 12/12 |
-| BUILD-DEMO-04 | 4-layer cross-laminated tower demo | true | COMPLETE | Browser verified 8/8 |
-| BUILD-DEMO-05 | Browser-local planned-cycle runner | true | COMPLETE | Reuse for bridge build |
-| BUILD-DEMO-06 | Configurable `cycleTimeMs` | true | COMPLETE | Simulator-only 1,000 ms target demonstrated |
-| BUILD-DEMO-07 | Current JS regression | true | COMPLETE | 153/153 at `dc062cfa...` |
-| BUILD-DEMO-08 | Reliability checkpoint | true | COMPLETE | 20/20 at `dc062cfa...` |
-| ORA-AUDIT-01 | Submission readiness Oracle audit | true | COMPLETE | Reviewed |
-| ORA-AUDIT-02 | Deep WebMCP audit | true | COMPLETE | Adopted into plan |
-| BRG-V46-01 | V4.6 Aqueduct/Viaduct compiler package | true | COMPLETE | Deterministic V4.6 package |
-| BRG-CORE-PKG-01 | Production DOM-free V4.6 bridge-core package | true | COMPLETE | 39/39 independently rerun |
-| MCP-DESIGN-PKG-01 | Five-tool bridge-design WebMCP package | true | COMPLETE | Integrated into production |
-| TERRAIN-PKG-01 | Curated terrain/challenge package | true | COMPLETE | 26/26 package acceptance |
-| TERRAIN-INT-01 | EASY terrain integrated in MAIN_DEMO | true | COMPLETE | `dc062cfa...` |
-| TERRAIN-INT-02 | EASY rebased into real UR10 area | true | COMPLETE | Bridge centre X=650 mm, yaw 90 degrees |
-| BRG-INT-01 | BridgeHost/compiler integrated in MAIN_DEMO | true | COMPLETE | `69b970bb...` -> preserved in `dc062cfa...` |
-| BRG-INT-02 | Exact BuildPlan hologram in MAIN_DEMO | true | COMPLETE | Reactive plan/checksum/hologram proof |
-| MCP-DESIGN-INT-01 | Five bridge WebMCP tools registered | true | COMPLETE | 19 total tools in browser |
-| CONST-PKG-01 | Construction/PartRegistry production package | true | COMPLETE | Final `ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_V1.zip`; 17/17 package tests + browser harness |
-| TRAIN-PKG-02 | Train V2.2 production package | true | COMPLETE | `ROBO_BRIDGE_TRAIN_V22_PRODUCTION`; 19/19 verification |
-| MCP-MISSION-PKG-01 | Mission + outcome-level WebMCP package | true | COMPLETE | `ORACLE_MISSION_WEBMCP_RUNTIME_V1`; 103/103 verification |
-| QA-PKG-01 | Automated submission gate package | true | COMPLETE | `oracle/p0-submission-gate` `fc37ddd...`; 45 PASS / 0 FAIL / future hooks NOT_AVAILABLE on old baseline |
-| PART-01 | Authoritative current-hero PartRegistry integrated | false | READY | Package exists; must regenerate from current 131-part BuildPlan |
-| PART-02 | Current hero part types supported by real build runtime | false | NEEDS_FIX | Oracle conservative actor policy is too human-heavy for hero demo |
-| GEO-BUILD-01 | Physical bridge elevation clears tabletop/terrain | false | BLOCKED | Current lower Aqueduct geometry extends below physical work surface |
-| GEO-BUILD-02 | Codex-assigned hero targets robot-reachable | false | BLOCKED | Must be verified after coherent elevation correction |
-| BRG-INT-03 | Frozen current BuildPlan projected into BuildBoard | false | READY | Construction package exists |
-| BRG-INT-04 | BUILD freezes full mission/plan identity | false | READY | Freeze implementation/package exists |
-| MCP-MISSION-01 | Outcome-level mission WebMCP surface integrated | false | READY | Package exists; thin adapters required |
-| MCP-MISSION-02 | `build_next_parts` executes existing real simulator cycle runner | false | READY | Construction/Mission packages expose seam |
-| MCP-OUTPUT-01 | Normal mission outputs ~1.5K chars | false | READY | Mission package implements bounded outcome surface; production integration unproven |
-| MCP-ERROR-01 | Common recovery-aware error envelope | false | READY | Mission package exists |
-| MCP-ANNOT-01 | Tool annotations audited/correct | false | NEEDS_FIX | Submission gate flags `plan_placement_queue` readOnlyHint=true as high risk |
-| TRAIN-INT-01 | Train V2.2 rendered at ENTRY in MAIN_DEMO | false | READY | Production package exists |
-| TRAIN-INT-02 | BuildBoard-derived rail support map | false | READY | Production package implements authority adapter; integrate against current BuildBoard |
-| TRAIN-INT-03 | Incomplete build -> visible linked train failure | false | READY | V2.2 package proves isolated behaviour |
-| TRAIN-INT-04 | Complete build -> CROSSED | false | READY | V2.2 package proves isolated behaviour |
-| TRAIN-INT-05 | Train self-overlap/coupler regression fixed in production package | true | COMPLETE | V2.2 production package |
-| GAME-01 | DESIGN/BUILD/TEST/COMPLETE integrated | false | READY | Mission package exists |
-| GAME-02 | Real event log + collaboration statistics | false | READY | Mission package exists |
-| GAME-03 | MISSION COMPLETE from CROSSED only | false | READY | Package behaviour proven; integration unproven |
-| GAME-04 | TRY AGAIN deterministic clean reset | false | READY | Package behaviour proven; integration unproven |
-| UI-EVIDENCE-01 | Judge-visible mission HUD/activity chain | false | READY | Extend existing activity panel after services wire |
-| EVAL-01 | Automated submission gate integrated | false | READY | Gate branch/package exists |
-| EVAL-02 | Deterministic integrated mission tests | false | BLOCKED | Requires integrated construction/train/mission |
-| EVAL-03 | `webmcp-evals`/external native smoke | false | BLOCKED | Requires final integrated URL |
-| EVAL-04 | Flagship autonomous mission 5/5 | false | BLOCKED | Requires integrated hero loop |
-| EVAL-05 | Nekuda Workbench/Chrome Inspector acceptance | false | BLOCKED | Requires final hosted URL |
-| REL-01 | Hero loop 3 consecutive complete runs | false | BLOCKED | Minimum freeze gate |
-| REL-02 | Hero loop 10 consecutive complete runs | false | BLOCKED | Final target if time permits |
-| PUB-01 | Asset/IP public-release clearance | false | IN_PROGRESS | Must resolve before public |
-| PUB-02 | README/tool count/provenance current | false | READY | Final expected semantic tool count 27 after mission integration |
-| PUB-03 | Hosted WebMCP URL | false | READY | No final URL yet |
-| PUB-04 | Repository public and submission-safe | false | BLOCKED | IP gate first |
-| PUB-05 | Final <3 minute public video | false | BLOCKED | Record after hero freeze |
+Draft PR #5:
 
----
+- branch: `codex/p0-construction-integration`
+- checkpoint: `d6154a58d97f52b3058d04c50eeb3ab5066de70c`
+- base: `main @ ec3c9237...`
+- status: **valuable WIP / blocked acceptance / do not merge**
 
-# 4. Verified current production baseline — `dc062cfa...`
+Verified WIP accomplishments:
 
-Branch:
+- imported the final Construction/PartRegistry production modules;
+- current BridgeHost -> immutable freeze -> dynamic PartRegistry/inventory;
+- same existing BuildBoard;
+- same existing lookahead / cycle runner / RobotController / PlacementAuthority;
+- no stale 476-part production fixture imported;
+- no actor-exclusive source pool;
+- both `human` and `agent` permitted for every current part class;
+- actor preference is scheduling metadata, not permission;
+- typed capture offsets and collision metadata;
+- exact custom-part visual adapter;
+- BuildBoard target loading and dependency checks;
+- frozen-design mutation lock;
+- Settings-panel ENTRY/EXIT XYZ controls;
+- linked endpoint height and atomic shared challenge transform;
+- browser persistence/reset of endpoint controls;
+- one human and three robot ARCH_B placements accepted on the same BuildBoard in real MAIN_DEMO service-path evidence;
+- human stole a planned source -> lookahead reassigned it;
+- human completed a Codex-intended target -> runtime adopted it and continued;
+- controller integration accepted 15 parts before correctly stopping at a collision;
+- JavaScript 163/163;
+- Robot 30/30;
+- Compiler 26/26;
+- WebMCP 15/15;
+- Player 26/26;
+- Reliability 20/20;
+- final Chrome run: zero console errors/warnings.
 
-`codex/p0-final-integration`
-
-Commit:
-
-`dc062cfa8f986b4a05228fe5c48f7b82c5d6bb6a`
-
-This is the required base for all remaining integration work. Do not start Construction/Train/Mission integration again from `69b970bb...`.
-
-Verified production geometry:
+Current WIP BuildPlan evidence:
 
 ```text
-Challenge display offset: (-170, 0, +4) mm
-Bridge world translation: (650, -111.2, 0) mm
-Bridge yaw: 90 degrees
-Bridge scale: 2
-ENTRY: (650, -248, 56) mm
-EXIT:  (650, 25.6, 56) mm
-Physical span: 273.6 mm primarily along MAIN_DEMO Y
-Aqueduct baseline: top/middle/bottom = 4/3/2
+planId: bp_0d7627b1
+parts: 131
+1x1x1: 87
+1x2x1: 15
+ARCH_A: 21
+ARCH_B: 6
+TRACK_SEGMENT: 2
 ```
 
-Verified WebMCP design journey:
+Current WIP registry:
 
 ```text
-Initial: revision 1, 4/3/2, bp_6a45b6bc, 131 parts
-Changed: revision 2, 3/3/2, bp_1b886868, 137 parts
-Reset: revision 3, 4/3/2, bp_6a45b6bc, 131 parts
+revision: bridge-part-registry.p0.v1
+hash: pr_767a6c8c
+freeze checksum: freeze_5c084eff
 ```
 
-Plan ID/checksum and the visible exact hologram changed together.
+Important timing note:
 
-Current browser acceptance:
-
-- 19 tools registered;
-- 0 warnings;
-- 0 errors;
-- EASY terrain loaded;
-- player collisions include conservative EASY terrain proxies;
-- exact hologram remains readable through the current low ravine/tabletop for design evidence.
-
-The last point is **design-only evidence**. Physical BUILD must not rely on depth-test bypasses or geometry hidden below the work surface.
+The bridge custom-part browser cycle evidence averaged approximately 3.61 s start-to-start for the measured sequence. Do **not** claim one-second bridge cycles. The earlier simple-brick one-second simulator evidence remains separate.
 
 ---
 
-# 5. Verified generic Codex/UR10 execution checkpoint — `4a9b88ac...`
+# 4. Current hard blocker — exact V4.6 internal part intersections
 
-This checkpoint proves deterministic multi-part construction can run without the agent pausing to reason between every brick.
+PR #5's independent exact geometry audit confirmed **21 real generated-part intersections** in the current old-terrain BuildPlan:
 
-Supported demonstrations:
+```text
+9 arch/arch
+12 standard-brick/arch
+21 total exact intersecting pairs
+```
 
-1. single brick;
-2. wall;
-3. cross-laminated tower.
+These are not merely AABB false positives.
 
-The placements retain:
+A common world transform cannot remove intersections between generated bridge parts.
 
-- stable IDs;
-- dependency ordering;
-- support relationships;
-- exact world-revision safety;
-- cancellation/live validation;
-- five-slot lookahead;
-- source reassignment.
+Therefore:
 
-Verified examples:
+- do not disable collision checks;
+- do not force-accept colliding targets;
+- do not hide the problem with rendering tricks;
+- do not merge PR #5 while this remains true.
 
-| Demo | Result | Planning | Simulator start-to-start cycle |
+The previous provisional +100 mm challenge elevation solved the old-tabletop vertical placement issue but **cannot** solve internal bridge-part overlap.
+
+The preferred next step is NOT immediate compiler surgery.
+
+First test the new terrain + manually authored support floor + new challenge geometry. That can legitimately change the V4.6 challenge/support input and therefore the generated BuildPlan.
+
+Only if the new calibrated challenge still produces internal intersections should a bounded V4.6 compiler/custom-geometry repair be authorised.
+
+---
+
+# 5. New terrain strategy — current critical path
+
+The user has prepared a newer terrain that is visually cleaner and easier to author for construction.
+
+Current Blender bridge reference:
+
+```text
+ENTRY = (0.00, 0.00, 0.00) m
+EXIT  = (0.37, 0.00, 0.00) m
+```
+
+Blender / ROBO convention:
+
+```text
+X = bridge longitudinal direction
+Y = horizontal transverse direction
+Z = up
+```
+
+Therefore:
+
+```text
+ENTRY -> EXIT = +X
+nominal span = 370 mm
+bridge yaw = 0 degrees in the authored terrain frame
+```
+
+This is intentionally simpler than the old production terrain, which required a larger machine-frame rotation/rebase.
+
+Do not rotate the canonical robot/table coordinate system merely to compensate for terrain orientation. Prefer terrain/challenge authoring that is naturally aligned to the bridge grid.
+
+Recommended final GLB marker nodes:
+
+```text
+RB_ENTRY
+RB_EXIT
+RB_BRIDGE_FRAME
+```
+
+The loader should also tolerate `Entry` / `Exit` during calibration.
+
+---
+
+# 6. Manual transparent support-floor strategy — P0 calibration authority
+
+The immediate geometry task is to author a deterministic support/floor field underneath the bridge using the Player-based visual lab.
+
+This support floor is a **challenge/terrain support definition**.
+
+It is NOT:
+
+- bridge BOM;
+- BuildBoard inventory;
+- Human/Codex contribution;
+- robot source inventory.
+
+It may become nearly or fully transparent in the final presentation.
+
+## 6.1 Independent grid frame
+
+Create one independent support-floor frame:
+
+`RB_FLOOR_GRID`
+
+with editable:
+
+```text
+origin X mm
+origin Y mm
+origin Z mm
+yaw deg (normally 0)
+cell X = 16 mm
+cell Y = 16 mm
+layer height Z = 9.6 mm
+```
+
+ENTRY/EXIT remain terrain/challenge markers.
+
+The floor-grid origin moves independently and is expected to sit below ENTRY Z=0 as required by the terrain.
+
+When the grid origin moves, all floor blocks retain integer grid indices and move coherently with the frame.
+
+## 6.2 Required virtual floor-block catalogue
+
+Logical XYZ sizes:
+
+| Type | X | Y | Z |
 |---|---:|---:|---:|
-| Single red brick | 1/1 | ~1.3 ms | n/a |
-| Blue wall 3×4 | 12/12 | ~3.1 ms | ~1,003 ms mean |
-| Red cross-laminated tower 4×2 | 8/8 | ~2.0 ms | ~1,004 ms mean |
+| `1x1x1` | 16 mm | 16 mm | 9.6 mm |
+| `2x1x1` | 32 mm | 16 mm | 9.6 mm |
+| `5x1x1` | 80 mm | 16 mm | 9.6 mm |
+| `10x1x1` | 160 mm | 16 mm | 9.6 mm |
+| `20x2x1` | 320 mm | 32 mm | 9.6 mm |
+| `3x3x1` | 48 mm | 48 mm | 9.6 mm |
 
-Runtime settings used for these measurements:
+Support-floor blocks may be embedded into terrain deliberately.
 
-- requested `cycleTimeMs`: 1,000 ms;
-- simulation playback multiplier: 20×;
-- configured Cartesian speed: 650 mm/s.
+They must have deterministic integer-grid occupancy and 0/90 degree rotation.
 
-**These are simulator settings and simulator measurements only.**
+## 6.3 Terrain/floor visual authoring
 
-Bridge construction must reuse this pipeline rather than introduce a new per-brick execution system.
+The Player-based lab must provide:
+
+- Player V7 pointer-lock / WASD / reticle interaction;
+- terrain opacity 0–100%;
+- floor opacity 0–100%;
+- active support layer;
+- grid origin nudge controls;
+- place/select/rotate/delete floor blocks;
+- undo/redo;
+- autosave + JSON save/load;
+- support-top map visualisation;
+- top/side/entry/exit inspection views as secondary tools.
+
+The user should be able to fade terrain to ~15–30%, build the support field underneath it, and visually establish the correct floor.
+
+## 6.4 370 mm / 16 mm grid detail
+
+Current nominal span:
+
+```text
+370 mm
+```
+
+At 16 mm cells:
+
+```text
+23 cells = 368 mm
+remainder = 2 mm
+```
+
+A useful calibration option is to centre the 368 mm whole-cell span between ENTRY and EXIT, leaving approximately:
+
+```text
+1 mm at ENTRY
+1 mm at EXIT
+```
+
+Do not silently move ENTRY or EXIT to achieve this.
 
 ---
 
-# 6. Accepted package inventory — use exactly these
+# 7. Support-floor output contract
 
-## 6.1 Bridge Core / design
+The floor authoring lab should export canonical integer-grid data including:
 
-Production bridge functionality is already integrated.
+```text
+terrainAsset
+entryMm
+exitMm
 
-Reference source package:
+gridFrame:
+  originMm {x,y,z}
+  yawDeg
+  cellXmm
+  cellYmm
+  layerHeightMm
+
+floorBlocks[]:
+  id
+  type
+  sizeCells {x,y,z}
+  gridIndex {x,y,z}
+  yawDeg
+
+expandedOccupancyCells[]
+supportTopMap[]
+bounds
+```
+
+`supportTopMap` should describe, for each occupied X/Y cell, the highest authored support layer/top Z and the source floor-block ID.
+
+This support-top map becomes the calibrated terrain/support input for V4.6 through the real compiler's accepted terrain/support seam.
+
+Do not invent a second incompatible bridge compiler.
+
+---
+
+# 8. New-terrain V4.6 decision gate
+
+After the manual support floor is authored:
+
+1. load the real accepted V4.6 bridge core;
+2. feed the calibrated support-top map through the supported challenge/support callback/API;
+3. compile the actual hero Aqueduct;
+4. render exact hologram + solid custom geometry;
+5. run the exact internal geometry audit;
+6. inspect terrain/support contact;
+7. export final calibration JSON and BuildPlan identity.
+
+Decision:
+
+```text
+IF internal exact intersections == 0
+    -> adopt new challenge/support definition
+    -> resume PR #5 Construction on that BuildPlan
+ELSE
+    -> freeze the new challenge/support geometry
+    -> give exact new BuildPlan + audit evidence to a Pro Oracle
+    -> perform only a bounded V4.6 geometry/compiler repair
+```
+
+Do not repair the old 21-intersection BuildPlan first if the new challenge makes it obsolete.
+
+---
+
+# 9. Package inventory — current verified outputs
+
+## Bridge core / design
+
+Production bridge design is already integrated.
+
+Reference package:
 
 `ORACLE_BRIDGE_CORE_MAIN_DEMO_V1`
 
-Do not reintroduce the standalone V4.6 renderer or `BuildExecutionEngine` as authority.
+Do not restore the standalone V4.6 execution engine as authority.
 
-## 6.2 Terrain
+## Construction
 
-`ORACLE_TERRAIN_CHALLENGE_V1` is already integrated at `dc062cfa...`.
-
-Do **not** re-integrate duplicate Terrain ZIP downloads.
-
-Production ChallengeService now exposes the useful seams:
-
-```text
-getActiveChallenge()
-getBridgeTransform()
-getEntry()
-getExit()
-getTrainRoute()
-getCollisionProxy()
-```
-
-## 6.3 Construction
-
-Use only the final:
+Use only:
 
 `ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_V1.zip`
 
-Do not use:
+The production integration work is already largely represented in PR #5.
 
-`ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_ALL_AVAILABLE_WORK*.zip`
+Do not use old `ALL_AVAILABLE_WORK` Construction ZIPs.
 
-The final package contains production modules under `apps/web/src/bridge-construction/` and passed 17/17 package tests plus its browser acceptance harness.
-
-Important: its packaged fixture/BOM was created against an older larger Aqueduct and is **not production truth for the current EASY hero**.
-
-Current 4/3/2 EASY BuildPlan must regenerate registry/inventory dynamically. Current verified hero BOM for `bp_6a45b6bc`:
-
-```text
-TOTAL                 131
-STANDARD_BRICK        102
-  1x1x1                87
-  1x2x1                15
-  1x20x1                0
-CUSTOM_ARCH            27
-TRACK_SEGMENT            2
-```
-
-Do not copy the package's old 476-part HERO_BOM into the final runtime.
-
-## 6.4 Train
+## Train — canonical integration package
 
 Use:
 
-`ROBO_BRIDGE_TRAIN_V22_PRODUCTION.zip`
+`ORACLE_TRAIN_MAIN_DEMO_ADAPTERS_V1(1).zip`
 
-The `(1)` / `(2)` downloaded copies are byte-identical to the original generated package.
+Verified independently:
 
-Verified package test result: 19/19.
+- ZIP/package integrity PASS;
+- 47/47 Node tests PASS;
+- browser acceptance 10/10 PASS;
+- Construction compatibility 7/7 PASS;
+- source-equivalence checks 16/16;
+- partial BuildBoard -> `TRAIN_FELL`;
+- complete supported BuildBoard -> `CROSSED`;
+- yaw 0 and 90 degree route support;
+- translated/elevated route support;
+- coupled-body overlap/self-collision regression;
+- repeated reset coverage.
 
-Production package includes:
+This package is transform-independent and should consume current ChallengeService route/transform interfaces at integration time.
 
-- 120 Hz failure physics;
-- BuildBoard-derived support adapter;
-- immutable collision snapshot machinery;
-- route-frame/yaw-independent motion;
-- Push Position Block placeholder/external adapter;
-- speed/push controls;
-- `TRAIN_FELL` and `CROSSED`;
-- deterministic reset;
-- train/coupler self-overlap regression fix.
-
-Do not use the older Train V2 package as the production source of truth.
-
-## 6.5 Mission + semantic WebMCP
+## Mission — canonical integration package
 
 Use:
 
-`ORACLE_MISSION_WEBMCP_RUNTIME_V1.zip`
+`ORACLE_MISSION_INTEGRATION_ADAPTERS_V1(1).zip`
 
-Verified package result: 103/103 plus package verification checks.
+Verified independently:
 
-It supplies the missing outcome-level tools:
+- 114/114 Mission + adapter tests PASS;
+- package verification PASS;
+- real Construction adapter smoke PASS;
+- real Train `TRAIN_FELL` smoke PASS;
+- real Train `CROSSED` smoke PASS.
+
+Semantic mission tools:
 
 ```text
 get_mission_state
@@ -356,202 +465,305 @@ test_bridge
 reset_mission
 ```
 
-Expected final native WebMCP count after integration: **27** = existing 19 + 8 mission/terrain tools.
+Expected final WebMCP count:
 
-Thin production adapters are expected; do not redesign the package.
+```text
+14 low-level
++ 5 bridge design
++ 8 mission/terrain
+= 27 tools
+```
 
-## 6.6 Automated submission gate
+Important compatibility rule:
 
-Use branch/package:
+Prefer the newer Train integration's clean Mission-facing adapter:
 
-`oracle/p0-submission-gate`
+```text
+getState()
+test()
+reset()
+```
 
-checkpoint:
+Do not regress Mission integration back to the older raw Train service seam.
 
-`fc37ddd694192373364ea38c750237066583173b`
+## Submission Gate — canonical current-runtime package
 
-The gate already produced 45 PASS / 0 FAIL on its old bridge-only baseline and correctly marked future Construction/Train/Mission/Terrain tests as NOT_AVAILABLE rather than faking success.
+Use:
 
-Useful commands:
+`ORACLE_SUBMISSION_GATE_CURRENT_RUNTIME_V1(1).zip`
+
+Verified:
+
+- package unit suite 11/11 PASS;
+- Oracle current-runtime evidence: JavaScript 164/164;
+- browser acceptance 46 PASS / 0 FAIL;
+- blocking browser errors 0;
+- current tool profile 19;
+- future Construction/Train/Mission checks activate only when those services actually exist.
+
+Useful commands remain:
 
 ```bash
 npm run submission:gate
 npm run submission:smoke
 npm run webmcp:audit
+npm run hero:1
 npm run hero:3
 npm run hero:10
 npm run release:evidence
 ```
 
-After service integration, bring this gate forward and turn the current NOT_AVAILABLE hero assertions into real pass/fail checks.
+---
+
+# 10. Production pipelines
+
+## Design
+
+`natural language -> WebMCP -> BridgeHost -> V4.6 -> BuildPlan -> exact hologram`
+
+**Status: COMPLETE in main.**
+
+## Challenge/support calibration
+
+`new terrain -> ENTRY/EXIT -> independent RB_FLOOR_GRID -> manually authored floor blocks -> supportTopMap -> V4.6 challenge/support input`
+
+**Status: IN PROGRESS / immediate critical path.**
+
+## Freeze
+
+`accepted calibrated challenge + BridgeSpec + clean BuildPlan -> freeze identity -> BuildBoard requirements -> BUILD`
+
+**Status: implementation exists; final clean geometry pending.**
+
+## Construction
+
+`frozen BuildPlan -> PartRegistry -> shared inventory -> normalized placements -> existing cycle runner -> RobotController -> PlacementAuthority -> same BuildBoard`
+
+**Status: strong WIP in PR #5; blocked by current BuildPlan geometry.**
+
+## TEST
+
+`frozen identity + accepted BuildBoard snapshot -> Train integration -> support/collision snapshot -> TRAIN_FELL/CROSSED`
+
+**Status: package-complete; MAIN_DEMO integration pending Construction acceptance.**
+
+## Mission
+
+`DESIGN -> BUILD -> TEST -> BUILD on TRAIN_FELL / COMPLETE on CROSSED -> reset`
+
+**Status: adapter/package-complete; MAIN_DEMO integration pending Train/Construction.**
 
 ---
 
-# 7. Architecture invariants
+# 11. Shared Human + Codex construction rule
 
-Canonical authority:
+Hard P0 rule:
 
-`RevisionClock -> BuildBoard + PlacementAuthority + RobotController -> Runtime -> Renderer / Player / Perception / WebMCP`
+**No hero part class is Human-only or Codex-only.**
 
-Bridge design authority:
+Both actors share:
 
-`ChallengeService -> BridgeHost -> V4.6 BuildPlan`
+- one PartRegistry;
+- one source inventory;
+- one BuildBoard;
+- the same pending targets.
 
-Never create:
+`actorPreference` is a scheduling hint, never a permission boundary.
 
-- a second BuildBoard;
-- a second accepted inventory/occupancy truth;
-- a second RobotController;
-- a second RevisionClock;
-- a WebMCP-only bridge state;
-- a train-owned bridge-complete Boolean;
-- a mission-owned physical part truth;
-- an instant-build shortcut;
-- joint-level WebMCP controls;
-- direct completion/support setters.
+A specific robot placement may be unreachable for geometric/workspace reasons, but the part class itself must not become Human-only.
 
-Do not restore NVIDIA Newton.
-
-Keep exact world-revision checks and cancellation fail-closed.
+PR #5 already demonstrates the intended shared-inventory/adoption architecture and must preserve it when the new challenge geometry lands.
 
 ---
 
-# 8. Frozen mission identity
+# 12. Frozen mission identity
 
 `start_bridge_build` freezes at least:
 
 ```text
 missionId
 challengeId
-challengeChecksum
 bridgeSpec
 designRevision
 planId
 designChecksum
-worldTransform
+worldTransform / calibrated challenge frame
 requiredPlacementIds
 partRegistryRevision/hash
+support-floor/grid identity or checksum where used
 ```
 
-Every build and TEST action verifies the current mission, plan, checksum, and applicable revisions.
+Every build and TEST action verifies the same frozen identity.
 
-A redesign during BUILD requires an explicit reset/return to DESIGN. It may not silently replace the frozen mission.
+A redesign during BUILD requires reset/return to DESIGN. It may not silently replace the frozen mission.
 
 ---
 
-# 9. P0 physical-build blocker — resolve before BUILD freeze
+# 13. Revised strict execution order
 
-The current EASY bridge transform is excellent for the design/hologram demonstration but is not yet physically buildable as-is.
+## TODAY-1 — keep production main stable
 
-The current lower Aqueduct extends below the existing tabletop/work surface and below useful robot Z reach. Approximate current physical envelope from the Construction adapter is:
+**COMPLETE.**
 
-```text
-X: 634 .. 666 mm
-Y: -247 .. +25 mm
-Z: approximately -62 .. +59 mm
+`main @ ec3c9237...` is the fallback production checkpoint.
+
+Do not merge PR #5 yet.
+
+## TODAY-2 — finish Player-based new-terrain support-floor lab
+
+**CURRENT CRITICAL PATH.**
+
+Required acceptance:
+
+1. latest new terrain loads with materials;
+2. ENTRY reads as `(0,0,0)` m or its authored marker equivalent;
+3. EXIT reads as `(0.37,0,0)` m or its authored marker equivalent;
+4. independent grid origin X/Y/Z can move without moving ENTRY/EXIT;
+5. terrain opacity works;
+6. all six floor block types place correctly;
+7. multi-layer floor works;
+8. grid occupancy is deterministic;
+9. floor save/reload is lossless;
+10. supportTopMap is exported;
+11. real V4.6 compiles against the authored support input;
+12. exact internal intersection count is reported.
+
+## TODAY-3 — choose geometry path
+
+If new BuildPlan has zero internal exact intersections:
+
+- adopt the new challenge/support calibration;
+- update PR #5 to that BuildPlan;
+- rerun full Construction acceptance.
+
+If intersections remain:
+
+- freeze new terrain/support calibration;
+- send the exact current BuildPlan/audit to Pro Oracle;
+- perform a small compiler/custom-geometry repair only;
+- do not redesign Construction.
+
+## TODAY-4 — complete Construction PR #5
+
+Hard acceptance:
+
+- current clean BuildPlan freezes;
+- PartRegistry generated dynamically;
+- all required hero classes represented;
+- Human + Codex both permitted for all hero classes;
+- one shared inventory;
+- one shared BuildBoard;
+- human real placement accepted;
+- Codex/UR10 meaningful sequence accepted;
+- stolen source reassigned;
+- human takeover/adoption succeeds;
+- no illegal internal bridge collisions;
+- relevant terrain/support clearance accepted;
+- regressions and browser console clean.
+
+Then merge to `main`.
+
+## TODAY-5 — integrate Train adapter package
+
+Use `ORACLE_TRAIN_MAIN_DEMO_ADAPTERS_V1(1).zip`.
+
+Wire only:
+
+`ChallengeService + frozen BuildPlan + live BuildBoard + PartRegistry -> TrainIntegration`
+
+Acceptance:
+
+1. partial accepted bridge -> `TRAIN_FELL`;
+2. reset train;
+3. continue same frozen construction;
+4. sufficient/complete support -> `CROSSED`;
+5. no hardcoded pass/fail;
+6. no train-owned bridge truth.
+
+## TODAY-6 — integrate Mission adapter package
+
+Use `ORACLE_MISSION_INTEGRATION_ADAPTERS_V1(1).zip`.
+
+Target 27 tools through the one existing registrar.
+
+Acceptance:
+
+`DESIGN -> BUILD -> failed TEST -> BUILD -> successful TEST -> COMPLETE -> reset -> new missionId DESIGN`
+
+Only `CROSSED` may produce COMPLETE.
+
+## TODAY-7 — install/run current Submission Gate
+
+Use `ORACLE_SUBMISSION_GATE_CURRENT_RUNTIME_V1(1).zip`.
+
+Run:
+
+```bash
+npm run submission:gate
+npm run hero:3
 ```
 
-Current ENTRY/EXIT deck level is approximately Z=56 mm.
+If hero 3/3 passes, freeze feature work.
 
-Therefore the next integration task must make one coherent challenge-frame correction so that:
+Then if time permits:
 
-1. the complete hero bridge exists above the work surface;
-2. Codex-assigned parts remain inside RobotController workspace;
-3. ENTRY/EXIT remain aligned;
-4. the train route remains aligned;
-5. terrain/ravine remains coherent;
-6. hologram, BuildBoard targets, Train and Mission all inherit the same transform.
+```bash
+npm run webmcp:audit
+npm run hero:10
+npm run release:evidence
+```
 
-Likely P0 solution: raise the challenge/bridge deck coherently by roughly the amount required to make the lowest physical proxy clear the work surface, then verify exact reachability. The final offset must be calculated and browser-verified; do not blindly hardcode an arbitrary +100 mm.
+## TODAY-8 — release + video
 
-**Never fix this by widening RobotController limits, disabling physical collision, or independently moving only the hologram.**
+Only after hero 3/3:
 
----
-
-# 10. Authoritative PartRegistry / current hero — P0
-
-Required path:
-
-`current frozen BuildPlan -> PartRegistry -> source inventory -> exact target -> placement stream -> PlacementAuthority -> BuildBoard`
-
-Current hero BOM is only 131 parts, so use it as production truth.
-
-Tasks:
-
-| ID | Task | completed |
-|---|---|---:|
-| PART-01 | Integrate one current-plan PartRegistry | false |
-| PART-02 | Regenerate BOM from current `bp_6a45b6bc` | true |
-| PART-03 | Register current standard types | false |
-| PART-04 | Register current custom arch definitions | false |
-| PART-05 | Register current track definitions | false |
-| PART-06 | Bind current-plan source inventory | false |
-| PART-07 | Bind collision/placement acceptance | false |
-| PART-08 | Preserve plan -> stream -> target -> BuildBoard identity | false |
-| PART-09 | Validate every required current hero placement before BUILD | false |
-| PART-10 | Verify Codex actor allocation is demo-viable | false |
-
-The Construction Oracle's conservative demo policy assigned too much of the current hero to the human because it limited Codex to a narrow standard-part subset.
-
-Do **not** preserve that policy blindly.
-
-Priority actor-support expansion:
-
-1. make `1x1x1` robot-buildable through the existing gripper/capture system;
-2. keep `1x2x1` robot support;
-3. assess custom arches using their existing deterministic grasp/collision proxies;
-4. track can remain human if necessary for P0, but it must still be an authoritative required placement;
-5. any unreachable target must be explicitly human-assigned, not silently skipped.
-
-The final hero needs a visibly meaningful Codex construction contribution, not 9 robot parts versus 122 human parts.
+1. final native WebMCP acceptance;
+2. hosted URL;
+3. public-repo/IP/provenance gate;
+4. README + 27-tool catalogue + judge instructions;
+5. record/edit public <3-minute video;
+6. Devpost submission.
 
 ---
 
-# 11. Production pipelines
+# 14. Hero acceptance gate
 
-## Design
+Submission runtime is ready only when all are true:
 
-`natural language -> WebMCP -> BridgeDesignService/BridgeHost -> V4.6 -> current BuildPlan -> exact hologram`
-
-**Status: integrated and verified.**
-
-## Challenge
-
-`curated EASY -> ChallengeService -> single bridge/ENTRY/EXIT/train-route transform authority`
-
-**Status: integrated and verified.**
-
-## Freeze
-
-`draft challenge + BridgeSpec + current BuildPlan -> confirmation -> frozen identity -> BuildBoard requirements + construction stream -> BUILD`
-
-**Status: implementation package ready; integration pending.**
-
-## Construction
-
-`frozen current BuildPlan -> PartRegistry -> normalized placements -> existing planned-cycle/placement stream -> five-slot window -> source reassignment -> RobotController -> PlacementAuthority -> BuildBoard`
-
-Reuse the generic deterministic executor proven at `4a9b88ac...`.
-
-## TEST
-
-`frozen identity + accepted BuildBoard snapshot -> rail support map -> Train V2.2 -> TRAIN_FELL/CROSSED`
-
-An incomplete TEST is intentionally allowed and produces failure evidence. Construction persists after failure.
-
-## Mission
-
-`DESIGN -> BUILD -> TEST -> BUILD on TRAIN_FELL / COMPLETE on CROSSED -> reset to new DESIGN mission`
-
-MissionService orchestrates only. It owns no brick/support truth.
+1. final curated terrain loads in real MAIN_DEMO;
+2. ENTRY/EXIT/challenge geometry are authoritative and coherent;
+3. support-floor/grid definition is frozen or otherwise deterministic;
+4. WebMCP changes BridgeSpec;
+5. V4.6 creates the authoritative BuildPlan;
+6. exact hologram matches plan identity;
+7. internal bridge geometry audit passes;
+8. BUILD freezes mission/plan/challenge/registry/support identity;
+9. every hero part is represented by PartRegistry;
+10. Human and Codex can both use every supported hero part class;
+11. Human places an accepted part;
+12. UR10 places a meaningful accepted sequence;
+13. Human removes/uses a source planned for Codex;
+14. runtime reassigns another valid source;
+15. Human completes a Codex-intended target and runtime adopts it;
+16. early TEST derives support from accepted BuildBoard state only;
+17. train visibly fails at real unsupported support;
+18. accepted construction survives failure;
+19. build continues on same frozen plan;
+20. final TEST returns CROSSED from real support;
+21. Mission enters COMPLETE only from CROSSED;
+22. TRY AGAIN creates a clean new mission and invalidates old IDs;
+23. final WebMCP semantic responses are bounded/recovery-aware;
+24. no page/tool authority mismatch;
+25. no blocking console errors or unhandled rejections;
+26. full hero sequence passes 3 consecutive times minimum.
 
 ---
 
-# 12. Final mission-level WebMCP surface — P0
+# 15. WebMCP final surface
 
-Existing 19 production tools remain available.
+Existing 19 tools remain unless deliberately deprecated after final review.
 
-Add the eight semantic tools from the Mission package:
+Add eight mission/terrain tools:
 
 1. `get_mission_state`
 2. `get_terrain_options`
@@ -562,234 +774,23 @@ Add the eight semantic tools from the Mission package:
 7. `test_bridge`
 8. `reset_mission`
 
-Existing bridge design tools remain:
-
-- `get_bridge_design`
-- `get_bridge_capabilities`
-- `update_bridge_design`
-- `get_bridge_build_plan`
-- `reset_bridge_design`
-
 Expected final total: **27 tools**.
 
-Thin adapter requirements:
+Normal mission responses should remain concise, approximately <=1.5K characters where practical, with paged detail.
 
-Construction package approximately exposes:
+Errors should include stable code, retryable flag, recovery action, current phase/revisions and allowed next actions.
 
-```text
-startBuild
-getBuildProgress
-buildNextParts
-cancelBuild
-reset
-```
+P0 annotation review item:
 
-Mission expects:
-
-```text
-startBuild
-getProgress
-buildNextParts
-cancel
-reset
-```
-
-Adapter:
-
-```text
-getProgress -> getBuildProgress
-cancel -> cancelBuild
-```
-
-Train package approximately exposes:
-
-```text
-getState
-prepareTest/startTest
-runToTerminal
-resetTrain
-```
-
-Mission expects semantic:
-
-```text
-test
-reset
-```
-
-Adapter:
-
-```text
-test() -> prepare/start -> bounded run to authoritative terminal outcome
-reset() -> resetTrain()
-```
-
-Do not fork either subsystem to solve naming differences.
-
-Normal mission outputs target approximately 1.5K characters. Page detail.
-
-Errors return stable code, retryable flag, recovery action, current phase/revisions, and permitted next actions.
-
-Annotation P0 fix:
-
-`plan_placement_queue` currently creates logical stream/ghost state and therefore must not remain marked `readOnlyHint: true` without a justified correction.
+`plan_placement_queue` mutates logical planning/ghost state and must not remain incorrectly advertised as read-only.
 
 ---
 
-# 13. TODAY — revised strict execution order
+# 16. QA / evidence gate
 
-The major packages now exist. Do not start another implementation-from-scratch Oracle or mega-merge.
+The current Submission Gate package is ready to become the referee once the services exist in MAIN_DEMO.
 
-## TODAY-1 — EASY terrain + BridgeHost + exact hologram
-
-**Status: COMPLETE** at `dc062cfa...`.
-
-Acceptance already proved:
-
-`EASY -> BridgeHost -> WebMCP mutation -> new plan/checksum -> visible exact hologram`
-
-Do not spend more time on terrain polish now.
-
-## TODAY-2 — Construction V1 -> current EASY BuildPlan
-
-**CURRENT CRITICAL PATH.**
-
-Steps:
-
-1. start from `dc062cfa...`;
-2. integrate `ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_V1.zip` production modules;
-3. regenerate PartRegistry/inventory from the current 131-part BuildPlan, not the package's old 476-part fixture;
-4. solve physical bridge elevation coherently through ChallengeService;
-5. verify all current targets against work surface and robot workspace;
-6. enable robot support for `1x1x1` plus existing `1x2x1`;
-7. initialise the same BuildBoard with frozen plan targets;
-8. human satisfies >=1 target;
-9. Codex/UR10 satisfies a meaningful sequence through the existing cycle runner;
-10. steal/move a planned source and prove automatic reassignment;
-11. preserve stable placement identity throughout.
-
-**Hard acceptance:** BuildBoard contains accepted human + Codex placements from the same frozen current plan; source reassignment works; physical targets are not hidden below the table.
-
-## TODAY-3 — Integrate Train V2.2
-
-Use `ROBO_BRIDGE_TRAIN_V22_PRODUCTION`.
-
-Wire:
-
-`current frozen BuildPlan + accepted BuildBoard + ChallengeService.getTrainRoute() -> support/collision snapshot -> TrainService`
-
-Do not re-create terrain or use the package's old standalone environment source.
-
-Acceptance:
-
-1. partial accepted construction -> Push Position Block -> first unsupported section -> linked derail -> `TRAIN_FELL`;
-2. reset train only;
-3. continue same frozen construction;
-4. sufficient/complete accepted support -> same TEST path -> `CROSSED`.
-
-## TODAY-4 — Integrate Mission + semantic WebMCP
-
-Use `ORACLE_MISSION_WEBMCP_RUNTIME_V1`.
-
-Add only thin Construction, Train and Challenge adapters.
-
-Register eight new tools through the one existing registrar.
-
-Acceptance:
-
-`DESIGN -> BUILD -> failed TEST -> BUILD -> successful TEST -> COMPLETE -> reset -> new missionId DESIGN`
-
-Only `CROSSED` may produce COMPLETE.
-
-## TODAY-5 — Bring forward Submission Gate
-
-Integrate/cherry-pick `oracle/p0-submission-gate` tooling after service composition is stable.
-
-Run:
-
-```bash
-npm run submission:gate
-npm run hero:3
-```
-
-Turn all current P0 future-service NOT_AVAILABLE entries into real pass/fail assertions.
-
-Fix only demonstrated blockers.
-
-Then, if stable:
-
-```bash
-npm run hero:10
-npm run release:evidence
-```
-
-## TODAY-6 — release + video
-
-Only after hero 3/3:
-
-1. final native WebMCP acceptance;
-2. hosted URL;
-3. public repo/IP/provenance gate;
-4. README final tool count and judge instructions;
-5. record/edit <3-minute video;
-6. Devpost submission.
-
----
-
-# 14. Hero acceptance gate
-
-Submission runtime is ready only when all are true:
-
-1. EASY terrain loads in real MAIN_DEMO.
-2. One ChallengeService owns terrain/ENTRY/EXIT/bridge/train route alignment.
-3. WebMCP changes BridgeSpec.
-4. V4.6 creates the authoritative current BuildPlan.
-5. Exact hologram updates with plan identity.
-6. Physical hero bridge geometry clears the work surface.
-7. BUILD freezes mission/plan/transform/registry identity.
-8. Every required current hero part is represented by PartRegistry.
-9. Every required target has a legal actor/source strategy.
-10. Human places an accepted frozen-plan part.
-11. UR10 places a meaningful sequence of accepted frozen-plan parts.
-12. Human changes/removes a source planned for Codex.
-13. Runtime reassigns another valid source.
-14. Early TEST derives support from accepted BuildBoard state only.
-15. Train visibly fails at real unsupported support.
-16. Existing accepted construction survives failure.
-17. Build continues on the same frozen plan.
-18. Final TEST reads the same authority and returns CROSSED.
-19. Mission enters COMPLETE only from CROSSED.
-20. Statistics match accepted events.
-21. TRY AGAIN creates a new clean mission and invalidates old IDs.
-22. Final WebMCP semantic tools return bounded, recovery-aware responses.
-23. No page/tool authority mismatch exists.
-24. No blocking console errors or unhandled rejections.
-25. Complete sequence passes 3 consecutive times minimum.
-
----
-
-# 15. Automated QA / evidence gate
-
-The submission-gate branch already proves the harness itself.
-
-Old bridge-only report:
-
-```text
-45 PASS
-0 FAIL
-17 NOT_AVAILABLE
-1 SKIPPED_WITH_REASON
-```
-
-Those NOT_AVAILABLE entries are expected to become real checks after service integration.
-
-The gate also identified current WebMCP review items:
-
-- `plan_placement_queue` annotation: high-priority fix;
-- some read tool responses are larger than the desired ~1.5K normal mission target;
-- mission-level tools should be used for the flagship journey rather than low-level tool soup.
-
-Final strict sequence:
+Required strict sequence:
 
 ```bash
 npm run submission:gate
@@ -800,90 +801,60 @@ npm run hero:10       # only if time permits
 npm run release:evidence
 ```
 
+Do not count isolated package tests as integrated hero acceptance.
+
+Do not hide `NOT_AVAILABLE`; the gate must activate real checks only when the actual production service is present.
+
 ---
 
-# 16. Simulation-only timing and hardware boundary
-
-Current browser cycle evidence is simulator-only.
+# 17. Simulation-only boundary
 
 Do not claim:
 
-- physical UR10 1-second cycles;
+- physical UR10 cycle timing;
 - physical 650 mm/s readiness;
 - physical safety;
 - physical accuracy;
 - hardware collision validation;
 - hardware reliability.
 
+Current robot/train timing and collision evidence is simulation evidence only.
+
 Physical hardware is not required for this submission.
-
-Eventual hardware integration requires a separate gated programme:
-
-1. physical workspace calibration;
-2. safe speed/acceleration caps;
-3. E-stop and safety validation;
-4. TCP/gripper calibration;
-5. dry-run reachability;
-6. single-placement verification;
-7. low-speed multi-placement cycles;
-8. controlled acceleration only after acceptance.
 
 ---
 
-# 17. Scope cuts until P0 passes
+# 18. Scope cuts until P0 passes
 
 Do not spend submission time on:
 
-- trees/grass/environment polish beyond fixing genuine readability blockers;
 - CHALLENGING terrain;
 - Viaduct production acceptance;
+- trees/grass polish beyond genuine readability blockers;
 - NVIDIA Newton;
 - procedural terrain;
 - extra bridge families;
 - structural collapse;
-- fancy train art or final GLB substitution;
+- fancy train art / final train GLBs;
 - robot loading/coupling train vehicles;
 - custom HDRI/interior redesign;
-- ImageGen/photo mode;
+- photo/ImageGen mode;
 - individual brick paint system;
 - joint-level MCP controls;
 - general motion planning;
 - physical UR10 deployment.
 
-The placeholder train cubes and Push Position Block are acceptable for P0 if the fail/pass physics and WebMCP story are clear.
-
----
-
-# 18. Post-submission robustness / larger builds
-
-After the submission hero loop is frozen:
-
-1. broaden PartRegistry beyond the curated hero plan;
-2. support additional custom parts/robot grasps;
-3. test much larger placement streams;
-4. add resumable/paged mission execution;
-5. test inventory exhaustion/replenishment;
-6. test longer dependency chains;
-7. add CHALLENGING and Viaduct production path;
-8. improve terrain/trees/lighting;
-9. replace train placeholder geometry with final art;
-10. profile memory/frame-time over long sessions;
-11. broaden model/eval coverage;
-12. only then plan carefully gated hardware integration.
+The support-floor authoring lab is not optional polish: it is currently part of resolving the P0 geometry blocker.
 
 ---
 
 # 19. Submission presentation gate — after hero freeze
 
-Start this work when the hero runtime is frozen and hero 3/3 passes. Do not add new product features during this phase unless they fix a demonstrated submission blocker.
-
-## 19.1 Project positioning
-
 Project name:
 
 **ROBO BRIDGE MCP**
 
-Concrete one-line description:
+One-line description:
 
 > Human and AI co-design and build the same bridge, then prove the result with a train test.
 
@@ -891,88 +862,60 @@ Central submission story:
 
 `HUMAN + AGENT SHARE ONE WORLD -> CO-DESIGN -> SHARED BUILDPLAN -> CO-BUILD -> TEST FAILS -> AGENT OBSERVES -> CONTINUE/REPAIR -> TRAIN CROSSES`
 
-Avoid vague AI marketing language.
-
-## 19.2 Demo video requirements
-
-Hard requirements:
+Video requirements:
 
 - under 3 minutes;
-- public on YouTube;
+- public YouTube;
 - audio narration;
-- show the project working in the first 10–15 seconds;
-- visibly show the agent using real WebMCP tools;
-- no sign-up, login, setup, loading, or title-screen footage;
-- use one strong end-to-end example rather than repeated examples.
+- working result in first 10–15 seconds;
+- real WebMCP tool use visible;
+- no login/setup/loading footage;
+- protect failure -> observe -> repair/continue -> successful crossing.
 
-Target final duration: **2:20–2:40**.
+Target duration: **2:20–2:40**.
 
 Recommended cut:
 
-| Time | Show | Main proof |
-|---|---|---|
-| 0:00–0:12 | Working bridge scene, human + Codex/UR10 action, train-success glimpse | Immediate shared-task hook |
-| 0:12–0:35 | Give agent bridge goal and show real WebMCP calls | WebMCP is the control surface |
-| 0:35–1:05 | Terrain/design read, bridge proposal/change, hologram update | Agent understands and changes spatial design |
-| 1:05–1:35 | Human + Codex/UR10 build same frozen BuildPlan | Shared authoritative construction |
-| 1:35–2:00 | Early TEST, visible failure, agent observes and continues | Outcome-driven recovery |
-| 2:00–2:20 | Final TEST, train crosses, MISSION COMPLETE | Verified shared result |
-| 2:20–2:35 | Short architecture explanation | Same page state powers human + WebMCP |
+| Time | Show |
+|---|---|
+| 0:00–0:12 | Working bridge/human/Codex/train-success hook |
+| 0:12–0:35 | User goal + real WebMCP calls |
+| 0:35–1:05 | Terrain/design read + proposal/change + hologram |
+| 1:05–1:35 | Human + Codex build same frozen BuildPlan |
+| 1:35–2:00 | Early TEST fails + agent observes |
+| 2:00–2:20 | Continue/repair + final CROSSED + MISSION COMPLETE |
+| 2:20–2:35 | Short authority/WebMCP explanation |
 
-Protect the **failure -> observe -> continue/repair -> successful crossing** sequence above all optional footage.
+Never overstate physical hardware evidence.
 
-## 19.3 Script rules
+---
 
-1. Describe concrete actions/outcomes, not marketing language.
-2. State that human and agent operate on the same mission state and frozen BuildPlan.
-3. Show actual WebMCP tool use while narration explains the result.
-4. Explain that Codex makes decisions while deterministic runtime systems execute accepted construction actions.
-5. Use early train failure as useful evidence, not an embarrassment.
-6. Never overstate physical hardware evidence.
-7. Put the best visual result first.
-8. Remove waits, filler and repeated actions.
-
-Suggested WebMCP explanation:
-
-> WebMCP gives the agent structured access to the same interactive environment as the human. It can understand the bridge state, change the design, perform construction actions, test the result, and continue from the outcome.
-
-## 19.4 Written submission description
-
-The description must answer:
-
-1. Why is this a strong WebMCP use case?
-2. How does WebMCP improve the experience?
-3. What can the human and agent now do together?
-4. How is WebMCP implemented?
-
-Only describe tools/functionality present in the submitted runtime.
-
-## 19.5 Final submission checklist
+# 20. Final submission checklist
 
 | ID | Task | completed |
-|---|---|---:|
-| SUB-01 | Lock final project name and one-line description | false |
-| SUB-02 | Write complete <3 minute narration and shot list | false |
-| SUB-03 | Record short hero clips with real WebMCP visible | false |
-| SUB-04 | Edit/upload final public YouTube video | false |
-| SUB-05 | Write Devpost description against judging criteria | false |
-| SUB-06 | Write exact judge testing instructions | false |
-| SUB-07 | Verify hosted URL from clean/incognito browser | false |
-| SUB-08 | Verify public repo, licence, README and provenance | false |
-| SUB-09 | Verify video link without account access | false |
-| SUB-10 | Check every submission-form field | false |
-| SUB-11 | Submit before hard deadline | false |
-
-Hard deadline: **Thursday 3 September 2026, 13:00 PDT / 21:00 BST**.
+|---|---:|---:|
+| SUB-01 | Lock final runtime and hero geometry | false |
+| SUB-02 | Hero loop 3/3 | false |
+| SUB-03 | Final Submission Gate PASS | false |
+| SUB-04 | Final native WebMCP browser acceptance | false |
+| SUB-05 | Hosted URL | false |
+| SUB-06 | Public repo / licence / provenance / IP gate | false |
+| SUB-07 | README + judge testing instructions | false |
+| SUB-08 | Record/edit <3-minute video | false |
+| SUB-09 | Public YouTube video | false |
+| SUB-10 | Complete Devpost fields | false |
+| SUB-11 | Submit before 2026-09-03 21:00 BST | false |
 
 If time becomes constrained, cut optional polish before cutting reliability, visible WebMCP evidence, fail/repair/pass, or submission clarity.
 
 ---
 
-# 20. Final principle
+# 21. Final principle
 
-**Do not build another subsystem from scratch. Integrate the completed packages into `dc062cfa...`, solve the physical build frame, and prove the mission.**
+**Do not build another major subsystem from scratch.**
+
+**First establish the final terrain/support grid visually. Then demand a clean real V4.6 BuildPlan. Preserve PR #5's shared-authority Construction work, wire the already-finished Train and Mission packages, and let the Submission Gate decide readiness.**
 
 **Today, optimise for one undeniable working mission, not feature count.**
 
-**Codex plans. Deterministic systems execute. Human actions change the shared world. The runtime adapts. BuildBoard controls TEST. The train proves the result.**
+**Codex decides. Deterministic systems execute. Human actions change the shared world. The runtime adapts. BuildBoard controls TEST. The train proves the result.**
