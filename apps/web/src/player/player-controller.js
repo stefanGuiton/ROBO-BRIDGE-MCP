@@ -3,8 +3,9 @@ import { clamp } from './math.js';
 
 const MOVEMENT_CODES = new Set([
   'KeyW', 'KeyA', 'KeyS', 'KeyD',
-  'ShiftLeft', 'ShiftRight', 'Space', 'ControlLeft', 'ControlRight'
+  'ShiftLeft', 'ShiftRight'
 ]);
+const DISABLED_VERTICAL_CODES = new Set(['Space', 'ControlLeft', 'ControlRight']);
 
 const FALLBACK_EDGE_YAW_PX_PER_SECOND = 1900;
 const FALLBACK_EDGE_PITCH_PX_PER_SECOND = 1150;
@@ -28,6 +29,7 @@ export class PlayerController {
     this.settings = settings;
     this.collisionSolver = collisionSolver;
     this.position = new THREE.Vector3();
+    this.fixedHeightMm = null;
     this.velocity = new THREE.Vector3();
     this.forward = new THREE.Vector3();
     this.right = new THREE.Vector3();
@@ -117,6 +119,10 @@ export class PlayerController {
     document.addEventListener('pointerlockerror', () => this.activateFallbackLook());
     addEventListener('keydown', (event) => {
       if (!this.enabled || event.target?.matches?.('input,select,textarea,button')) return;
+      if (DISABLED_VERTICAL_CODES.has(event.code)) {
+        event.preventDefault();
+        return;
+      }
       if (MOVEMENT_CODES.has(event.code)) {
         this.keys.add(event.code);
         event.preventDefault();
@@ -339,12 +345,23 @@ export class PlayerController {
 
   setLookAt(position, target) {
     this.position.copy(position);
+    this.fixedHeightMm = position.z;
     const direction = this.delta.copy(target).sub(position).normalize();
     this.yaw = Math.atan2(direction.y, direction.x);
     this.pitch = Math.asin(clamp(direction.z, -1, 1));
     this.targetYaw = this.yaw;
     this.targetPitch = this.pitch;
     this.syncCamera();
+  }
+
+  setFixedHeight(heightMm) {
+    if (!Number.isFinite(heightMm)) throw new TypeError('fixed player height must be finite');
+    this.fixedHeightMm = heightMm;
+    this.position.z = heightMm;
+    this.velocity.z = 0;
+    this.desired.z = 0;
+    this.syncCamera();
+    return heightMm;
   }
 
   physicsStep(dt) {
@@ -355,20 +372,19 @@ export class PlayerController {
     this.yaw += (this.targetYaw - this.yaw) * lookAlpha;
     this.pitch += (this.targetPitch - this.pitch) * lookAlpha;
     this.syncBasis();
+    if (Number.isFinite(this.fixedHeightMm)) this.position.z = this.fixedHeightMm;
     const pressed = (code) => this.keys.has(code) || this.mobileKeys.has(code);
     const ix = Number(pressed('KeyW')) - Number(pressed('KeyS'));
     const iy = Number(pressed('KeyD')) - Number(pressed('KeyA'));
-    const iz = Number(pressed('Space')) - Number(pressed('ControlLeft') || pressed('ControlRight'));
     this.desired.set(0, 0, 0)
       .addScaledVector(this.forward, ix)
       .addScaledVector(this.right, iy);
-    if (!this.settings.movementFollowsPitch) this.desired.z = 0;
+    this.desired.z = 0;
     if (this.desired.lengthSq()) this.desired.normalize();
     const mobileScale = this.mobileMode ? this.settings.mobileDpadSpeedScale : 1;
     const sprint = pressed('ShiftLeft') || pressed('ShiftRight') ? this.settings.sprintMultiplier : 1;
     this.desired.multiplyScalar(this.settings.moveSpeedMmS * sprint * mobileScale);
-    this.desired.z = iz * this.settings.verticalSpeedMmS * sprint * mobileScale;
-    const input = Boolean(ix || iy || iz);
+    const input = Boolean(ix || iy);
     const acceleration = input ? this.settings.accelerationMmS2 : this.settings.decelerationMmS2;
     this.delta.copy(this.desired).sub(this.velocity);
     const length = this.delta.length();
@@ -377,6 +393,7 @@ export class PlayerController {
     if (!input && this.settings.movementDampingPerS > 0) {
       this.velocity.multiplyScalar(Math.exp(-this.settings.movementDampingPerS * dt));
     }
+    this.velocity.z = 0;
     if (this.velocity.length() > this.settings.maximumSpeedMmS) {
       this.velocity.setLength(this.settings.maximumSpeedMmS);
     }
@@ -387,6 +404,8 @@ export class PlayerController {
       const inward = this.velocity.dot(this.collisionSolver.lastNormal);
       if (inward < 0) this.velocity.addScaledVector(this.collisionSolver.lastNormal, -inward);
     }
+    this.velocity.z = 0;
+    if (Number.isFinite(this.fixedHeightMm)) this.position.z = this.fixedHeightMm;
     this.syncCamera();
   }
 
@@ -421,6 +440,7 @@ export class PlayerController {
       fallbackFlickBoost: { dx: this.fallbackFlickDx, dy: this.fallbackFlickDy },
       lookMode: this.pointerLocked ? 'pointer-lock' : this.fallbackLookActive ? 'in-app-fallback' : 'inactive',
       position: this.position.toArray(),
+      fixedHeightMm: this.fixedHeightMm,
       velocity: this.velocity.toArray(),
       yaw: this.yaw,
       pitch: this.pitch,

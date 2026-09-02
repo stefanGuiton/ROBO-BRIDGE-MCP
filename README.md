@@ -34,7 +34,7 @@ NVIDIA Newton and the old duplicate SCARA/physics service have been removed. The
 
 ## MAIN_DEMO controls
 
-- `WASD`: move; `Shift`: sprint; `Space` / `Ctrl`: vertical movement.
+- `WASD`: move at the fixed player height; `Shift`: sprint. Adjust height deliberately with the `Player Eye Height mm` setting.
 - Mouse: click the scene once to capture the pointer, then look freely without holding a button. Press `Esc` to release the pointer and use the UI. Wheel: zoom.
 - Centre click: pick or place; `R`: rotate the held brick by 90 degrees.
 - `PLAYER` / `ORBIT`: switch between player navigation and inspection camera.

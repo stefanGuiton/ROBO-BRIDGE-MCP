@@ -26,6 +26,8 @@ const SELECT_OPTIONS = Object.freeze({
   connectionOverhangGhostStyle: ['Yellow', 'Green']
 });
 
+const HIDDEN_SETTINGS = new Set(['verticalSpeedMmS', 'movementFollowsPitch']);
+
 function labelFor(key) {
   return key
     .replace(/MmS2/g, ' mm/s²')
@@ -120,6 +122,7 @@ export function installPlayerSettingsPanel({ store, panel, groups, search, onImp
     sections.set(name, { details, body });
   }
   for (const [key, value] of Object.entries(settings)) {
+    if (HIDDEN_SETTINGS.has(key)) continue;
     sections.get(groupFor(key)).body.append(makeControl(key, value, store));
   }
   for (const { details, body } of sections.values()) if (!body.childElementCount) details.remove();

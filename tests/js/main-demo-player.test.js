@@ -243,6 +243,73 @@ test('in-app fallback adds exponential 100px edge assist and an immediate bounde
   }
 });
 
+test('player movement ignores Space and Control and stays at its configurable fixed height', () => {
+  const previous = {
+    document: globalThis.document,
+    addEventListener: globalThis.addEventListener,
+    matchMedia: globalThis.matchMedia
+  };
+  const documentTarget = new EventTarget();
+  documentTarget.pointerLockElement = null;
+  documentTarget.querySelectorAll = () => [];
+  documentTarget.exitPointerLock = () => {};
+  documentTarget.body = { classList: { add() {}, remove() {}, toggle() {} } };
+  const windowTarget = new EventTarget();
+  const canvas = new EventTarget();
+  const event = (type, values) => {
+    const result = new Event(type, { cancelable: true });
+    for (const [key, value] of Object.entries(values)) Object.defineProperty(result, key, { value });
+    return result;
+  };
+  const camera = {
+    position: { copy() {} },
+    up: { set() {} },
+    lookAt() {}
+  };
+  const collision = {
+    lastCollisionCount: 0,
+    move(start, delta, output) {
+      output.copy(start).add(delta);
+      output.z = -999;
+      return output;
+    },
+    getDiagnostics: () => ({})
+  };
+  globalThis.document = documentTarget;
+  globalThis.addEventListener = windowTarget.addEventListener.bind(windowTarget);
+  globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
+  let player;
+  try {
+    player = new PlayerController(camera, canvas, { ...PLAYER_FALLBACK_SETTINGS, mobileControlsMode: 'Off' }, collision);
+    player.setLookAt({ x: 0, y: 0, z: 500 }, { x: 0, y: 100, z: 500 });
+    player.setFixedHeight(640);
+    player.setEnabled(true);
+
+    const space = event('keydown', { code: 'Space' });
+    const control = event('keydown', { code: 'ControlLeft' });
+    windowTarget.dispatchEvent(space);
+    windowTarget.dispatchEvent(control);
+    assert.equal(player.keys.has('Space'), false);
+    assert.equal(player.keys.has('ControlLeft'), false);
+    assert.equal(space.defaultPrevented, true);
+    assert.equal(control.defaultPrevented, true);
+
+    player.keys.add('Space');
+    player.keys.add('ControlRight');
+    player.keys.add('KeyW');
+    player.physicsStep(0.1);
+    assert.ok(Math.hypot(player.position.x, player.position.y) > 0, 'horizontal movement must remain enabled');
+    assert.equal(player.position.z, 640, 'collision resolution must not change the configured player height');
+    assert.equal(player.velocity.z, 0);
+    assert.equal(player.getState().fixedHeightMm, 640);
+  } finally {
+    player?.setEnabled(false);
+    globalThis.document = previous.document;
+    globalThis.addEventListener = previous.addEventListener;
+    globalThis.matchMedia = previous.matchMedia;
+  }
+});
+
 test('held brick uses the V8 240 Hz gravity and constrained-pendulum solver', () => {
   const physics = new HeldBrickController({
     ...PLAYER_FALLBACK_SETTINGS,
@@ -315,6 +382,8 @@ test('released bricks retain V8 gravity, angular motion, collision, and authorit
 test('the visible carried brick is opaque while only placement targets remain translucent', async () => {
   const renderer = await readFile(fileURLToPath(new URL('../../apps/web/src/render/robot-renderer.js', import.meta.url)), 'utf8');
   const visual = await readFile(fileURLToPath(new URL('../../apps/web/src/player/v8-brick-visual.js', import.meta.url)), 'utf8');
+  assert.doesNotMatch(renderer, /tcpMarker|tcpRing/);
+  assert.match(renderer, /this\.gripper\.update\(fk\.frames\[6\], state\.gripper\.jawGapMm\)/);
   assert.match(renderer, /createV8BrickVisual\(\{ colour: 'green',[\s\S]*MAIN_DEMO_HELD_BRICK/);
   assert.match(visual, /transparent:\s*ghost,[\s\S]*opacity:\s*ghost \? settings\.ghostOpacity : 1/);
   assert.match(renderer, /heldGhost\.userData\.material\.opacity\s*=\s*1/);
@@ -357,6 +426,7 @@ test('V8 scene exposes all settings plus live robot mount controls in the tucked
   assert.match(html, /PLACE NEXT BRICK/);
   assert.match(panel, /20×20 Stud Build Mat/);
   assert.match(panel, /Robot Mount/);
+  assert.match(panel, /HIDDEN_SETTINGS = new Set\(\['verticalSpeedMmS', 'movementFollowsPitch'\]\)/);
   assert.match(workbench, /MAIN_DEMO_V8_MORE_BRICKS_BUTTON/);
   assert.match(workbench, /matPanelsX \* s\.matPanelStuds/);
 });

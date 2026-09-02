@@ -20,6 +20,8 @@ import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } fro
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
 import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
+import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
+import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -149,6 +151,10 @@ const cycleTimeOutput = $('[data-cycle-time]');
 const cycleStartButton = $('[data-cycle-start]');
 const cycleStopButton = $('[data-cycle-stop]');
 const undoButtonEl = $('[data-undo]');
+const bridgeHudEl = $('[data-bridge-hud]');
+const bridgeFamilyEl = $('[data-bridge-family]');
+const bridgeRevisionEl = $('[data-bridge-revision]');
+const bridgePlanEl = $('[data-bridge-plan]');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -227,6 +233,22 @@ function showToast(message) {
 }
 function setStatus(value, kind = '') { if (statusEl) { statusEl.textContent = value; statusEl.dataset.kind = kind; } }
 function formatNumber(value) { return Number.isFinite(value) ? value.toFixed(1) : '—'; }
+
+function updateBridgeHologramStatus({ source, summary }) {
+  const family = String(source.family ?? 'bridge').toUpperCase();
+  if (bridgeFamilyEl) bridgeFamilyEl.textContent = `${family} HOLOGRAM`;
+  if (bridgeRevisionEl) bridgeRevisionEl.textContent = `REV ${source.designRevision} · ${summary.totalPhysicalCount} PARTS`;
+  if (bridgePlanEl) bridgePlanEl.textContent = `${source.planId} · ${source.designChecksum}`;
+  if (bridgeHudEl) {
+    bridgeHudEl.dataset.state = 'ready';
+    bridgeHudEl.dataset.family = source.family;
+    bridgeHudEl.dataset.designRevision = String(source.designRevision);
+    bridgeHudEl.dataset.planId = source.planId;
+    bridgeHudEl.dataset.designChecksum = source.designChecksum;
+    bridgeHudEl.dataset.partCount = String(summary.totalPhysicalCount);
+  }
+  document.documentElement.dataset.bridgeReady = 'true';
+}
 
 function getRobotState() { return runtime.robot.getState(); }
 function getWorkspace() { return runtime.robot.getWorkspace(); }
@@ -751,6 +773,29 @@ function updateToolDiagnostics(event) {
   if (event.status === 'rejected') addLog(`WebMCP rejected: ${event.toolName} (${event.reason ?? 'invalid request'})`, 'bad');
 }
 
+let mainDemoChallenge = null;
+let mainDemoBridge = null;
+try {
+  mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
+  const entry = mainDemoChallenge.getEntry().position;
+  const exit = mainDemoChallenge.getExit().position;
+  addLog(`EASY terrain ready: ${entry.x.toFixed(0)},${entry.y.toFixed(0)} → ${exit.x.toFixed(0)},${exit.y.toFixed(0)} mm`, 'ok');
+  mainDemoBridge = await createMainDemoBridge({
+    renderer,
+    challenge: mainDemoChallenge.bridgeChallenge,
+    onHologramChanged: updateBridgeHologramStatus
+  });
+  const bridgeState = mainDemoBridge.host.getCompileState();
+  addLog(`V4.6 ${mainDemoBridge.host.settings.family} ready: ${bridgeState.planId}`, 'ok');
+} catch (error) {
+  if (bridgeHudEl) bridgeHudEl.dataset.state = 'failed';
+  if (bridgeFamilyEl) bridgeFamilyEl.textContent = 'BRIDGE UNAVAILABLE';
+  if (bridgeRevisionEl) bridgeRevisionEl.textContent = 'V4.6 INITIALISATION FAILED';
+  if (bridgePlanEl) bridgePlanEl.textContent = String(error?.code ?? 'COMPILE_FAILED');
+  document.documentElement.dataset.bridgeReady = 'false';
+  addLog(`V4.6 bridge unavailable: ${error?.code ?? error?.message ?? 'compile failed'}`, 'bad');
+}
+
 renderer.start();
 setInterval(() => {
   const performance = renderer.getPerformance();
@@ -799,7 +844,7 @@ setInterval(() => {
 window.addEventListener('resize', () => renderer.render());
 
 try {
-  const result = await registerWebMcpTools(runtime, updateToolDiagnostics);
+  const result = await registerWebMcpTools(runtime, updateToolDiagnostics, mainDemoBridge?.bridgeDesign.tools ?? []);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
     else { webmcpEl.textContent = 'WEBMCP UNAVAILABLE'; webmcpEl.dataset.kind = 'warning'; addLog(`WebMCP unavailable: ${result.reason}`, 'bad'); }
@@ -824,6 +869,10 @@ const publicRuntime = Object.freeze({
   board,
   blueprint,
   renderer,
+  challenge: mainDemoChallenge,
+  bridgeHost: mainDemoBridge?.host ?? null,
+  bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
+  get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },
   getSceneState,
   getRobotState,
   getWorkspace,
