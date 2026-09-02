@@ -11,6 +11,7 @@
     "test:compiler": "node --test --test-concurrency=1 tests/js/logo-*.test.js tests/js/compiler-integration.test.js",
     "test:player": "node --test tests/js/main-demo-player.test.js",
     "test:reliability": "node scripts/reliability.mjs",
+    "test:submission": "node --test --test-concurrency=1 tests/js/submission-gate.test.js",
     "verify": "python scripts/verify.py",
     "build:release": "python scripts/build_release.py",
     "submission:gate": "node tools/submission/submission-gate.mjs",
@@ -19,7 +20,8 @@
     "hero:1": "node tools/submission/hero-runner.mjs 1",
     "hero:3": "node tools/submission/hero-runner.mjs 3",
     "hero:10": "node tools/submission/hero-runner.mjs 10",
-    "release:evidence": "node tools/submission/submission-gate.mjs --profile final --hero-attempts 10 --reset-cycles 50"
+    "release:evidence": "node tools/submission/submission-gate.mjs --profile final --hero-attempts 10 --reset-cycles 50",
+    "submission:source": "node tools/submission/materialize-source.mjs artifacts/submission-source"
   },
   "engines": {
     "node": ">=20",

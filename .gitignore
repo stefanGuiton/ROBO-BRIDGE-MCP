@@ -15,6 +15,7 @@ Thumbs.db
 !*.env.example
 evidence/local/
 artifacts/submission-evidence/
+artifacts/submission-source/
 
 # Preserved transfer/reference inputs (not project source)
 /ROBO-SIM-MCP-foundation-v0.1.0/
