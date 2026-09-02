@@ -511,7 +511,123 @@ Do not spend submission time on:
 
 ---
 
-# 15. Final principle
+# 15. Submission presentation gate — after hero freeze
+
+Start this work when the hero runtime is frozen and the minimum reliability gate passes. Do not add new product features during this phase unless they fix a demonstrated submission blocker.
+
+## 15.1 Project name and positioning
+
+Keep the project name specific and descriptive. The current name **ROBO BRIDGE MCP** is acceptable; do not replace it with an abstract AI-generated brand name during the final sprint.
+
+Use a concrete one-line description:
+
+> Human and AI co-design and build the same bridge, then prove the result with a train test.
+
+Avoid vague claims such as "seamless agentic experience", "AI-powered workflow", or similar wording that does not state what the agent actually does.
+
+The central submission story is:
+
+`HUMAN + AGENT SHARE ONE WORLD -> CO-DESIGN -> SHARED BUILDPLAN -> CO-BUILD -> TEST FAILS -> AGENT OBSERVES -> CONTINUE/REPAIR -> TRAIN CROSSES`
+
+## 15.2 Demo video requirements
+
+Hard requirements:
+
+- under 3 minutes;
+- public on YouTube;
+- audio narration;
+- show the project working in the first 10–15 seconds;
+- visibly show the agent using the real WebMCP tools;
+- no sign-up, login, setup, loading, or title-screen footage;
+- do not type long prompts live;
+- use short recorded clips, jump cuts, and modest speed-up where useful;
+- use on-screen text for facts that are faster to read than narrate;
+- show one strong end-to-end example rather than several repeated examples.
+
+Target final duration: **2:20–2:40**.
+
+Recommended cut:
+
+| Time | Show | Main proof |
+|---|---|---|
+| 0:00–0:12 | Working bridge scene, human action, Codex/UR10 action, quick train success glimpse | Immediate hook: human + AI share one task |
+| 0:12–0:35 | Give Codex the bridge goal and show real WebMCP calls | WebMCP is the control surface, not a mock UI |
+| 0:35–1:05 | Terrain/design read, bridge proposal, one design change, hologram/BuildPlan update | Agent can understand and change a spatial design |
+| 1:05–1:35 | Human + Codex/UR10 build from the same frozen BuildPlan | Real co-construction and shared state |
+| 1:35–2:00 | Run TEST early, train visibly fails, agent reads outcome and continues/repairs | Outcome-driven agent behaviour rather than a scripted success path |
+| 2:00–2:20 | Final TEST, train crosses, MISSION COMPLETE | The shared work produces a verified result |
+| 2:20–2:35 | Very short WebMCP architecture explanation | Browser UI + WebMCP tools + agent use the same application state |
+
+The **failure -> observe -> continue/repair -> successful crossing** sequence is the highest-value video sequence. Protect it if other footage must be cut.
+
+## 15.3 Script rules
+
+Write the script before recording.
+
+Script rules:
+
+1. Describe concrete actions and outcomes, not marketing language.
+2. State that the human and agent operate on the same mission state and BuildPlan.
+3. Show the actual WebMCP tool use while the narration explains the result.
+4. Explain that Codex can plan and make decisions while deterministic runtime systems execute accepted construction actions.
+5. Make the early train failure useful evidence: the agent sees the result, continues the same mission, and fixes the outcome.
+6. Never overstate physical hardware evidence. Simulator timing remains simulator-only.
+7. Put the best visual result first; do not begin with project history or team history.
+8. Keep inspiration, development story, and longer background for the written submission.
+9. Remove pauses, filler, waiting, loading, and repeated actions from the final edit.
+10. Record in short clips so one failed section does not require a complete re-record.
+
+Suggested final WebMCP explanation:
+
+> WebMCP gives the agent structured access to the same interactive environment as the human. It can understand the bridge state, change the design, perform construction actions, test the result, and continue from the outcome.
+
+## 15.4 Written submission description
+
+The description must answer four questions with specific evidence:
+
+1. **Why is this a strong WebMCP use case?**  
+   A browser agent must understand and operate a stateful 3D construction mission, not only click through a form.
+
+2. **How does WebMCP improve the experience?**  
+   The agent receives semantic mission/design/build/test actions instead of relying on fragile screen coordinates or a separate agent-only interface.
+
+3. **What can the human and agent now do together?**  
+   They can co-design one bridge, act on the same frozen BuildPlan, change the same physical/spatial world, test it, observe failure, continue construction, and reach a shared verified result.
+
+4. **How is WebMCP implemented?**  
+   State the real mission-level and design tools, shared authority model, bounded construction actions, revision/checksum validation, and outcome-driven TEST path. Do not describe tools that are not present in the submitted runtime.
+
+Use concrete statements. Example:
+
+> The agent can inspect the terrain, change the bridge design, freeze a deterministic BuildPlan, build accepted parts through the same runtime used by the human, start a train test, observe an incomplete-build failure, continue construction, and run the successful crossing test.
+
+## 15.5 Final submission checklist
+
+Complete before submission:
+
+| ID | Task | completed |
+|---|---|---:|
+| SUB-01 | Lock the final project name and one-line description | false |
+| SUB-02 | Write the complete <3 minute narration and shot list | false |
+| SUB-03 | Record short hero clips with real WebMCP use visible | false |
+| SUB-04 | Edit and upload the final public YouTube video | false |
+| SUB-05 | Write the Devpost description against all four judging criteria | false |
+| SUB-06 | Write exact judge testing instructions and credentials if required | false |
+| SUB-07 | Verify hosted URL from a clean/incognito browser | false |
+| SUB-08 | Verify repository link, public access, licence, README, and provenance | false |
+| SUB-09 | Verify video link works without account access | false |
+| SUB-10 | Check every submission-form field: URL, instructions, video, repo, licence, description, teammates | false |
+| SUB-11 | Submit before the hard deadline | false |
+
+Hard submission deadline: **Thursday 3 September 2026, 13:00 PDT / 21:00 BST**.
+
+Target: finish and submit on Wednesday night rather than use the final hours for primary development or recording.
+
+If time becomes constrained, cut optional features before cutting reliability, visible WebMCP evidence, the fail/repair/pass sequence, or submission clarity.
+
+---
+
+# 16. Final principle
 
 **Today, optimise for one undeniable working mission, not feature count.**
 
