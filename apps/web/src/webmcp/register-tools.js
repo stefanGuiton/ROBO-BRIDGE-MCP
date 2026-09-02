@@ -11,7 +11,7 @@ function boundedJson(value, maxChars = 12000) {
   let truncated = false;
   let totalAvailable = null;
   let returnedCount = null;
-  for (const key of ['targets', 'detections', 'objects', 'entries']) {
+  for (const key of ['targets', 'detections', 'objects', 'entries', 'placements', 'definitions']) {
     if (!Array.isArray(candidate?.[key])) continue;
     const originalCount = candidate[key].length;
     totalAvailable = Math.max(totalAvailable ?? 0, originalCount);
@@ -35,12 +35,15 @@ function boundedJson(value, maxChars = 12000) {
   return JSON.stringify({
     ok: candidate?.ok !== false,
     reason: candidate?.ok === false ? (candidate.reason ?? 'internal_error') : undefined,
+    error: candidate?.ok === false ? candidate.error : undefined,
     worldRevision: candidate?.worldRevision ?? candidate?.snapshotRevision ?? null,
+    designRevision: candidate?.designRevision ?? candidate?.summary?.designRevision ?? null,
+    planId: candidate?.planId ?? candidate?.summary?.planId ?? null,
+    designChecksum: candidate?.designChecksum ?? candidate?.summary?.designChecksum ?? null,
     truncated: true,
     message: 'Tool result was reduced to the bounded response size.'
   });
 }
-
 export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, xMaxMm:710, yMinMm:-275, yMaxMm:275, zMinMm:40, zMaxMm:470, speedLimitMmS:650 }) {
   return [
     {
@@ -167,13 +170,19 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
   ];
 }
 
-export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}) {
+export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}, additionalTools = []) {
   const modelContext = globalThis.document?.modelContext;
   if (!modelContext?.registerTool) return { ok:false, reason:'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
   const bridge = createRuntimeBridge(runtime ?? globalThis.__LOGO_ROBO_RUNTIME__ ?? null);
   if (!bridge.availability.ok) return { ok:false, reason:'runtime_unavailable', missing:bridge.availability.missing };
+  if (!Array.isArray(additionalTools)) return { ok:false, reason:'invalid_additional_tools' };
   const handlers = createLogoRoboToolHandlers({ bridge });
-  const tools = getLogoRoboToolDefinitions(handlers, bridge.robot.getWorkspace());
+  const tools = [...getLogoRoboToolDefinitions(handlers, bridge.robot.getWorkspace()), ...additionalTools];
+  const invalidTool = tools.find((tool) => !tool || typeof tool.name !== 'string' || typeof tool.execute !== 'function');
+  if (invalidTool) return { ok:false, reason:'invalid_additional_tools' };
+  const names = tools.map((tool) => tool.name);
+  const duplicateName = names.find((name, index) => names.indexOf(name) !== index);
+  if (duplicateName !== undefined) return { ok:false, reason:'duplicate_tool_name', toolName:duplicateName };
   activeController?.abort();
   activeController = new AbortController();
   const registeredNames = [];
@@ -189,7 +198,7 @@ export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}
         }
         try {
           const result = await execute(input, options);
-          onLifecycle({status:result?.ok===false?'rejected':'succeeded',toolName:tool.name,reason:result?.reason??null});
+          onLifecycle({status:result?.ok===false?'rejected':'succeeded',toolName:tool.name,reason:result?.reason??result?.error?.code??null});
           return boundedJson(result);
         } catch {
           const result = { ok:false, reason:'internal_error', message:'The tool failed internally.' };
