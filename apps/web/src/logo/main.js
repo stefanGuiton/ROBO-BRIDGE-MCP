@@ -38,6 +38,7 @@ import { THREE } from '../render/real-gripper-visual.js';
 import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
 import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
 import { createSceneSettingsTools } from '../webmcp/scene-settings-tools.js';
+import { createRecolourLooseBricksTool } from '../workcell/recolour-loose-bricks-tool.js';
 import { createSimpleSourceRefill } from '../workcell/simple-source-refill.js';
 import { createMoreBricksButton } from '../workcell/more-bricks-button.js';
 import { guardDemoLevelTools } from './demo-level-tools.js';
@@ -1152,6 +1153,8 @@ try {
   const bridgeTools = guardDemoLevelTools(mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? [],
     () => demoMode, () => controller.worldRevision);
   const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : []), moreBricksButton.tool,
+    ...(fastPlacement && placementCycleRunner ? [createRecolourLooseBricksTool({ controller, coordinator: fastPlacement,
+      runner: placementCycleRunner, isSimpleMode: () => demoMode === 'simple' })] : []),
     ...createSceneSettingsTools({ settingsStore: playerSettingsStore, revisionClock,
       canUpdate: () => !controller.moving && !controller.pendingMoveCount && controller.operationState === 'idle'
         && !controller.operationBlocked() && !humanBuildAdapter.getState().heldBrickId })];
