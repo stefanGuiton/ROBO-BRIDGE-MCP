@@ -45,19 +45,6 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## Quixel Megascans materials via Fab
-
-Two Quixel Megascans materials acquired in the repository owner's Fab library are incorporated into the project terrain/environment under the Fab Standard License:
-
-1. **Rough Concrete** — used for the exit-tunnel concrete material.
-   - Source: https://www.fab.com/listings/e835f2f0-699f-4f9c-bfd8-8007216d2c1e
-2. **Dirt Ground** — used for the entry-ramp dirt material.
-   - Source: https://www.fab.com/listings/35fa8381-06e6-4ba2-b50b-27fc591e08e3
-
-Fab Standard License: https://www.fab.com/eula
-
-The Fab Standard License permits modification and incorporation into projects and permits distribution of projects with the assets incorporated. It does not permit standalone redistribution of the assets. Publisher credit is not required by the Fab Standard License; these credits are included for provenance and transparency.
-
 ## Terrain creation provenance
 
 The base terrain concept image was generated with OpenAI ChatGPT image generation. It was then converted into a 3D model using Vizcom and subsequently edited and integrated into ROBO BRIDGE MCP by the repository owner.
