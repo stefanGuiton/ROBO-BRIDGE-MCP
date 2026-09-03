@@ -69,3 +69,29 @@ Verification:
 - Supported Chrome 148 with experimental Web Platform features exposes real `navigator.modelContext.registerTool`; `document.modelContext` is absent. The production HUD and lifecycle elements prove **27 unique native tools**, exact to the Mission composition, with zero console errors/warnings.
 - Native evidence: `output/playwright/native-webmcp/01-native-27-tools.png` and `acceptance.json`.
 - Gate evidence: `artifacts/submission-evidence/submission-gate-report.json`, `.md`, screenshots, runtime metadata, WebMCP audit, and console log.
+
+## Checkpoint D — Non-geometry Construction acceptance hardening
+
+Status: **PASS for the plan's non-geometry scope; final hero remains geometry-blocked**
+
+- Added a current-plan test that discovers the live hero classes instead of hardcoding a stale BOM. The current classes are `1x1x1`, `1x2x1`, `ARCH_A`, `ARCH_B`, and `TRACK_SEGMENT`.
+- For every live class, the dynamic PartRegistry permits both `human` and `agent`, two sources come from the same current shared inventory, and the real HumanBuildAdapter plus existing RobotController/cycle runner each complete a target on the same BuildBoard authority.
+- Retained the existing regression proof that a Human taking a reserved source causes automatic compatible-source reassignment and that Human completion of a Codex-intended target is adopted without reset.
+- Fixed a narrow Player interaction defect: exact bridge parts render as nested Three.js groups, so centre-ray picking is now recursive and the authoritative `brickId` is propagated to nested render objects. No geometry, transform, collision tolerance, or authority changed.
+- Added an explicit real-browser Player acceptance script. Real canvas clicks pick a current shared source, move its held preview to a valid frozen target, and release it through the HumanBuildAdapter. The same BuildBoard records the accepted human `snap`.
+- Browser proof used current source `bridge-src.b222fb9e.027` and current target `bp_0d7627b1.s.2.0`; the accepted target reports `completedBy: human`, Player remains enabled, and console errors/warnings are both zero.
+- Current runtime identity remains derived: plan `bp_0d7627b1`, checksum `0d7627b1`, 131 parts, PartRegistry `pr_767a6c8c`.
+- Timing remains honest: the established simple placement path is approximately one second; current custom-part sequences were previously measured around 3.61 seconds between starts. This checkpoint does not claim every custom part meets one second.
+
+Verification:
+
+- Per-class Construction hardening: **6/6 PASS** (one parent plus five class subtests).
+- Focused Construction and Player suites: **37/37 PASS**.
+- Final `npm run verify`: **345/345 JavaScript PASS**, **20/20 reliability PASS**, 152 JavaScript syntax files, 4 Python syntax files, overall PASS.
+- Full Submission Gate: **70 PASS / 4 FAIL / 0 NOT_AVAILABLE / 1 SKIPPED_WITH_REASON**. All nine adversarial cases and the 50-cycle reset/leak test pass. The four red results are the dirty-worktree check and the three declared incomplete-bridge hero outcomes.
+- Native WebMCP audit: **63 PASS / 3 FAIL / 0 NOT_AVAILABLE / 1 SKIPPED_WITH_REASON**. Construction authority, source reassignment, real Train failure, reset/leak, and all adversarial cases pass. Its three red results are the dirty-worktree check, Train success, and Mission COMPLETE.
+- Player evidence: `output/playwright/construction-hardening/01-player-aims-at-shared-source.png` through `04-player-accepted-on-shared-board.png`, plus `acceptance.json` and `console.json` (generated locally, ignored by normal commits).
+
+## Remaining external blocker
+
+The downstream preparation requested by this plan is complete. Final Train CROSSED, Mission COMPLETE, and flagship hero acceptance remain dependent on repairing/replacing the known 21 internal V4.6 geometry intersections and the final support/terrain geometry. This branch intentionally does not repair or bypass them.

@@ -587,7 +587,9 @@ export class RobotRenderer {
 
   centreHits(objects) {
     this.raycaster.setFromCamera(this.ndcCentre, this.camera);
-    return this.raycaster.intersectObjects(objects, false);
+    // Bridge custom parts are nested exact-geometry groups. Recursive picking keeps
+    // the Player path identical for standard bricks, arches and track segments.
+    return this.raycaster.intersectObjects(objects, true);
   }
 
   updatePlayerInteraction(bricks = this.frameBricks) {
@@ -763,7 +765,7 @@ export class RobotRenderer {
         const body = createV8BrickVisual(brick, this.playerSettings, this.brickFactory);
         body.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
         body.name = `BRICK_${brick.id}`;
-        body.userData.brickId = brick.id;
+        body.traverse((object) => { object.userData.brickId = brick.id; });
         this.machineRoot.add(body);
         mesh = body;
         this.brickMeshes.set(brick.id, mesh);
