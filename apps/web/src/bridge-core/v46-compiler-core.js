@@ -27,7 +27,7 @@ function deriveSettings(source) {
     ...source,
     roadY,
     span: source.anchorGapX,
-    bridgeWidth: 3 * source.voxelSize,
+    bridgeWidth: source.bridgeWidthCells * source.voxelSize,
     deckElevation: roadY - source.deckThickness,
     bridgeStartX: -source.anchorGapX * 0.5,
     bridgeEndX: source.anchorGapX * 0.5,

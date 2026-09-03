@@ -1,5 +1,97 @@
 # P0 Downstream Integration — Progress Handoff
 
+## Post-merge Level1 acceptance-script validation — PASS
+
+Publication state of this follow-up: **local/uncommitted**. Scoped git add
+failed on an existing `.git/index.lock` (zero bytes, last-write2026-09-03
+17:41:38UTC). Read-only elevated process inspection at18:02:40UTC found no
+git.exe processes, but ownership was not established; the lock was not removed
+and no process was stopped. Index remained unstaged. Do not confuse this with
+the already successful PR7/main merge. Preserve the verified local patch.
+
+Verified harness SHA256:
+`3e0af0f62d482b021d5028f06bcc9cce1a0f7782d05f8976919e6dd48bc9a228`.
+
+The shipped runtime remains main`2abb010` (tree identical tobf75ef5). Only the
+local browser harness and documentation changed. Fresh native Chrome148 full
+run `output/playwright/launch-level1-current-full-r3/acceptance.json` passes
+all12 required gates/30 checks with31 unique tools and21 native calls:
+requested-blue single;35/35 unique blue wall; two measured physical button
+contacts adding24 checked sources; actual canvas blue Human adoption plus11red
+robot placements in the12-target tower; same board/controller/clock/registrar;
+rendered settings and camera invariance. Console0errors/0warnings/0exceptions.
+Root opened all8 final PNGs; independent Sol reviewed the source/camera fix and
+tower/settings visuals. Report has no skipped/missing gates.
+
+Measured wall49,194.1ms at1333ms requested,16overruns(max566.7ms); tower11robot
+placements11,345ms at1000ms requested,6overruns(max227.6ms). These are simulator
+execution measurements, not AI thinking-time or guaranteed frame-rate claims.
+
+Retained failed harness runs: initial full attempt assumed one35-entry status
+page (runtime caps pages20); r2 then completed wall but timed out on Human
+pickup because its camera was120mm above the source, inside the tabletop's
+expanded player collider. Corrected bounded pagination and camera placement
+above the unchanged collider, plus capture-promise cleanup. No production
+collision/Player/robot rule was changed. Tower-only diagnostic/success reports
+are explicitly partial; final r3 is the complete run. All processes completed.
+
+Level2 full Terrain9 replay and physical Level3/final release gates remain
+separate; collision/clash work is deferred by the user. Other-task messages
+remain paused. No further main or deployment changes were made.
+
+## User-requested main merge completed — 2026-09-03
+
+User explicitly requested **"merge it please!"** after accepting Level1 and
+deferring collision/clash work. PR7 was marked ready and normally merged with
+expected head bf75ef5 (no force/admin bypass). GitHub reports closed/merged;
+fetched `origin/main` verifies **2abb01012ee6a2af18c3fd8fe27cc11626c3120b**.
+The merge tree exactly matches published bf75ef5. No Cloudflare configuration
+or site-publication action was performed. Full physical Level3 success remains
+unproven/deferred, not turned green by the merge.
+
+Local checkout deliberately remains `codex/p0-downstream-integration-prep` at
+bf75ef5; uncommitted audit/docs and Sol's Level1 harness work were excluded from
+the merge and preserved, as were user Blender/assets. Do not blindly switch or
+overwrite local files. Messages to the other task remain paused.
+
+## Latest user direction — ship the working checkpoint
+
+The user has finished recording and authorized isolated browser testing, then
+reported Level1 tested and explicitly deferred collision/clash work to prioritize
+shipping. Record that as **user Level1 acceptance**, not invented automated35wall
+or physical Level3 crossing evidence. Do not spend more time on collision/clash
+hardening or block the working checkpoint on it. No merge/main/Cloudflare change
+is authorized by this status request. Messages to the other task remain paused.
+
+Live GitHub PR7 metadata rechecked after the CLI network proxy failed: head is
+`bf75ef5f11cc893588d3b3a3014debb554290566`, base main
+`3077883c7d2d29134b7856033fa7814f212f0ac8`, open/draft/not merged. This includes
+Level3 TCP/Train code, Terrain9 and Simple smooth timing/guidance. The1000ms
+target applies to Simple placement cadence; it is not a guaranteed model
+thinking time or Level3 Train speed. Today's audit docs/harness remain local.
+
+## Recording hold history — 2026-09-03 (browser hold now released)
+
+The user is recording in the other task and explicitly requested **no messages
+to it**. Leave that task and its browser untouched; no browser tests, heavy
+commands, runtime edits or publication until the recording ends. Automatic goal
+continuation is not permission to interrupt. Root is doing documentation-only
+acceptance review; Sol owns only `scripts/level1-launch-browser.mjs` assertion
+hardening, unexecuted during recording.
+
+Current local HEAD rechecked: `bf75ef5f11cc893588d3b3a3014debb554290566`, branch
+`codex/p0-downstream-integration-prep`. No remote refresh/push this audit. The
+complete requirement/evidence map is `docs/LAUNCH_READY_ACCEPTANCE_AUDIT.md`.
+Historical full Level1/2 passes remain valid for their checkpoints, but current
+14/14 starter + smooth timing needs full Level1 native rerun, and Terrain9 needs
+full Level2 native rerun. Current smoke/12-wall tests do not cover those gates.
+Level3 actual support-loss → same-Mission repair → whole-consist crossing remains
+missing; clearance approval remains pending. No final-ready claim.
+
+The saved default submission report was re-read: it is old SHA `0a23db03`, smoke
+mode,64 PASS/5 FAIL/2 skips, not current-candidate evidence. Do not reuse its
+totals or other historical gate totals as the final result.
+
 ## Latest resume — Terrain 9 and release preflight follow-up
 
 **Final frozen-runtime verification PASS at ec23aed196e7b324afce95b74df26fe5526d5ead:**642/642 JavaScript,20/20 reliability (exact count independently repeated),174 JavaScript +4 Python syntax, required-file and removed-legacy checks. Subsequent edits are handoff documentation only; production/test source is unchanged. Final publication keeps PR7 draft and main3077883c7d2d29134b7856033fa7814f212f0ac8 untouched. Original user assets and generated evidence are not staged. This is a verified checkpoint, not Level3/final-release completion.

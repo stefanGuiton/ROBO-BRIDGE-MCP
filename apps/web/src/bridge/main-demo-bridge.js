@@ -28,6 +28,7 @@ export const TERRAIN7_BRIDGE_INITIAL_SETTINGS = Object.freeze({
   // Six need >=384mm; five at the tested opening width have unsupported
   // feet. Four keep the tested proportions and pass the exact/support audit.
   viArchCount: 4,
+  bridgeWidthCells: 2,
   viPenetration: 0,
   capHeight: 0,
   deckThickness: 4.8

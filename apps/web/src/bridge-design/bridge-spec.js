@@ -18,6 +18,7 @@ const boolean = (internal, description) => ({ internal, type: 'boolean', descrip
 
 export const BRIDGE_PARAMETER_DEFINITIONS = Object.freeze({
   common: Object.freeze({
+    widthCells: integer('bridgeWidthCells', 2, 3, 'Bridge width in grid units. Two units match the long side of a 1x2 brick.'),
     positionX: number('anchorGroupX', -100, 100, 'Bridge and ENTRY/EXIT pair X position.'),
     positionZ: number('anchorGroupZ', -80, 80, 'Bridge and ENTRY/EXIT pair Z position.'),
     bridgeBaseElevation: number('anchorBaseY', -80, 160, 'Base elevation. Increase this to make the bridge and road higher.'),
@@ -57,7 +58,7 @@ export const BRIDGE_PARAMETER_DEFINITIONS = Object.freeze({
   track: Object.freeze({
     nominalSegmentLengthCells: number('trackNominalSegmentLengthCells', 2, 30, 'Nominal track module length in cells.'),
     sleeperWidthCells: number('trackSleeperWidthCells', 0.2, 2, 'Sleeper width in cells.'),
-    sleeperDepthCells: number('trackSleeperDepthCells', 1, 3, 'Sleeper depth in cells. The bridge is three cells wide.'),
+    sleeperDepthCells: number('trackSleeperDepthCells', 1, 3, 'Sleeper depth in cells, capped to the configured bridge width.'),
     railGaugeCells: number('trackRailGaugeCells', 0.5, 2.7, 'Rail gauge in cells.'),
     railWidthCells: number('trackRailWidthCells', 0.05, 0.6, 'Rail width in cells.'),
     railHeightLayers: number('trackRailHeightLayers', 0.05, 0.8, 'Rail height in brick layers.'),
@@ -162,8 +163,8 @@ function validateCrossField(candidate) {
       anchorHeight: candidate.anchorHeightY
     });
   }
-  if (candidate.trackRailGaugeCells + candidate.trackRailWidthCells > 3 + 1e-9) {
-    throw new BridgeDesignError('OUT_OF_RANGE', 'Track rail gauge and rail width exceed the fixed three-cell bridge width.', {
+  if (candidate.trackRailGaugeCells + candidate.trackRailWidthCells > (candidate.bridgeWidthCells ?? 3) + 1e-9) {
+    throw new BridgeDesignError('OUT_OF_RANGE', 'Track rail gauge and rail width exceed the configured bridge width.', {
       railGaugeCells: candidate.trackRailGaugeCells,
       railWidthCells: candidate.trackRailWidthCells,
       maximumCombinedCells: 3

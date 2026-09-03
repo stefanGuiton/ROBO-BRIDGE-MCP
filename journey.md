@@ -1,5 +1,31 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — Post-merge current Level1 full native verification
+
+- Optional local checkpoint could not stage: pre-existing zero-byte.git/index.lock dated17:41:38UTC. Elevated read-only check found noGitprocess at18:02:40UTC; did not remove another task's lock or stop processes. Follow-up remains local/unstaged; shippedmain2abb010 unaffected.
+
+- Shipped runtime unchanged(main2abb010 tree=bf75ef5). Hardened only the test harness: actual source/board colours and poses, completed timing, measured double-contact refill, reset/registrar identities, explicit full/partial gates and bounded pagination.
+- Native rerun exposed two harness errors: assuming35entries in one20-entry-capped response, then aiming a full player capsule inside tabletop collision. Fixed test pagination/camera and capture cleanup without modifying runtime/collision rules. Failed evidence retained.
+- FinalChrome148`launch-level1-current-full-r3`FULL_PASS:12gates/30checks,31tools,21native calls,35blue wall, real mouse blueHuman+11redrobot tower,24new sources/two measured button contacts,renderer settings and clean console. Root opened all8images; independent Sol source/camera/tower/settings review passed.
+- Wall49.1941s at1333ms requested with16overruns;11robot tower placements11.345s at1000ms with6overruns. No guaranteed speed/FPS or thinking-time claim. Level2 currentTerrain9 and Level3 physical/finalrelease gates remain separate; user has deferred collision work.
+
+## 2026-09-03 — Explicitly requested merge of the published demo
+
+- User requested merge after accepting Level1/defer-collisions. Normally merged PR7 at expected headbf75ef5 into main; GitHub and fetchedorigin/main both verify2abb01012ee6a2af18c3fd8fe27cc11626c3120b. Merge tree equals publishedbf75ef5; no forced/admin bypass.
+- Local branch/files remain untouched by checkout: uncommitted harness/audit/docs excluded, user assets preserved. No Cloudflare/site action and no fabricated Level3 crossing acceptance. Other-task messages remain paused.
+
+## 2026-09-03 — User acceptance and collision deferral
+
+- User released the isolated-browser hold, then confirmed Level1 tested and deferred collision/clash work to prioritize shipping. Other-task messages remain paused. No full physical Level3 crossing claim is added.
+- GitHub PR7 metadata confirms published bf75ef5 includes Level3 TCP/Train foundation, Terrain9 and Simple smooth timing/guidance; still draft/unmerged, main3077883 unchanged. CLI remote check was unavailable through its proxy; read-only GitHub connector provided live confirmation.
+
+## 2026-09-03 — Quiet recording hold and acceptance-gap audit
+
+- Honoured the user's no-other-task-messages request. No browser actions, heavy tests, runtime edits or publication; the recording browser remains untouched. Auto-continuation does not release the hold.
+- Rechecked local bf75ef5 on the same downstream branch and read plan sections0–37 against saved native evidence. Added `docs/LAUNCH_READY_ACCEPTANCE_AUDIT.md` with exact historical/current boundaries and remaining gates. Full Level2 evidence uses Terrain7; Terrain9 currently has smoke only. Balanced-pool native evidence is12blue, not the mandatory35wall/full-Human journey.
+- Independent Sol source review identified Level1 harness assertion gaps (actual colours/poses, completed timing, reset/registrar identities, physical button contact and partial-run labelling). Assigned harness-only hardening; no runtime modification or execution during recording.
+- Re-read default submission report: old0a23db03 smoke64PASS/5FAIL/2skips. This is not current release evidence. Level3 physical clearance, same-Mission fall/repair/crossing and final exact-head gates remain incomplete.
+
 ## 2026-09-03 — Terrain9 replacement and bounded preflight hardening
 
 - Replaced only the active terrain GLB with the user's3.49MB Terrain9 (was31.38MB), one shared asset descriptor, unchanged bridge/world/water/anchors. Retired the old served copy to recoverable local backup; all source Scene/Blender assets untouched. Terrain25/25 and native Chrome148 smoke pass:31 tools, unchanged276-part Viaduct, no Level2 Train, console0/0/0; both images inspected. Details in `docs/TERRAIN9_CHECKPOINT.md`.

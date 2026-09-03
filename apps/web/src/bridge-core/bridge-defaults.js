@@ -31,6 +31,7 @@ export const V46_COMMON_SETTINGS = Object.freeze({
   playbackSpeedMultiplier: 120,
 
   voxelSize: 2,
+  bridgeWidthCells: 3,
   brickHeightRatio: 1.18,
   samplesPerAxis: 2,
   captureThreshold: 0.10,
