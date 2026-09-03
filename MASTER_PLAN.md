@@ -1,17 +1,16 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** SIMPLE WEBMCP HERO EXTERNALLY PROVEN — CLOUDFLARE GIT PIPELINE PROVEN — TOWER SEMANTICS FIX / FINAL RELEASE NEXT  
-**Plan version:** 2026-09-03-L  
+**Status:** SIMPLE WEBMCP HERO EXTERNALLY PROVEN — CLOUDFLARE GIT PIPELINE PROVEN — PR #7 TOWER CHECKPOINT UNDER RELEASE REVIEW  
+**Plan version:** 2026-09-03-M  
 **Production branch:** `main`  
-**Main head before this plan update:** `261ee3fd95b66b3205d6a9299242b7e6844917c0`  
+**Latest known main before this update:** `4b68aff2d13b11acbdbaad5e928f3b4ba763e501`  
 **Merged production integration:** `118abaeadb04031ac2a48b572206ceae90c5bdd5`  
-**Merged integration PR:** #6 — `P0 downstream Train, Mission, WebMCP and Construction prep`  
+**Candidate tower/pickup checkpoint:** `29953f01d994b9b877a7871e6c2aeda2dee3d77e` on `codex/p0-downstream-integration-prep`  
+**Draft PR:** #7 — `Fix pickup colours and alternating tower demo` — **NOT MERGED**  
 **Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
-**Canonical runtime:** `MAIN_DEMO` Player V8  
-**Canonical authority:** `RevisionClock` + `BuildBoard` + `PlacementAuthority` + `RobotController`  
 **Primary submission demo:** SIMPLE BRICKS WebMCP hero  
 **Secondary demo:** Terrain 7 + Viaduct + Train + Mission  
-**Production hosting target:** `robo-bridge-mcp-git.pages.dev`
+**Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
 
@@ -19,11 +18,11 @@
 
 This file is the authoritative submission execution plan.
 
-If an older Oracle package, handoff, README, branch note or chat instruction conflicts with this file, **this file wins for the submission sprint**.
+If an older handoff, README, Oracle package, branch note or chat instruction conflicts with this file, this file wins for the submission sprint.
 
-Evidence must remain tied to a concrete runtime/commit. Do not combine incompatible evidence into a release claim.
+Evidence must remain tied to a concrete runtime/commit. Do not combine separate runs into a false release claim.
 
-Hard authority chain:
+Canonical authority chain:
 
 ```text
 RevisionClock / worldRevision
@@ -34,163 +33,207 @@ RevisionClock / worldRevision
 -> Renderer / Player / Perception / WebMCP
 ```
 
-Never create:
+Do not create a second BuildBoard, RobotController, RevisionClock, inventory truth, occupancy truth, render loop or WebMCP-only execution authority.
 
-- a second BuildBoard;
-- a second inventory/occupancy truth;
-- a second RobotController;
-- a second RevisionClock;
-- WebMCP-only placement truth;
-- Train-owned bridge completion truth;
-- Mission-owned physical-part truth;
-- direct fake completion/support setters;
-- joint-level WebMCP controls;
-- a second production render loop.
-
-Simulator evidence must never be described as physical UR10 readiness.
+Simulation evidence must never be described as physical UR10 readiness.
 
 ---
 
-# 1. Executive status — CURRENT TRUTH
+# 1. Executive release truth
 
-PR #6 is merged into `main`.
+The release is now in **freeze / verify / deploy / record / submit** mode.
 
-The project has two intentional demo modes:
-
-```text
-SIMPLE BRICKS
-BRIDGE
-```
-
-The Simple Bricks mode is the primary submission/video path because it proves generic WebMCP planning, execution and Human adaptation with lower execution risk.
-
-The Bridge mode remains the richer secondary demonstration of Terrain 7, Viaduct design, Train failure/recovery and Mission orchestration.
-
-Important release facts now proven:
+Already proven:
 
 ```text
-Simple WebMCP external-browser invocation: PROVEN
-single red brick: WORKING
-3x3 wall: WORKING
-tower execution: WORKING IN PRINCIPLE, final 12-target semantics still to freeze
-Cloudflare private GitHub access: PASS
-main -> automatic Cloudflare Pages deployment: PASS
+Simple WebMCP external-browser invocation: PASS
+single red brick: PASS
+wall construction: PASS
+tower planning/execution: PASS in several bounded runs
+Cloudflare private GitHub connection: PASS
+main -> automatic Pages deployment: PASS
 public pages.dev update after push: PASS
 static-only hosting: PASS
-Pages Functions / server compute: ABSENT
 ```
 
-Current strict critical path:
+The current product blocker is no longer basic WebMCP execution or hosting.
+
+The current blocker is to make one **final tower + Human interjection scenario** deterministic enough for the recording, freeze its exact semantics, merge only the bounded release changes, and deploy the real app.
+
+Strict remaining path:
 
 ```text
-FINALISE 12-TARGET TOWER SEMANTICS
--> EXTERNAL-BROWSER SIMPLE RETEST
--> FREEZE RELEASE SHA
--> CHANGE CLOUDFLARE OUTPUT cloudflare-smoke -> apps/web
--> LIVE-SITE ASSET + WEBMCP ACCEPTANCE
+RECONCILE FINAL TOWER SPEC
+-> FIX / TIGHTEN HUMAN INTERJECTION TEST
+-> REVIEW PR #7 EXACT DIFF
+-> FINAL SIMPLE BROWSER ACCEPTANCE
+-> MERGE BOUNDED RELEASE FIX
+-> FREEZE MAIN SHA
+-> CLOUDFLARE cloudflare-smoke -> apps/web
+-> PUBLIC LIVE-SITE ACCEPTANCE
 -> RECORD <3 MIN VIDEO
 -> UPLOAD YOUTUBE
--> COMPLETE SUBMISSION BEFORE 21:00 BST
+-> SUBMIT BEFORE 21:00 BST
 ```
 
-Do not reopen Bridge collision work before the submission is safe.
+Do not reopen Bridge collision work.
 
 ---
 
-# 2. Simple Bricks implementation — PRESERVE
+# 2. PR #7 — current candidate checkpoint
 
-Merged Simple mode evidence includes:
+PR #7 is open and draft against `main`.
+
+Candidate commit:
 
 ```text
-one brick: 1/1
-3x3 wall: 9/9
-historical explicit 2x2x6 tower: 24/24
-Human blue placement: ADOPTED
-no duplicate placement on adopted slot
-live cadence changes: PASS
-browser console: 0 errors / 0 warnings
+29953f01d994b9b877a7871e6c2aeda2dee3d77e
 ```
 
-The Simple/Bridge selector reuses the same:
+Branch:
 
-- `RobotController`;
-- `BuildBoard`;
-- `PlacementAuthority`;
-- `PlacementLookaheadCoordinator`;
-- `PlannedPlacementCycleRunner`;
-- `worldRevision`;
-- WebMCP registrar.
+```text
+codex/p0-downstream-integration-prep
+```
 
-Do not create separate Simple-mode authorities.
+Reported focused validation:
+
+```text
+14 / 14 PASS
+staged whitespace checks PASS
+browser-script syntax checks PASS
+```
+
+PR #7 includes bounded work around:
+
+- Simple-demo tower planning;
+- alternating 90-degree tower orientation;
+- pickup colour persistence;
+- reused source-mesh colour refresh;
+- Human pickup diagnostics/logging;
+- focused browser pickup checks.
+
+Important: **PR #7 is not release-approved yet and must not be merged only because 14/14 focused tests pass.**
 
 ---
 
-# 3. Final tower semantics — P0 RELEASE GATE
+# 3. Tower specification conflict — MUST RESOLVE BEFORE MERGE
 
-The final recording tower is **not** the earlier 2x2 footprint/four-bricks-per-layer tower.
-
-Final required semantics:
+The earlier authoritative submission handoff specified the final recording tower as:
 
 ```text
-2 red bricks per layer
+2 bricks per layer
 6 layers
-12 placement targets total
+12 placements total
 ```
 
-Use unambiguous natural language:
+with wording:
 
 ```text
 Build a tower six layers tall using two red bricks per layer.
 ```
 
-Acceptance target:
+PR #7 currently describes a different alternating cross-laminated tower and its latest collaborative evidence uses:
 
 ```text
-12/12 satisfied
+10 levels
+2 bricks per level
+20 placements total
+alternating 0 / 90 degree orientation
 ```
 
-The earlier explicit `2x2x6 = 24 placements` automated behaviour may remain valid for that different explicit specification.
+This is a real specification difference.
 
-The final-user request must produce 12 targets.
+Do not silently convert the final submission target from 12 to 20 placements.
 
-At the time plan `2026-09-03-L` was written, the latest `main` head before this documentation update was the Cloudflare smoke commit `261ee3fd...`; no later tower-fix commit was yet present on `main`.
+Release rule:
 
-Do not redesign the placement stream or robot runtime to solve this. Keep the fix bounded to plan/shape semantics.
+1. choose one final tower specification for the video;
+2. make the prompt unambiguous;
+3. make the automated/browser acceptance use that same specification;
+4. make the Human-interjection guidance use that same target geometry;
+5. record only after that exact scenario passes.
+
+Until explicitly superseded, the earlier handoff target remains the safer final-user requirement:
+
+```text
+6 layers x 2 bricks = 12 placements
+```
+
+The 10-level/20-brick PR #7 implementation can remain available if needed, but it must not overwrite the final recording requirement by accident.
 
 ---
 
-# 4. Human blue-brick adaptation — MUST RETEST
+# 4. Human brick interjection — CURRENT P0 QA ISSUE
 
-During the final tower build, the Human may place a blue brick into a compatible pending slot.
+PR #7 reports two separate tower results that must not be combined.
 
-Required behaviour:
-
-```text
-Human blue brick placed
--> worldRevision changes
--> placement stream reconciles
--> compatible pending target becomes ADOPTED
--> actor = human
--> actualBrickId retained
--> robot does not place a duplicate
--> dependencies become satisfied
--> robot continues
-```
-
-This passed on the historical 24-target tower and must be rechecked on the final 12-target tower.
-
-Colour distinction remains:
+Earlier correctly aligned collaborative run:
 
 ```text
-colour = strict requirement when required
-preferredColour = source preference; compatible Human colour may satisfy geometry
+20 / 20 satisfied
+19 robot COMPLETED
+1 Human ADOPTED
+no duplicate on adopted slot
+robot continued to top
 ```
 
-Do not globally weaken colour validation.
+Latest user-driven rerun with off-plan Human placement:
+
+```text
+stopped at 6 / 20
+6 COMPLETED
+3 BLOCKED
+11 WAITING_DEPENDENCY
+blue pickup colour stayed blue
+placed blue records stayed blue
+```
+
+The problem is geometry/alignment, not colour persistence.
+
+The latest Human bricks were placed off the planned slot/orientation, so automatic arbitrary replanning is **not proven**.
+
+Required bounded correction before calling the interjection demo reliable:
+
+```text
+make the intended pending slot obvious
+show required position/orientation clearly
+ensure the Human places into a compatible pending target
+confirm target becomes ADOPTED
+confirm robot does not duplicate it
+confirm dependencies continue
+confirm build completes
+```
+
+Do not weaken BuildBoard legality or invent automatic acceptance of arbitrary off-plan placements just to make the demo pass.
+
+A simple guided valid-slot Human contribution is sufficient for the video.
 
 ---
 
-# 5. WebMCP surface — 28 TOOLS
+# 5. Pickup colour issue — current evidence
+
+PR #7 provides good evidence that pickup colour persistence itself is fixed.
+
+Reported browser evidence:
+
+```text
+28 post-reset source materials matched authoritative colours
+actual red/blue mouse pickups retained colour
+pickup logs retained brick identity and colour
+0 console errors
+0 console warnings
+```
+
+The latest stalled tower also preserved both blue pickups and placed records as blue.
+
+Therefore treat colour persistence as **provisionally fixed**, subject to final visual/browser regression after merge.
+
+Do not confuse this with proving arbitrary Human tower insertion.
+
+---
+
+# 6. Simple WebMCP surface — preserve
 
 Expected production surface:
 
@@ -199,354 +242,135 @@ Expected production surface:
 1 registrar
 ```
 
-The added placement-stream control tool is:
+The placement-stream control must continue to use the existing `PlannedPlacementCycleRunner`.
 
-```text
-control_placement_stream
-```
+Do not create separate `build_wall` or `build_tower` tools.
 
-It controls the existing placement-cycle runner. It is not a second executor.
-
-Relevant generic tools include:
-
-```text
-get_scene_state
-get_build_state
-get_robot_state
-get_workspace
-observe_camera
-preview_placement
-get_placement_stream_status
-plan_placement_queue
-execute_next_placement
-move_tool
-latch
-unlatch
-claim_target
-reset_workcell
-```
-
-Mission/Terrain tools include:
-
-```text
-get_mission_state
-get_terrain_options
-select_terrain
-start_bridge_build
-get_build_progress
-build_next_parts
-test_bridge
-reset_mission
-```
-
-Do not create bespoke `build_wall` or `build_tower` tools unless a release blocker makes this unavoidable.
-
-Preferred story:
+Preferred architecture story:
 
 ```text
 natural language
 -> model reasons about geometry/dependencies
 -> generic WebMCP tools
 -> deterministic runtime executes
+-> Human actions update the same world state
 ```
+
+Cadence contract:
+
+```text
+normal = 2000 ms/cycle
+50% faster = about 1333 ms/cycle
+hard minimum = 1000 ms/cycle
+```
+
+Do not weaken IK, collision, workspace or placement authority to meet cadence.
 
 ---
 
-# 6. Cadence / conversational speed
+# 7. Final Simple recording acceptance
 
-Current Simple cadence contract:
+Before recording, prove the exact final release SHA with:
 
 ```text
-normal = 2000 ms per complete cycle
-"50% faster" = about 1333 ms per cycle
-hard minimum = 1000 ms per cycle
+one red brick: PASS
+chosen wall demo: PASS
+chosen final tower specification: PASS
+Human blue valid-slot contribution: ADOPTED
+no duplicate robot placement
+robot continues after ADOPTED
+speed change: PASS
+28 WebMCP tools: PASS
+mode reset/toggle: PASS
+0 blocking console errors
 ```
 
-Another speed increase from ~1333 ms must clamp at 1000 ms.
+Important wall note:
 
-Changing cadence must not weaken collision, IK, workspace or placement-authority rules.
+Historical Simple evidence includes both a 3x3 wall and newer PR #7 material referring to a 3x4 wall.
+
+For the final video, use one exact prompt/specification and test that exact one before recording. Do not rely on ambiguous shape wording.
 
 ---
 
-# 7. External-browser WebMCP evidence
+# 8. Scene / Bridge scope — frozen
 
-The user has personally observed Codex controlling the real local external-browser WebMCP surface.
+Simple Bricks remains the primary hero.
 
-User-observed successful tasks:
+Bridge remains secondary.
 
-```text
-single red brick: WORKING
-red brick wall: WORKING
-red brick tower: execution/planning works; final requested count semantics need the bounded 12-target fix
-```
-
-This is stronger than registration/callback-only evidence.
-
-Still repeat a bounded release test after the final tower fix and again on the public site if the supported WebMCP browser can access it.
-
----
-
-# 8. Final Simple recording set
-
-## A. One brick
+Final Bridge family:
 
 ```text
-Place a red brick on the mat.
+V4.6 Type 2 Viaduct
 ```
 
-Expected:
+Approved Terrain 7 orientation is intentionally diagonal relative to the camera. Do not straighten it.
 
-```text
-scene/workspace read
--> placement plan
--> robot pick/place
--> authoritative state readback
-```
-
-## B. Wall
-
-```text
-Build a 3 by 3 wall.
-```
-
-Expected:
-
-```text
-9 targets
-bottom-up dependencies
-continuous execution
-```
-
-## C. Tower + Human adaptation
-
-```text
-Build a tower six layers tall using two red bricks per layer.
-```
-
-Expected:
-
-```text
-12 targets
-Human blue brick -> ADOPTED
-no duplicate
-robot continues
-```
-
-## D. Speed
-
-```text
-Codex, could you move 50% faster?
-```
-
-Expected:
-
-```text
-2000 ms -> about 1333 ms
-```
-
----
-
-# 9. Final scene layout — LOCKED
-
-Approved table:
+Approved table baseline remains frozen:
 
 ```text
 X = -100 mm
 Y = 200 mm
 Width = 1750 mm
 Depth = 1200 mm
-Top thickness = 130 mm
 Top height = 1200 mm
-Leg width = 60 mm
-Leg depth = 60 mm
-Leg inset = 70 mm
-Roughness = 0.58
-Metalness = 0.02
 ```
 
-Terrain 7:
-
-```text
-KEEP current authored Blender orientation
-```
-
-It looks diagonal relative to the table/camera by design. Do not straighten it.
-
-No more layout tuning unless the user explicitly requests it.
-
----
-
-# 10. Bridge mode — SECONDARY / PRESERVED
-
-Final bridge family:
-
-```text
-V4.6 Type 2 Viaduct
-```
-
-Do not return to the Roman Aqueduct as the primary Bridge demo.
-
-Known checkpoint:
-
-```text
-4 arches
-276 total parts
-261 bricks
-12 arches
-3 tracks
-0 internal prohibited intersections
-0 unsupported declared targets
-```
-
-Generic bridge design remains the correct interface for changes such as:
-
-```text
-Make it a viaduct with 4 arches.
-Try 5 arches.
-```
-
-Do not create arch-count-specific WebMCP tools.
-
----
-
-# 11. Bridge construction truth / limitation
-
-Normal simulated robot-only progression previously reached:
+Normal simulated robot-only Bridge progression previously reached:
 
 ```text
 183 / 276
 ```
 
-then stopped on an empty-gripper retreat collision.
+then stopped on a real fail-closed retreat collision.
 
-This is deferred and is not a submission blocker.
+This is deferred.
 
-Explicit authoritative `simulated_fast_forward` supports a truthful mixed-mode completion through the same BuildBoard/PlacementAuthority seam.
-
-Proven mixed-mode evidence:
+Mixed-mode deterministic completion remains valid evidence:
 
 ```text
 Human: 1
 normal simulated UR10: 3
 accelerated simulated placements: 272
-276/276 accepted
+276 / 276 accepted
 incorrect: 0
-TRAIN_FELL -> same mission BUILD -> CROSSED -> COMPLETE
-reset -> new missionId
+TRAIN_FELL -> BUILD -> CROSSED -> COMPLETE
 ```
-
-Safe claim:
-
-> The deterministic shared board was completed using explicit mixed simulation mode.
 
 Do not claim all 276 parts were robot-executed.
 
 ---
 
-# 12. Train + Mission truth
+# 9. Terrain / deployment asset invariants
 
-Train support comes from authoritative BuildBoard state.
-
-Water does not count as support.
-
-Required flow:
-
-```text
-incomplete BuildBoard
--> test_bridge
--> TRAIN_FELL / SUPPORT_LOSS
--> same mission returns to BUILD
-
-complete BuildBoard
--> test_bridge
--> CROSSED
--> Mission COMPLETE
-```
-
-Mission states:
-
-```text
-DESIGN
-BUILD
-TEST
-COMPLETE
-```
-
-Reset must create a new mission ID.
-
-Do not weaken Mission rules to force success.
-
----
-
-# 13. Terrain 7 invariants — PRESERVE
-
-Production asset:
+Production Terrain asset:
 
 ```text
 Scene_and_3D_Files/Terrain_7_Main.glb
 ```
 
-Reported fingerprint:
+Reported SHA256:
 
 ```text
-SHA256 419adc72b8fb408eea5060142890682fbcd03709b4cd4d292742286ba1518217
+419adc72b8fb408eea5060142890682fbcd03709b4cd4d292742286ba1518217
 ```
 
-Authoring frame:
-
-```text
-ENTRY = (0.000, 0.000, 0.000) m
-EXIT  = (0.370, 0.000, 0.000) m
-ENTRY -> EXIT = +X
-span = 370 mm
-```
-
-Water object:
-
-```text
-Plane
-```
-
-Authoritative build/foundation datum:
+Build/water datum:
 
 ```text
 Z = -132.718 mm
 ```
 
-Deployment must serve the real GLB binary, not a Git LFS pointer.
-
-Human terrain occlusion invariant:
-
-```text
-camera -> terrain -> target = block Human interaction
-camera -> target -> terrain = allow Human interaction
-```
-
-Solid terrain may occlude Human placement. Water and authored markers do not.
+Final deployment must serve the actual GLB binary, not a Git LFS pointer.
 
 ---
 
-# 14. Cloudflare Pages — GIT PIPELINE PROVEN
+# 10. Cloudflare — deployment pipeline is DONE / PROVEN
 
-This section supersedes older deployment uncertainty.
+Do not spend more time experimenting with hosting.
 
-The Cloudflare Git pipeline is now proven end-to-end:
-
-```text
-private GitHub repo
--> push to main
--> Cloudflare Pages detects github:push
--> automatic production deployment
--> public pages.dev site updates
-```
-
-Observed redeploy time in the user's browser:
-
-```text
-about 20-30 seconds
-```
-
-Working Git-connected project:
+Working project:
 
 ```text
 robo-bridge-mcp-git
@@ -558,54 +382,32 @@ Public URL:
 https://robo-bridge-mcp-git.pages.dev
 ```
 
-Current proven settings:
+Proven configuration:
 
 ```text
-Git provider: GitHub
-Repository: stefanGuiton/ROBO-BRIDGE-MCP
-Repository visibility: PRIVATE
-Production branch: main
-Framework preset: None
-Root directory: /
-Build command: exit 0
-Build output directory: cloudflare-smoke
-Environment variables: none
+GitHub repository: stefanGuiton/ROBO-BRIDGE-MCP
+repository visibility: PRIVATE
+production branch: main
+root directory: /
+build command: exit 0
+current output: cloudflare-smoke
 Pages Functions: none
-Server compute: none
+server compute: none
 ```
 
-Cloudflare reports:
+Automatic deployment is proven:
 
 ```text
-source type: github
-trigger: github:push
-production_deployments_enabled: true
-uses_functions: false
+private repo
+-> push main
+-> github:push detected
+-> automatic Pages deployment
+-> public site updates
 ```
 
-Automatic redeployment was proven twice:
+Observed update time was about 20-30 seconds.
 
-```text
-31c761cd...  Deployment connected. -> Git deployment connected.
-261ee3fd...  dark text -> blue text
-```
-
-Therefore:
-
-```text
-Git connection: PASS
-private repo access: PASS
-main deployment: PASS
-automatic github:push deployment: PASS
-public Pages URL: PASS
-static hosting: PASS
-Pages Functions absent: PASS
-server compute absent: PASS
-```
-
-## Old Direct Upload project — DO NOT TOUCH
-
-An older project still exists:
+Older Direct Upload project:
 
 ```text
 robo-bridge-mcp
@@ -618,188 +420,83 @@ User instruction:
 DO NOT DELETE ANYTHING.
 ```
 
-Do not delete, replace or modify that old project unless the user explicitly changes this instruction.
+Do not modify/delete the old project unless the user explicitly asks.
 
-Do not create more test Pages projects.
+Do not create more Pages projects.
 
-Do not change GitHub permissions or repository visibility.
+Do not enable Workers, Functions, D1, R2, AI, Queues, Durable Objects or other server compute.
 
-Do not enable Workers, Pages Functions, Workers AI, D1, R2, Durable Objects, Queues or other server compute.
+---
 
-Do not ask Cloudflare Agent to modify GitHub.
+# 11. Final Cloudflare switch
 
-## Final Cloudflare switch
-
-When the final `apps/web` release is frozen on `main`, reuse:
+Only after the final app is frozen on `main`, change the existing `robo-bridge-mcp-git` project from:
 
 ```text
-robo-bridge-mcp-git
+Build output directory: cloudflare-smoke
 ```
 
-Change only:
+to:
 
 ```text
-Build output directory:
-cloudflare-smoke
-->
-apps/web
+Build output directory: apps/web
 ```
 
 Keep:
 
 ```text
-Repository: stefanGuiton/ROBO-BRIDGE-MCP
-Production branch: main
-Root directory: /
+repo: stefanGuiton/ROBO-BRIDGE-MCP
+production branch: main
+root directory: /
 Git integration: enabled
 ```
 
-Do not make this switch before the final playable `apps/web` build is ready.
-
----
-
-# 15. Final public deployment acceptance
-
-After changing the output directory to `apps/web`, verify:
+Then verify:
 
 ```text
 index.html -> 200
-Terrain 7 GLB -> 200 and real binary bytes
-required textures/assets -> 200
-Three.js/vendor modules -> 200
-page opens in current Chrome
+Terrain 7 GLB -> 200 and real binary
+textures/assets -> 200
+Three/vendor modules -> 200
+Chrome opens page
 canvas renders
 Player controls initialise
-native WebMCP tools are discoverable where supported
+WebMCP tools are discoverable where supported
 no blocking console errors
 no Pages Functions
 no server compute
 ```
 
-Then run the strongest bounded hero path available on the deployed build:
+---
+
+# 12. PR #7 release decision procedure
+
+Do **not** merge PR #7 automatically.
+
+Use this order:
 
 ```text
-one red brick
-wall or final 12-target tower
-speed change
+1. inspect exact PR #7 diff
+2. confirm no unrelated changes
+3. resolve final tower count/spec conflict
+4. tweak Human interjection guidance/test only as needed
+5. rerun focused Simple acceptance
+6. verify pickup colours still correct
+7. verify Human valid-slot ADOPTED + continuation
+8. verify no console regression
+9. merge only if bounded and stable
+10. note exact merge/main SHA
 ```
 
-If WebMCP Site Tools are available in the public-test browser, verify actual invocation, not only registration.
+Do not require a general arbitrary-off-plan replanner for submission.
+
+Do not broaden PR #7 into Bridge work.
 
 ---
 
-# 16. Hosting / cost architecture — PRESERVE
+# 13. Time-boxed release tests
 
-Production architecture remains:
-
-```text
-Cloudflare Pages
--> serves static HTML / JS / GLB / textures
--> user's browser downloads assets
--> user's CPU/GPU runs simulation and rendering
-```
-
-Do not move simulation, physics, rendering, WebMCP runtime or Bridge logic to Cloudflare server compute.
-
----
-
-# 17. ChatGPT Work / Oracle remote tasks
-
-While the user is away from the physical PC, remote work should focus on release QA.
-
-Good tasks:
-
-```text
-fetch latest main / tower-fix branch
-read this MASTER_PLAN.md
-clean-clone verification
-npm run verify
-npm run submission:smoke
-npm run submission:gate
-npm run webmcp:audit
-focused Simple tests
-asset/Git-LFS audit
-browser/console checks
-rectangle WebMCP capability test
-submission-content preparation
-bounded P0 fixes on a branch
-```
-
-Tower acceptance:
-
-```text
-2 bricks per layer
-6 layers
-12 placements
-Human blue ADOPTED
-no duplicate
-execution continues
-```
-
-Do not:
-
-- force-push `main`;
-- rewrite history;
-- delete branches/assets;
-- change secrets;
-- change repository visibility;
-- perform broad redesign;
-- spend hours on the Bridge retreat collision.
-
-If a P0 bug is found, fix it on a bounded branch and report exact SHA/PR unless the user explicitly authorises another path.
-
----
-
-# 18. Immediate strict execution order
-
-## NOW-1 — find/finalise tower fix
-
-Check remote state for the two-bricks-per-layer correction.
-
-Required result:
-
-```text
-2 bricks/layer
-6 layers
-12 targets
-```
-
-## NOW-2 — external-browser Simple acceptance
-
-Prove:
-
-```text
-one red brick: PASS
-3x3 wall: PASS
-12-target tower: PASS
-```
-
-Also retest:
-
-```text
-Human blue compatible brick -> ADOPTED
-no duplicate
-execution continues
-speed change works
-```
-
-## NOW-3 — freeze release SHA
-
-Run focused regression:
-
-```text
-Simple mode
-28-tool registration
-one brick
-wall
-12-target tower
-ADOPTED
-speed change
-mode reset/toggle
-console
-```
-
-Run the strongest time-boxed repository gates that fit:
+After the final bounded fix, run the strongest tests that fit the remaining time:
 
 ```bash
 npm run verify
@@ -808,164 +505,117 @@ npm run submission:gate
 npm run webmcp:audit
 ```
 
-Do not make robot-only Bridge completion or `hero:3` a blocker.
+Then run focused external-browser Simple acceptance.
 
-## NOW-4 — deploy real app
+Do not make `hero:3`, robot-only 276/276, or Bridge retreat collision a blocker.
 
-In the existing Cloudflare project `robo-bridge-mcp-git`, change only:
-
-```text
-cloudflare-smoke -> apps/web
-```
-
-## NOW-5 — public live-site acceptance
-
-Check assets, canvas, console and WebMCP.
-
-## NOW-6 — record
-
-Record the strongest stable Simple-led demo.
-
-Do not wait for Bridge collision perfection.
-
-## NOW-7 — upload + submit
-
-Upload the public YouTube video and complete the submission well before **21:00 BST**.
-
-After a valid submission is secured, use remaining time only for optional polish.
+Record any remaining limitations truthfully.
 
 ---
 
-# 19. Final video strategy
+# 14. Final video strategy
 
-Target:
+Target length:
 
 ```text
 2:20-2:40
 hard maximum under 3:00
 ```
 
-Suggested sequence:
+Recommended structure:
 
 ```text
-0:00-0:10  working app immediately; place one red brick
-0:10-0:40  build 3x3 wall
-0:40-1:15  build 6-layer / 2-bricks-per-layer tower
-             Human inserts blue brick -> ADOPTED -> no duplicate
-1:15-1:30  "Move 50% faster" -> ~1333 ms cycle
-1:30-1:55  explain shared browser world / BuildBoard / WebMCP
-1:55-2:20  optional BRIDGE mode: Terrain 7 + Viaduct + arch-count change
-2:20-2:35  concise architecture/end statement
+0:00-0:10   start on working app; one red brick
+0:10-0:40   wall demo
+0:40-1:15   final agreed two-bricks-per-layer tower
+             Human adds blue brick into clearly indicated valid pending slot
+             show ADOPTED + no duplicate + continuation
+1:15-1:30   "Move 50% faster" -> ~1333 ms
+1:30-1:55   explain one shared browser world / BuildBoard / WebMCP
+1:55-2:20   optional Bridge mode: Terrain 7 + Viaduct + semantic arch change
+2:20-2:35   concise close
 ```
 
-Do not start with login, setup, loading or a long title card.
+If the Human interjection remains unreliable, do not improvise arbitrary placement during recording. Use the known compatible slot/orientation that has already demonstrated ADOPTED behaviour.
 
-If Bridge mode is not presentation-ready, omit live Bridge execution and keep the video focused on stable Simple WebMCP interaction.
+If Bridge mode is not presentation-ready, omit live Bridge execution.
 
 ---
 
-# 20. Claim safety
+# 15. Claim safety
 
-Safe claims:
+Safe:
 
 - Codex controls a deterministic browser workcell through WebMCP;
-- Codex can inspect state, generate generic placement plans and execute them through shared authorities;
-- Human actions change the same shared world;
-- compatible Human placements can be adopted into an active build;
+- Codex can inspect state, plan generic placements and execute them through shared authorities;
+- a correctly aligned compatible Human placement can be adopted into the active plan;
+- pickup colour persistence is verified in bounded browser tests;
 - placement cadence can be changed conversationally;
-- the same architecture supports Terrain 7 / Viaduct / Train / Mission;
-- the Bridge board can be completed using an explicitly labelled accelerated-simulation path for remaining deterministic targets;
-- Cloudflare Pages hosts the application as static browser-delivered assets.
+- Terrain / Viaduct / Train / Mission share the same application architecture;
+- Cloudflare serves the application as static assets;
+- deterministic Bridge completion can use an explicitly labelled accelerated-simulation path.
 
 Do not claim:
 
+- arbitrary off-plan Human insertion automatically replans successfully;
 - physical UR10 readiness;
 - physical collision safety;
-- all 276 Viaduct parts robot-executed;
-- physical one-second pick/place proof;
+- all 276 Bridge parts robot-executed;
+- physical one-second cycles;
 - physical accuracy/repeatability;
-- 120 FPS based only on render-disabled Oracle results;
-- native Work/Cloud WebMCP invocation unless the tested environment actually exposes and invokes the Site Tools.
-
-This is a browser simulator. Be explicit about simulation.
+- 120 FPS based only on render-disabled tests.
 
 ---
 
-# 21. Hard scope cuts for the rest of submission day
+# 16. Hard scope cuts
 
-Unless a new release blocker proves otherwise, do not spend time on:
+Do not spend submission time on:
 
 ```text
 Bridge retreat collision repair
+new path planner
+arbitrary Human off-plan replanning
 new terrain variants
 new bridge families
 Aqueduct resurrection
-new physics engine
+physics rewrite
 renderer rewrite
 trees/grass
-advanced reflection systems
-new path planner
+reflection systems
 physical robot deployment
-extra UI dashboards
+extra dashboards
 large refactors
-hero:10
-perfect visual polish
-new Cloudflare test projects
+new Cloudflare projects
 server-side Cloudflare architecture
 ```
 
-The project already has enough technical depth.
+---
 
-The remaining job is:
+# 17. Exact remaining execution order
 
 ```text
-FREEZE
--> VERIFY
--> DEPLOY
--> DEMONSTRATE
--> SUBMIT
+A. Decide/freeze the exact final tower spec.
+B. Make the Human valid target obvious and retest the interjection.
+C. Review PR #7 exact diff and focused evidence.
+D. Merge only the bounded accepted fix to main.
+E. Record the exact final main SHA.
+F. Run final Simple regression / strongest time-boxed gates.
+G. Change Cloudflare output cloudflare-smoke -> apps/web.
+H. Test public app, assets, console and WebMCP.
+I. Record the <3 minute video.
+J. Upload public YouTube video.
+K. Complete submission before 21:00 BST.
+L. Only then do optional polish.
 ```
 
 ---
 
-# 22. Final human deliverables
+# 18. Final release principle
 
-Before the deadline, the user must have:
+**The deployment pipeline is solved. Stop experimenting with Cloudflare.**
 
-```text
-working public site
-final stable release SHA
-public YouTube video under 3 minutes with audio
-project/submission description
-WebMCP explanation
-source repository link / required visibility state
-submission form completed before 21:00 BST
-```
+**PR #7 is a useful candidate checkpoint, but it is not yet release-ready because the latest off-plan Human interjection stalled the 20-target tower at 6/20 and its 20-target tower specification conflicts with the earlier 12-target final handoff.**
 
-A separate short user-facing checklist is maintained as:
+**Do not solve this by weakening authority rules or building a general replanner. Use one explicit final tower specification and one clearly compatible Human slot, prove ADOPTED + continuation, then freeze and merge the bounded fix.**
 
-```text
-USER_SUBMISSION_MINI_PLAN_2026-09-03.md
-```
-
-The mini plan must stay simple and action-oriented. This `MASTER_PLAN.md` remains the technical authority.
-
----
-
-# 23. Release principle
-
-**Simple Bricks is the primary submission hero.**
-
-**The final tower is two bricks per layer for six layers: 12 placements.**
-
-**Human blue placement must be ADOPTED without a duplicate robot placement.**
-
-**Cloudflare Git deployment is already proven. Do not experiment with hosting again.**
-
-**Keep `robo-bridge-mcp-git` connected to private `stefanGuiton/ROBO-BRIDGE-MCP` on `main`. When the app is frozen, change only the output directory from `cloudflare-smoke` to `apps/web`.**
-
-**Do not delete or modify the old `robo-bridge-mcp` Direct Upload project.**
-
-**Bridge collision perfection is not a submission blocker.**
-
-**The rest of the day is release QA, final deployment, recording and submission.**
+**After that: deploy `apps/web`, test the public site, record, and submit.**
