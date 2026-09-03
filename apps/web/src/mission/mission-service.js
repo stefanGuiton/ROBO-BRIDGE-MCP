@@ -477,7 +477,10 @@ export class MissionService {
       const resultSnapshotId=evidence(raw.supportSnapshotId??raw.identity?.supportSnapshotId,'resultSupportSnapshotId',{required:false,code:'INVALID_TRAIN_RESULT'});
       const resultSnapshotChecksum=evidence(raw.supportSnapshotChecksum??raw.identity?.supportSnapshotChecksum,'resultSupportSnapshotChecksum',{required:false,code:'INVALID_TRAIN_RESULT'});
       if ((snapshotId&&resultSnapshotId!==snapshotId)||(snapshotChecksum&&resultSnapshotChecksum!==snapshotChecksum)) throw new MissionError('STALE_TRAIN_RESULT','The train result used another BUILD_BOARD snapshot.');
-      const resultOutcome=outcome(raw.outcome??raw.result); const resultWorldRevision=verifyWorld(this.services,[raw.worldRevision,currentWorld],'INVALID_TRAIN_RESULT','TrainService test'); this._robotIdle();
+      const liveFinalWorld=readWorldRevision(this.services);
+      const ownedRobotMotion=liveFinalWorld!==currentWorld&&this.services.trainService.validateTestMotion?.({testId,sampledWorldRevision:currentWorld,finalWorldRevision:liveFinalWorld})===true;
+      if (ownedRobotMotion&&raw.worldRevision!==liveFinalWorld) throw new MissionError('INVALID_TRAIN_RESULT','Owned Train motion must report the exact final world revision.');
+      const resultOutcome=outcome(raw.outcome??raw.result); const resultWorldRevision=verifyWorld(this.services,ownedRobotMotion?[raw.worldRevision]:[raw.worldRevision,currentWorld],'INVALID_TRAIN_RESULT','TrainService test'); this._robotIdle();
       const record=Object.freeze({testId,missionId:frozen.missionId,planId:frozen.planId,designChecksum:frozen.designChecksum,supportSource:BUILD_BOARD_SOURCE,supportSnapshotId:snapshotId,supportSnapshotChecksum:snapshotChecksum,outcome:resultOutcome,firstUnsupportedSegment:compact(raw.firstUnsupportedSegment,160),firstUnsupportedProgress:typeof raw.firstUnsupportedProgress==='number'&&Number.isFinite(raw.firstUnsupportedProgress)&&raw.firstUnsupportedProgress>=0?raw.firstUnsupportedProgress:null});
       if (resultOutcome===TRAIN_CROSSED) {
         if (p.accepted!==p.required||p.correct!==p.required||p.incorrect!==0) throw new MissionError('INVALID_TRAIN_RESULT','CROSSED cannot complete an incomplete or incorrect build.');

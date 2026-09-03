@@ -20,10 +20,12 @@ export function createTrainRuntime({
   let droppedCatchUpSeconds = 0;
   let disposed = false;
   let rendererUpdates = 0;
+  let lastPusherPoseKey = null;
 
   function updateRenderer(snapshot) {
     if (!renderer?.update || !snapshot) return false;
     renderer.update(snapshot, service.getSupportMap?.(), service.getCollisionSnapshot?.());
+    lastPusherPoseKey = snapshot.motion?.mode === 'tcp_contact' ? JSON.stringify(snapshot.pusher?.pose) : null;
     rendererUpdates += 1;
     return true;
   }
@@ -39,6 +41,7 @@ export function createTrainRuntime({
     if (!active) {
       accumulatorSeconds = 0;
       const snapshot = service.getSnapshot();
+      if (snapshot.motion?.mode === 'tcp_contact' && JSON.stringify(snapshot.pusher?.pose) !== lastPusherPoseKey) updateRenderer(snapshot);
       onFrame?.(snapshot, { fixedSteps: 0, active: false });
       return { fixedSteps: 0, active: false, accumulatorSeconds, snapshot };
     }
@@ -57,7 +60,7 @@ export function createTrainRuntime({
       accumulatorSeconds = 0;
     }
     const snapshot = service.getSnapshot();
-    if (fixedSteps > 0) updateRenderer(snapshot);
+    if (fixedSteps > 0 || (snapshot.motion?.mode === 'tcp_contact' && JSON.stringify(snapshot.pusher?.pose) !== lastPusherPoseKey)) updateRenderer(snapshot);
     onFrame?.(snapshot, { fixedSteps, active: TRAIN_ACTIVE_STEP_STATES.has(service.getState()) });
     return {
       fixedSteps,

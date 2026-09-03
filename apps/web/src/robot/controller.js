@@ -653,7 +653,11 @@ export class RobotController {
         throw new RobotError('cancelled');
       }
       const validation = this.validateMoveRequest(request);
-      if (!validation.ok) throw new RobotError(validation.reason, validation);
+      if (!validation.ok) {
+        // Queued validation runs before the motion cleanup finally below.
+        this.pendingMoveCount = Math.max(0, this.pendingMoveCount - 1);
+        throw new RobotError(validation.reason, validation);
+      }
       const epoch = queuedEpoch;
       const internalAbort = new AbortController();
       this.activeAbortController = internalAbort;

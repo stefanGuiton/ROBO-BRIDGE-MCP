@@ -47,10 +47,31 @@ export function createChallengeTerrainSurfaceAdapter({
   includeFloor = true,
   fallbackHeightMm = -300,
   horizontalToleranceMm = 0.01,
-  sampleMachineSurface = null
+  sampleMachineSurface = null,
+  solidContactProvider = null
 } = {}) {
   invariant(routeFrame?.originMm && routeFrame?.trackTopMachineZMm !== undefined,
     'TRAIN_ROUTE_REQUIRED', 'A BuildPlan-bound train route frame is required for terrain collision.');
+  if (solidContactProvider) {
+    invariant(typeof solidContactProvider.sample === 'function'
+      && typeof solidContactProvider.queryBodyContacts === 'function'
+      && typeof solidContactProvider.sweepBody === 'function',
+    'INVALID_TERRAIN_CONTACT_PROVIDER', 'Exact terrain contact requires floor, body-contact and sweep queries.');
+    // This opt-in path must not read the legacy collision proxy at all. Its
+    // Terrain7 floorZMm is a water datum, not an actual support surface.
+    return Object.freeze({
+      schemaVersion: 'robo-bridge.train-terrain-surface-adapter.v2',
+      sample: input => solidContactProvider.sample(input),
+      heightAt(forwardMm, rightMm, probeHeightMm) {
+        return solidContactProvider.sample(typeof forwardMm === 'object' ? forwardMm : { forwardMm, rightMm, probeHeightMm });
+      },
+      queryBodyContacts: input => solidContactProvider.queryBodyContacts(input),
+      sweepBody: input => solidContactProvider.sweepBody(input),
+      queryColumn: input => solidContactProvider.queryColumn(input),
+      refresh: () => solidContactProvider.refresh(),
+      getDiagnostics: () => solidContactProvider.getDiagnostics()
+    });
+  }
   let collision = readCollisionProxy(challengeService);
   let sampleCount = 0;
   let proxyHitCount = 0;

@@ -4,6 +4,8 @@ Started 2026-09-03. Governing task: `Downloads/OVERALL_PLAN_LAUNCH_READY.md`; us
 
 ## Current state
 
+Latest Level3 work is a foundation checkpoint, not accepted as complete. Real Chrome148 native31-tool diagnostic completes the actual six-move TCP sequence with zero position mismatch and zero console errors/warnings/exceptions, then truthfully returns TRAIN_COLLIDED / TERRAIN_OBSTRUCTION to the same Mission BUILD. Results UI and owned-motion/cancellation/lifecycle guards are integrated. Current geometry cannot fit the train at entrance/tunnel/exit; a user clearance-approval question is pending, original assets untouched. Stable-source full verification passed **582/582 JS, 20/20 reliability, 173 JS + 4 Python syntax files** and repository checks. This shared-worktree run does not replace final clean-candidate acceptance. Excessive pusher penetration still needs a contact-sampling fix. See `docs/LEVEL3_TCP_TRAIN_PROGRESS.md` for exact evidence and limitations. Level2 was already pushed at c24c7f1 with exact66/66 regression, so the historical publication/gating notes below are superseded.
+
 - Checkout: `D:\ROBO-BRIDGE-MCP-TRUNK`.
 - Branch: `codex/p0-downstream-integration-prep`; starting candidate `29953f01d994b9b877a7871e6c2aeda2dee3d77e`, draft PR #7.
 - Fetched remote truth; main `3077883c7d2d29134b7856033fa7814f212f0ac8`, MASTER_PLAN N. Safely merged main into this branch at `14441e3` (plans and smoke page only). No merge into main.
@@ -19,11 +21,17 @@ Use accepted evidence `output/playwright/launch-level2-final/acceptance.json` an
 | Level | Status | Required checkpoint |
 | --- | --- | --- |
 | 1 Simple | PASS — committed and pushed | `9c73e80b53e25c18741b22059ec098721f21c20a`; exact-checkpoint27/27 regression PASS; local/remote SHA verified; draftPR7 updated |
-| 2 Viaduct, no Train | PASS — checkpoint publication next |276/276shared (58Human/120robot/98accelerated), exact visible arches/hologram, native15/15, noTrain, Level1native14/14, independent code/image review |
-| 3 Train physics | NOT STARTED | TCP-bound pusher contact; physical Train failure and crossing; Mission recovery/completion/stats; earlier-level regression; visual/state review |
+| 2 Viaduct, no Train | PASS — committed/pushed | `c24c7f135359a8c80aa859724b640afb2c6e7fd5`; local/remote SHA verified; draftPR7 updated; exact-checkpoint Level1+2 regression66/66 PASS |
+| 3 Train physics | IN PROGRESS — NOT ACCEPTED | TCP/terrain/contact + service/Mission/results wired; real native obstruction diagnosed; physical geometry/contact/crossing acceptance remains |
 | Final release audit | NOT STARTED | Exact-head verify/smoke/gate/WebMCP and all-level browser checks; static apps/web and real GLB audit; no deployment |
 
 ## Level 1 implementation ownership
+
+### Level 3 resume — after accepted Level 2 publication
+
+Explicit Sol modules landed locally: `robot-tcp-pusher.js` (24newtests/71focused total), narrow Controller queued-validation pending-count cleanup; `terrain-mesh-contact.js` and optional exact terrain-surface path (14newtests/64focused total); existing Train physics extended with measured kinematic contact and shared accepted-track support helpers (6newtests/25focused total). These are not committed or integrated acceptance. Old agent sessions failed/expired during service/browser work; a new explicit Sol agent resumes Train service/runtime/factory. Root owns Mission/integration/main. No second authority, no worldRevision bypass, no synthetic Train speed/pose.
+
+Actual GLB preflight: routeENTRY(465,-111.2,144.448), EXIT(835,-111.2,144.448), span370; solid launch floor136.174 (8.274mm step); tunnel floor132.934, ceiling158.148; rail gauge26.4/width2.88 conflicts with tunnel positive-side wall by≥0.552mm for a flat rail-spanning footprint. A solid end wall at machineX~872.3 leaves37.2mm receiving pocket. Current34x34 train cannot fit. Smaller body alone does not solve rail contact, step or whole-consist clearance. These remain concrete physical blockers; do not shrink acceptance to lead-only crossing, add imaginary track or ignore tunnel/water.
 
 ### Accepted gate (supersedes in-progress notes below)
 

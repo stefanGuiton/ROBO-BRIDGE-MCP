@@ -304,7 +304,7 @@ test('Mission reset wraps the accepted staged and instant reset paths', async ()
   const first = mission.test(authorityInput(fixture));
   driveToTerminal(integration);
   assert.equal((await first).outcome, 'CROSSED');
-  const reset = mission.reset({ instant: true });
+  const reset = await mission.reset({ instant: true });
   assert.equal(reset.ok, true);
   assert.equal(reset.state, TRAIN_STATES.READY);
   assert.equal(integration.updateFrame(1).fixedSteps, 0);

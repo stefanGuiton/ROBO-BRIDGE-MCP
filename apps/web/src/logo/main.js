@@ -29,6 +29,9 @@ import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
 import { createLevelGatedTrain } from '../train-integration/level-gated-train.js';
+import { createRobotTcpPusher } from '../train-integration/robot-tcp-pusher.js';
+import { createTrainBoardFingerprint } from '../train-integration/train-board-fingerprint.js';
+import { createTerrainMeshContact } from '../train-integration/terrain-mesh-contact.js';
 import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
 import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acceptance.js';
 import { THREE } from '../render/real-gripper-visual.js';
@@ -38,6 +41,7 @@ import { createSceneSettingsTools } from '../webmcp/scene-settings-tools.js';
 import { createSimpleSourceRefill } from '../workcell/simple-source-refill.js';
 import { createMoreBricksButton } from '../workcell/more-bricks-button.js';
 import { guardDemoLevelTools } from './demo-level-tools.js';
+import { createLevel3ResultsCollector, createLevel3ResultsPanel, deriveLevel3Results } from './level3-results.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -876,6 +880,25 @@ let mainDemoBridge = null;
 let mainDemoConstruction = null;
 let mainDemoTrain = null;
 let mainDemoMission = null;
+const level3Telemetry = createLevel3ResultsCollector();
+const level3ResultsPanel = !evidenceMode ? createLevel3ResultsPanel() : null;
+if (level3ResultsPanel) Object.assign(level3ResultsPanel.element.style, {
+  position: 'fixed', top: '145px', right: '16px', width: '300px',
+  maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', zIndex: '20'
+});
+let resultsReadPending = false;
+async function updateLevel3Results() {
+  if (!level3ResultsPanel) return;
+  if (demoMode !== 'train') { level3ResultsPanel.render({ visible: false }); return; }
+  if (!mainDemoMission || resultsReadPending) return;
+  resultsReadPending = true;
+  try {
+    const state = await mainDemoMission.service.getMissionState({ detail: 'detail', eventLimit: 1 });
+    level3ResultsPanel.render(deriveLevel3Results({ mode: demoMode, missionState: state,
+      constructionProgress: mainDemoConstruction?.getBuildProgress(), frozenMission: mainDemoMission.service.frozen,
+      telemetry: level3Telemetry.getSnapshot({ missionId: state.missionId }) }));
+  } finally { resultsReadPending = false; }
+}
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -897,18 +920,30 @@ try {
     }
     mainDemoTrain = createLevelGatedTrain({
       subscribeFrame: listener => renderer.addFrameListener(listener),
-      createIntegration: () => createMainDemoTrainIntegration({
-      challengeService: mainDemoChallenge,
-      THREE,
-      machineRoot: renderer.machineRoot,
-      requestRender: () => renderer.render(),
-      pusher: { mode: 'placeholder' },
-      preconditions: {
-        isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
-        isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
-        isGripperHoldingPart: () => Boolean(controller.heldBrick())
+      createIntegration: () => {
+        // Created lazily in Level 3 only. The pusher reads the one controller;
+        // its private witness also binds unchanged board and source geometry.
+        const robotPusher = createRobotTcpPusher({ controller,
+          getBoardFingerprint: createTrainBoardFingerprint({ board, controller }) });
+        return createMainDemoTrainIntegration({
+          challengeService: mainDemoChallenge, THREE,
+          machineRoot: renderer.machineRoot,
+          requestRender: () => renderer.render(),
+          motionMode: 'tcp_contact', robotPusher,
+          pusher: { adapter: robotPusher },
+          trainProfile: ({ routeFrame }) => ({
+            pusherRotationQuaternion: robotPusher.getOrientationForYaw(Math.atan2(routeFrame.forward.y, routeFrame.forward.x))
+          }),
+          createSolidContactProvider: ({ routeFrame }) => createTerrainMeshContact({ routeFrame,
+            getSolidMeshes: () => mainDemoChallenge.getTerrainOccluders(),
+            machineMount: mainDemoChallenge.getState().machineMount }),
+          preconditions: {
+            isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
+            isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
+            isGripperHoldingPart: () => Boolean(controller.heldBrick())
+          }
+        });
       }
-      })
     });
     mainDemoConstruction = createConstructionService({ bridgeHost: mainDemoBridge.host, challenge: mainDemoChallenge,
       buildBoard: board, controller, placementAuthority, placementCoordinator: fastPlacement, cycleRunner: placementCycleRunner,
@@ -916,7 +951,7 @@ try {
         renderer.brickFactory.partRegistry = prepared?.registry ?? null;
         mainDemoBridge.setConstructionBoard(prepared ? board : null);
         if (prepared && demoMode === 'train') mainDemoTrain.prepare({ preparedBuild: prepared, buildBoard: board });
-        else if (!prepared) mainDemoTrain.clear();
+        else if (!prepared) Promise.resolve(mainDemoTrain.clear()).catch(error => addLog(`Train cleanup: ${error.message}`, 'bad'));
       }
     });
     mainDemoMission = await createProductionMissionRuntime({
@@ -931,7 +966,10 @@ try {
       trainIntegration: mainDemoTrain,
       robotController: controller,
       runtime,
-      eventSink: event => addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok')
+      eventSink: event => {
+        level3Telemetry.recordMissionEvent(event, { worldRevision: controller.worldRevision });
+        addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok');
+      }
     });
     controller.subscribe(event => {
       if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup', 'simulated_placement'].includes(event.type)) mainDemoBridge.refreshHologram();
@@ -1004,6 +1042,7 @@ if (demoModeControl) {
 }
 renderer.start();
 setInterval(() => {
+  void updateLevel3Results().catch(error => addLog(`Results unavailable: ${error.message}`, 'bad'));
   if (mainDemoConstruction && demoMode !== 'simple') {
     const progress = mainDemoConstruction.getBuildProgress();
     const sides = progress.collaboration?.byAdvisorySide;

@@ -40,7 +40,7 @@ export function createDemoModeControl({ controller, board, runtime, streamContro
       // Levels 2 and 3 share the SAME frozen bridge. Adding/removing Train does
       // not erase the Human/agent construction or reset its mission identity.
       if (previous !== 'simple' && next !== 'simple' && !reset) {
-        train?.setEnabled(next === 'train');
+        await train?.setEnabled(next === 'train');
         if (next === 'train' && getPreparedBuild()) train.prepare({ preparedBuild: getPreparedBuild(), buildBoard: board });
         mode = next; setMode(next);
         controller.revisionClock.bump('demo_level_changed');
@@ -53,7 +53,7 @@ export function createDemoModeControl({ controller, board, runtime, streamContro
           expectedMissionRevision: state.revisions.missionRevision, expectedWorldRevision: controller.worldRevision, confirm: true });
         if (!result.ok) return result;
       }
-      train?.setEnabled(next === 'train');
+      await train?.setEnabled(next === 'train');
       mode = next; setMode(next);
       coordinator.workcellProfile = next === 'simple' ? { ...workcellProfile, safeClearanceZMm: SIMPLE_DEMO_CLEARANCE_MM } : workcellProfile;
       const result = await runtime.robot.reset({ expectedWorldRevision: controller.worldRevision });
@@ -63,7 +63,7 @@ export function createDemoModeControl({ controller, board, runtime, streamContro
       show();
       return getState();
     } catch (error) {
-      train?.setEnabled(previous === 'train');
+      await train?.setEnabled(previous === 'train');
       mode = previous; setMode(previous); show();
       coordinator.workcellProfile = previous === 'simple' ? { ...workcellProfile, safeClearanceZMm: SIMPLE_DEMO_CLEARANCE_MM } : workcellProfile;
       return { ok: false, reason: error.message };

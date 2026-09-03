@@ -1,6 +1,6 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** THREE-LEVEL DEMO RELEASE — LEVELS 1 AND 2 ACCEPTED; LEVEL 3 IS NEXT
+**Status:** THREE-LEVEL DEMO RELEASE — LEVELS 1 AND 2 ACCEPTED; LEVEL 3 TCP FOUNDATION IN PROGRESS, PHYSICAL CROSSING BLOCKED
 **Plan version:** 2026-09-03-N  
 **Production branch:** `main`  
 **Candidate Simple checkpoint:** Level 1 completion commit on `codex/p0-downstream-integration-prep` (see `docs/LAUNCH_READY_PROGRESS.md`)

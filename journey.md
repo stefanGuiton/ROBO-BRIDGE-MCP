@@ -1,5 +1,11 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — Level 3 TCP foundation and truthful obstruction diagnosis
+
+- Level2 published at c24c7f1 with exact66/66 regression before Level3 began. Sol subagents implemented/reviewed physical-contact service, revision/cancellation tests and results projection; root integrated the existing main scene and authorities.
+- Production Level3 uses actual TCP samples and actual solid meshes; no scripted pusher or synthetic floor. Browser native31-tool diagnostic completed6 real controller moves with0 position mismatch, then correctly returned the same Mission to BUILD for Entry_Structure collision, never COMPLETE. Console0/0/0; result screenshot opened. Current Terrain7 geometry cannot pass a whole-consist crossing; clearance permission is pending, original source assets unchanged.
+- Independent review caught disposal/re-enable races, early arming, omitted final revision, cancellation normalization, and an empty-ledger fingerprint cache ABA; all have focused regression fixes. Fingerprint snapshot reads improved46.12→0.26ms in the browser; this is a read-path measurement, not120FPS acceptance. Stable-source verification passed582/582JS,20/20reliability,173JS+4Python syntax and repository checks. Unrelated user source changes remain excluded from publication; final clean-candidate acceptance is pending. A separate excessive-penetration contact-sampling defect is under review. See docs/LEVEL3_TCP_TRAIN_PROGRESS.md; this is not the completed Level3 milestone.
+
 ## 2026-09-03 — launch Levels 1 and 2 verified sequentially
 
 - Level1 committed/pushed9c73e80, native14/14 and exact-checkpoint27/27 regression. Preserved PlanN/main and draftPR7; no deployment/merge.

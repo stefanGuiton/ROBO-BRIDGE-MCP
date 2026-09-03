@@ -11,6 +11,8 @@ import { createAcceptedBuildBoardSnapshot, segmentAtRouteDistance } from './buil
 import { createPushProfile } from './train-push-profile.js';
 import { createPusherAdapter } from './pusher-adapter.js';
 import { createTrainPhysics } from './train-physics.js';
+import { createAcceptedRailContactProvider } from './train-contact-support.js';
+import { boxRadiusAlong, measuredKinematicCollider, tcpPoseToRouteCollider } from './train-kinematic-contact.js';
 import { createPerformanceRecorder } from './performance-recorder.js';
 import {
   createRouteFrame,
@@ -22,9 +24,15 @@ import {
 import {
   clamp,
   cloneValue,
+  bodyAxes,
+  conjugateQuaternion,
+  dot,
   eulerDegreesToQuaternion,
   identityQuaternion,
   length,
+  multiplyQuaternions,
+  normaliseQuaternion,
+  quaternionAngularError,
   round6,
   vector
 } from './math.js';
@@ -32,11 +40,27 @@ import { createTrainTestPreconditionAdapter } from './train-test-preconditions.j
 
 const now = () => performance.now();
 
-function makeBodyDefinitions(plan, frame) {
+function positiveSize(source, label) {
+  const size = { x: source?.xMm, y: source?.yMm, z: source?.zMm };
+  if (!Object.values(size).every(value => typeof value === 'number' && Number.isFinite(value) && value > 0)) {
+    throw new TypeError(`${label} requires positive finite xMm, yMm and zMm dimensions.`);
+  }
+  return size;
+}
+
+function finiteProfileNumber(profile, key, fallback, minimum = -Infinity) {
+  const value = profile[key] ?? fallback;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum) {
+    throw new TypeError(`trainProfile.${key} must be finite${Number.isFinite(minimum) ? ` and at least ${minimum}` : ''}.`);
+  }
+  return value;
+}
+
+function makeBodyDefinitions(plan, frame, trainProfile = {}) {
   const scale = frame.worldTransform.scale;
   const cellForwardMm = plan.geometry.grid.dx * scale;
   const cellUpMm = plan.geometry.grid.dy * scale;
-  return [
+  const definitions = [
     {
       id: 'A', label: 'A', role: 'locomotive', colourIndex: 0,
       size: {
@@ -62,13 +86,22 @@ function makeBodyDefinitions(plan, frame) {
       }
     }
   ];
+  if (trainProfile.bodySizesMm !== undefined) {
+    if (!Array.isArray(trainProfile.bodySizesMm) || trainProfile.bodySizesMm.length !== 3) {
+      throw new TypeError('trainProfile.bodySizesMm must contain exactly three body sizes.');
+    }
+    definitions.forEach((definition, index) => {
+      definition.size = positiveSize(trainProfile.bodySizesMm[index], `trainProfile.bodySizesMm[${index}]`);
+    });
+  }
+  return definitions;
 }
 
-function createInitialPoses(plan, frame, definitions) {
+function createInitialPoses(plan, frame, definitions, trainProfile = {}) {
   const cellForwardMm = plan.geometry.grid.dx * frame.worldTransform.scale;
-  const gapMm = Math.max(8, cellForwardMm * 0.8);
+  const gapMm = finiteProfileNumber(trainProfile, 'gapMm', Math.max(8, cellForwardMm * 0.8), 0);
   const poses = [];
-  let centreX = definitions[0].size.x * 0.62;
+  let centreX = finiteProfileNumber(trainProfile, 'leadStartForwardMm', definitions[0].size.x * 0.62);
   for (let index = 0; index < definitions.length; index += 1) {
     if (index > 0) {
       centreX -= definitions[index - 1].size.x * 0.5 + gapMm + definitions[index].size.x * 0.5;
@@ -127,7 +160,10 @@ function localPoseToPublic(frame, pose) {
     },
     contacts: pose.contacts || 0,
     resting: Boolean(pose.resting),
-    collisionKind: pose.collisionKind || 'none'
+    collisionKind: pose.collisionKind || 'none',
+    railContact: Boolean(pose.railContact),
+    groundContact: Boolean(pose.groundContact),
+    railSupport: cloneValue(pose.railSupport ?? null)
   };
 }
 
@@ -140,10 +176,18 @@ export function createTrainTestService(options = {}) {
   if (typeof options.getAcceptedBuildBoardSnapshot !== 'function') throw new TypeError('getAcceptedBuildBoardSnapshot() is required.');
   if (!options.supportMapAdapter?.refresh) throw new TypeError('supportMapAdapter is required.');
   if (!options.collisionSnapshotManager?.prepare) throw new TypeError('collisionSnapshotManager is required.');
+  const motionMode = options.motionMode ?? 'fixture_analytic';
+  if (!['fixture_analytic', 'tcp_contact'].includes(motionMode)) throw new TypeError('Unknown Train motionMode.');
+  const physicalContact = motionMode === 'tcp_contact';
+  const trainProfile = cloneValue(options.trainProfile ?? {});
   const getWorldTransform = options.getWorldTransform || (() => ({}));
-  const surfaceProvider = options.surfaceProvider || { heightAt: () => -300 };
+  const surfaceProvider = options.surfaceProvider || (physicalContact ? { sample: () => null } : { heightAt: () => -300 });
+  const solidContactProvider = options.solidContactProvider || (surfaceProvider.queryBodyContacts ? surfaceProvider : null);
   const physics = options.physics || createTrainPhysics(options.physicsSettings || {});
   const pusherAdapter = options.pusherAdapter || createPusherAdapter({ mode: 'placeholder' });
+  if (physicalContact && (typeof pusherAdapter.getPose !== 'function' || typeof pusherAdapter.getSample !== 'function')) {
+    throw new TypeError('tcp_contact requires an authoritative TCP adapter with getPose() and getSample().');
+  }
   const preconditions = options.preconditions || createTrainTestPreconditionAdapter(options.preconditionDependencies || {});
   const listeners = new Set();
   if (typeof options.onChange === 'function') listeners.add(options.onChange);
@@ -165,6 +209,10 @@ export function createTrainTestService(options = {}) {
   let pusherVisible = options.pusherVisible ?? DEFAULT_TRAIN_MOTION_SETTINGS.pusherVisible;
   const settleRequiredSeconds = Number(options.settleRequiredSeconds ?? options.physicsSettings?.settleRequiredSeconds ?? 0.65);
   const settleTimeoutSeconds = Number(options.settleTimeoutSeconds ?? options.physicsSettings?.settleTimeoutSeconds ?? 12);
+  const contactTestTimeoutSeconds = Number(options.contactTestTimeoutSeconds ?? 30);
+  if (!(Number.isFinite(contactTestTimeoutSeconds) && contactTestTimeoutSeconds > 0)) {
+    throw new TypeError('contactTestTimeoutSeconds must be positive and finite.');
+  }
 
   let state = TRAIN_STATES.READY;
   let result = null;
@@ -198,6 +246,14 @@ export function createTrainTestService(options = {}) {
   let resetEventTimes = { C: null, B: null, A: null };
   let frozenResetPoses = [];
   let lastPrepareError = null;
+  let railContactProvider = null;
+  let previousTcpCollider = null;
+  let lastMeasuredCollider = null;
+  let contactSampleCount = 0;
+  let contactInputError = null;
+  let contactStartForwardMm = null;
+  let physicalPushFinished = false;
+  const bodiesWithRailContact = new Set();
   const performanceStats = {
     fixedSteps: 0,
     positioningSteps: 0,
@@ -226,16 +282,17 @@ export function createTrainTestService(options = {}) {
   }
 
   function rebuildInitial(assign = true) {
-    definitions = makeBodyDefinitions(plan, routeFrame);
-    initialPoses = createInitialPoses(plan, routeFrame, definitions);
+    definitions = makeBodyDefinitions(plan, routeFrame, trainProfile);
+    initialPoses = createInitialPoses(plan, routeFrame, definitions, trainProfile);
     if (assign) poses = cloneValue(initialPoses);
     pusherStartLocalPose = computePusherStartLocalPose();
-    pusherLocalPose = cloneValue(pusherStartLocalPose);
+    pusherLocalPose = physicalContact ? readTcpCollider() : cloneValue(pusherStartLocalPose);
     pusherAdapter.setVisible(pusherVisible);
     pusherAdapter.reset(pusherPublicPose(pusherStartLocalPose));
   }
 
   function pusherSizeMm() {
+    if (trainProfile.pusherSizeMm) return positiveSize(trainProfile.pusherSizeMm, 'trainProfile.pusherSizeMm');
     const cell = plan ? plan.geometry.grid.dx * routeFrame.worldTransform.scale : 20;
     return {
       x: Math.max(28, cell * 1.55),
@@ -248,13 +305,26 @@ export function createTrainTestService(options = {}) {
     if (!initialPoses.length) return null;
     const rear = initialPoses[2];
     const size = pusherSizeMm();
+    let rotation = eulerDegreesToQuaternion(pusherRotationDeg);
+    if (physicalContact) {
+      // A target is a requested TCP frame, never a separately animated proxy.
+      // An explicit profile quaternion is in machine coordinates; otherwise
+      // retain the live robot's feasible fixed-tool orientation.
+      const machineRotation = trainProfile.pusherRotationQuaternion ?? pusherAdapter.getPose()?.rotationQuaternion;
+      if (!machineRotation || !['x', 'y', 'z', 'w'].every(axis => Number.isFinite(machineRotation[axis]))
+        || Math.hypot(machineRotation.x, machineRotation.y, machineRotation.z, machineRotation.w) < 1e-9) {
+        throw new TypeError('A finite authoritative TCP target orientation is required.');
+      }
+      rotation = multiplyQuaternions(conjugateQuaternion(routeFrame.routeQuaternion), normaliseQuaternion(machineRotation));
+    }
+    const halfForward = physicalContact ? boxRadiusAlong({ size, rotation }, { x: 1, y: 0, z: 0 }) : size.x * 0.5;
     return {
       position: {
-        x: rear.position.x - rear.size.x * 0.5 - size.x * 0.5 - pusherClearanceMm + pusherOffsetMm.xMm,
-        y: size.y * 0.5 + pusherOffsetMm.yMm,
+        x: rear.position.x - rear.size.x * 0.5 - halfForward - pusherClearanceMm + pusherOffsetMm.xMm,
+        y: (physicalContact ? rear.position.y : size.y * 0.5) + pusherOffsetMm.yMm,
         z: pusherOffsetMm.zMm
       },
-      rotation: eulerDegreesToQuaternion(pusherRotationDeg)
+      rotation
     };
   }
 
@@ -278,6 +348,45 @@ export function createTrainTestService(options = {}) {
     supportMap = refreshSupport ? options.supportMapAdapter.refresh() : options.supportMapAdapter.getMap();
     if (!supportMap?.ready || !supportMap.routeFrame) throw new Error('Rail support map is not ready.');
     routeFrame = createRouteFrame({ frozenBuildPlan: plan, worldTransform });
+    refreshRailContacts();
+  }
+
+  function refreshRailContacts() {
+    railContactProvider = physicalContact
+      ? createAcceptedRailContactProvider({ plan, boardSnapshot, supportMap, routeFrame }) : null;
+  }
+
+  function readTcpCollider() {
+    return tcpPoseToRouteCollider(routeFrame, pusherAdapter.getPose(), pusherSizeMm());
+  }
+
+  function actualPusherAtStart() {
+    if (!physicalContact) return pusherAdapter.isAtTarget(pusherPublicPose(pusherStartLocalPose), {
+      positionToleranceMm: 0.5, rotationToleranceRad: 0.25 * Math.PI / 180
+    });
+    try {
+      const actual = readTcpCollider();
+      return Math.hypot(...['x', 'y', 'z'].map(axis => actual.position[axis] - pusherStartLocalPose.position[axis])) <= 0.25
+        && quaternionAngularError(actual.rotation, pusherStartLocalPose.rotation) <= Math.PI / 720;
+    } catch { return false; }
+  }
+
+  function resetPhysicalContact({ initializeBodies = true } = {}) {
+    previousTcpCollider = null;
+    lastMeasuredCollider = null;
+    contactSampleCount = 0;
+    contactInputError = null;
+    contactStartForwardMm = null;
+    physicalPushFinished = false;
+    bodiesWithRailContact.clear();
+    if (physicalContact && initializeBodies) {
+      // No launch kick: all motion after this allocation belongs to this same
+      // three-body/two-coupler physics island and measured contacts.
+      poses = physics.promote(initialPoses, 0, {
+        angularVelocities: initialPoses.map(() => vector()),
+        lateralSpeedsMmPerSecond: [0, 0, 0], verticalSpeedsMmPerSecond: [0, 0, 0]
+      });
+    }
   }
 
   function resetPerformance() {
@@ -289,8 +398,9 @@ export function createTrainTestService(options = {}) {
   function setReadyState(reason = 'RESET_COMPLETE') {
     poses = cloneValue(initialPoses);
     physics.reset();
+    resetPhysicalContact();
     pusherStartLocalPose = computePusherStartLocalPose();
-    pusherLocalPose = cloneValue(pusherStartLocalPose);
+    pusherLocalPose = physicalContact ? readTcpCollider() : cloneValue(pusherStartLocalPose);
     pusherAdapter.setVisible(pusherVisible);
     pusherAdapter.reset(pusherPublicPose(pusherStartLocalPose));
     pusherEngaged = false;
@@ -354,7 +464,7 @@ export function createTrainTestService(options = {}) {
       zMm: Number.isFinite(Number(value.zMm)) ? Number(value.zMm) : pusherOffsetMm.zMm
     };
     pusherStartLocalPose = computePusherStartLocalPose();
-    pusherLocalPose = cloneValue(pusherStartLocalPose);
+    pusherLocalPose = physicalContact ? readTcpCollider() : cloneValue(pusherStartLocalPose);
     pusherAdapter.reset(pusherPublicPose(pusherStartLocalPose));
     emit('PUSHER_OFFSET');
     return cloneValue(pusherOffsetMm);
@@ -362,6 +472,7 @@ export function createTrainTestService(options = {}) {
 
   function setPusherRotation(value = {}) {
     assertEditable();
+    if (physicalContact) throw new Error('TCP contact orientation belongs to the robot; use a validated machine-frame trainProfile target.');
     pusherRotationDeg = {
       xDeg: Number.isFinite(Number(value.xDeg)) ? Number(value.xDeg) : pusherRotationDeg.xDeg,
       yDeg: Number.isFinite(Number(value.yDeg)) ? Number(value.yDeg) : pusherRotationDeg.yDeg,
@@ -431,8 +542,10 @@ export function createTrainTestService(options = {}) {
       pusherEngaged = false;
       pusherAdapter.onPushEnd({ reason: 'SUPPORT_LOST', speedMmPerSecond });
     }
-    physics.setCollisionSnapshot(collisionSnapshot);
-    poses = physics.promote(poses, speedMmPerSecond);
+    if (!physicalContact) {
+      physics.setCollisionSnapshot(collisionSnapshot);
+      poses = physics.promote(poses, speedMmPerSecond);
+    }
     fallingElapsedSeconds = 0;
     settledElapsedSeconds = 0;
     state = TRAIN_STATES.FALLING;
@@ -446,9 +559,10 @@ export function createTrainTestService(options = {}) {
       outcome: 'CROSSED',
       progress: 1,
       elapsedMs: Math.round(elapsedSeconds * 1000),
-      supportMapChecksum: supportMap.checksum
+      supportMapChecksum: supportMap.checksum,
+      ...(physicalContact ? { motionMode, crossing: crossingEvidence(), physicalContact: physics.getDiagnostics().physicalContact } : {})
     };
-    poses = poses.map(zeroMotion);
+    poses = physicalContact ? physics.freeze() : poses.map(zeroMotion);
     currentSpeedMmPerSecond = 0;
     currentAccelerationMmPerSecondSquared = 0;
     emit('CROSSED');
@@ -467,7 +581,8 @@ export function createTrainTestService(options = {}) {
       elapsedMs: Math.round(elapsedSeconds * 1000),
       settleTimedOut,
       supportMapChecksum: supportMap.checksum,
-      collisionChecksum: collisionSnapshot?.checksum ?? null
+      collisionChecksum: collisionSnapshot?.checksum ?? null,
+      ...(physicalContact ? { motionMode, crossing: crossingEvidence(), physicalContact: physics.getDiagnostics().physicalContact } : {})
     };
     currentSpeedMmPerSecond = 0;
     currentAccelerationMmPerSecondSquared = 0;
@@ -497,6 +612,7 @@ export function createTrainTestService(options = {}) {
       supportMap = options.supportMapAdapter.refresh();
       if (!supportMap?.ready || !supportMap.routeFrame) throw new Error('Rail support map is not ready.');
       routeFrame = createRouteFrame({ frozenBuildPlan: plan, worldTransform });
+      refreshRailContacts();
       const prepared = options.collisionSnapshotManager.prepare({ includeMergedFaces: true });
       collisionSnapshot = prepared.snapshot;
       collisionPrepareReport = prepared.report;
@@ -504,6 +620,7 @@ export function createTrainTestService(options = {}) {
       else performanceStats.collisionPrepareCount += 1;
       physics.setCollisionSnapshot(collisionSnapshot);
       rebuildInitial(true);
+      resetPhysicalContact();
       result = null;
       profile = null;
       pushElapsedSeconds = 0;
@@ -516,16 +633,13 @@ export function createTrainTestService(options = {}) {
       firstUnsupportedSegment = null;
       failureProgress = null;
       pusherStartLocalPose = computePusherStartLocalPose();
-      pusherLocalPose = cloneValue(pusherStartLocalPose);
+      pusherLocalPose = physicalContact ? readTcpCollider() : cloneValue(pusherStartLocalPose);
       pusherAdapter.setTargetPose(pusherPublicPose(pusherStartLocalPose));
       state = TRAIN_STATES.POSITIONING_PUSHER;
       const prepareMs = now() - started;
       recorder.record('prepareTestMs', prepareMs);
       emit('POSITIONING_PUSHER');
-      if (pusherAdapter.isAtTarget(pusherPublicPose(pusherStartLocalPose), {
-        positionToleranceMm: 0.5,
-        rotationToleranceRad: 0.25 * Math.PI / 180
-      })) {
+      if (!physicalContact && actualPusherAtStart()) {
         state = TRAIN_STATES.PUSH_READY;
         emit('PUSH_READY');
       }
@@ -540,6 +654,9 @@ export function createTrainTestService(options = {}) {
   }
 
   function notifyPusherReady(pose) {
+    // Contact readiness is observed in snapshots, but only the owned robot
+    // stroke's onAtStart callback may arm its physics through armPhysicalPush.
+    if (physicalContact) return getSnapshot();
     pusherAdapter.notifyReady(pose || pusherPublicPose(pusherStartLocalPose));
     if (state === TRAIN_STATES.POSITIONING_PUSHER) {
       state = TRAIN_STATES.PUSH_READY;
@@ -550,13 +667,28 @@ export function createTrainTestService(options = {}) {
 
   function pushEvent() {
     if (state !== TRAIN_STATES.PUSH_READY) return { ok: false, reason: 'PUSHER_NOT_READY', snapshot: getSnapshot() };
-    profile = createPushProfile({ pushDistanceMm, trainSpeedMmPerSecond });
+    if (physicalContact && !actualPusherAtStart()) {
+      state = TRAIN_STATES.POSITIONING_PUSHER;
+      emit('PUSH_POSE_CHANGED');
+      return { ok: false, reason: 'PUSHER_NOT_AT_START', snapshot: getSnapshot() };
+    }
+    profile = physicalContact ? null : createPushProfile({ pushDistanceMm, trainSpeedMmPerSecond });
+    if (physicalContact) {
+      try {
+        previousTcpCollider = checkedTcpSample();
+        lastMeasuredCollider = measuredKinematicCollider(previousTcpCollider, previousTcpCollider, TRAIN_FIXED_DT_SECONDS);
+        contactStartForwardMm = previousTcpCollider.position.x;
+      } catch (error) {
+        return { ok: false, reason: 'INVALID_TCP_SAMPLE', message: error.message, snapshot: getSnapshot() };
+      }
+    }
     pushElapsedSeconds = 0;
     pushDistanceTravelledMm = 0;
     currentSpeedMmPerSecond = 0;
     currentAccelerationMmPerSecondSquared = 0;
     pusherEngaged = true;
-    pusherAdapter.onPushStart({ pushDistanceMm, trainSpeedMmPerSecond, durationSeconds: profile.durationSeconds });
+    pusherAdapter.onPushStart({ pushDistanceMm, trainSpeedMmPerSecond,
+      durationSeconds: physicalContact ? null : profile.durationSeconds, motionMode });
     state = TRAIN_STATES.PUSHING;
     emit('PUSH_START');
     return { ok: true, snapshot: getSnapshot() };
@@ -565,17 +697,173 @@ export function createTrainTestService(options = {}) {
   function startTest() {
     const prepared = prepareTest();
     if (!prepared.ok) return prepared;
-    if (state !== TRAIN_STATES.PUSH_READY) return { ok: true, waitingForPusher: true, snapshot: getSnapshot() };
+    if (physicalContact || state !== TRAIN_STATES.PUSH_READY) return { ok: true, waitingForPusher: true, snapshot: getSnapshot() };
     return pushEvent();
   }
 
-  function positioningStep() {
-    if (pusherAdapter.isAtTarget(pusherPublicPose(pusherStartLocalPose), {
-      positionToleranceMm: 0.5,
-      rotationToleranceRad: 0.25 * Math.PI / 180
-    })) {
+  function positioningStep({ armPhysical = false } = {}) {
+    if (physicalContact && !armPhysical) return;
+    if (actualPusherAtStart()) {
       state = TRAIN_STATES.PUSH_READY;
       emit('PUSH_READY');
+    }
+  }
+
+  function armPhysicalPush() {
+    if (!physicalContact) return { ok: false, reason: 'TCP_CONTACT_MODE_REQUIRED', snapshot: getSnapshot() };
+    if (state === TRAIN_STATES.POSITIONING_PUSHER) positioningStep({ armPhysical: true });
+    return pushEvent();
+  }
+
+  function finishPhysicalPush({ reason = 'TCP_STROKE_COMPLETE' } = {}) {
+    if (!physicalContact) return { ok: false, reason: 'TCP_CONTACT_MODE_REQUIRED', snapshot: getSnapshot() };
+    if (![TRAIN_STATES.PUSHING, TRAIN_STATES.RUNNING_SUPPORTED, TRAIN_STATES.FALLING].includes(state)) {
+      return { ok: false, reason: 'NO_ACTIVE_PHYSICAL_PUSH', snapshot: getSnapshot() };
+    }
+    physicalPushFinished = true;
+    if (pusherEngaged) pusherAdapter.onPushEnd({ reason, speedMmPerSecond: currentSpeedMmPerSecond, motionMode });
+    pusherEngaged = false;
+    if (state === TRAIN_STATES.PUSHING) state = TRAIN_STATES.RUNNING_SUPPORTED;
+    emit('TCP_PUSH_COMPLETE');
+    return { ok: true, snapshot: getSnapshot() };
+  }
+
+  function checkedTcpSample() {
+    const sample = pusherAdapter.getSample();
+    if (!Number.isFinite(sample?.sampleTimeSeconds) || sample.sampleTimeSeconds < 0
+      || !Number.isSafeInteger(sample?.sequence) || sample.sequence < 0) {
+      throw new TypeError('TCP contact requires a finite monotonic timestamp and sample sequence.');
+    }
+    const sampled = tcpPoseToRouteCollider(routeFrame, sample, pusherSizeMm());
+    const actual = readTcpCollider();
+    if (Math.hypot(...['x', 'y', 'z'].map(axis => sampled.position[axis] - actual.position[axis])) > 1e-6
+      || quaternionAngularError(sampled.rotation, actual.rotation) > 1e-6) {
+      throw new Error('The sampled TCP collider does not match the authoritative robot pose.');
+    }
+    return sampled;
+  }
+
+  function consumeMeasuredCollider(dt) {
+    const current = checkedTcpSample();
+    const previous = previousTcpCollider ?? current;
+    const changedPose = Math.hypot(...['x', 'y', 'z'].map(axis => current.position[axis] - previous.position[axis])) > 1e-8
+      || quaternionAngularError(current.rotation, previous.rotation) > 1e-8;
+    if (current.sequence < previous.sequence || current.sampleTimeSeconds < previous.sampleTimeSeconds
+      || (changedPose && (current.sequence === previous.sequence || current.sampleTimeSeconds <= previous.sampleTimeSeconds))) {
+      throw new Error('TCP contact samples are stale or have a non-monotonic motion interval.');
+    }
+    const newSample = current.sequence !== previous.sequence;
+    // Catch-up physics steps must not replay a robot movement or turn the
+    // physics dt into a fabricated TCP velocity. Only real sample time counts.
+    const intervalSeconds = newSample ? current.sampleTimeSeconds - previous.sampleTimeSeconds : dt;
+    lastMeasuredCollider = measuredKinematicCollider(newSample ? previous : current, current, intervalSeconds);
+    previousTcpCollider = current;
+    pusherLocalPose = current;
+    if (newSample) contactSampleCount += 1;
+    if (Number.isFinite(contactStartForwardMm)) {
+      pushDistanceTravelledMm = Math.max(pushDistanceTravelledMm, current.position.x - contactStartForwardMm);
+    }
+    return lastMeasuredCollider;
+  }
+
+  function crossingEvidence() {
+    const diagnostics = physics.getDiagnostics();
+    const rail = railContactProvider?.getSummary() ?? null;
+    const trailingExtents = poses.map(pose => ({
+      id: pose.id,
+      forwardMm: pose.position.x - boxRadiusAlong(pose, { x: 1, y: 0, z: 0 })
+    }));
+    return {
+      requiredExitForwardMm: routeFrame?.lengthMm ?? null,
+      trailingExtents,
+      allBodiesClearExit: poses.length === 3 && trailingExtents.every(item => item.forwardMm >= routeFrame.lengthMm),
+      continuousAcceptedRoute: rail?.allSupported === true && rail?.allRequiredPartsAccepted === true,
+      allBodiesHadRailContact: poses.length === 3 && poses.every(pose => bodiesWithRailContact.has(pose.id)),
+      allBodiesCurrentlySupported: poses.length === 3 && poses.every(pose => pose.groundContact || pose.railContact),
+      allBodiesUpright: poses.length === 3 && poses.every(pose => {
+        const axes = bodyAxes(pose);
+        return dot(axes[1], { x: 0, y: 1, z: 0 }) >= Math.cos(Math.PI / 12)
+          && dot(axes[0], { x: 1, y: 0, z: 0 }) >= Math.cos(Math.PI / 12);
+      }),
+      hasMeasuredContactImpulse: diagnostics.physicalContact.impulseCount > 0,
+      noBodyIntersection: diagnostics.currentMaximumBodyOverlapDepthMm <= 0.1,
+      noSolidObstruction: diagnostics.physicalContact.solidCollisionCount === 0
+    };
+  }
+
+  function finishPhysicalFailure(cause, outcome = 'TRAIN_BLOCKED', message = null) {
+    if (pusherEngaged) pusherAdapter.onPushEnd({ reason: cause, speedMmPerSecond: currentSpeedMmPerSecond, motionMode });
+    pusherEngaged = false;
+    poses = physics.freeze();
+    state = TRAIN_STATES.FAILED;
+    result = {
+      success: false, outcome, cause, message, motionMode, progress: getProgress(),
+      elapsedMs: Math.round(elapsedSeconds * 1000), supportMapChecksum: supportMap.checksum,
+      collisionChecksum: collisionSnapshot?.checksum ?? null,
+      crossing: crossingEvidence(), physicalContact: physics.getDiagnostics().physicalContact
+    };
+    currentSpeedMmPerSecond = 0;
+    currentAccelerationMmPerSecondSquared = 0;
+    emit(outcome);
+  }
+
+  function contactStep(dt) {
+    const priorSpeed = currentSpeedMmPerSecond;
+    let collider;
+    try { collider = consumeMeasuredCollider(dt); }
+    catch (error) {
+      contactInputError = error.message;
+      finishPhysicalFailure('INVALID_TCP_SAMPLE', 'TRAIN_CONTACT_FAILED', error.message);
+      return;
+    }
+    try {
+      poses = physics.step(dt, { motionMode, surfaceProvider, solidContactProvider, railContactProvider, kinematicCollider: collider });
+    } catch (error) {
+      contactInputError = error.message;
+      finishPhysicalFailure('CONTACT_QUERY_FAILED', 'TRAIN_CONTACT_FAILED', error.message);
+      return;
+    }
+    currentSpeedMmPerSecond = poses.reduce((sum, pose) => sum + pose.linearVelocity.x, 0) / poses.length;
+    currentAccelerationMmPerSecondSquared = (currentSpeedMmPerSecond - priorSpeed) / dt;
+    for (const pose of poses) {
+      if (pose.railContact && pose.railSupport?.fullyOnRoute) bodiesWithRailContact.add(pose.id);
+    }
+    const diagnostics = physics.getDiagnostics();
+    if (diagnostics.physicalContact.solidCollisionCount > 0) {
+      finishPhysicalFailure('TERRAIN_OBSTRUCTION', 'TRAIN_COLLIDED');
+      return;
+    }
+    if (state === TRAIN_STATES.FALLING) {
+      updateFallingResult(dt);
+      return;
+    }
+    const fallen = poses.find(pose => {
+      const bottom = pose.position.y - boxRadiusAlong(pose, { x: 0, y: 1, z: 0 });
+      const axes = bodyAxes(pose);
+      return bottom < -2 || dot(axes[1], { x: 0, y: 1, z: 0 }) < Math.cos(Math.PI / 12)
+        || dot(axes[0], { x: 1, y: 0, z: 0 }) < Math.cos(Math.PI / 12);
+    });
+    if (fallen) {
+      const missingId = fallen.railSupport?.missing?.[0]?.segmentId;
+      beginFall(supportMap.segments.find(segment => segment.id === missingId) ?? null, currentSpeedMmPerSecond);
+      return;
+    }
+    if (state === TRAIN_STATES.PUSHING) {
+      pushElapsedSeconds += dt;
+      const adapter = pusherAdapter.getSnapshot();
+      const strokeEnded = ['retract', 'retreat', 'complete'].includes(adapter.motion?.stage)
+        || adapter.pushing === false || pushDistanceTravelledMm >= pushDistanceMm - 1e-6;
+      if (strokeEnded) finishPhysicalPush();
+    }
+    const crossing = crossingEvidence();
+    if (crossing.allBodiesClearExit) {
+      if (Object.values(crossing).filter(value => typeof value === 'boolean').every(Boolean)) finishCrossed();
+      else if (!crossing.continuousAcceptedRoute || !crossing.allBodiesHadRailContact) {
+        finishPhysicalFailure('UNPROVEN_CONTINUOUS_RAIL_SUPPORT');
+      }
+    }
+    if ([TRAIN_STATES.PUSHING, TRAIN_STATES.RUNNING_SUPPORTED].includes(state) && elapsedSeconds >= contactTestTimeoutSeconds) {
+      finishPhysicalFailure('CROSSING_TIMEOUT', 'TRAIN_STALLED');
     }
   }
 
@@ -617,6 +905,10 @@ export function createTrainTestService(options = {}) {
 
   function fallingStep(dt) {
     poses = physics.step(dt, { surfaceProvider });
+    updateFallingResult(dt);
+  }
+
+  function updateFallingResult(dt) {
     fallingElapsedSeconds += dt;
     const diagnostics = physics.getDiagnostics();
     const motionSettled = poses.length === 3 && poses.every((pose) => (
@@ -650,6 +942,10 @@ export function createTrainTestService(options = {}) {
   }
 
   function step(dt = TRAIN_FIXED_DT_SECONDS) {
+    if (dt === 0) {
+      if (state === TRAIN_STATES.POSITIONING_PUSHER) positioningStep();
+      return false;
+    }
     if (!TRAIN_ACTIVE_STEP_STATES.has(state)) {
       performanceStats.idleStepCalls += 1;
       return false;
@@ -660,6 +956,12 @@ export function createTrainTestService(options = {}) {
     if (state === TRAIN_STATES.POSITIONING_PUSHER) {
       positioningStep();
       performanceStats.positioningSteps += 1;
+    } else if (physicalContact && [TRAIN_STATES.PUSHING, TRAIN_STATES.RUNNING_SUPPORTED, TRAIN_STATES.FALLING].includes(state)) {
+      const physicsStepsBefore = physics.getCounts().physicsSteps;
+      contactStep(fixed);
+      performanceStats.physicsSteps += physics.getCounts().physicsSteps - physicsStepsBefore;
+      if (before === TRAIN_STATES.PUSHING) performanceStats.pushingSteps += 1;
+      if (before === TRAIN_STATES.RUNNING_SUPPORTED) performanceStats.supportedSteps += 1;
     } else if (state === TRAIN_STATES.PUSHING) {
       pushingStep(fixed);
       performanceStats.pushingSteps += 1;
@@ -711,9 +1013,10 @@ export function createTrainTestService(options = {}) {
     }
     frozenResetPoses = poses.map(zeroMotion);
     physics.reset();
+    resetPhysicalContact({ initializeBodies: false });
     rebuildInitial(false);
     pusherAdapter.reset(pusherPublicPose(pusherStartLocalPose));
-    pusherLocalPose = cloneValue(pusherStartLocalPose);
+    pusherLocalPose = physicalContact ? readTcpCollider() : cloneValue(pusherStartLocalPose);
     pusherEngaged = false;
     profile = null;
     currentSpeedMmPerSecond = 0;
@@ -748,6 +1051,10 @@ export function createTrainTestService(options = {}) {
     if (state !== TRAIN_STATES.READY) throw new Error('Support can refresh only while TrainService is READY.');
     refreshContext({ refreshSupport: true });
     rebuildInitial(true);
+    if (physicalContact) {
+      physics.reset();
+      resetPhysicalContact();
+    }
     generation += 1;
     emit('SUPPORT_REFRESH');
     return supportMap;
@@ -759,7 +1066,7 @@ export function createTrainTestService(options = {}) {
       pusherEngaged = false;
       state = TRAIN_STATES.STOPPED;
       result = { success: false, outcome: 'STOPPED', progress: getProgress(), elapsedMs: Math.round(elapsedSeconds * 1000) };
-      poses = poses.map(zeroMotion);
+      poses = physicalContact ? physics.freeze() : poses.map(zeroMotion);
       currentSpeedMmPerSecond = 0;
       currentAccelerationMmPerSecondSquared = 0;
       emit('STOPPED');
@@ -805,7 +1112,7 @@ export function createTrainTestService(options = {}) {
   }
 
   function localCouplers() {
-    if ((state === TRAIN_STATES.FALLING || state === TRAIN_STATES.FAILED) && physics.getCounts().couplerJoints) {
+    if ((physicalContact || state === TRAIN_STATES.FALLING || state === TRAIN_STATES.FAILED) && physics.getCounts().couplerJoints) {
       return physics.getCouplers();
     }
     return analyticCouplers();
@@ -827,35 +1134,46 @@ export function createTrainTestService(options = {}) {
 
   function getProgress() {
     if (!routeFrame || !poses.length) return 0;
-    return round6(routeProgress(routeFrame, poses[0].position.x));
+    const forwardMm = physicalContact
+      ? Math.min(...poses.map(pose => pose.position.x - boxRadiusAlong(pose, { x: 1, y: 0, z: 0 })))
+      : poses[0].position.x;
+    return round6(routeProgress(routeFrame, forwardMm));
   }
 
   function getPusherSnapshot() {
     const adapter = pusherAdapter.getSnapshot();
+    const localPose = physicalContact ? tcpPoseToRouteCollider(routeFrame, adapter.pose, pusherSizeMm()) : pusherLocalPose;
+    const publicPose = physicalContact ? cloneValue(adapter.pose) : pusherPublicPose(pusherLocalPose);
     return {
       mode: pusherAdapter.mode,
       visible: pusherVisible && adapter.visible !== false,
       engaged: pusherEngaged,
       sizeMm: { xMm: pusherSizeMm().x, yMm: pusherSizeMm().y, zMm: pusherSizeMm().z },
-      routeLocal: pusherLocalPose ? {
+      routeLocal: localPose ? {
         positionMm: {
-          forwardMm: pusherLocalPose.position.x,
-          upMm: pusherLocalPose.position.y,
-          rightMm: pusherLocalPose.position.z
+          forwardMm: localPose.position.x,
+          upMm: localPose.position.y,
+          rightMm: localPose.position.z
         },
-        rotationQuaternion: cloneValue(pusherLocalPose.rotation)
+        rotationQuaternion: cloneValue(localPose.rotation)
       } : null,
-      pose: pusherPublicPose(pusherLocalPose),
+      pose: publicPose,
       targetPose: pusherPublicPose(pusherStartLocalPose),
       offsetMm: cloneValue(pusherOffsetMm),
       rotationDeg: cloneValue(pusherRotationDeg),
       clearanceMm: pusherClearanceMm,
-      speedMmPerSecond: pusherEngaged ? currentSpeedMmPerSecond : 0,
+      speedMmPerSecond: physicalContact ? length(lastMeasuredCollider?.linearVelocity ?? vector()) : pusherEngaged ? currentSpeedMmPerSecond : 0,
       accelerationMmPerSecondSquared: pusherEngaged ? currentAccelerationMmPerSecondSquared : 0,
       pushDistanceTravelledMm,
       pushDistanceMm,
       pushTimeSeconds: getPushTimeSeconds(),
-      pushElapsedSeconds
+      pushElapsedSeconds,
+      ...(physicalContact ? {
+        authority: 'RobotController.TCP',
+        sample: cloneValue(adapter.sample ?? null),
+        collider: { position: cloneValue(localPose.position), rotation: cloneValue(localPose.rotation), size: pusherSizeMm() },
+        startReady: actualPusherAtStart()
+      } : {})
     };
   }
 
@@ -867,6 +1185,7 @@ export function createTrainTestService(options = {}) {
       dynamicBodies: physicsCounts.dynamicBodies,
       activePhysicsBodies: physicsCounts.activeBodies,
       physicsContacts: physicsCounts.contacts,
+      physicsSteps: physicsCounts.physicsSteps,
       couplerJoints: physicsCounts.couplerJoints,
       visibleCouplers: publicCouplers().filter((coupler) => coupler.visible).length,
       currentMaximumCouplerAnchorErrorMm: physicsCounts.currentMaximumCouplerAnchorErrorMm,
@@ -906,13 +1225,15 @@ export function createTrainTestService(options = {}) {
       } : null,
       routeFrame: cloneValue(routeFrame),
       motion: {
+        mode: motionMode,
         trainSpeedMmPerSecond,
         currentSpeedMmPerSecond,
         currentAccelerationMmPerSecondSquared,
         pushDistanceMm,
         pushTimeSeconds: getPushTimeSeconds(),
         pushElapsedSeconds,
-        pushDistanceTravelledMm
+        pushDistanceTravelledMm,
+        profile: cloneValue(trainProfile)
       },
       pusher,
       support: supportMap ? {
@@ -922,6 +1243,16 @@ export function createTrainTestService(options = {}) {
         firstUnsupportedSegment: supportMap.firstUnsupportedSegment,
         firstUnsupportedProgress: supportMap.firstUnsupportedProgress,
         checksum: supportMap.checksum
+      } : null,
+      physicalContact: physicalContact ? {
+        startReady: pusher?.startReady ?? false,
+        sampleCount: contactSampleCount,
+        inputError: contactInputError,
+        pushFinished: physicalPushFinished,
+        lastStepCollider: cloneValue(lastMeasuredCollider),
+        rail: railContactProvider?.getSummary() ?? null,
+        crossing: crossingEvidence(),
+        diagnostics: physics.getDiagnostics().physicalContact
       } : null,
       poses: routeFrame ? poses.map((pose) => localPoseToPublic(routeFrame, pose)) : [],
       couplers: routeFrame ? publicCouplers() : [],
@@ -988,6 +1319,8 @@ export function createTrainTestService(options = {}) {
     setPusherRotation,
     setPusherVisible,
     prepareTest,
+    armPhysicalPush,
+    finishPhysicalPush,
     notifyPusherReady,
     pushEvent,
     startTest,

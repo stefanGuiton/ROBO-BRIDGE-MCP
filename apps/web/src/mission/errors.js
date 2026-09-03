@@ -12,6 +12,7 @@ export const MISSION_ERROR_CODES = Object.freeze([
 
 const EXTERNAL_ERROR_CODE_MAP = Object.freeze({
   cancelled: 'CANCELLED',
+  train_test_cancelled: 'CANCELLED',
   abort_err: 'CANCELLED',
   invalid_input: 'INVALID_PARAMETER',
   invalid_parameter: 'INVALID_PARAMETER',
