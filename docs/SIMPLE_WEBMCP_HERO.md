@@ -2,6 +2,12 @@
 
 Updated: 2026-09-03
 
+## Balanced starter inventory
+
+The latest user-requested preset starts with **14 red + 14 blue**, interleaved, preserving 28 total sources and validated reachable poses. Explicit requested build colours still override defaults. A red 12-brick wall plus a red 10-brick tower in the same scene requires legitimate replenishment; the starter pool is not unlimited.
+
+Focused preset/level-gate tests7/7 pass. Fresh native Chrome148 fast-mode wall regression uses the balanced pool: one plan, one continuous start,12/12 unique blue placements in12,658.5ms at the1000ms target, five overruns (maximum313.9ms),635 moving frames, restored prior playback, console0/0/0. No refill was needed because14blue were available. All three screenshots inspected; the final HUD capture is one refresh behind the authoritative completed board. This is not a repeated full Human-adoption/refill matrix or a frame-rate guarantee. Evidence: `output/playwright/level1-balanced-fast/acceptance.json`. Historical24red/4blue mentions and earlier refill measurements below refer to the old preset.
+
 ## Verified smooth-cycle follow-up
 
 The existing native `control_placement_stream` now opts the Simple board into the profile-informed smooth cycle. Normal remains2000ms, faster1333ms, minimum1000ms; Bridge cadence is unchanged. The speed is a target, not a promise or hardware claim.

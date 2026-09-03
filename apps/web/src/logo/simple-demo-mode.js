@@ -1,6 +1,6 @@
 import './simple-human-slot-guide.js';
 
-export const SIMPLE_DEMO_COLOURS = Object.freeze([...Array(24).fill('red'), ...Array(4).fill('blue')]);
+export const SIMPLE_DEMO_COLOURS = Object.freeze(Array.from({ length: 28 }, (_, index) => index % 2 ? 'blue' : 'red'));
 // A within-workspace transfer height for the flat-table scene, avoiding the
 // wrist singularity crossed by the legacy 400mm transfer from the new tray.
 export const SIMPLE_DEMO_CLEARANCE_MM = 250;

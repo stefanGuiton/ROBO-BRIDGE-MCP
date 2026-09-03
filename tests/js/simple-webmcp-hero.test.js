@@ -70,7 +70,12 @@ for (const shape of [...SIMPLE_DEMO_SCENARIOS, { prefix: 'grid-regression', widt
     assert.equal(h.board.getPlacements().length, placements.length);
     assert.equal(state.entries.some(entry => ['BLOCKED', 'WAITING_SOURCE', 'WAITING_DEPENDENCY', 'CANCELLED'].includes(entry.status)), false);
     const acceptedBricks = state.entries.map(entry => h.controller.getBricks().find(brick => brick.id === entry.actualBrickId));
-    if (shape.prefix !== 'tower') assert.ok(acceptedBricks.every(brick => brick?.colour === 'red'));
+    if (shape.prefix === 'grid-regression') {
+      assert.equal(acceptedBricks.filter(brick => brick?.colour === 'red').length, 14);
+      assert.equal(acceptedBricks.filter(brick => brick?.colour === 'blue').length, 10);
+    } else if (shape.prefix !== 'tower') {
+      assert.ok(acceptedBricks.every(brick => brick?.colour === 'red'));
+    }
     if (shape.prefix === 'tower') {
       assert.equal(placements.length, 12);
       const adopted = state.entries.filter(entry => entry.status === 'ADOPTED');
