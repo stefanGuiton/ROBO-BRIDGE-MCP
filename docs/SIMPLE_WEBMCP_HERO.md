@@ -12,28 +12,40 @@ The separate native Human tower regression passed 7/7 checks: one real canvas pi
 
 Run the short wall explicitly with `node scripts/level1-fast-timing-browser.mjs --write-evidence` (optional `ROBO_FAST_URL` and `ROBO_FAST_OUTPUT`). It does not replace the full 35-brick acceptance matrix below. Earlier `level1-fast-timing-final` passed at 12,698.8 ms; `level1-fast-timing-current` is a failed camera-harness run, not acceptance. Generated evidence stays local.
 
-## Active launch-readiness update (Level 1 acceptance in progress)
+## Level 1 launch-readiness implementation
 
 This section supersedes the old deferred-audit/publication instructions below. Current work follows `Downloads/OVERALL_PLAN_LAUNCH_READY.md` on `codex/p0-downstream-integration-prep`; do not merge or deploy. See `docs/LAUNCH_READY_PROGRESS.md` for gate status.
 
-- Wall planning now supports positive integer width, height and depth; the mandatory strict-blue wall is 5 x 7 x 1 = 35 targets. The recording tower is six alternating layers with two bricks per layer = 12 targets; ten layers remains supported.
+- Wall planning supports positive integer width, height and depth. The launch acceptance explicitly tests a 5 x 7 x 1 strict-blue wall (35 targets) and a six-layer alternating tower (12 targets); these are test cases, not generic recording defaults. Explicit dimensions always override the defaults below.
 - Native registration now includes 31 unique tools: the existing 28 plus `request_more_bricks`, `get_scene_settings`, and `update_scene_settings`, using the same registrar.
 - `request_more_bricks({expectedWorldRevision})` moves the empty robot to the shared rendered button and presses twice. Refill occurs only after verified TCP contact. Human clicks use the same demand-aware dispenser. Sources have unique IDs, validated reachable feeder poses and unchanged colours; no accepted targets are fabricated. If the feeder fills before enough sources are available, consume sources, request another physical double press, then resume the same plan.
 - `get_scene_settings({})` returns current presentation values, supported bounds and revision. `update_scene_settings({brightness, tableColor, expectedWorldRevision})` atomically changes the existing settings store. Brightness is renderer exposure in 0.1..4; table colour accepts #RRGGBB or supported simple names such as `dark grey`. Existing motion/layout guards still apply.
 - An amber pending-slot guide is derived from the live stream. Match its yaw using R, aim at it while holding a compatible brick, then click to release normally. Pickup alone never accepts a target. Strict target colour is enforced; a red preference with no strict colour permits a blue Human contribution.
 - Test-only `tests/helpers/human-simulator.js` drives HumanBuildAdapter pickup/validated-preview/release and labels evidence `simulation: true`. It is not loaded by production, never writes ADOPTED directly and does not replace actual pointer acceptance.
 
-Repeat browser acceptance explicitly with `node scripts/level1-launch-browser.mjs --write-evidence`; screenshots are local evidence, not a substitute for inspecting board state. Full browser/visual acceptance is still in progress; do not treat this implementation summary as the Level 1 completion gate.
+Repeat browser acceptance explicitly with `node scripts/level1-launch-browser.mjs --write-evidence`; screenshots are local evidence, not a substitute for inspecting board state. The original full Level 1 gate and subsequent follow-up results are recorded in `docs/LAUNCH_READY_PROGRESS.md`; the short timing check alone is not that full gate.
 
 
 ## Low-latency continuous demos
 
-### Two-cue recording preset
+### Three-cue recording defaults
 
-For the short recording, use one blue brick followed by a 2 x 2 tower: six
-alternating layers, two flat red bricks per layer (12 bricks), not four bricks
-per layer. Omit the wall. Keep the requested 1000 ms target; do not lower the
-Simple minimum or change the normal 2000 ms default.
+Include all three cues: one brick, a wall, and an alternating tower. For a
+generic wall request use 3 wide x 4 high x 1 deep (12 bricks). For a generic
+tower use a 2 x 2 footprint, five layers, two flat parallel bricks per layer
+(10 bricks total), rotating each successive pair 90 degrees. A 2 x 2 footprint
+does not mean four bricks per layer. Explicit dimensions override these defaults:
+a 4 x 5 wall has 20 bricks; an explicit six-layer tower has 12 bricks. Honour
+the requested colour. Keep the requested 1000 ms target for the fast recording;
+do not lower the Simple minimum or change its normal 2000 ms default.
+
+The presenter's thinking/planning targets are **5 seconds for one brick** and
+**8 seconds for the tower**, before execution starts; no wall planning budget
+has been specified. These are not total build
+durations, and transport latency can prevent meeting them. Measure from receipt
+of the cue when claiming a cue-to-start result; a timer started at the planning
+tool call excludes earlier agent thinking. Start dispatch, start acknowledgement
+and first observed motion are distinct events. Do not claim one proves another.
 
 - Before recording, keep the live browser and native tool handles ready, check
   the intended footprint, and prefill available feeder capacity for the agreed
@@ -53,8 +65,16 @@ Simple minimum or change the normal 2000 ms default.
   setup, start dispatch, observed completion, and verified completion immediately
   in that invocation. Agent/tool latency is included; these are not the runner's
   exact motion-only duration. Report refill time and overruns separately.
+- Persist each cue's result object in a top-level collection **before** starting
+  asynchronous work. A failed wait must not discard its start timestamps.
+  Block-local REPL variables did not survive a later call in this session.
+  Prefer one bounded invocation per cue: combining both full builds exhausted
+  the browser wait deadline even with a longer outer invocation timeout. A wait
+  timeout does not cancel the stream; verify its current state instead of
+  restarting it or declaring success. Do not inspect each brick to work around it.
 
-In-app spot check on 2026-09-03, using existing code and the warm connection:
+Historical explicit six-layer checks, not the new five-layer default:
+in-app spot check on 2026-09-03, using existing code and the warm connection:
 one blue brick took 12.1 s from initial inventory read to visible completion and
 14.9 s through verification (previous workflow: 20.6 s). A prepared six-layer
 tower took 15.3 s from start dispatch to visible completion and 17.3 s through
@@ -62,6 +82,14 @@ verification; its separate plan/refill invocation took 14.4 s. All 12 tower
 targets completed with unique actual brick IDs; the runner reported seven
 overruns. This is a limited workflow check, not a ten-second guarantee or a
 replacement for the full Human-adoption acceptance matrix.
+
+Later clean-board cue check, excluding reset and inventory preflight: the single
+brick took 3.216 s from planning-call dispatch to start dispatch, 7.673 s through
+start acknowledgement, 8.802 s to visible completion and 11.596 s through final
+verification. This does **not** prove five-second cue-to-motion latency. The
+tower completed 12/12 with unique bricks and an idle stream, but the wait timed
+out and its local timing object was not retained, so its eight-second planning
+budget was not verified. Do not replace those missing timings with estimates.
 
 Use the existing native WebMCP tools in the open Level 1 browser. Keep the
 browser/tool handles for the recording session; do not rediscover the application

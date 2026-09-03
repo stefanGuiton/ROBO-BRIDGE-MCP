@@ -6,6 +6,8 @@ Normal TRUNK checkout; `codex/p0-downstream-integration-prep`, based on accepted
 
 Foundation published at **9a0a9e922059df47ab6cc66c4f94b1903bfd2f91**, with remote SHA verified. Subsequent contact-timeline repair remains separate from that checkpoint. The two unrelated JS paths reported dirty are normalized-blob-identical to HEAD; no functional user code was omitted. User Blender changes remain outside this work.
 
+The contact-timeline and realtime pacing follow-up is now committed and pushed at **3dc9ca95e517840985fefbb9de0168c3c45277ed**, local/remote SHA verified, exact-head focused regression 153/153. It also contains the earlier Simple timing milestone 188acaf. This documentation-only follow-up changes no runtime. Full Level 3 physical acceptance remains pending below.
+
 ## Implemented
 
 - Lazy Level3-only `tcp_contact` production mode. Levels1/2 do not initialize Train physics or its frame subscription.
