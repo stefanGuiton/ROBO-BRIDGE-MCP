@@ -20,6 +20,9 @@ export class HumanBuildAdapter {
     this.listeners = new Set();
     this.undoStack = [];
     this.maximumUndoDepth = 50;
+    // Diagnostics only, never placement or inventory authority.
+    this.pickupLog = [];
+    this.pickupSequence = 0;
     this.controller.subscribe?.((event) => {
       if (!['reset', 'world_reset'].includes(event.type)) return;
       this.active = null;
@@ -34,6 +37,8 @@ export class HumanBuildAdapter {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+
+  getPickupLog() { return clone(this.pickupLog); }
 
   emit(type, details = {}) {
     const event = { type, ...details, state: this.getState() };
@@ -65,6 +70,8 @@ export class HumanBuildAdapter {
       brickId,
       original: {
         position: { ...source.position },
+        colour: source.colour,
+        displayHex: source.displayHex ?? null,
         yawRad: source.yawRad ?? 0,
         placement: placement ? clone(placement) : null,
         targetId: source.placedTargetId ?? null,
@@ -80,7 +87,16 @@ export class HumanBuildAdapter {
       }
     };
     this.placementEngine.reset();
-    this.emit('picked_up', { brickId, worldRevision: result.worldRevision });
+    const pickup = {
+      sequence: ++this.pickupSequence, timestampMs: Date.now(), brickId,
+      colour: source.colour, displayHex: source.displayHex ?? null,
+      colourAfterPickup: result.brick.colour,
+      colourPreserved: source.colour === result.brick.colour && (source.displayHex ?? null) === (result.brick.displayHex ?? null),
+      position: { ...source.position }, worldRevision: result.worldRevision
+    };
+    this.pickupLog.push({ type: 'player_pickup', ...clone(pickup) });
+    if (this.pickupLog.length > 100) this.pickupLog.shift();
+    this.emit('picked_up', pickup);
     return { ok: true, brickId, state: this.getState(), worldRevision: result.worldRevision };
   }
 
@@ -137,11 +153,14 @@ export class HumanBuildAdapter {
         connections: preview.connections ?? []
       });
     }
+    const colour = result.brick?.colour;
+    const originalColour = this.active.original.colour;
+    const colourPreserved = colour === originalColour && (result.brick?.displayHex ?? null) === this.active.original.displayHex;
     this.active = null;
     this.placementEngine.reset();
     this.undoStack.push(undoRecord);
     if (this.undoStack.length > this.maximumUndoDepth) this.undoStack.shift();
-    this.emit('released', { brickId, result });
+    this.emit('released', { brickId, colour, originalColour, colourPreserved, result });
     return result;
   }
 

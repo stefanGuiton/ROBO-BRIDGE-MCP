@@ -621,8 +621,8 @@ controller.subscribe((event) => {
 });
 
 humanBuildAdapter.subscribe((event) => {
-  if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId}`, 'ok');
-  if (event.type === 'released') addLog(`Player placed ${event.brickId}`, 'ok');
+  if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId} · colour ${event.colour} · after pickup ${event.colourAfterPickup} · ${event.colourPreserved ? 'unchanged' : 'COLOUR MISMATCH'}`, event.colourPreserved ? 'ok' : 'bad');
+  if (event.type === 'released') addLog(`Player placed ${event.brickId} · colour ${event.colour} · ${event.colourPreserved ? 'unchanged' : 'COLOUR MISMATCH'}`, event.colourPreserved ? 'ok' : 'bad');
   if (event.type === 'dropped') addLog(`Player dropped ${event.brickId}`);
   if (event.type === 'undone') addLog(`Player undid ${event.brickId}`, 'ok');
   if (event.type === 'mode_changed') addLog(`Player mode: ${event.mode}`);

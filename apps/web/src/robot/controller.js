@@ -320,7 +320,7 @@ export class RobotController {
     delete brick.freeQuaternion;
     brick.placementType = null;
     brick.connection = null;
-    this.#bumpRobot('human_pickup', { brickId, actor: 'human' });
+    this.#bumpRobot('human_pickup', { brickId, actor: 'human', colour: brick.colour, displayHex: brick.displayHex ?? null });
     return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 

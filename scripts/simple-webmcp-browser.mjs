@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { ChromiumSession } from '../tools/submission/cdp-browser.mjs';
-import { simplePlacements } from '../tests/helpers/simple-demo-harness.js';
+import { simplePlacements, SIMPLE_DEMO_SCENARIOS } from '../tests/helpers/simple-demo-harness.js';
 
 // Observe real native registration, never supply a modelContext shim.
 const preload = `(() => {
@@ -22,7 +22,7 @@ const report = { browser: browser.version.product, visual: 'USER-VERIFY PENDING'
 const check = (name, details) => { report.tests.push({ name, ...details }); console.log(JSON.stringify({ name, ...details })); };
 const evaluate = (fn, args = null) => browser.evaluate(`(${fn.toString()})(${JSON.stringify(args)})`);
 const call = (name, input = {}) => evaluate(async ({ name, input }) => {
-  const value = await window.__simpleTools.get(name).execute(input);
+  const value = await navigator.modelContextTesting.executeTool(name, JSON.stringify(input));
   return typeof value === 'string' ? JSON.parse(value) : value;
 }, { name, input });
 try {
@@ -33,7 +33,7 @@ try {
   assert.equal(boot.native, true); assert.equal(boot.names.length, 28); assert.equal(boot.mode, 'simple'); assert.equal(boot.terrain, false); assert.equal(boot.hologram, false);
   check('native registration and Simple mode', boot);
   await evaluate(() => { const r = __ROBO_BRIDGE__; window.__simpleAuthorities = [r.robotController, r.board, r.fastPlacement, r.placementCycleRunner]; });
-  for (const shape of [{ prefix: 'single', width: 1, depth: 1, height: 1 }, { prefix: 'wall', width: 3, depth: 1, height: 3 }, { prefix: 'tower', width: 2, depth: 2, height: 6 }]) {
+  for (const shape of SIMPLE_DEMO_SCENARIOS) {
     await evaluate(() => __ROBO_BRIDGE__.demoModeControl.change('simple', { reset: true }));
     const workspace = await call('get_workspace');
     const scene = await call('get_scene_state', { type: 'brick', limit: 20 });
@@ -45,9 +45,9 @@ try {
     if (shape.prefix === 'tower') {
       await browser.waitFor(`__ROBO_BRIDGE__.fastPlacement.summary().satisfiedPlacements >= 1`, { timeoutMs: 20000 });
       const human = await evaluate(() => {
-        const r = __ROBO_BRIDGE__, entry = r.fastPlacement.stream.byId.get('tower.z0.x1.y1');
+        const r = __ROBO_BRIDGE__, entry = r.fastPlacement.stream.entries[1];
         const brick = r.robotController.getBricks().find(b => b.colour === 'blue' && !b.heldBy && !b.placementType);
-        const preview = r.robotController.placementAuthority.preview({ brickId: brick.id, position: entry.request.position, yawRad: 0 });
+        const preview = r.robotController.placementAuthority.preview({ brickId: brick.id, position: entry.request.position, yawRad: entry.request.yawRad });
         if (!preview.ok) return preview;
         const pickup = r.robotController.beginHumanCarry(brick.id); if (!pickup.ok) return pickup;
         return r.robotController.commitHumanPlacement({ brickId: brick.id, position: preview.candidate.position, yawRad: preview.candidate.yawRad });
@@ -55,8 +55,7 @@ try {
       assert.equal(human.ok, true, JSON.stringify(human));
       for (const cycleTimeMs of [1333, 889]) {
         const changed = await evaluate(async cycleTimeMs => {
-          const tool = window.__simpleTools.get('control_placement_stream');
-          const result = await tool.execute({ action: 'set_speed', cycleTimeMs, expectedWorldRevision: __ROBO_BRIDGE__.robotController.worldRevision });
+          const result = await navigator.modelContextTesting.executeTool('control_placement_stream', JSON.stringify({ action: 'set_speed', cycleTimeMs, expectedWorldRevision: __ROBO_BRIDGE__.robotController.worldRevision }));
           return typeof result === 'string' ? JSON.parse(result) : result;
         }, cycleTimeMs);
         assert.equal(changed.cycleTimeMs, Math.max(1000, cycleTimeMs));
@@ -67,7 +66,7 @@ try {
     const result = await call('get_placement_stream_status', { streamId: shape.prefix, limit: 50 });
     const execution = await evaluate(() => __ROBO_BRIDGE__.streamControl.getState());
     assert.equal(result.satisfiedPlacements, placements.length, JSON.stringify({ result, execution }));
-    // Native responses are bounded: page through all 24 tower entries.
+    // Native responses remain bounded; follow the cursor when needed.
     const all = [...result.entries];
     if (result.nextCursor !== null) all.push(...(await call('get_placement_stream_status', { streamId: shape.prefix, cursor: result.nextCursor, limit: 20 })).entries);
     assert.equal(new Set(all.map(e => e.actualBrickId)).size, placements.length);

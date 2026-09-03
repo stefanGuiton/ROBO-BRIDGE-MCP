@@ -197,6 +197,19 @@ Only production integration files, tests, the exact GLB, and this journey are in
 - Focused27/27 checks PASS. Chrome148 state-only browser PASS: single1/1, wall9/9, tower24/24 with robot23+human-blue1 ADOPTED, unique sources, dependent continuation, live speed changes, unchanged authority identities/bridge plan through mode switches, console0errors/0warnings. No screenshots; user visual acceptance pending. Native registration and registered callback execution, not external-agent transport acceptance.
 - Evidence `output/playwright/simple-webmcp/acceptance.json` remains local/ignored. Handoff `docs/SIMPLE_WEBMCP_HERO.md` contains recording instructions, exact limits and publication scope. Prior bridge/full verification remains historical; no hero:3 or final readiness claim.
 
+## 2026-09-03 — Corrected two-brick alternating Simple tower
+
+- Publication requested: checkpoint the current tower, colour and pickup-log fixes on the existing downstream branch; no new merge. Explicit follow-up: **brick interjection test needs tweaking**. Latest user rerun stopped6/20 after off-plan yaw0 geometry at a yaw90 pending level; both blue pickups and placed records stayed blue. Pending-slot guidance and blocked-build recovery expectations need further work; earlier correctly aligned20/20 collaboration remains separate evidence. Preserve all unrelated assets and generated evidence.
+
+- Pickup-colour follow-up: reproduced stale mesh colour on same-ID inventory reset, red human ghost overlay, and stale displayHex batch; added failing regressions then fixed all3. Added colour to authoritative pickup event, before/after/unchanged activity messages, and last100 copied pickup diagnostics.14/14 focused checks pass. Chrome148 actual mouse pickup check verifies1red+4blue with unchanged visible/held colours and correct logs, all28 reset meshes consistent,0 console errors/warnings. Diagnostic renderer paused to keep camera fixed; no screenshots, no user-window reset, no publication. See latest handoff section.
+
+- Subsequent live user collaboration:10-level/20-brick tower completed via native WebMCP,19 robot +1 human ADOPTED. User's `v8-brick-25` accepted at level4 slot2 (`simple-cross-laminated-tower-ba6d923b-l03-b01`); robot continued above it without reset/duplication.2000ms cadence,0 overruns,0 console errors/exceptions/warnings. Human placement came from the user, not test injection. Final stream `jenga-10-levels`; full identity in handoff_progress.md.
+
+- User clarified1 red brick,3x4 wall12, and2 parallel bricks per level rotated90 degrees each layer for5 levels10. Reused existing cross-laminated planner/connector dependencies; no special build tool. Former24-brick grid kept as regression coverage.
+- Held physical brick retains original colour; blocked/valid status stays on the preview. Blue pickup/preview does not auto-accept or recolour in the focused test. Exact accidental user-click sequence not reproduced.
+- Visible Chrome148 native modelContextTesting execution:1/1,12/12,10/10 agent placements;2000ms cycles,0 overruns,0 console errors/exceptions/warnings. Tower left visible in external Chrome for user inspection. No screenshots.
+- Focused9/9 passed; combined Player32/35 with3 existing saved-settings/provenance/spawn assertion failures in untouched files. No broad audit or publication this turn. See latest handoff_progress.md and docs/SIMPLE_WEBMCP_HERO.md.
+
 ## 2026-09-03 — Terrain-max Z-hop and browser retry
 
 - User authorized a headless retry, then supplied the simple terrain-max Z-hop addendum. Terrain7 checkpoint23f254b was already pushed; PR6 remains draft with Construction base, unmerged.

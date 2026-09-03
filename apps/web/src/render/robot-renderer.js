@@ -392,9 +392,13 @@ export class RobotRenderer {
     const yawRad = preview.previewYawRad ?? preview.yawRad ?? 0;
     visuals.ghost.position.set(position.xMm, position.yMm, position.zMm);
     visuals.ghost.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawRad);
-    const overhang = preview.valid && preview.overhang && this.playerSettings.connectionOverhangGhostStyle === 'Yellow';
     const proposalColour = preview.status === 'STALE' ? 0xe5a52e : preview.valid ? 0x35d6ff : 0xe34f45;
-    visuals.ghost.userData.material.color.setHex(preview.proposal ? proposalColour : preview.valid ? (overhang ? 0xe5b72e : 0x21c77a) : 0xe34f45);
+    // Human previews retain the picked brick's colour; status belongs to the HUD
+    // and markers, not a red ghost overlapping the held physical brick.
+    const humanColour = previewBrick?.bridgePart
+      ? new THREE.Color(previewBrick.displayColour ?? '#cda86c').getHex()
+      : previewBrick ? colourHex(previewBrick) : 0x21c77a;
+    visuals.ghost.userData.material.color.setHex(preview.proposal ? proposalColour : humanColour);
     visuals.ghost.userData.material.opacity = this.playerSettings.ghostOpacity * (preview.opacityScale ?? 1);
     const connectionVisible = preview.type === 'BRICK';
     visuals.supportMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
@@ -722,12 +726,11 @@ export class RobotRenderer {
     this.heldGhost.visible = true;
     this.heldGhost.position.set(pose.position.xMm, pose.position.yMm, pose.position.zMm);
     this.heldGhost.quaternion.fromArray(pose.quaternion);
-    const valid = pose.candidate?.valid;
-    const blocked = pose.candidate && !pose.candidate.valid;
     this.heldGhost.userData.material.opacity = 1;
     this.heldGhost.userData.material.transparent = false;
-    this.heldGhost.userData.material.emissive.setHex(blocked ? 0xff3300 : valid ? 0x22c47a : 0x000000);
-    this.heldGhost.userData.material.emissiveIntensity = blocked || valid ? 0.22 : 0;
+    // Status colour belongs to the placement preview, not the held brick.
+    this.heldGhost.userData.material.emissive.setHex(0x000000);
+    this.heldGhost.userData.material.emissiveIntensity = 0;
   }
 
   syncTargets() {
@@ -772,7 +775,7 @@ export class RobotRenderer {
     const brickById = new Map(bricks.map((brick) => [brick.id, brick]));
     const batchSignature = `${animatedBrickId ?? '-'}:${[...batchPlacedIds].sort().map((id) => {
       const brick = brickById.get(id);
-      return brick ? `${id}:${brick.position.xMm}:${brick.position.yMm}:${brick.position.zMm}:${brick.yawRad ?? 0}:${brick.colour}` : id;
+      return brick ? `${id}:${brick.position.xMm}:${brick.position.yMm}:${brick.position.zMm}:${brick.yawRad ?? 0}:${brick.colour}:${brick.displayHex ?? '-'}` : id;
     }).join('|')}`;
     if (batchSignature !== this.lastBatchSignature) {
       this.batcher.rebuild(bricks, batchPlacedIds);
@@ -791,6 +794,9 @@ export class RobotRenderer {
         mesh = body;
         this.brickMeshes.set(brick.id, mesh);
       }
+      // Reset inventory reuses IDs with new colours. Refresh cached source meshes
+      // before a pickup recreates the held visual from the same live record.
+      if (!brick.bridgePart) mesh.userData.material.color.setHex(colourHex(brick));
       mesh.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
       if (Array.isArray(brick.freeQuaternion) && brick.freeQuaternion.length === 4) mesh.quaternion.fromArray(brick.freeQuaternion).normalize();
       else mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), brick.yawRad ?? 0);
