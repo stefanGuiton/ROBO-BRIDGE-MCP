@@ -92,7 +92,16 @@ const renderer = new RobotRenderer(document.querySelector('#scene'), controller,
 const runtime = createLogoRoboRuntime({
   controller,
   board,
-  beforeReset: () => mainDemoConstruction?.preparedBuild ? mainDemoConstruction.reset({ expectedWorldRevision: controller.worldRevision }) : null,
+  beforeReset: async () => {
+    const state = await mainDemoMission?.service.getMissionState();
+    if (mainDemoConstruction?.preparedBuild || (state && state.phase !== 'DESIGN')) {
+      throw Object.assign(new Error('Use reset_mission while a mission build is active.'), {
+        code: 'mission_reset_required', currentPhase: state?.phase, currentMissionId: state?.missionId,
+        currentRevision: controller.worldRevision, permittedNextActions: ['get_mission_state', 'reset_mission'],
+        recoveryAction: 'Call reset_mission with current mission and world revisions.'
+      });
+    }
+  },
   resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
   humanBuildAdapter,
   placementAuthority,

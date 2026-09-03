@@ -42,6 +42,8 @@ function bridgeLocalPoint(point) {
 }
 
 export function createEasyBridgeChallenge(challengeService) {
+  const input = challengeService.getBridgeChallengeInput?.();
+  if (input?.id === 'terrain7-easy-aqueduct') return Object.freeze(input);
   const source = challengeService.getBridgeTransform();
   return Object.freeze({
     id: 'terrain-easy-aqueduct',
@@ -72,7 +74,8 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
   }
   const service = createChallengeService({
     THREE,
-    terrainUrl: new URL('../../assets/terrain/Terrain_Optimised_10k.glb', import.meta.url),
+    terrain7: true,
+    terrainUrl: new URL('../../assets/terrain/Terrain_7_Main.glb', import.meta.url),
     machineMount: machineMountFromSettings(playerSettings),
     displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET,
     challengeYawDeg: MAIN_DEMO_EASY_CHALLENGE_YAW_DEG
@@ -82,6 +85,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
   const terrainGroup = service.getTerrainGroup();
   terrainGroup.name = 'MAIN_DEMO_EASY_CURATED_TERRAIN';
   renderer.scene.add(terrainGroup);
+  renderer.setTerrainOccluders?.(service.getTerrainOccluders());
   renderer.setEnvironmentCollisionProxies?.(playerCollisionBoxes(service));
   renderer.webgl.shadowMap.needsUpdate = true;
   renderer.render();
@@ -91,7 +95,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
     terrainGroup,
     async updateEndpoints(bridgeHost, endpoints, { expectedDesignRevision = bridgeHost.designRevision, signal = null } = {}) {
       const candidate = service.previewEndpoints(endpoints);
-      const challenge = createEasyBridgeChallenge({ getBridgeTransform: () => candidate.bridgeTransform });
+      const challenge = createEasyBridgeChallenge({ getBridgeChallengeInput: () => candidate.bridgeChallengeInput, getBridgeTransform: () => candidate.bridgeTransform });
       await bridgeHost.applySettingsBatch(bridgeHost.settings, expectedDesignRevision, { signal, challenge });
       service.setEndpoints(endpoints);
       renderer.setEnvironmentCollisionProxies?.(playerCollisionBoxes(service));
@@ -101,7 +105,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
     },
     async elevateForConstruction(bridgeHost, buildElevationMm, options = {}) {
       const candidate = service.previewBuildElevation(buildElevationMm);
-      const challenge = createEasyBridgeChallenge({ getBridgeTransform: () => candidate.bridgeTransform });
+      const challenge = createEasyBridgeChallenge({ getBridgeChallengeInput: () => candidate.bridgeChallengeInput, getBridgeTransform: () => candidate.bridgeTransform });
       await bridgeHost.applySettingsBatch(bridgeHost.settings, bridgeHost.designRevision, { ...options, challenge });
       service.setBuildElevation(buildElevationMm);
       renderer.setEnvironmentCollisionProxies?.(playerCollisionBoxes(service));
@@ -116,6 +120,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
     getEntry: () => service.getEntry(),
     getExit: () => service.getExit(),
     getTrainRoute: () => service.getTrackRoute(),
-    getCollisionProxy: () => service.getCollisionProxy()
+    getCollisionProxy: () => service.getCollisionProxy(),
+    getTerrainOccluders: () => service.getTerrainOccluders()
   });
 }

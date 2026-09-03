@@ -25,7 +25,7 @@ page.on('console', (message) => {
 });
 
 async function screenshot(name) {
-  if (write) await page.screenshot({ path: path.join(output, `${name}.png`) });
+  if (write && args.includes('--screenshots')) await page.screenshot({ path: path.join(output, `${name}.png`) });
 }
 
 async function aimAt(kind, id) {

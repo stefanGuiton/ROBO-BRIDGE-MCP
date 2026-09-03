@@ -56,7 +56,7 @@ export function sliceInfo(settings) {
   return { count: SLICE_COUNT, pitch: settings.voxelSize, width: SLICE_COUNT * settings.voxelSize };
 }
 
-function trackDesignForSettings(settings) {
+function trackDesignForSettings(settings, compiled) {
   const anchors = derivedAnchors(settings);
   const dx = settings.voxelSize;
   const dy = settings.voxelSize * settings.brickHeightRatio;
@@ -64,6 +64,12 @@ function trackDesignForSettings(settings) {
   const nominalLength = Math.max(dx * 2, settings.trackNominalSegmentLengthCells * dx);
   const segmentCount = Math.max(1, Math.round(routeLength / nominalLength));
   const segmentLength = routeLength / segmentCount;
+  // Rasterised full bricks can finish above the ideal road height when the
+  // authored datum is not layer-aligned. Seat tracks above the actual packed
+  // deck/cap, never through its top layer. Route adapters already derive the
+  // road-to-rail offset from this authoritative BuildPlan.
+  const packedDeckTopY = Math.max(anchors.roadY + settings.capHeight,
+    ...compiled.placements.filter(p => p.role === 'deck' || p.role === 'cap').map(p => (p.gridY + 1) * dy));
   const parameters = {
     partClass: 'TRACK_SEGMENT',
     geometryVersion: 1,
@@ -109,8 +115,8 @@ function trackDesignForSettings(settings) {
       label: `track_${index}`,
       repeatAcrossSlices: false,
       centreX: anchors.entry.innerFaceX + segmentLength * (index + 0.5),
-      baseY: anchors.roadY + settings.capHeight + dy * 0.03,
-      baseLayer: Math.round((anchors.roadY + settings.capHeight) / dy),
+      baseY: packedDeckTopY + dy * 0.03,
+      baseLayer: Math.round(packedDeckTopY / dy),
       role: 'track',
       roleCode: 2,
       territory: settings.trackOwner === 'user' ? 'user' : settings.trackOwner === 'shared_open' ? 'shared' : 'codex',
@@ -132,7 +138,7 @@ function createCustomDesign(compiled, settings) {
     ...cloneValue(placement),
     masterCustomId: `arch_${index}`
   }));
-  const track = trackDesignForSettings(settings);
+  const track = trackDesignForSettings(settings, compiled);
   definitions.set(track.definition.definitionId, track.definition);
   masterPlacements.push(...track.placements);
   return { definitions: [...definitions.values()], masterPlacements, track };

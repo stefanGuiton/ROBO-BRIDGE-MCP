@@ -82,11 +82,13 @@ export async function runCurrentAcceptance({
   tests.push(passFail({ id: 'bridge.mutation_changes_plan_id', area: 'BROWSER', condition: after.planId !== before.planId, details: { before: before.planId, after: after.planId } }));
   tests.push(passFail({ id: 'bridge.mutation_changes_checksum', area: 'BROWSER', condition: after.designChecksum !== before.designChecksum, details: { before: before.designChecksum, after: after.designChecksum } }));
   tests.push(passFail({
-    id: 'bridge.mutation_changes_visible_hologram',
+    id: 'bridge.mutation_changes_hologram_state',
     area: 'BROWSER',
-    condition: after.hologramGroupUuid !== before.hologramGroupUuid && afterShot.sha256 !== beforeShot.sha256,
+    condition: after.hologramGroupUuid !== before.hologramGroupUuid && after.hologramSource?.planId === after.planId && after.planId !== before.planId,
     details: { beforeGroup: before.hologramGroupUuid, afterGroup: after.hologramGroupUuid, beforeImage: beforeShot.sha256, afterImage: afterShot.sha256 }
   }));
+  tests.push(makeTest({ id: 'bridge.visual_inspection', area: 'BROWSER', status: STATUS.SKIPPED_WITH_REASON,
+    required: false, reason: 'USER-VERIFY PENDING: user owns visual inspection under the time-critical addendum.' }));
   tests.push(passFail({ id: 'bridge.partial_patch_preserves_omitted_parameters', area: 'BROWSER', condition: JSON.stringify(stripDeckOverhang(before.bridgeSpec)) === JSON.stringify(stripDeckOverhang(after.bridgeSpec)), details: { before: before.bridgeSpec, after: after.bridgeSpec } }));
   tests.push(passFail({ id: 'bridge.hologram_follows_mutated_plan', area: 'BROWSER', condition: after.hologramSource?.planId === after.planId && after.hologramSource?.designChecksum === after.designChecksum, details: after }));
   const exactAfter = inspectExactHologramIdentity(after);

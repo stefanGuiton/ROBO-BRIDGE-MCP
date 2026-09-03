@@ -1,6 +1,6 @@
 import { machinePointToTable, tablePointToMachine } from '../workcell/v8-workcell-profile.js';
 
-const STORAGE_KEY = 'roboBridgeEasyEndpointsV1';
+const STORAGE_KEY = 'roboBridgeTerrain7EndpointsV1';
 
 export function endpointToTable(point, settings) {
   const table = machinePointToTable({ xMm: point.x, yMm: point.y, zMm: point.z }, settings);

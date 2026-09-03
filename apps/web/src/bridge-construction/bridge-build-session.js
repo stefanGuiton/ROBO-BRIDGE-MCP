@@ -11,10 +11,11 @@ import {
 } from './bridge-build-adapter.js';
 import { getBridgeBuildProgress, acceptedPlacementMap } from './bridge-build-progress.js';
 import { freezeBridgeConstructionPlan } from './bridge-freeze.js';
-import { createBridgePartInventory, DEFAULT_FEEDER_SLOTS, sourceToControllerBrick } from './bridge-part-inventory.js';
+import { createBridgePartInventory, allocateFeederSources } from './bridge-part-inventory.js';
 import { createBridgePartRegistry } from './part-registry.js';
 import { createBridgeSourceResolver } from './bridge-source-resolver.js';
 import { cloneFrozen, deepFreeze, hashRecord, invariant } from './internal.js';
+import { partBounds } from '../bricks/part-spec.js';
 
 function planSnapshot(host) {
   invariant(host?.ready && host.buildPlan?.schemaVersion === '4.6', 'BUILDPLAN_UNAVAILABLE', 'The authoritative BridgeHost must be ready.');
@@ -135,11 +136,6 @@ function assertBoardTargets(preparedBuild, buildBoard) {
   }
 }
 
-function nextFreeFeederSlots(controller, count) {
-  const freeBricks = controller.getBricks().filter((brick) => !brick.heldBy && !brick.snapped && !brick.placedTargetId && !brick.placementType);
-  return DEFAULT_FEEDER_SLOTS.filter((slot) => !freeBricks.some((brick) => Math.hypot(brick.position.xMm - slot.xMm, brick.position.yMm - slot.yMm) < 8)).slice(0, count);
-}
-
 function activateSources({ placements, controller, inventory }) {
   if (typeof controller.addLooseBricks !== 'function') return { ok: true, added: [], skipped: true };
   const existing = new Set(controller.getBricks().map((brick) => brick.id));
@@ -153,8 +149,7 @@ function activateSources({ placements, controller, inventory }) {
     const candidates = inventory.compatibleSources(key).filter((source) => source.robotEligible && !existing.has(source.sourceId)).slice(0, missing);
     additions.push(...candidates);
   }
-  const slots = nextFreeFeederSlots(controller, additions.length);
-  const bounded = additions.slice(0, slots.length).map((source, index) => sourceToControllerBrick(source, slots[index], { graspable: true }));
+  const bounded = allocateFeederSources(additions, controller.getBricks());
   if (!bounded.length) return { ok: true, added: [], skipped: false };
   const result = controller.addLooseBricks(bounded, { actor: 'bridge-source-feeder' });
   invariant(result?.ok, 'OPERATION_IN_PROGRESS', 'RobotController rejected bridge source activation.', result ?? {});
@@ -169,7 +164,12 @@ function eligibleBatch(preparedBuild, buildBoard, count) {
     .filter((placement) => placement.partClass !== 'TRACK_SEGMENT')
     .map((placement) => placement.placementId);
   const structureComplete = structurePlacementIds.every((placementId) => accepted.has(placementId));
-  for (const placement of preparedBuild.normalisedBuild.placements) {
+  // Build low exposed surfaces before installing tall arches. Sorting only by
+  // arch origin installed a crown over neighbouring unfinished masonry, making
+  // the empty gripper's retreat collide despite non-overlapping final parts.
+  const accessOrder = [...preparedBuild.normalisedBuild.placements].sort((a, b) =>
+    partBounds(a).max.zMm - partBounds(b).max.zMm || a.placementId.localeCompare(b.placementId));
+  for (const placement of accessOrder) {
     if (selected.length >= count) break;
     if (!placement.robotTarget.reachable || accepted.has(placement.placementId)) continue;
     if (placement.requiresStructureComplete && !structureComplete) continue;
@@ -262,15 +262,29 @@ export function createBridgeBuildSession({
     requireStarted();
     invariant(Number.isSafeInteger(count) && count >= 1 && count <= 5, 'INVALID_SETTINGS', 'count must be from 1 to 5.');
     if (bridgeHost) assertPreparedBuildCurrent(preparedBuild, bridgeHost);
-    const { accepted, selected } = eligibleBatch(preparedBuild, buildBoard, count);
+    const eligible = eligibleBatch(preparedBuild, buildBoard, count);
+    const { accepted } = eligible;
+    let selected = eligible.selected;
     if (!selected.length) {
       lastPlan = deepFreeze({ ok: false, reason: getBuildProgress().remaining === 0 ? 'build_complete' : 'no_agent_eligible_placement', selectedCount: 0 });
       return lastPlan;
     }
     const activation = activateSources({ placements: selected, controller, inventory: preparedBuild.inventory });
+    // Admit only targets with distinct physical sources. A finite feeder may
+    // supply fewer than count; the next bounded batch refills vacated slots.
+    const sourceIds = new Map(), used = new Set(), admitted = new Set();
+    selected = selected.filter(placement => {
+      if (!placement.dependencyIds.every(id => accepted.has(id) || admitted.has(id))) return false;
+      const live = sourceResolver.compatibleLiveSources(placement).filter(brick => !used.has(brick.id));
+      const source = live.find(brick => brick.bridgePart?.dedicatedPlacementId === placement.placementId) ?? live[0];
+      if (!source) return false;
+      sourceIds.set(placement.placementId, source.id); used.add(source.id); admitted.add(placement.placementId);
+      return true;
+    });
+    if (!selected.length) return { ok: false, reason: 'source_unavailable', recoveryAction: 'Clear space in the shared source feeder and retry build_next_parts.' };
     const queueEntries = createBridgePlacementQueueEntries(selected, {
       acceptedPlacementIds: new Set(accepted.keys()),
-      resolveBrickId: (placement) => sourceResolver.resolveBrickId(placement)
+      resolveBrickId: (placement) => sourceIds.get(placement.placementId)
     });
     invariant(queueEntries.every((entry) => entry.brickId), 'UNSUPPORTED_PART', 'No compatible active source exists for one or more selected placements.', {
       placements: queueEntries.filter((entry) => !entry.brickId).map((entry) => entry.placementId)

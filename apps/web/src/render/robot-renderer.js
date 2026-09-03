@@ -479,6 +479,7 @@ export class RobotRenderer {
     if (this.protectedBrickId) return { ok: false, reason: 'supporting_brick', brickId: this.protectedBrickId };
     if (!this.highlightedBrickId) return { ok: false, reason: 'no_pick_target' };
     const brick = this.controller.getBricks().find((candidate) => candidate.id === this.highlightedBrickId);
+    if (brick && this.terrainBlocksMachinePoint(brick.position)) return { ok: false, reason: 'terrain_occluded' };
     const result = this.humanBuildAdapter.pickup(this.highlightedBrickId);
     if (result.ok && brick) {
       this.heldVisual.pickup(brick);
@@ -505,6 +506,9 @@ export class RobotRenderer {
   }
 
   releaseHeldPlacement() {
+    // Refresh against the camera at click time, not a potentially stale frame.
+    const preview = this.humanBuildAdapter.getPreview();
+    if (preview?.position && this.terrainBlocksMachinePoint(preview.position)) return { ok: false, reason: 'terrain_occluded' };
     const pose = this.heldVisual.getVisualPose();
     const result = this.humanBuildAdapter.release();
     if (result.ok) {
@@ -592,6 +596,17 @@ export class RobotRenderer {
     return this.raycaster.intersectObjects(objects, true);
   }
 
+  setTerrainOccluders(meshes = []) { this.terrainOccluders = [...meshes]; }
+
+  terrainBlocksWorldPoint(point) {
+    this.scene.updateMatrixWorld(true);
+    return terrainOccludesPoint({ origin: this.camera.getWorldPosition(new THREE.Vector3()), point, occluders: this.terrainOccluders }).blocked;
+  }
+
+  terrainBlocksMachinePoint(position) {
+    return this.terrainBlocksWorldPoint(this.machineRoot.localToWorld(new THREE.Vector3(position.xMm, position.yMm, position.zMm)));
+  }
+
   updatePlayerInteraction(bricks = this.frameBricks) {
     if (!this.player?.enabled) return;
     const active = this.humanBuildAdapter.active;
@@ -601,7 +616,8 @@ export class RobotRenderer {
         ...this.batcher.pickMeshes(),
         this.workbench.moreBricksButton
       ].filter((mesh) => mesh.visible);
-      const hit = this.centreHits(pickMeshes)[0] ?? null;
+      let hit = this.centreHits(pickMeshes)[0] ?? null;
+      if (hit && this.terrainBlocksWorldPoint(hit.point)) hit = null;
       this.highlightedMoreBricks = Boolean(hit?.object?.userData?.moreBricks);
       this.workbench.setMoreBricksHighlighted(this.highlightedMoreBricks);
       const aimedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
@@ -674,6 +690,9 @@ export class RobotRenderer {
     if (carried.bridgePart && candidate?.type === 'TARGET') {
       const verified = this.controller.placementAuthority.preview({ brickId: carried.id, position: candidate.position, yawRad: candidate.yawRad });
       if (!verified.ok) candidate = { ...candidate, valid: false, status: 'BLOCKED', blockedReason: verified.reason };
+    }
+    if (candidate?.type !== 'CARRY' && candidate?.position && this.terrainBlocksMachinePoint(candidate.position)) {
+      candidate = { ...candidate, valid: false, status: 'BLOCKED', blockedReason: 'terrain_occluded' };
     }
     const signature = JSON.stringify(candidate);
     if (signature !== this.lastPreviewSignature) {
@@ -1144,3 +1163,4 @@ export class RobotRenderer {
     };
   }
 }
+import { terrainOccludesPoint } from '../player/terrain-occlusion.js';

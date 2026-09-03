@@ -1,5 +1,15 @@
 # P0 Downstream Integration — Progress Handoff
 
+## Current resume point — 2026-09-03 (supersedes the historical section below)
+
+Continue **only** `codex/p0-downstream-integration-prep`; do not merge/retarget PR5 or PR6. Single agent. No Oracle-loop workflow. User owns visual QA; no screenshots.
+
+See **docs/TERRAIN7_PROGRESS.md** for the final Terrain7 task, current code/evidence and exact blockers. Terrain7, constant water datum, shared transform, view-only terrain occlusion, arch/deck-track geometry repairs, shared feeder, reset/error/paging hardening are implemented. Current plan `bp_818c1694` / checksum `818c1694`,303 parts, registry `pr_55ecaf7f`; internal geometry audit clear. Final combined verification356/356 JS +20/20 reliability passed. Release packaging excludes unrelated user exports/imports/evidence.
+
+Current physical progression is **46/303**, Human1/Agent45, source reassignment and target adoption verified via real services/controller. Empty gripper retreat hits a neighbouring arch after `s.12.0` unlatch. Browser launch was denied by the approval service; do not bypass it. Console/native/hero acceptance still pending. HTTP demo available on8774. No final hero or readiness claim. User Blender/imported assets and generated artifacts must not be staged.
+
+## Historical downstream-preparation handoff
+
 Updated: 2026-09-02 (Europe/London)
 
 ## Resume point

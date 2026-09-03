@@ -28,7 +28,11 @@ function boundedJson(value, maxChars = 12000) {
   if (truncated) {
     candidate.truncated = true;
     candidate.returnedCount = returnedCount;
-    candidate.totalAvailable = totalAvailable;
+    candidate.totalAvailable ??= totalAvailable;
+    if (Array.isArray(candidate.objects) && Number.isInteger(candidate.cursor)) {
+      candidate.returnedCount = candidate.objects.length;
+      candidate.nextCursor = candidate.cursor + candidate.objects.length < candidate.totalAvailable ? candidate.cursor + candidate.objects.length : null;
+    }
   }
   const text = JSON.stringify(candidate);
   if (text.length <= maxChars) return text;
@@ -48,7 +52,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
   return [
     {
       name:'get_scene_state', description:'Read the bounded authoritative brick and target inventory, placement state, build state, and exact world revision shared by the human and robot.',
-      inputSchema:{type:'object',properties:{colour:{type:'string',enum:PALETTE},type:{type:'string',enum:['brick','target']},limit:LIMIT},additionalProperties:false},
+      inputSchema:{type:'object',properties:{colour:{type:'string',enum:PALETTE},type:{type:'string',enum:['brick','target']},limit:LIMIT,cursor:{type:'integer',minimum:0,default:0},expectedWorldRevision:{...REVISION,description:'Required after cursor 0: use the first page worldRevision; restart paging if stale.'}},additionalProperties:false},
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getSceneState(input)
     },
     {

@@ -19,11 +19,39 @@ export function physicalBuildReport(prepared, { tableZMm = 0, obstacles = [] } =
 }
 
 export function createConstructionService({ bridgeHost, challenge, buildBoard, controller, placementAuthority, placementCoordinator, cycleRunner, onPrepared = () => {} }) {
-  let session = null, unlock = null, restore = null, busy = false;
+  let session = null, unlock = null, restore = null, busy = false, resetting = false, activeRun = null;
   const revision = expected => { if (!Number.isSafeInteger(expected) || expected !== controller.worldRevision) throw new Error('stale_world_revision'); };
-  const idle = () => { if (busy || controller.operationState !== 'idle' || controller.pendingMoveCount > 0 || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy)) throw new Error('operation_in_progress'); };
+  const idle = () => { if (busy || resetting || controller.operationState !== 'idle' || controller.pendingMoveCount > 0 || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy)) throw new Error('operation_in_progress'); };
   const prepare = () => prepareBridgeBuild({ host: bridgeHost, workspace: controller.workspace });
   const report = prepared => physicalBuildReport(prepared, { tableZMm: controller.layout.tableZMm, obstacles: machineTerrainBoxes(challenge) });
+  const restoreIdleState = () => {
+    if (restore) {
+      const changed = controller.setBricks(restore.bricks);
+      if (!changed.ok) throw Object.assign(new Error(changed.reason), { code: changed.reason });
+      buildBoard.loadBlueprint(restore.blueprint, { expectedWorldRevision: controller.worldRevision });
+      controller.layout = restore.layout;
+    }
+    unlock?.(); unlock = null; session = null; restore = null;
+    placementAuthority.constructionObstacles = [];
+    onPrepared(null);
+  };
+  async function reset({ expectedWorldRevision } = {}) {
+    revision(expectedWorldRevision);
+    if (resetting) throw new Error('operation_in_progress');
+    resetting = true;
+    try {
+      session?.cancelBuild('bridge_build_reset');
+      cycleRunner.cancel('bridge_build_reset');
+      if (activeRun) { try { await activeRun; } catch { /* cancellation */ } }
+      // Controller owns cancellation of unrelated motion, idle fencing, held
+      // part release and board reset. Never clear the board before it is idle.
+      await controller.reset({ bricks: restore?.bricks ?? controller.getBricks() });
+      session?.dispose();
+      placementCoordinator.invalidateStream('bridge_build_reset');
+      restoreIdleState();
+      return { ok: true, worldRevision: controller.worldRevision };
+    } finally { resetting = false; }
+  }
   return Object.freeze({
     get preparedBuild() { return session?.preparedBuild ?? null; },
     getBuildProgress() { return session?.getBuildProgress() ?? { status: 'design', completed: 0 }; },
@@ -53,7 +81,11 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
         onPrepared(prepared);
         return result;
       } catch (error) {
-        this.reset({ expectedWorldRevision: controller.worldRevision });
+        // Startup is synchronous/idle: closure-safe rollback also works when
+        // startBuild was called as a detached callback.
+        session?.dispose();
+        buildBoard.reset();
+        restoreIdleState();
         throw error;
       }
     },
@@ -67,27 +99,13 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
       if (!session) throw new Error('build_not_started');
       if (signal?.aborted) throw new Error('aborted');
       busy = true;
-      try { return await session.buildNextParts(count, { ...options, signal }); }
-      finally { busy = false; }
+      try { activeRun = session.buildNextParts(count, { ...options, signal }); return await activeRun; }
+      finally { busy = false; activeRun = null; }
     },
     cancelBuild({ expectedWorldRevision } = {}) {
       revision(expectedWorldRevision);
       return session?.cancelBuild() ?? { ok: true };
     },
-    reset({ expectedWorldRevision } = {}) {
-      revision(expectedWorldRevision);
-      if (busy) throw new Error('cancel_and_await_execution_before_reset');
-      session?.dispose();
-      placementCoordinator.invalidateStream('bridge_build_reset');
-      if (restore) {
-        buildBoard.reset(); controller.setBricks(restore.bricks);
-        buildBoard.loadBlueprint(restore.blueprint, { expectedWorldRevision: controller.worldRevision });
-        controller.layout = restore.layout;
-      }
-      unlock?.(); unlock = null; session = null; restore = null;
-      placementAuthority.constructionObstacles = [];
-      onPrepared(null);
-      return { ok: true, worldRevision: controller.worldRevision };
-    }
+    reset
   });
 }

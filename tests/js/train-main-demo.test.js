@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { constructionHarness } from '../helpers/construction-harness.js';
 import { createEasyBridgeChallenge } from '../../apps/web/src/challenge/main-demo-easy.js';
 import { createMainDemoTrainIntegration } from '../../apps/web/src/train-integration/index.js';
+import { partBounds } from '../../apps/web/src/bricks/part-spec.js';
 
 function trainChallenge(service) {
   return Object.freeze({
@@ -32,14 +33,16 @@ async function runTest(train) {
   return terminal;
 }
 
-test('current MAIN_DEMO road-plane route derives the exact live rail-top offset', async () => {
-  const harness = await constructionHarness();
+for (const terrain7 of [false, true]) test(`current MAIN_DEMO road-plane route derives the exact live rail-top offset (terrain7=${terrain7})`, async () => {
+  const harness = await constructionHarness({ terrain7 });
   harness.service.startBuild({ expectedWorldRevision: harness.controller.worldRevision });
   const train = createTrain(harness);
   const prepared = train.prepare({ preparedBuild: harness.service.preparedBuild, buildBoard: harness.board });
   assert.equal(prepared.evidence.routeContract.validation.ok, true);
   assert.equal(prepared.evidence.routeContract.validation.elevationReference, 'bridge_road');
-  assert.ok(Math.abs(prepared.evidence.routeContract.validation.roadToTrackOffsetMm - 6.048) < 1e-6);
+  const track = harness.service.preparedBuild.normalisedBuild.placements.find(p => p.partClass === 'TRACK_SEGMENT');
+  const expectedOffset = partBounds(track).max.zMm - harness.challenge.getEntry().position.z;
+  assert.ok(Math.abs(prepared.evidence.routeContract.validation.roadToTrackOffsetMm - expectedOffset) < 1e-5);
   const result = await runTest(train);
   assert.equal(result.outcome, 'TRAIN_FELL');
   assert.equal(result.cause, 'SUPPORT_LOSS');

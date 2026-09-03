@@ -1,6 +1,7 @@
 'use strict';
 
 import { cloneFrozen, deepFreeze, fnv1a32, invariant } from './internal.js';
+import { partBounds, boundsOverlap } from '../bricks/part-spec.js';
 
 export const DEFAULT_STORAGE_LAYOUT = deepFreeze({
   // Inactive warehouse poses are in the machine world frame but outside the workcell.
@@ -13,11 +14,28 @@ export const DEFAULT_STORAGE_LAYOUT = deepFreeze({
   layerSpacingMm: 400
 });
 
-// Shared feeder across the clear front of the existing tabletop. 80 x 170 mm
-// spacing fits every current custom part at yaw=90 degrees.
-export const DEFAULT_FEEDER_SLOTS = deepFreeze(Array.from({ length: 12 }, (_, index) => ({
-  xMm: 440 + (index % 6) * 80, yMm: 155 + Math.floor(index / 6) * 170, yawRad: Math.PI / 2
+// Shared feeder in the forward work area, away from the robot's inner
+// singularity region. Allocation checks each current part's physical footprint.
+export const DEFAULT_FEEDER_SLOTS = deepFreeze(Array.from({ length: 18 }, (_, index) => ({
+  xMm: 480 + (index % 6) * 100, yMm: 90 + Math.floor(index / 6) * 60, yawRad: 0
 })));
+
+export function allocateFeederSources(sources, existing = [], slots = DEFAULT_FEEDER_SLOTS) {
+  const placed = [], occupied = [...existing];
+  for (const source of sources) {
+    for (const slot of slots) {
+      // Long beams run across the table, not into the adjacent feeder row.
+      const pose = { ...slot, yawRad: source.physicalDimensions.lengthMm > 170 ? 0 : slot.yawRad };
+      const brick = sourceToControllerBrick(source, pose), bounds = partBounds(brick);
+      const expanded = { min: { ...bounds.min }, max: { ...bounds.max } };
+      for (const axis of ['xMm', 'yMm']) { expanded.min[axis] -= 18; expanded.max[axis] += 18; }
+      if (bounds.min.xMm < 300 || bounds.max.xMm > 1030 || bounds.max.yMm > 225 || bounds.min.yMm < -65) continue;
+      if (occupied.some(other => boundsOverlap(expanded, partBounds(other), 0))) continue;
+      placed.push(brick); occupied.push(brick); break;
+    }
+  }
+  return placed;
+}
 
 function sourceId(placementId, index) {
   return `bridge-src.${fnv1a32(placementId)}.${String(index).padStart(3, '0')}`;
@@ -185,7 +203,7 @@ export function createBridgePartInventory({ normalisedBuild, storageLayout = DEF
         if (selected.length >= maximumSources) break;
       }
       const bounded = selected.slice(0, Math.min(maximumSources, feederSlots.length));
-      return bounded.map((source, index) => sourceToControllerBrick(source, feederSlots[index], { graspable: true }));
+      return allocateFeederSources(bounded, [], feederSlots);
     }
   });
 }

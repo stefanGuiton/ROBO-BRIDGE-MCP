@@ -21,7 +21,7 @@ test('construction derives current identity, shared parts and physical bounds; f
   assert.throws(() => h.service.planNext({ expectedWorldRevision: -1 }), /stale_world_revision/);
   const live = h.controller.getBricks();
   for (let i = 0; i < live.length; i++) for (let j = 0; j < i; j++) assert.equal(partsOverlap(live[i], live[j]), false, 'shared feeder sources overlap');
-  h.service.reset({ expectedWorldRevision: h.controller.worldRevision });
+  await h.service.reset({ expectedWorldRevision: h.controller.worldRevision });
   assert.equal(h.board.progress().total, 0);
   await h.host.applySettingsBatch(h.host.settings, h.host.designRevision);
 });
@@ -62,7 +62,7 @@ test('construction cancellation is forwarded and reset releases the frozen desig
   const cancelled = await run;
   assert.equal(cancelled.ok, false);
   assert.equal(h.board.progress().filled, 0);
-  h.service.reset({ expectedWorldRevision: h.controller.worldRevision });
+  await h.service.reset({ expectedWorldRevision: h.controller.worldRevision });
   await h.host.applySettingsBatch(h.host.settings, h.host.designRevision);
 });
 

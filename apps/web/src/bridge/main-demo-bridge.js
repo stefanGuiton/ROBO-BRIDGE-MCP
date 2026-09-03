@@ -18,6 +18,16 @@ export const MAIN_DEMO_BRIDGE_INITIAL_SETTINGS = Object.freeze({
   aqBottomCount: 2
 });
 
+// Three-tier 4/3/3 hero, sized for the authored 370mm span and 132.718mm
+// water-to-deck height. These are ordinary V4.6 parameters, not compiler magic.
+export const TERRAIN7_BRIDGE_INITIAL_SETTINGS = Object.freeze({
+  ...MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
+  aqBottomCount: 3,
+  aqTopOffset: 0.4, aqMiddleOffset: 0.4, aqBottomOffset: 0.4,
+  aqTopSupportBand: 2.4, aqMiddleSupportBand: 2.4, aqBottomSupportBand: 2.4,
+  deckThickness: 4.8
+});
+
 function alignThreeYUpHologramToMachineZUp(group) {
   // Bridge Core's reusable Three adapter emits conventional Three.js Y-up
   // geometry. MAIN_DEMO renders its authoritative machine frame directly as
@@ -42,7 +52,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
   if (!challenge) throw new TypeError('The authoritative EASY bridge challenge is required.');
 
   const host = await createBridgeHost({
-    initialSettings: MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
+    initialSettings: challenge.id === 'terrain7-easy-aqueduct' ? TERRAIN7_BRIDGE_INITIAL_SETTINGS : MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
     challenge,
     challengePolicy: 'locked',
     compilerOptions: { preferWorker: true }

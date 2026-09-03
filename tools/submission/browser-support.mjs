@@ -210,6 +210,9 @@ async function fileSha256(filePath) {
 }
 
 export async function capture(browser, evidenceDirectory, name, screenshots) {
+  // User-owned visual QA: browser state/console tests must not trigger image
+  // capture unless screenshot evidence is explicitly requested again.
+  if (process.env.ROBO_BRIDGE_CAPTURE_SCREENSHOTS !== '1') return { name, captured: false, sha256: null, visual: 'USER-VERIFY PENDING' };
   const filePath = path.join(evidenceDirectory, name);
   await browser.screenshot(filePath);
   screenshots.push(name);
