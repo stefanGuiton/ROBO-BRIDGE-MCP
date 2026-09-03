@@ -1,15 +1,11 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** SIMPLE WEBMCP HERO EXTERNALLY PROVEN — CLOUDFLARE GIT PIPELINE PROVEN — PR #7 TOWER CHECKPOINT UNDER RELEASE REVIEW  
-**Plan version:** 2026-09-03-M  
+**Status:** THREE-LEVEL DEMO RELEASE — LEVEL 1 + LEVEL 2 ARE THE NEXT TWO-HOUR CRITICAL PATH  
+**Plan version:** 2026-09-03-N  
 **Production branch:** `main`  
-**Latest known main before this update:** `4b68aff2d13b11acbdbaad5e928f3b4ba763e501`  
-**Merged production integration:** `118abaeadb04031ac2a48b572206ceae90c5bdd5`  
-**Candidate tower/pickup checkpoint:** `29953f01d994b9b877a7871e6c2aeda2dee3d77e` on `codex/p0-downstream-integration-prep`  
+**Candidate Simple checkpoint:** `29953f01d994b9b877a7871e6c2aeda2dee3d77e` on `codex/p0-downstream-integration-prep`  
 **Draft PR:** #7 — `Fix pickup colours and alternating tower demo` — **NOT MERGED**  
 **Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
-**Primary submission demo:** SIMPLE BRICKS WebMCP hero  
-**Secondary demo:** Terrain 7 + Viaduct + Train + Mission  
 **Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
@@ -39,224 +35,238 @@ Simulation evidence must never be described as physical UR10 readiness.
 
 ---
 
-# 1. Executive release truth
+# 1. NEW RELEASE STRATEGY — THREE DEMO LEVELS
 
-The release is now in **freeze / verify / deploy / record / submit** mode.
+The submission is now intentionally split into three independently useful demo levels.
 
-Already proven:
-
-```text
-Simple WebMCP external-browser invocation: PASS
-single red brick: PASS
-wall construction: PASS
-tower planning/execution: PASS in several bounded runs
-Cloudflare private GitHub connection: PASS
-main -> automatic Pages deployment: PASS
-public pages.dev update after push: PASS
-static-only hosting: PASS
-```
-
-The current product blocker is no longer basic WebMCP execution or hosting.
-
-The current blocker is to make one **final tower + Human interjection scenario** deterministic enough for the recording, freeze its exact semantics, merge only the bounded release changes, and deploy the real app.
-
-Strict remaining path:
+The key rule is:
 
 ```text
-RECONCILE FINAL TOWER SPEC
--> FIX / TIGHTEN HUMAN INTERJECTION TEST
--> REVIEW PR #7 EXACT DIFF
--> FINAL SIMPLE BROWSER ACCEPTANCE
--> MERGE BOUNDED RELEASE FIX
--> FREEZE MAIN SHA
--> CLOUDFLARE cloudflare-smoke -> apps/web
--> PUBLIC LIVE-SITE ACCEPTANCE
--> RECORD <3 MIN VIDEO
--> UPLOAD YOUTUBE
--> SUBMIT BEFORE 21:00 BST
+LEVEL 1 = MUST WORK AND BECOME RECORDABLE FIRST
+LEVEL 2 = MUST WORK NEXT AND HAS NO TRAIN
+LEVEL 3 = FULL TRAIN + TRAIN PHYSICS; MUST NOT BLOCK LEVEL 1 OR LEVEL 2
 ```
 
-Do not reopen Bridge collision work.
+The user may start recording Level 1 clips as soon as Level 1 is frozen.
+
+The user may then record Level 2 clips as soon as Level 2 is frozen.
+
+Level 3 can be recorded later if it reaches a stable state.
+
+This avoids waiting for the most complex Train/physics path before useful recording can begin.
+
+Target for the next two hours:
+
+```text
+FIRST HOUR: Level 1 fully working / recordable
+SECOND HOUR: Level 2 fully working / recordable
+AFTER THAT: Level 3 full Train/physics if time permits
+```
+
+Do not delay Level 1 or Level 2 for Level 3 work.
 
 ---
 
-# 2. PR #7 — current candidate checkpoint
+# 2. LEVEL 1 — SIMPLE BRICKS — P0 / PRIMARY FOUNDATION
 
-PR #7 is open and draft against `main`.
+Level 1 is the complete Simple Bricks WebMCP workcell.
 
-Candidate commit:
+The user must be able to use natural language to request structures and settings.
 
-```text
-29953f01d994b9b877a7871e6c2aeda2dee3d77e
-```
-
-Branch:
+Representative requests:
 
 ```text
-codex/p0-downstream-integration-prep
+Place one blue brick on the mat.
+
+Build a blue wall 5 bricks wide and 7 bricks high, one brick deep.
+
+Build a red tower six layers tall using two bricks per layer.
+
+Move 50% faster.
+
+Make the scene brighter.
+
+Make the table dark grey.
 ```
 
-Reported focused validation:
+## Level 1 structure capabilities
+
+Level 1 must support:
 
 ```text
-14 / 14 PASS
-staged whitespace checks PASS
-browser-script syntax checks PASS
+single brick
+requested brick colour
+wall width
+wall height
+wall depth
+tower height / layers
+tower dimensions / bricks per layer
+Human + Codex collaborative placement
+conversational placement speed
+scene visual settings through WebMCP
 ```
 
-PR #7 includes bounded work around:
+The model should reason about geometry using generic tools.
 
-- Simple-demo tower planning;
-- alternating 90-degree tower orientation;
-- pickup colour persistence;
-- reused source-mesh colour refresh;
-- Human pickup diagnostics/logging;
-- focused browser pickup checks.
+Do not add shape-specific `build_wall` or `build_tower` WebMCP tools unless absolutely necessary as a last release-rescue measure.
 
-Important: **PR #7 is not release-approved yet and must not be merged only because 14/14 focused tests pass.**
+Preferred path:
+
+```text
+natural language
+-> scene/workspace read
+-> generic placement planning
+-> dependency plan
+-> authoritative BuildBoard
+-> RobotController / Human placement
+-> shared state readback
+```
 
 ---
 
-# 3. Tower specification conflict — MUST RESOLVE BEFORE MERGE
+# 3. LEVEL 1 — INVENTORY / REFILL IS NOW P0
 
-The earlier authoritative submission handoff specified the final recording tower as:
+A ChatGPT Work local code-level test created the correct **35-target** plan for a 5 x 7 blue wall.
+
+The real RobotController and BuildBoard executed four blue placements, then stopped because only four blue source bricks were available.
+
+Evidence classification:
 
 ```text
-2 bricks per layer
-6 layers
-12 placements total
+35-target wall planner: PASS
+real placement path: PARTIAL PASS
+BuildBoard: 4/35 blue placements
+stop reason: no more blue bricks
+visible Work browser acceptance: NOT PROVEN
+native Work Site Tools: NOT PROVEN
 ```
 
-with wording:
+Therefore Level 1 requires a legitimate source/inventory strategy that can satisfy requested structures within the supported workspace.
+
+Required behaviour:
+
+```text
+requested plan determines required BOM / source count
+-> existing refill/inventory authority supplies enough compatible bricks
+-> robot never fabricates accepted BuildBoard completion
+-> unique source IDs remain valid
+-> colour semantics remain correct
+```
+
+Do not fake completed targets.
+
+Do not bypass source identity.
+
+Use the existing legitimate inventory/reset/refill seam where possible.
+
+A 5 x 7 x 1 blue wall must not stop after four bricks merely because the initial visible blue source pool is four.
+
+---
+
+# 4. LEVEL 1 — HUMAN + CODEX COLLABORATION
+
+Level 1 must support a Human building along with Codex.
+
+Required guided behaviour:
+
+```text
+Human places compatible brick into a valid pending target
+-> worldRevision changes
+-> placement stream reconciles
+-> target becomes ADOPTED
+-> actor = human
+-> actualBrickId retained
+-> robot does not duplicate the slot
+-> dependencies continue
+-> build completes
+```
+
+A general arbitrary off-plan replanner is not required for submission.
+
+The intended valid slot and orientation should be obvious enough for the user to place correctly during recording.
+
+Known evidence from PR #7:
+
+```text
+correctly aligned collaborative run: 20/20
+19 robot COMPLETED
+1 Human ADOPTED
+no duplicate
+robot continued
+```
+
+Known limitation:
+
+```text
+off-plan Human insertion caused a later 20-target run to stop at 6/20
+```
+
+Do not weaken BuildBoard legality to accept arbitrary placements.
+
+---
+
+# 5. LEVEL 1 — FINAL TOWER SEMANTICS
+
+The final recording request remains:
 
 ```text
 Build a tower six layers tall using two red bricks per layer.
 ```
 
-PR #7 currently describes a different alternating cross-laminated tower and its latest collaborative evidence uses:
+Required result:
 
 ```text
-10 levels
-2 bricks per level
-20 placements total
-alternating 0 / 90 degree orientation
+2 bricks per layer
+6 layers
+12 placement targets
+12/12 satisfied
 ```
 
-This is a real specification difference.
+PR #7 also contains a useful 10-level / 20-brick alternating cross-laminated tower capability.
 
-Do not silently convert the final submission target from 12 to 20 placements.
+That capability may remain, but it must not silently replace the 12-target recording requirement.
 
-Release rule:
-
-1. choose one final tower specification for the video;
-2. make the prompt unambiguous;
-3. make the automated/browser acceptance use that same specification;
-4. make the Human-interjection guidance use that same target geometry;
-5. record only after that exact scenario passes.
-
-Until explicitly superseded, the earlier handoff target remains the safer final-user requirement:
-
-```text
-6 layers x 2 bricks = 12 placements
-```
-
-The 10-level/20-brick PR #7 implementation can remain available if needed, but it must not overwrite the final recording requirement by accident.
+Both specifications may coexist if the natural-language planner distinguishes them correctly.
 
 ---
 
-# 4. Human brick interjection — CURRENT P0 QA ISSUE
+# 6. LEVEL 1 — WEBMCP TOOL SURFACE + SCENE SETTINGS
 
-PR #7 reports two separate tower results that must not be combined.
-
-Earlier correctly aligned collaborative run:
-
-```text
-20 / 20 satisfied
-19 robot COMPLETED
-1 Human ADOPTED
-no duplicate on adopted slot
-robot continued to top
-```
-
-Latest user-driven rerun with off-plan Human placement:
-
-```text
-stopped at 6 / 20
-6 COMPLETED
-3 BLOCKED
-11 WAITING_DEPENDENCY
-blue pickup colour stayed blue
-placed blue records stayed blue
-```
-
-The problem is geometry/alignment, not colour persistence.
-
-The latest Human bricks were placed off the planned slot/orientation, so automatic arbitrary replanning is **not proven**.
-
-Required bounded correction before calling the interjection demo reliable:
-
-```text
-make the intended pending slot obvious
-show required position/orientation clearly
-ensure the Human places into a compatible pending target
-confirm target becomes ADOPTED
-confirm robot does not duplicate it
-confirm dependencies continue
-confirm build completes
-```
-
-Do not weaken BuildBoard legality or invent automatic acceptance of arbitrary off-plan placements just to make the demo pass.
-
-A simple guided valid-slot Human contribution is sufficient for the video.
-
----
-
-# 5. Pickup colour issue — current evidence
-
-PR #7 provides good evidence that pickup colour persistence itself is fixed.
-
-Reported browser evidence:
-
-```text
-28 post-reset source materials matched authoritative colours
-actual red/blue mouse pickups retained colour
-pickup logs retained brick identity and colour
-0 console errors
-0 console warnings
-```
-
-The latest stalled tower also preserved both blue pickups and placed records as blue.
-
-Therefore treat colour persistence as **provisionally fixed**, subject to final visual/browser regression after merge.
-
-Do not confuse this with proving arbitrary Human tower insertion.
-
----
-
-# 6. Simple WebMCP surface — preserve
-
-Expected production surface:
+Current merged baseline before the new Level 1 settings requirement was:
 
 ```text
 28 unique WebMCP tools
 1 registrar
 ```
 
-The placement-stream control must continue to use the existing `PlannedPlacementCycleRunner`.
+Do **not** treat 28 as a permanent fixed count if Level 1 requires bounded new generic settings tools.
 
-Do not create separate `build_wall` or `build_tower` tools.
+The final tool count must be audited and frozen after the Level 1 settings surface is complete.
 
-Preferred architecture story:
+Prefer a small generic settings surface rather than one tool per visual property.
+
+Conceptually the surface should support operations equivalent to:
 
 ```text
-natural language
--> model reasons about geometry/dependencies
--> generic WebMCP tools
--> deterministic runtime executes
--> Human actions update the same world state
+read scene settings
+update supported scene settings
 ```
 
-Cadence contract:
+Supported Level 1 visual controls should include, where the runtime exposes them safely:
+
+```text
+scene / light brightness
+table colour
+other already-supported presentation settings that are useful in the demo
+```
+
+Use existing naming conventions if suitable tools already exist.
+
+Do not create a second renderer or state authority.
+
+Settings updates must flow into the existing Player/runtime configuration.
+
+Cadence controls remain:
 
 ```text
 normal = 2000 ms/cycle
@@ -264,40 +274,52 @@ normal = 2000 ms/cycle
 hard minimum = 1000 ms/cycle
 ```
 
-Do not weaken IK, collision, workspace or placement authority to meet cadence.
+Changing cadence must not weaken IK, collision, workspace or placement authority.
 
 ---
 
-# 7. Final Simple recording acceptance
+# 7. LEVEL 1 — RECORDING GATE
 
-Before recording, prove the exact final release SHA with:
+Level 1 becomes recordable when the exact candidate SHA proves:
 
 ```text
-one red brick: PASS
-chosen wall demo: PASS
-chosen final tower specification: PASS
-Human blue valid-slot contribution: ADOPTED
-no duplicate robot placement
-robot continues after ADOPTED
-speed change: PASS
-28 WebMCP tools: PASS
-mode reset/toggle: PASS
+single requested-colour brick: PASS
+5 x 7 x 1 blue wall planning: 35 targets
+5 x 7 x 1 blue wall execution: 35/35
+requested tower: 12/12
+Human valid-slot placement: ADOPTED
+no duplicate after ADOPTED
+build continues after Human contribution
+requested colour preserved
+inventory/refill supports the requested BOM
+speed change works
+scene brightness can be changed through WebMCP
+Table colour can be changed through WebMCP
+final WebMCP catalogue audited
+one registrar
+mode reset/toggle works
 0 blocking console errors
 ```
 
-Important wall note:
+Once this gate passes:
 
-Historical Simple evidence includes both a 3x3 wall and newer PR #7 material referring to a 3x4 wall.
-
-For the final video, use one exact prompt/specification and test that exact one before recording. Do not rely on ambiguous shape wording.
+```text
+FREEZE LEVEL 1
+RECORD LEVEL 1 CLIPS IMMEDIATELY
+DO NOT WAIT FOR LEVEL 2 OR LEVEL 3
+```
 
 ---
 
-# 8. Scene / Bridge scope — frozen
+# 8. LEVEL 2 — COLLABORATIVE BRIDGE — NO TRAIN
 
-Simple Bricks remains the primary hero.
+**There is no Train in Level 2.**
 
-Bridge remains secondary.
+**There is no Train physics in Level 2.**
+
+Train, Train testing, Train success/failure and Train physics belong only to Level 3.
+
+Level 2 is purely the conversational Bridge design + Human/Codex collaborative construction demonstration.
 
 Final Bridge family:
 
@@ -305,29 +327,141 @@ Final Bridge family:
 V4.6 Type 2 Viaduct
 ```
 
-Approved Terrain 7 orientation is intentionally diagonal relative to the camera. Do not straighten it.
-
-Approved table baseline remains frozen:
+The user should be able to request semantic Bridge changes such as:
 
 ```text
-X = -100 mm
-Y = 200 mm
-Width = 1750 mm
-Depth = 1200 mm
-Top height = 1200 mm
+Build a viaduct with four arches.
+
+Try five arches.
+
+Make the openings wider.
 ```
 
-Normal simulated robot-only Bridge progression previously reached:
+Existing generic Bridge design tools should update the design and regenerate the exact BuildPlan/hologram.
+
+Do not create arch-count-specific tools.
+
+---
+
+# 9. LEVEL 2 — HUMAN + CODEX BUILD THE BRIDGE TOGETHER
+
+Level 2 should demonstrate shared construction without requiring a Train test.
+
+Desired journey:
+
+```text
+user selects / changes Bridge design
+-> deterministic Bridge compiler creates BuildPlan
+-> hologram / pending targets appear
+-> work is divided between Human and Codex
+-> Human builds one side / region
+-> Codex builds the other side / region
+-> both write into the same BuildBoard authority
+-> progress updates continuously
+-> bridge reaches authoritative construction completion
+```
+
+The exact split can be simple and deterministic.
+
+For example:
+
+```text
+Human = left side / assigned region
+Codex = right side / assigned region
+```
+
+or another clear spatial partition that fits the existing planner.
+
+The goal is to make the collaboration obvious and intuitive on video.
+
+Do not redesign the Bridge compiler.
+
+Do not fix the old robot retreat collision as part of this Level 2 time box unless it directly blocks the selected bounded Level 2 recording path.
+
+Use existing authoritative placement / accelerated-simulation seams only where they are explicitly labelled and truthful.
+
+---
+
+# 10. LEVEL 2 — RECORDING GATE
+
+Level 2 becomes recordable when the release candidate proves:
+
+```text
+Terrain 7 loads
+Viaduct is selected
+user can change arch count conversationally
+BuildPlan / hologram updates correctly
+Human and Codex can contribute to the same Bridge plan
+shared BuildBoard records both actors correctly
+no duplicate accepted placement
+progress state is readable
+selected bounded Bridge build reaches its intended completion state
+0 blocking console errors
+NO TRAIN is required or invoked
+```
+
+Once this gate passes:
+
+```text
+FREEZE LEVEL 2
+RECORD LEVEL 2 CLIPS
+DO NOT WAIT FOR LEVEL 3
+```
+
+---
+
+# 11. LEVEL 3 — FULL TRAIN + TRAIN PHYSICS
+
+Level 3 is the full ambitious simulation.
+
+Only Level 3 contains:
+
+```text
+Train
+Train physics
+Train collision/support behaviour
+Train falling / derailment
+failure detection
+repair / retest
+CROSSED
+Mission COMPLETE
+full success / statistics presentation
+```
+
+Desired Level 3 journey:
+
+```text
+BUILD
+-> TEST
+-> incomplete/unsupported Bridge can cause Train failure/fall
+-> same mission returns to BUILD
+-> repair / completion
+-> TEST
+-> Train physically crosses
+-> CROSSED
+-> COMPLETE
+-> final statistics / result presentation
+```
+
+Level 3 should be intuitive and visually strong, but it is a stretch layer for the current submission sprint.
+
+**Level 3 must never block recording or submission of Level 1 or Level 2.**
+
+---
+
+# 12. LEVEL 3 — EXISTING EVIDENCE / LIMITATIONS
+
+Historical normal simulated robot-only Viaduct progression reached:
 
 ```text
 183 / 276
 ```
 
-then stopped on a real fail-closed retreat collision.
+then stopped on an empty-gripper retreat collision.
 
-This is deferred.
+This collision is not a Level 1 or Level 2 blocker.
 
-Mixed-mode deterministic completion remains valid evidence:
+Existing explicit mixed simulation evidence remains:
 
 ```text
 Human: 1
@@ -336,13 +470,22 @@ accelerated simulated placements: 272
 276 / 276 accepted
 incorrect: 0
 TRAIN_FELL -> BUILD -> CROSSED -> COMPLETE
+reset -> new missionId
 ```
 
-Do not claim all 276 parts were robot-executed.
+Safe claim:
+
+```text
+the deterministic shared board can be completed through explicitly labelled mixed simulation
+```
+
+Do not claim all 276 Bridge parts were robot-executed.
+
+Level 3 may build on this existing work if time remains.
 
 ---
 
-# 9. Terrain / deployment asset invariants
+# 13. TERRAIN / SCENE INVARIANTS
 
 Production Terrain asset:
 
@@ -362,15 +505,72 @@ Build/water datum:
 Z = -132.718 mm
 ```
 
-Final deployment must serve the actual GLB binary, not a Git LFS pointer.
+Approved Terrain orientation is intentionally diagonal relative to the camera.
+
+Do not straighten it.
+
+Approved table baseline remains frozen except for user-controlled presentation properties such as colour/brightness:
+
+```text
+X = -100 mm
+Y = 200 mm
+Width = 1750 mm
+Depth = 1200 mm
+Top height = 1200 mm
+```
+
+Final deployment must serve the real GLB binary, not a Git LFS pointer.
 
 ---
 
-# 10. Cloudflare — deployment pipeline is DONE / PROVEN
+# 14. PR #7 — CURRENT LEVEL 1 CANDIDATE
+
+PR #7 remains draft and unmerged.
+
+Candidate checkpoint:
+
+```text
+29953f01d994b9b877a7871e6c2aeda2dee3d77e
+```
+
+Reported focused validation:
+
+```text
+14 / 14 PASS
+```
+
+PR #7 contains useful Level 1 work:
+
+```text
+alternating tower planning
+pickup colour persistence
+source material refresh
+Human pickup diagnostics/logging
+focused browser pickup checks
+```
+
+It is not release-approved solely because focused tests pass.
+
+Level 1 review must now also cover:
+
+```text
+12-target recording tower
+requested colour structures
+inventory/refill for larger requested BOMs
+Human valid-slot ADOPTED path
+scene brightness / table colour WebMCP settings
+final tool catalogue
+```
+
+Do not merge automatically.
+
+---
+
+# 15. CLOUDFLARE — PIPELINE IS PROVEN
 
 Do not spend more time experimenting with hosting.
 
-Working project:
+Working Git-connected project:
 
 ```text
 robo-bridge-mcp-git
@@ -405,9 +605,9 @@ private repo
 -> public site updates
 ```
 
-Observed update time was about 20-30 seconds.
+Observed redeploy time was about 20-30 seconds.
 
-Older Direct Upload project:
+Old Direct Upload project remains:
 
 ```text
 robo-bridge-mcp
@@ -420,17 +620,17 @@ User instruction:
 DO NOT DELETE ANYTHING.
 ```
 
-Do not modify/delete the old project unless the user explicitly asks.
+Do not modify or delete the old project.
 
 Do not create more Pages projects.
 
-Do not enable Workers, Functions, D1, R2, AI, Queues, Durable Objects or other server compute.
+Do not enable Workers, Pages Functions, D1, R2, AI, Queues, Durable Objects or other server compute.
 
 ---
 
-# 11. Final Cloudflare switch
+# 16. FINAL CLOUDFLARE SWITCH
 
-Only after the final app is frozen on `main`, change the existing `robo-bridge-mcp-git` project from:
+Only after the intended release candidate is frozen on `main`, change the existing `robo-bridge-mcp-git` project from:
 
 ```text
 Build output directory: cloudflare-smoke
@@ -467,36 +667,71 @@ no Pages Functions
 no server compute
 ```
 
+Level 1 and Level 2 should be tested on the public deployment before final submission where practical.
+
 ---
 
-# 12. PR #7 release decision procedure
+# 17. TWO-HOUR EXECUTION PLAN
 
-Do **not** merge PR #7 automatically.
+## PHASE A — LEVEL 1 — FIRST HOUR
 
-Use this order:
+Priority order:
 
 ```text
-1. inspect exact PR #7 diff
-2. confirm no unrelated changes
-3. resolve final tower count/spec conflict
-4. tweak Human interjection guidance/test only as needed
-5. rerun focused Simple acceptance
-6. verify pickup colours still correct
-7. verify Human valid-slot ADOPTED + continuation
-8. verify no console regression
-9. merge only if bounded and stable
-10. note exact merge/main SHA
+1. fix legitimate inventory/refill so requested colours/BOMs can complete
+2. prove one requested-colour brick
+3. prove 5 x 7 x 1 blue wall = 35/35
+4. prove final 6-layer / 12-target tower
+5. prove guided Human valid-slot ADOPTED + no duplicate + continuation
+6. expose/audit useful scene settings through WebMCP
+7. prove brightness change
+8. prove table-colour change
+9. audit final WebMCP catalogue + registrar
+10. browser/console regression
+11. freeze Level 1 recording candidate
 ```
 
-Do not require a general arbitrary-off-plan replanner for submission.
+As soon as Level 1 is stable, recording may begin.
 
-Do not broaden PR #7 into Bridge work.
+## PHASE B — LEVEL 2 — SECOND HOUR
+
+Priority order:
+
+```text
+1. load Terrain 7 + Viaduct reliably
+2. conversational arch-count/design change
+3. regenerate exact BuildPlan/hologram
+4. establish clear Human/Codex Bridge work split
+5. record both actors into the same BuildBoard
+6. complete the selected bounded Bridge construction path
+7. verify progress/readback
+8. console regression
+9. freeze Level 2 recording candidate
+```
+
+**Do not add or test Train in this phase.**
+
+As soon as Level 2 is stable, record Level 2 clips.
+
+## PHASE C — LEVEL 3 — AFTER LEVEL 1 + LEVEL 2
+
+Only then spend remaining engineering time on:
+
+```text
+Train
+Train physics
+fall/derailment
+support failure
+repair/retest
+CROSSED / COMPLETE
+full statistics / final simulation presentation
+```
 
 ---
 
-# 13. Time-boxed release tests
+# 18. TIME-BOXED RELEASE TESTS
 
-After the final bounded fix, run the strongest tests that fit the remaining time:
+Use the strongest tests that fit the remaining time:
 
 ```bash
 npm run verify
@@ -505,76 +740,104 @@ npm run submission:gate
 npm run webmcp:audit
 ```
 
-Then run focused external-browser Simple acceptance.
+But focused level acceptance takes priority over chasing unrelated historical failures.
 
-Do not make `hero:3`, robot-only 276/276, or Bridge retreat collision a blocker.
+Do not weaken tests.
 
-Record any remaining limitations truthfully.
-
----
-
-# 14. Final video strategy
-
-Target length:
-
-```text
-2:20-2:40
-hard maximum under 3:00
-```
-
-Recommended structure:
-
-```text
-0:00-0:10   start on working app; one red brick
-0:10-0:40   wall demo
-0:40-1:15   final agreed two-bricks-per-layer tower
-             Human adds blue brick into clearly indicated valid pending slot
-             show ADOPTED + no duplicate + continuation
-1:15-1:30   "Move 50% faster" -> ~1333 ms
-1:30-1:55   explain one shared browser world / BuildBoard / WebMCP
-1:55-2:20   optional Bridge mode: Terrain 7 + Viaduct + semantic arch change
-2:20-2:35   concise close
-```
-
-If the Human interjection remains unreliable, do not improvise arbitrary placement during recording. Use the known compatible slot/orientation that has already demonstrated ADOPTED behaviour.
-
-If Bridge mode is not presentation-ready, omit live Bridge execution.
+Do not make robot-only 276/276 or the old Bridge retreat collision a Level 1/2 blocker.
 
 ---
 
-# 15. Claim safety
+# 19. RECORDING STRATEGY — RECORD IN INDEPENDENT CLIPS
+
+Do not require one perfect uninterrupted demo session.
+
+Record stable clips as each level becomes ready.
+
+## Level 1 clips
+
+Capture:
+
+```text
+single requested-colour brick
+large requested-colour wall
+requested tower
+Human collaboration / ADOPTED
+speed change
+brightness change
+table colour change
+WebMCP state/tool interaction
+```
+
+## Level 2 clips
+
+Capture:
+
+```text
+Terrain + Viaduct
+conversational arch-count/design change
+hologram / plan change
+Human takes one Bridge region
+Codex takes the other region
+shared progress / BuildBoard
+Bridge construction completion
+```
+
+**No Train footage belongs to Level 2.**
+
+## Level 3 clips — only if stable
+
+Capture:
+
+```text
+Train physics
+failure / falling if useful
+repair
+retest
+successful crossing
+full result/stats
+```
+
+The final under-3-minute edit can combine the strongest Level 1, Level 2 and optional Level 3 clips.
+
+---
+
+# 20. CLAIM SAFETY
 
 Safe:
 
 - Codex controls a deterministic browser workcell through WebMCP;
 - Codex can inspect state, plan generic placements and execute them through shared authorities;
-- a correctly aligned compatible Human placement can be adopted into the active plan;
-- pickup colour persistence is verified in bounded browser tests;
-- placement cadence can be changed conversationally;
-- Terrain / Viaduct / Train / Mission share the same application architecture;
-- Cloudflare serves the application as static assets;
-- deterministic Bridge completion can use an explicitly labelled accelerated-simulation path.
+- correctly aligned Human contributions can be adopted into the active plan;
+- requested structure colours/dimensions can be model-planned within supported limits once release acceptance proves them;
+- scene presentation settings can be changed conversationally once final acceptance proves the settings surface;
+- Human and Codex can share one Bridge BuildPlan/BuildBoard in Level 2;
+- Level 2 does not require Train simulation;
+- Level 3 contains the Train/physics mission;
+- Cloudflare serves static browser assets;
+- explicit accelerated simulation remains clearly labelled when used.
 
 Do not claim:
 
-- arbitrary off-plan Human insertion automatically replans successfully;
+- arbitrary off-plan Human replanning unless proven;
 - physical UR10 readiness;
 - physical collision safety;
 - all 276 Bridge parts robot-executed;
 - physical one-second cycles;
 - physical accuracy/repeatability;
-- 120 FPS based only on render-disabled tests.
+- 120 FPS without real rendered evidence.
 
 ---
 
-# 16. Hard scope cuts
+# 21. HARD SCOPE CUTS
 
-Do not spend submission time on:
+Until Level 1 and Level 2 are recordable, do not spend time on:
 
 ```text
+Train or Train physics
 Bridge retreat collision repair
 new path planner
-arbitrary Human off-plan replanning
+arbitrary off-plan Human replanning
 new terrain variants
 new bridge families
 Aqueduct resurrection
@@ -589,33 +852,20 @@ new Cloudflare projects
 server-side Cloudflare architecture
 ```
 
----
-
-# 17. Exact remaining execution order
-
-```text
-A. Decide/freeze the exact final tower spec.
-B. Make the Human valid target obvious and retest the interjection.
-C. Review PR #7 exact diff and focused evidence.
-D. Merge only the bounded accepted fix to main.
-E. Record the exact final main SHA.
-F. Run final Simple regression / strongest time-boxed gates.
-G. Change Cloudflare output cloudflare-smoke -> apps/web.
-H. Test public app, assets, console and WebMCP.
-I. Record the <3 minute video.
-J. Upload public YouTube video.
-K. Complete submission before 21:00 BST.
-L. Only then do optional polish.
-```
+After Level 1 and Level 2 are recorded, Train/Train physics may resume as Level 3 work.
 
 ---
 
-# 18. Final release principle
+# 22. FINAL RELEASE PRINCIPLE
 
-**The deployment pipeline is solved. Stop experimenting with Cloudflare.**
+**The release is now progressive.**
 
-**PR #7 is a useful candidate checkpoint, but it is not yet release-ready because the latest off-plan Human interjection stalled the 20-target tower at 6/20 and its 20-target tower specification conflicts with the earlier 12-target final handoff.**
+**Level 1 is the complete Simple Bricks WebMCP workcell and must be recordable first.**
 
-**Do not solve this by weakening authority rules or building a general replanner. Use one explicit final tower specification and one clearly compatible Human slot, prove ADOPTED + continuation, then freeze and merge the bounded fix.**
+**Level 2 is collaborative Viaduct design/build with Human + Codex sharing the same authoritative build state. There is NO TRAIN in Level 2.**
 
-**After that: deploy `apps/web`, test the public site, record, and submit.**
+**Level 3 is the only level containing Train, Train testing and Train physics.**
+
+**Do not wait for Level 3 before recording Level 1 or Level 2.**
+
+**The next two hours are for making Level 1 and Level 2 stable, browser-proven and recordable.**
