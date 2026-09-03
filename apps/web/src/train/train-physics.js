@@ -408,7 +408,8 @@ export function createTrainPhysics(options = {}) {
     }
     const queried = provider.queryBodyContacts({
       body: solidBodyQuery(body), previousPosition: { ...body.previousPosition },
-      previousRotation: { ...body.previousRotation }, contactMarginMm: contactConfiguration.contactMarginMm
+      previousRotation: { ...body.previousRotation }, contactMarginMm: contactConfiguration.contactMarginMm,
+      includeColumnDiagnostics: false
     });
     for (const contact of (queried?.contacts || []).slice(0, 32)) {
       const penetration = solidContactDepth(contact);
@@ -687,7 +688,7 @@ export function createTrainPhysics(options = {}) {
       for (const body of bodies) {
         const queried = environment.solidContactProvider.queryBodyContacts({
           body: solidBodyQuery(body), previousPosition: { ...body.position },
-          previousRotation: { ...body.rotation }, contactMarginMm: 0
+          previousRotation: { ...body.rotation }, contactMarginMm: 0, includeColumnDiagnostics: false
         });
         for (const contact of queried?.contacts || []) {
           const depthMm = solidContactDepth(contact);

@@ -1,5 +1,11 @@
 # Level 3 TCP Train — integration progress, not acceptance
 
+## Current asset/performance follow-up
+
+The user-supplied Terrain9 is now the active asset; legacy Terrain7 names retain the same coordinate contract. Current-mesh tests preserve the original low-tunnel/end-wall assertions, so replacement is not a clearance fix. The native diagnostic below ran on Terrain7 and remains historical until repeated on the new asset.
+
+An independently reviewed opt-out removes only unused ground/ceiling diagnostic columns from the two physics contact-query call sites. Exact body contacts, embedded-solid containment, sweeps and residual checks are unchanged; ordinary callers retain columns by default. Omitted values are explicitly null with `columnDiagnosticsAvailable:false`. New parity tests cover synthetic solids/water/void and the current Terrain9 mesh. Focused Train/contact suite77/77 passes. CPU-only microbenchmark:0.0295294 to0.0199515ms/query (32.4% lower), identical contact checksum; not browser FPS or physical acceptance. No geometry, Train dimensions, controller limits or success criteria changed.
+
 ## Boundary
 
 Normal TRUNK checkout; `codex/p0-downstream-integration-prep`, based on accepted/pushed Level2 `c24c7f135359a8c80aa859724b640afb2c6e7fd5`. Keep draft PR7, PlanN and unrelated user assets. No main merge, deployment, second controller/board/clock, or collision-limit changes.

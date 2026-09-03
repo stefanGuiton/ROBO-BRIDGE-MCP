@@ -203,7 +203,7 @@ export function createTerrainMeshContact({
 
   let records = [], cells = new Map(), wideTriangles = [], meshCount = 0, excludedMeshCount = 0, generation = 0;
   let bounds = new THREE.Box3();
-  const counters = { samples: 0, unsupportedSamples: 0, invalidHeightSamples: 0, bodyQueries: 0, sweeps: 0,
+  const counters = { samples: 0, unsupportedSamples: 0, invalidHeightSamples: 0, bodyQueries: 0, sweeps: 0, columnRaycasts: 0,
     triangleTests: 0, contactCount: 0, rotationalSweeps: 0 };
   const key = (x, z) => `${x},${z}`;
 
@@ -271,6 +271,7 @@ export function createTerrainMeshContact({
   }
 
   function verticalHit(forwardMm, rightMm, heightMm, direction) {
+    counters.columnRaycasts += 1;
     const ray = new THREE.Ray(new THREE.Vector3(forwardMm, heightMm, rightMm), new THREE.Vector3(0, direction, 0));
     const column = new THREE.Box3(new THREE.Vector3(forwardMm - EPSILON, -Infinity, rightMm - EPSILON),
       new THREE.Vector3(forwardMm + EPSILON, Infinity, rightMm + EPSILON));
@@ -356,8 +357,9 @@ export function createTerrainMeshContact({
     return contacts;
   }
 
-  function queryBodyContacts({ body, previousPosition = null, contactMarginMm = 0 } = {}) {
+  function queryBodyContacts({ body, previousPosition = null, contactMarginMm = 0, includeColumnDiagnostics = true } = {}) {
     if (!(contactMarginMm >= 0) || !Number.isFinite(contactMarginMm)) throw new RangeError('contactMarginMm must be nonnegative.');
+    if (typeof includeColumnDiagnostics !== 'boolean') throw new TypeError('includeColumnDiagnostics must be boolean.');
     const shape = bodyGeometry(body), previous = previousPosition ? vector(previousPosition, 'previousPosition') : null;
     counters.bodyQueries += 1;
     const contacts = [];
@@ -369,10 +371,15 @@ export function createTerrainMeshContact({
     contacts.push(...embeddedContacts(shape, contacts));
     const unique = deduplicateContacts(contacts);
     counters.contactCount += unique.length;
-    const column = queryColumn({ forwardMm: shape.position.x, rightMm: shape.position.z, probeHeightMm: shape.position.y });
-    return { contacts: unique, ground: column.ground, ceiling: column.ceiling, walls: unique.filter(contact => contact.kind === 'terrain-wall'),
+    // Height/clearance probes are diagnostic only. Physics can omit them while
+    // retaining every exact surface and embedded-solid contact above. Null
+    // columns with availability=false are not evidence of no floor or roof.
+    const column = includeColumnDiagnostics
+      ? queryColumn({ forwardMm: shape.position.x, rightMm: shape.position.z, probeHeightMm: shape.position.y }) : null;
+    return { contacts: unique, ground: column?.ground ?? null, ceiling: column?.ceiling ?? null, walls: unique.filter(contact => contact.kind === 'terrain-wall'),
       supported: unique.some(contact => contact.kind === 'terrain-ground'),
-      diagnostics: { actualSolidOnly: true, contactCount: unique.length, columnClearanceMm: column.clearanceMm,
+      diagnostics: { actualSolidOnly: true, contactCount: unique.length, columnClearanceMm: column?.clearanceMm ?? null,
+        columnDiagnosticsAvailable: includeColumnDiagnostics,
         belowGround: unique.some(contact => contact.kind === 'terrain-ground' && contact.penetrationMm > EPSILON),
         embeddedInSolid: unique.some(contact => contact.embedded),
         ceilingCollision: unique.some(contact => contact.kind === 'terrain-ceiling'), bodyWallCollision: unique.some(contact => contact.kind === 'terrain-wall') } };

@@ -4,6 +4,7 @@ import * as THREE from '../../apps/web/vendor/three.module.min.js';
 import { createTerrainMeshContact } from '../../apps/web/src/train-integration/terrain-mesh-contact.js';
 import { createChallengeTerrainSurfaceAdapter } from '../../apps/web/src/train-integration/challenge-terrain-surface-adapter.js';
 import { createRouteFrame } from '../../apps/web/src/train/route-frame.js';
+import { createTrainPhysics } from '../../apps/web/src/train/train-physics.js';
 import { constructionHarness } from '../helpers/construction-harness.js';
 
 const frame = Object.freeze({ originMm: { xMm: 100, yMm: -20, zMm: 50 },
@@ -31,6 +32,89 @@ function tunnel() {
 }
 
 const body = (position = { x: 0, y: 4, z: 0 }, size = { x: 4, y: 8, z: 4 }, rotation = identity()) => ({ id: 'test-body', position, size, rotation });
+
+function physicalContactEvidence(result) {
+  const { ground, ceiling, diagnostics, ...evidence } = result;
+  const { columnClearanceMm, columnDiagnosticsAvailable, ...contactDiagnostics } = diagnostics;
+  return { ...evidence, diagnostics: contactDiagnostics };
+}
+
+function assertOptionalColumns(contact, query) {
+  const sweep = { body: query.body, previousPosition: query.previousPosition
+    ?? { ...query.body.position, x: query.body.position.x - 0.5 }, contactMarginMm: query.contactMarginMm ?? 0 };
+  const sweptBefore = contact.sweepBody(sweep);
+  const originalQuery = structuredClone(query), before = contact.getDiagnostics();
+  const full = contact.queryBodyContacts(query), afterFull = contact.getDiagnostics();
+  const contactsOnly = contact.queryBodyContacts({ ...query, includeColumnDiagnostics: false });
+  const afterContactsOnly = contact.getDiagnostics();
+  assert.deepEqual(physicalContactEvidence(contactsOnly), physicalContactEvidence(full));
+  assert.deepEqual(structuredClone(query), originalQuery, 'the diagnostic option cannot mutate the body or prior pose');
+  assert.equal(full.diagnostics.columnDiagnosticsAvailable, true, 'existing callers retain column diagnostics by default');
+  assert.equal(contactsOnly.diagnostics.columnDiagnosticsAvailable, false);
+  assert.equal(contactsOnly.ground, null);
+  assert.equal(contactsOnly.ceiling, null);
+  assert.equal(contactsOnly.diagnostics.columnClearanceMm, null, 'an omitted clearance must not become zero or Infinity');
+  assert.equal(afterFull.columnRaycasts - before.columnRaycasts, 2);
+  assert.equal(afterContactsOnly.columnRaycasts - afterFull.columnRaycasts, 0);
+  assert.equal(afterContactsOnly.bodyQueries - afterFull.bodyQueries, 1, 'the actual body query still executes');
+  assert.deepEqual(contact.queryBodyContacts({ ...query, includeColumnDiagnostics: true }), full);
+  assert.deepEqual(contact.sweepBody(sweep), sweptBefore, 'the diagnostic option cannot change exact or conservative sweep evidence');
+  return full;
+}
+
+test('omitting column diagnostics preserves exact floor, tunnel, embedded-solid, water and void contacts', () => {
+  const tunnelContact = provider(tunnel());
+  const solid = provider([box('thick-solid', { x: 100, y: 100, z: 100 }, { x: 0, y: -50, z: 0 })]);
+  const water = box('Plane', { x: 100, y: 2, z: 100 });
+  const voidMesh = box('decoration', { x: 100, y: 2, z: 100 });
+  voidMesh.userData.contactKind = 'void';
+  const excluded = provider([water, voidMesh]);
+  const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+  const cases = [
+    { contact: tunnelContact, shape: body({ x: 0, y: 3.5, z: 0 }), previousPosition: { x: 0, y: 4, z: 0 }, kind: 'terrain-ground' },
+    { contact: tunnelContact, shape: body({ x: 0, y: 7, z: 0 }), kind: 'terrain-ceiling' },
+    { contact: tunnelContact, shape: body({ x: 0, y: 5, z: 10 }, { x: 4, y: 4, z: 4 }), kind: 'terrain-wall' },
+    { contact: tunnelContact, shape: body({ x: 0, y: 5, z: 8 }, { x: 8, y: 2, z: 2 }, rotation), kind: 'terrain-wall' },
+    { contact: tunnelContact, shape: body({ x: 0, y: 5, z: 0 }, { x: 4, y: 4, z: 4 }), empty: true },
+    { contact: solid, shape: body({ x: 0, y: -20, z: 0 }, { x: 4, y: 4, z: 4 }), kind: 'terrain-ground', embedded: true },
+    { contact: excluded, shape: body(), empty: true },
+    { contact: tunnelContact, shape: body({ x: 10000, y: -1000, z: 10000 }), empty: true }
+  ];
+  for (const item of cases) for (const margin of [0, 0.025]) {
+    const full = assertOptionalColumns(item.contact, { body: item.shape,
+      previousPosition: item.previousPosition ?? null, contactMarginMm: margin });
+    if (item.kind) assert.ok(full.contacts.some(contact => contact.kind === item.kind));
+    if (item.empty) assert.deepEqual(full.contacts, []);
+    if (item.embedded) {
+      assert.equal(full.diagnostics.embeddedInSolid, true, 'required containment rays must not be removed');
+      close(full.contacts[0].penetrationMm, 22);
+    }
+  }
+});
+
+test('Train physics omits only column diagnostics while retaining all contact, sweep and residual queries', () => {
+  const contact = provider([box('floor', { x: 200, y: 2, z: 100 }, { x: 0, y: -1, z: 0 })]);
+  const physics = createTrainPhysics();
+  const shapes = [40, 0, -40].map((x, index) => ({ ...body({ x, y: 2, z: 0 }, { x: 20, y: 4, z: 6 }), id: String(index) }));
+  physics.promote(shapes, 0, { angularVelocities: shapes.map(() => ({ x: 0, y: 0, z: 0 })),
+    lateralSpeedsMmPerSecond: [0, 0, 0], verticalSpeedsMmPerSecond: [0, 0, 0] });
+  const queries = [];
+  const solidContactProvider = {
+    queryBodyContacts(query) { queries.push(structuredClone(query)); return contact.queryBodyContacts(query); },
+    sweepBody: query => contact.sweepBody(query)
+  };
+  const result = physics.step(1 / 120, { motionMode: 'tcp_contact', solidContactProvider });
+  const diagnostics = contact.getDiagnostics();
+  assert.equal(queries.length, 12, 'three contact passes plus the final residual query for each of three bodies');
+  assert.ok(queries.every(query => query.includeColumnDiagnostics === false));
+  assert.equal(diagnostics.bodyQueries, 12);
+  assert.equal(diagnostics.sweeps, 3);
+  assert.equal(diagnostics.columnRaycasts, 0);
+  assert.ok(diagnostics.triangleTests > 0);
+  assert.ok(result.every(pose => pose.groundContact), 'real triangle contacts still support every body');
+  assert.equal(physics.getCounts().couplerJoints, 2);
+  assert.equal(physics.getCounts().physicsSteps, 1);
+});
 
 test('finite floor probes find the tunnel floor, not the roof top, and report the real ceiling', () => {
   const contact = provider(tunnel());
@@ -117,6 +201,7 @@ test('a body fully inside a thick solid is not mistaken for empty space, while a
   const insideCavity = hollow.queryBodyContacts({ body: body({ x: 0, y: 5, z: 0 }, { x: 4, y: 4, z: 4 }) });
   assert.equal(insideCavity.diagnostics.embeddedInSolid, false);
   assert.deepEqual(insideCavity.contacts, []);
+  assertOptionalColumns(hollow, { body: body({ x: 0, y: 5, z: 0 }, { x: 4, y: 4, z: 4 }) });
 });
 
 test('the actual rail footprint cannot support a narrow box suspended between rails', () => {
@@ -228,6 +313,7 @@ test('exact adapter opt-in never consults legacy AABBs, water datum or fallback 
   assert.equal(proxyReads, 0);
   assert.equal(adapter.getDiagnostics().fallbackFloor, false);
   assert.equal(adapter.queryBodyContacts({ body: body() }).supported, true);
+  assertOptionalColumns(adapter, { body: body() });
 });
 
 test('invalid geometry frames fail closed instead of fabricating support', () => {
@@ -237,12 +323,17 @@ test('invalid geometry frames fail closed instead of fabricating support', () =>
   const contact = provider([]);
   assert.throws(() => contact.queryBodyContacts({ body: body({ x: 0, y: 4, z: NaN }) }), /finite/);
   assert.throws(() => contact.queryBodyContacts({ body: body(), contactMarginMm: -1 }), /nonnegative/);
+  for (const value of [null, 0, 1, 'false', {}]) {
+    assert.throws(() => contact.queryBodyContacts({ body: body(), includeColumnDiagnostics: value }), /must be boolean/);
+  }
 });
 
-test('real Terrain7 mesh query excludes water and preserves the exact route and authority revisions', async () => {
+test('current production terrain mesh query excludes water and preserves the exact route and authority revisions', async () => {
+  // The historical flag selects the shared route contract; the harness loads the active production terrain asset.
   const h = await constructionHarness({ terrain7: true });
   const plan = h.host.buildPlan;
-  const worldRevision = h.controller.worldRevision, boardRevision = h.board.revision;
+  const worldRevision = h.controller.worldRevision, boardRevision = h.board.worldRevision;
+  const boardTargets = h.board.getTargets(), boardCursor = h.board.eventCursor;
   const transform = h.challenge.getBridgeTransform();
   const routeFrame = createRouteFrame({ frozenBuildPlan: plan, worldTransform: transform });
   const state = h.challenge.getState();
@@ -262,11 +353,18 @@ test('real Terrain7 mesh query excludes water and preserves the exact route and 
     previousPosition: { x: 385, y: 6, z: 0 } });
   assert.equal(endWall.diagnostics.bodyWallCollision, true, 'the authored tunnel end wall cannot be ignored for all-train crossing');
   assert.ok(endWall.walls.some(hit => hit.sourceId === 'Tunnel' && hit.normal.x < -0.99));
+  for (const query of [
+    { body: body({ x: 385, y: 6, z: 0 }, { x: 30, y: 12, z: 20 }) },
+    { body: body({ x: 400, y: 6, z: 0 }, { x: 30, y: 12, z: 20 }), previousPosition: { x: 385, y: 6, z: 0 } },
+    { body: body({ x: 385, y: 17, z: 0 }, { x: 88, y: 34, z: 34 }) }
+  ]) for (const contactMarginMm of [0, 0.025]) assertOptionalColumns(contact, { ...query, contactMarginMm });
   // Far from every transformed solid remains void even below the water datum.
   assert.equal(contact.sample({ forwardMm: 10000, rightMm: 10000, probeHeightMm: -1000 }), null);
   close(routeFrame.lengthMm, 370, 1e-4);
   assert.deepEqual(h.host.buildPlan, plan, 'BridgeHost returns clones; geometry queries must preserve their exact contents');
   assert.equal(h.controller.worldRevision, worldRevision);
-  assert.equal(h.board.revision, boardRevision);
+  assert.equal(h.board.worldRevision, boardRevision);
+  assert.deepEqual(h.board.getTargets(), boardTargets);
+  assert.deepEqual(h.board.eventCursor, boardCursor);
   assert.deepEqual(h.challenge.getBridgeTransform(), transform);
 });
