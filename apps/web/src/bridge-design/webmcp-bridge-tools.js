@@ -99,7 +99,7 @@ export function getBridgeDesignToolDefinitions(service) {
     },
     {
       name: 'update_bridge_design',
-      description: 'Atomically merge a partial public BridgeSpec patch into the authoritative V4.6 design and compile one exact BuildPlan. Unspecified values remain unchanged. A family switch starts from that family’s tested V4.6 preset.',
+      description: 'Atomically merge a partial public BridgeSpec patch and compile one exact BuildPlan. Terrain7 hero: change NUMBER OF ARCHES with patch.viaduct.archCount (read the current design first). Unspecified values remain unchanged. A family switch starts from that family’s tested V4.6 preset.',
       inputSchema: {
         type: 'object',
         properties: {

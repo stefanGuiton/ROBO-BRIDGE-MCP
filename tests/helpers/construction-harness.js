@@ -17,7 +17,7 @@ import { PlacementIntentEngine } from '../../apps/web/src/player/placement-inten
 import { PLAYER_FALLBACK_SETTINGS } from '../../apps/web/src/player/player-settings.js';
 import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell-profile.js';
 
-export async function constructionHarness({ terrain7 = false } = {}) {
+export async function constructionHarness({ terrain7 = false, bridgeSettings = null } = {}) {
   const settings = { ...PLAYER_FALLBACK_SETTINGS, ...JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url), 'utf8')) };
   const profile = createV8WorkcellProfile(settings), clock = new RevisionClock();
   const board = new BuildBoard([], { revisionClock: clock });
@@ -32,7 +32,7 @@ export async function constructionHarness({ terrain7 = false } = {}) {
     ...(terrain7 ? { THREE, terrainUrl: 'fixture', decodeImage: async () => ({ width: 1, height: 1 }),
       fetchImpl: async () => ({ ok: true, arrayBuffer: async () => terrainBytes.buffer.slice(terrainBytes.byteOffset, terrainBytes.byteOffset + terrainBytes.byteLength) }) } : {}) });
   if (terrain7) await challenge.load();
-  const host = await createBridgeHost({ initialSettings: terrain7 ? TERRAIN7_BRIDGE_INITIAL_SETTINGS : MAIN_DEMO_BRIDGE_INITIAL_SETTINGS, challenge: createEasyBridgeChallenge(challenge), challengePolicy: 'locked', compilerOptions: { preferWorker: false } });
+  const host = await createBridgeHost({ initialSettings: bridgeSettings ?? (terrain7 ? TERRAIN7_BRIDGE_INITIAL_SETTINGS : MAIN_DEMO_BRIDGE_INITIAL_SETTINGS), challenge: createEasyBridgeChallenge(challenge), challengePolicy: 'locked', compilerOptions: { preferWorker: false } });
   const initial = prepareBridgeBuild({ host, workspace: controller.workspace });
   const elevation = Math.max(0, 4 - physicalBuildReport(initial).physicalBoundsMm.min.zMm);
   challenge.setBuildElevation(elevation);

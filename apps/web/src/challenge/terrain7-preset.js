@@ -71,7 +71,7 @@ export function buildTerrain7Preset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT
     exit: { x: 650 + authoredSpan / 2, y: -111.2, z: 4 - TERRAIN7_WATER_DATUM_MM }
   };
   if (![selected.entry?.x, selected.entry?.y, selected.entry?.z, selected.exit?.x, selected.exit?.y, selected.exit?.z, buildElevationMm].every(Number.isFinite)) throw new Error('Endpoint XYZ values must be finite numbers.');
-  if (Math.abs(selected.entry.z - selected.exit.z) > 1e-7) throw new Error('The Aqueduct requires level ENTRY and EXIT heights.');
+  if (Math.abs(selected.entry.z - selected.exit.z) > 1e-7) throw new Error('The bridge requires level ENTRY and EXIT heights.');
   const entryPosition = { ...selected.entry, z: selected.entry.z + buildElevationMm };
   const exitPosition = { ...selected.exit, z: selected.exit.z + buildElevationMm };
   const span = Math.hypot(exitPosition.x - entryPosition.x, exitPosition.y - entryPosition.y);
@@ -109,7 +109,7 @@ export function buildTerrain7Preset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT
     direction, lengthMm: span, deckZMm: entryPosition.z, displayDeckZMm: entryDisplay.z,
     segments: [{ id: 'bridge-crossing', start: entryPosition, end: exitPosition, supportedBy: 'BuildBoard-derived support map' }] };
   return {
-    schemaVersion: 'robo-bridge.challenge.v1', presetId: 'EASY', familyHint: 'AQUEDUCT', coordinateFrame: MAIN_DEMO_MACHINE_FRAME, displayFrame: MAIN_DEMO_DISPLAY_FRAME,
+    schemaVersion: 'robo-bridge.challenge.v1', presetId: 'EASY', familyHint: 'VIADUCT', coordinateFrame: MAIN_DEMO_MACHINE_FRAME, displayFrame: MAIN_DEMO_DISPLAY_FRAME,
     machineMount, terrainAsset: TERRAIN7_ASSET, terrainTransform, entry, exit, trackRoute, bridgeChallengeInput,
     bridgeTransform: { ...worldTransform, localEntry: { x: -span / 2, y: roadY * 2, z: 0 }, localExit: { x: span / 2, y: roadY * 2, z: 0 }, spanMm: span, roadYmm: roadY * 2 },
     bridgeCorridor: { centre: { x: worldTransform.translationMm.xMm, y: worldTransform.translationMm.yMm, z: entryPosition.z }, direction, lengthMm: span, widthMm: 160, deckZMm: entryPosition.z },

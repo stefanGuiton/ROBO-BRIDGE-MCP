@@ -1,5 +1,13 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — published layout checkpoint; switched final hero to Viaduct
+
+- Pushed `9998ef3966ca34262b54e5227fd692a06cbbe651` and verified remote SHA. Updated existing draft PR #6, no merge/retarget.
+- User then requested `CODEX_SWITCH_FINAL_HERO_TO_VIADUCT.md`. Kept Terrain7, datum/span/grid/transforms and one authority graph. Four-arch Type2 Viaduct is the local default: 276 parts, A=0/D=0. Six violates existing grid pitch; five at tested width has unsupported feet. Three arches remains a clean public single-parameter alternative for user inspection.
+- Existing guarded WebMCP callback changes arch count and replaces exact hologram. Chrome148 native 27 tools, early TRAIN_FELL→same mission BUILD, shared Human1/Agent3 placements, theft reassignment and target adoption pass; console0/0. No screenshots.
+- Real deterministic controller progression reached183/276 (Human1/Agent182), then empty-tool collision retreating from `bp_9453b510.s.54.0` beside `bp_9453b510.c.0.0`. Stopped at this real blocker; no collision weakening or Train/Mission shortcut. CROSSED/COMPLETE/hero:1/3 remain unproven.
+- Full verification PASS: JS368/368 + reliability20/20, 156 JS / 4 Python syntax files and repository checks. Original Aqueduct collision regression preserved as explicit historical test input. Detailed evidence, limitations and next steps: `docs/VIADUCT_HERO_PROGRESS.md`. Viaduct local changes not pushed yet; user owns visual acceptance.
+
 ## 2026-09-03 — user-directed scene-layout controls
 
 - User superseded the release-clearance addendum: defer jaw and collision work, implement `CODEX_FINAL_SCENE_LAYOUT_CONTROLS_ADDENDUM.md`. Removed only this agent's unfinished release/collision edits; preserved prior Z-hop and user assets.

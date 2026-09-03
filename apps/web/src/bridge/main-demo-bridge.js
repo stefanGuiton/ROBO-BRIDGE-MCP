@@ -18,13 +18,18 @@ export const MAIN_DEMO_BRIDGE_INITIAL_SETTINGS = Object.freeze({
   aqBottomCount: 2
 });
 
-// Three-tier 4/3/3 hero, sized for the authored 370mm span and 132.718mm
-// water-to-deck height. These are ordinary V4.6 parameters, not compiler magic.
+// Type 2 hero. BridgeHost supplies the tested Viaduct family preset; the
+// challenge still owns the authored 370mm span and water-to-deck height.
+// Keep the production brick grid and one-layer deck, with no cap above track.
 export const TERRAIN7_BRIDGE_INITIAL_SETTINGS = Object.freeze({
-  ...MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
-  aqBottomCount: 3,
-  aqTopOffset: 0.4, aqMiddleOffset: 0.4, aqBottomOffset: 0.4,
-  aqTopSupportBand: 2.4, aqMiddleSupportBand: 2.4, aqBottomSupportBand: 2.4,
+  family: 'viaduct',
+  voxelSize: 8,
+  brickHeightRatio: 0.6,
+  // Six need >=384mm; five at the tested opening width have unsupported
+  // feet. Four keep the tested proportions and pass the exact/support audit.
+  viArchCount: 4,
+  viPenetration: 0,
+  capHeight: 0,
   deckThickness: 4.8
 });
 

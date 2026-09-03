@@ -4,7 +4,6 @@ import {
   errorCode,
   passFail,
   safeArray,
-  stripDeckOverhang,
   waitForIdle,
   bridgeSnapshot,
   evaluate
@@ -50,7 +49,7 @@ export async function runCurrentAcceptance({
   tests.push(passFail({ id: 'challenge.route_internal_consistency', area: 'BROWSER', condition: easy.checks.routeInternallyConsistent, details: easy }));
   tests.push(passFail({ id: 'challenge.bridge_transform_derived', area: 'BROWSER', condition: easy.checks.bridgeTransformDerived, details: easy }));
   tests.push(passFail({ id: 'bridge.host_exists', area: 'BROWSER', condition: before.hostReady, details: before }));
-  tests.push(passFail({ id: 'bridge.initial_family_aqueduct', area: 'BROWSER', condition: before.family === 'aqueduct', details: before }));
+  tests.push(passFail({ id: 'bridge.initial_family_viaduct', area: 'BROWSER', condition: before.family === 'viaduct', details: before }));
   tests.push(passFail({ id: 'bridge.initial_plan_identity', area: 'BROWSER', condition: Boolean(before.planId && before.designChecksum), details: before }));
   tests.push(passFail({ id: 'bridge.hologram_exists', area: 'BROWSER', condition: before.hologramVisible && before.hologramPlacementCount > 0, details: before }));
   tests.push(passFail({ id: 'bridge.hologram_plan_matches_host', area: 'BROWSER', condition: before.hologramSource?.planId === before.planId, details: before }));
@@ -64,13 +63,13 @@ export async function runCurrentAcceptance({
   }));
   const beforeShot = await capture(browser, evidenceDirectory, CURRENT_SCREENSHOTS.before, screenshots);
 
-  const currentOverhang = Number(before.bridgeSpec?.common?.deckOverhang ?? 5);
-  const nextOverhang = currentOverhang <= 24 ? currentOverhang + 5 : currentOverhang - 5;
+  const currentArchCount = Number(before.bridgeSpec?.viaduct?.archCount);
+  const nextArchCount = currentArchCount === 4 ? 3 : 4;
   const mutationStarted = performance.now();
   const mutation = await evaluate(browser, `async (input) => window.__ROBO_BRIDGE__.bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: input.revision,
-    patch: { common: { deckOverhang: input.value } }
-  })`, { revision: before.designRevision, value: nextOverhang });
+    patch: { viaduct: { archCount: input.value } }
+  })`, { revision: before.designRevision, value: nextArchCount });
   await browser.waitFor(`window.__ROBO_BRIDGE__?.bridgeHologram?.source?.designRevision > ${Number(before.designRevision)}`, { timeoutMs: 120_000, intervalMs: 100 });
   await waitForIdle(browser);
   await delay(300);
@@ -89,7 +88,8 @@ export async function runCurrentAcceptance({
   }));
   tests.push(makeTest({ id: 'bridge.visual_inspection', area: 'BROWSER', status: STATUS.SKIPPED_WITH_REASON,
     required: false, reason: 'USER-VERIFY PENDING: user owns visual inspection under the time-critical addendum.' }));
-  tests.push(passFail({ id: 'bridge.partial_patch_preserves_omitted_parameters', area: 'BROWSER', condition: JSON.stringify(stripDeckOverhang(before.bridgeSpec)) === JSON.stringify(stripDeckOverhang(after.bridgeSpec)), details: { before: before.bridgeSpec, after: after.bridgeSpec } }));
+  const omitArchCount = spec => { const copy = structuredClone(spec); delete copy.viaduct.archCount; return copy; };
+  tests.push(passFail({ id: 'bridge.partial_patch_preserves_omitted_parameters', area: 'BROWSER', condition: JSON.stringify(omitArchCount(before.bridgeSpec)) === JSON.stringify(omitArchCount(after.bridgeSpec)), details: { before: before.bridgeSpec, after: after.bridgeSpec } }));
   tests.push(passFail({ id: 'bridge.hologram_follows_mutated_plan', area: 'BROWSER', condition: after.hologramSource?.planId === after.planId && after.hologramSource?.designChecksum === after.designChecksum, details: after }));
   const exactAfter = inspectExactHologramIdentity(after);
   tests.push(passFail({
@@ -102,13 +102,13 @@ export async function runCurrentAcceptance({
   const committedIdentity = { designRevision: after.designRevision, planId: after.planId, designChecksum: after.designChecksum };
   const stale = await evaluate(browser, `async (input) => window.__ROBO_BRIDGE__.bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: input.revision,
-    patch: { common: { deckOverhang: input.value } }
-  })`, { revision: before.designRevision, value: currentOverhang });
+    patch: { viaduct: { archCount: input.value } }
+  })`, { revision: before.designRevision, value: currentArchCount });
   tests.push(passFail({ id: 'bridge.stale_design_revision_rejects', area: 'BROWSER', condition: stale?.ok === false && errorCode(stale) === 'STALE_DESIGN_REVISION', details: stale }));
 
   const invalid = await evaluate(browser, `async (revision) => window.__ROBO_BRIDGE__.bridgeDesign.invoke('update_bridge_design', {
     expectedDesignRevision: revision,
-    patch: { aqueduct: { bottomArchCount: 99 } }
+    patch: { viaduct: { archCount: 99 } }
   })`, after.designRevision);
   tests.push(passFail({ id: 'bridge.invalid_parameter_rejects', area: 'BROWSER', condition: invalid?.ok === false && ['OUT_OF_RANGE', 'INVALID_PARAMETER'].includes(errorCode(invalid)), details: invalid }));
 
@@ -128,8 +128,8 @@ export async function runCurrentAcceptance({
 
   const aborted = await evaluate(browser, `async (input) => window.__ROBO_BRIDGE_QA__.invoke('update_bridge_design', {
     expectedDesignRevision: input.revision,
-    patch: { common: { deckOverhang: input.value } }
-  }, { aborted: true })`, { revision: after.designRevision, value: currentOverhang });
+    patch: { viaduct: { archCount: input.value } }
+  }, { aborted: true })`, { revision: after.designRevision, value: currentArchCount });
   const afterAbort = await bridgeSnapshot(browser);
   tests.push(passFail({
     id: 'bridge.aborted_mutation_rejects_without_commit',
@@ -207,7 +207,7 @@ export async function runCurrentAcceptance({
     observe_camera: { input: { cameraId: 'tray_camera', type: 'brick', limit: 2 }, scenario: 'normal-bounded-read' },
     get_placement_stream_status: { input: { streamId: 'submission-gate-missing', limit: 1 }, scenario: 'bounded-missing-stream' },
     get_bridge_design: { input: { includeCapabilities: false }, scenario: 'normal-summary' },
-    get_bridge_capabilities: { input: { family: 'aqueduct' }, scenario: 'normal-capabilities' },
+    get_bridge_capabilities: { input: { family: 'viaduct' }, scenario: 'normal-capabilities' },
     get_bridge_build_plan: { input: { detail: 'summary' }, scenario: 'normal-summary' }
   };
   const responseSizes = [];

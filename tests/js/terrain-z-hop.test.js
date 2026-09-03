@@ -6,6 +6,7 @@ import { createTerrainTravelPolicy } from '../../apps/web/src/robot/terrain-trav
 import { movingBodyAabb } from '../../apps/web/src/robot/collision.js';
 import { partCollisionBounds, boundsOverlap } from '../../apps/web/src/bricks/part-spec.js';
 import { constructionHarness } from '../helpers/construction-harness.js';
+import { MAIN_DEMO_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
 
 test('travel plane uses transformed solid vertices only and excludes water/markers/helpers', () => {
   const root = new THREE.Group();
@@ -86,8 +87,15 @@ test('out-of-workspace terrain travel plane rejects BUILD before changing author
   assert.equal(h.service.getBuildState().started, false);
 });
 
-test('current narrow masonry seat cannot evade the supporting arch by raising only the retreat destination', async () => {
-  const h = await constructionHarness({ terrain7: true });
+test('historical Aqueduct narrow seat cannot evade its supporting arch by raising only the retreat destination', async () => {
+  // Preserve the original safety regression after the hero family switches.
+  // This explicit historical design is test input, never production authority.
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: {
+    ...MAIN_DEMO_BRIDGE_INITIAL_SETTINGS, aqBottomCount: 3,
+    aqTopOffset: .4, aqMiddleOffset: .4, aqBottomOffset: .4,
+    aqTopSupportBand: 2.4, aqMiddleSupportBand: 2.4, aqBottomSupportBand: 2.4,
+    deckThickness: 4.8
+  } });
   h.service.startBuild({ expectedWorldRevision: h.controller.worldRevision });
   const placements = h.service.preparedBuild.normalisedBuild.placements;
   const seat = placements.find(p => p.placementId.endsWith('.s.12.0'));

@@ -47,7 +47,8 @@ for (const p of placements) {
   if (!p.requiresStructureComplete && !p.dependencyIds.length && bounds.min.zMm > preset.waterDatum.machineZMm + .1) noDeclaredSupport.push(p.placementId);
   for (const id of p.dependencyIds) if (!ids.has(id)) invalidDependencies.push({ placementId: p.placementId, dependencyId: id });
 }
-const report = { planId: host.buildPlan.planId, checksum: host.buildPlan.designChecksum, partCount: placements.length,
+const report = { family: host.settings.family, archCount: host.settings.viArchCount,
+  planId: host.buildPlan.planId, checksum: host.buildPlan.designChecksum, partCount: placements.length, bom: prepared.heroBom,
   A: auditPreparedGeometry(prepared),
   B: { method: 'solid terrain triangles against conservative physical part AABBs; diagnostic, not exact mesh-volume overlap', count: overlaps.length, overlaps },
   C: { method: 'part-centre rays from five synthetic clear-distance viewpoints; diagnostic, not user camera/visual acceptance', count: visibilityRisks.length, visibilityRisks },
