@@ -42,7 +42,7 @@ test('HumanSimulator adopts one blue brick through the normal path and Codex con
   const selected = h.simulator.chooseEligiblePendingTarget({ sourceColour: 'blue' });
   assert.equal(selected.ok, true, JSON.stringify(selected));
   assert.equal(selected.source.colour, 'blue');
-  assert.equal(selected.guide.placementId, h.plan.placements[0].placementId);
+  assert.equal(selected.guide.placementId, h.plan.placements[1].placementId);
 
   const human = await h.simulator.placeNext({ sourceColour: 'blue' });
   assert.equal(human.ok, true, JSON.stringify(human));

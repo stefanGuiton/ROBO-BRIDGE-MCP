@@ -5,7 +5,7 @@ const SATISFIED = new Set(['COMPLETED', 'ADOPTED']);
 export function pendingHumanGuide(coordinator, carried = null) {
   const entries = coordinator?.stream?.entries ?? [];
   const byId = new Map(entries.map(entry => [entry.placementId, entry]));
-  const entry = entries.find(entry => {
+  const eligible = entries.filter(entry => {
     if (!['PENDING', 'PLANNED', 'WAITING_SOURCE'].includes(entry.status)) return false;
     if (entry.request.colour && carried && entry.request.colour !== carried.colour) return false;
     const dependencies = new Set([...(entry.request.dependsOnPlacementIds ?? []),
@@ -15,6 +15,9 @@ export function pendingHumanGuide(coordinator, carried = null) {
       return SATISFIED.has(support?.status) && Boolean(support.actualBrickId);
     });
   });
+  // Prefer a second ready slot so the displayed Human suggestion does not
+  // compete with the robot's first slot. This is guidance, not permission.
+  const entry = eligible[1] ?? eligible[0];
   if (!entry) return null;
   return { placementId: entry.placementId, position: { ...entry.request.position }, yawRad: entry.request.yawRad ?? 0,
     colour: entry.request.colour, preferredColour: entry.request.preferredColour,

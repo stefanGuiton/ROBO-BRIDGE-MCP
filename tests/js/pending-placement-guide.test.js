@@ -26,6 +26,14 @@ test('guide requires the authoritative accepted source for explicit and implicit
   assert.equal(pendingHumanGuide({ stream: { entries } }).supportBrickId, 'accepted-source');
 });
 
+test('Human marker prefers the second ready slot without reserving either actor', () => {
+  const request = { position: { xMm: 700, yMm: 0, zMm: 8.6 }, yawRad: 0 };
+  const entries = ['first', 'second'].map(placementId => ({ placementId, request, status: 'PLANNED' }));
+  assert.equal(pendingHumanGuide({ stream: { entries } }).placementId, 'second');
+  entries[1].status = 'EXECUTING';
+  assert.equal(pendingHumanGuide({ stream: { entries } }).placementId, 'first');
+});
+
 test('guided12-target tower requires correct yaw, normal Human release, then adopts and continues', async () => {
   const h = await simpleHarness();
   const plan = createSimpleStructurePlan({ structure: 'cross_laminated_tower', height: 6, colour: 'red' }, { profile: h.profile });
