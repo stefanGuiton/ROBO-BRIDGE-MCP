@@ -19,6 +19,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -42,6 +45,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -68,6 +74,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -82,6 +91,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -89,6 +101,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm run submission:smoke
+        env:
+          ROBO_BRIDGE_SOFTWARE_GL: '1'
 
   submission-gate:
     name: npm run submission:gate
@@ -96,6 +110,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -103,6 +120,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm run submission:gate
+        env:
+          ROBO_BRIDGE_SOFTWARE_GL: '1'
 
   webmcp-audit:
     name: npm run webmcp:audit
@@ -110,6 +129,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -117,3 +139,5 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm run webmcp:audit
+        env:
+          ROBO_BRIDGE_SOFTWARE_GL: '1'
