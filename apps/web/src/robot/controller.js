@@ -494,8 +494,9 @@ export class RobotController {
     brick.yawRad = pose.yawRad;
   }
 
-  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision }) {
+  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision, timingMode = undefined }) {
     if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) return { ok: false, reason: 'invalid_input' };
+    if (timingMode !== undefined && timingMode !== 'realtime') return { ok: false, reason: 'invalid_input' };
     if (yawRad !== undefined && !isFiniteNumber(yawRad)) return { ok: false, reason: 'invalid_input' };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (speedMmS > this.speedLimitMmS) return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
@@ -673,19 +674,33 @@ export class RobotController {
         this.operationState = 'moving';
         this.emit('motion_started', { target: plan.target, durationMs: plan.durationMs, diagnostics: plan.diagnostics });
         const startedAt = nowMs();
+        const realtime = request.timingMode === 'realtime';
+        let priorSampleFinishedAt = startedAt;
+        let priorProfileElapsedMs = 0;
         let acceptedIndex = -1;
         for (let i = 0; i < plan.points.length; i += 1) {
           if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
           const point = plan.points[i];
-          if (this.timeScale > 0) {
-            const targetElapsed = point.targetElapsedMs * this.timeScale;
+          const profileIntervalMs = point.targetElapsedMs - priorProfileElapsedMs;
+          if (realtime && (!Number.isFinite(profileIntervalMs) || profileIntervalMs < 0
+            || (profileIntervalMs === 0 && (distance3(point.tcp, this.tcp) > 1e-6 || angleDistance(point.yawRad, this.toolYawRad) > 1e-8)))) {
+            throw new RobotError('invalid_motion_timing', { acceptedIndex });
+          }
+          if (realtime || this.timeScale > 0) {
+            // Contact-driven motion must not bunch overdue accepted poses after
+            // a renderer/observer stall. Reuse the validated physical profile,
+            // measuring each interval after the previous sample's observers.
+            // Other moves retain existing absolute playback scheduling.
+            const dueAt = realtime ? priorSampleFinishedAt + profileIntervalMs
+              : startedAt + point.targetElapsedMs * this.timeScale;
             while (true) {
               if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
-              const wait = targetElapsed - (nowMs() - startedAt);
+              const wait = dueAt - nowMs();
               if (wait <= 0) break;
               await new Promise((resolve) => setTimeout(resolve, Math.min(16, wait)));
             }
           }
+          if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
           const currentFk = forwardKinematics(point.jointsRad, this.definition);
           const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick() ? { ...this.heldBrick(), yawRad: wrapPi(point.yawRad + this.brickYawInTcpRad) } : null, bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
           if (!liveCollision.ok) throw new RobotError(liveCollision.reason, liveCollision);
@@ -695,6 +710,8 @@ export class RobotController {
           this.updateHeldBrickPose();
           acceptedIndex = i;
           this.#bumpRobot('motion_sample', { sampleIndex: i, sampleCount: plan.points.length });
+          priorProfileElapsedMs = point.targetElapsedMs;
+          priorSampleFinishedAt = nowMs();
           if (this.timeScale === 0) await Promise.resolve();
         }
         this.moving = false;

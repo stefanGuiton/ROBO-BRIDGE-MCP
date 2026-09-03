@@ -35,16 +35,33 @@ function controlledTcp({ initiallyAtStart = false, delayedCleanup = false, integ
   const witness = Object.freeze({ privateToken: Symbol('owned-motion') });
   const sampledWorldRevision = fixture.board.worldRevision;
   let worldRevision = sampledWorldRevision;
-  let request = null, running = false, complete = false, cancelled = false;
+  let request = null, running = false, moving = false, complete = false, cancelled = false;
   let pose = { frame: 'main-demo-machine-mm', positionMm: { xMm: -1000, yMm: 0, zMm: 200 },
     rotationQuaternion: { x: 0, y: 0, z: 0, w: 1 } };
-  let target = null, sequence = 0;
-  const moveTo = next => { pose = structuredClone(next); sequence += 1; };
+  let target = null, sequence = 0, clockSeconds = 0, sampleTimeSeconds = 0;
+  const listeners = new Set();
+  const advanceClock = seconds => {
+    assert.ok(Number.isFinite(seconds) && seconds >= 0, 'Fixture time must be finite and monotonic.');
+    clockSeconds += seconds;
+  };
+  // Pose endpoints and idle observations share this explicitly advanced clock.
+  // Reads neither publish a source endpoint nor advance either timestamp.
+  const getSample = () => ({ ...structuredClone(pose), sampleTimeSeconds,
+    observedTimeSeconds: clockSeconds, moving, sequence, worldRevision, robotRevision: worldRevision });
+  const moveTo = next => {
+    advanceClock(1 / 120);
+    pose = structuredClone(next); sampleTimeSeconds = clockSeconds; sequence += 1;
+    for (const listener of listeners) listener(getSample());
+  };
   const robotPusher = {
     mode: 'tcp_contact',
     getPose: () => structuredClone(pose),
-    getSample: () => ({ ...structuredClone(pose), sampleTimeSeconds: sequence / 120,
-      sequence, worldRevision, robotRevision: worldRevision }),
+    getSample,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(getSample());
+      return () => listeners.delete(listener);
+    },
     getSnapshot: () => ({ mode: 'tcp_contact', running, pushing: running,
       pose: structuredClone(pose), visible: true, targetPose: structuredClone(target),
       motion: { stage: complete ? 'complete' : running ? 'approach' : 'idle' } }),
@@ -53,7 +70,7 @@ function controlledTcp({ initiallyAtStart = false, delayedCleanup = false, integ
     reset(next) { target = structuredClone(next); if (initiallyAtStart) moveTo(next); return this.getPose(); },
     setVisible() {}, onPushStart() {}, onPushEnd() {},
     run(input) {
-      calls.push('run'); request = input; running = true;
+      calls.push('run'); request = input; running = true; moving = true;
       input.onWitness(witness);
       return motion.promise;
     },
@@ -61,7 +78,7 @@ function controlledTcp({ initiallyAtStart = false, delayedCleanup = false, integ
       calls.push(`cancel:${reason}`);
       await cleanup.promise;
       if (running) {
-        running = false; cancelled = true;
+        running = false; moving = false; cancelled = true;
         motion.reject(Object.assign(new Error('Owned motion cancelled.'), { code: 'CANCELLED' }));
       }
       return { ok: true };
@@ -85,13 +102,14 @@ function controlledTcp({ initiallyAtStart = false, delayedCleanup = false, integ
     get request() { return request; },
     get running() { return running; },
     get binding() { return { testId: input.testId, sampledWorldRevision, finalWorldRevision: worldRevision }; },
-    arrive() { moveTo(request.startPose); return request.onAtStart(); },
+    arrive() { moving = false; moveTo(request.startPose); return request.onAtStart(); },
     completeMotion() {
-      complete = true; running = false;
+      complete = true; running = false; moving = false;
       worldRevision = sampledWorldRevision + 4;
       fixture.board.worldRevision = worldRevision;
       motion.resolve({ ok: true, worldRevision, witness });
     },
+    advanceClock,
     releaseCleanup: cleanup.resolve,
     async dispose() { cleanup.resolve(); await integration.cancelMotion('test_cleanup'); await integration.dispose(); }
   };
@@ -141,15 +159,29 @@ test('TCP cancellation waits for robot cleanup before allowing train reset', { t
 });
 
 test('a physical contact failure is a completed failed test, not a missing transport result', { timeout: 2000 }, async t => {
+  let contactQueries = 0;
   const h = controlledTcp({ integrationOptions: {
-    createSolidContactProvider: () => ({ queryBodyContacts() { throw new Error('contact query failed'); } })
+    createSolidContactProvider: () => ({ queryBodyContacts() {
+      contactQueries += 1;
+      throw new Error('contact query failed');
+    } })
   } });
   t.after(() => h.dispose());
   const pending = h.integration.test(h.input);
   assert.equal(h.arrive().ok, true);
   h.completeMotion();
+  const stationarySample = h.robotPusher.getSample();
+  assert.equal(stationarySample.moving, false);
+  assert.equal(h.integration.updateFrame(1 / 60).fixedSteps, 0, 'Frame delta alone cannot advance TCP physics.');
+  assert.deepEqual(h.robotPusher.getSample(), stationarySample, 'Polling leaves source time and observation time unchanged.');
+  h.advanceClock(1 / 60);
+  const observedSample = h.robotPusher.getSample();
+  assert.equal(observedSample.sequence, stationarySample.sequence);
+  assert.equal(observedSample.sampleTimeSeconds, stationarySample.sampleTimeSeconds);
+  assert.equal(observedSample.observedTimeSeconds, stationarySample.observedTimeSeconds + 1 / 60);
   h.integration.updateFrame(1 / 60);
   const result = await pending;
+  assert.ok(contactQueries > 0, 'The contact query must run rather than failing TCP sample validation.');
   assert.equal(result.ok, true);
   assert.equal(result.success, false);
   assert.equal(result.outcome, 'TRAIN_CONTACT_FAILED');

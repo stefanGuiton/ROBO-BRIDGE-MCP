@@ -95,6 +95,7 @@ export function createRobotTcpPusher({
 
   let disposed = false, visible = Boolean(initialVisible), pushing = false;
   let active = null, lastRun = null, targetPose = null, latestSample = null;
+  let lastObservationClockSeconds = initialTime;
   const listeners = new Set(), witnesses = new WeakSet();
   const readState = () => controller.getState();
   const poseFromState = state => ({ frame: FRAME, positionMm: { ...state.tcp }, rotationQuaternion: quaternionForYaw(controller, state.toolYawRad) });
@@ -228,7 +229,16 @@ export function createRobotTcpPusher({
 
   function getSample() {
     const state = readState();
+    const observed = nowSeconds();
+    // This is a clock observation, not another motion sample. In particular a
+    // UI read must not advance the sequence, revisions, or subscriber stream.
+    // Motion timestamps use a 1 ns uniqueness nudge when clock readings tie.
+    requireValue(finite(observed) && observed >= 0 && observed >= lastObservationClockSeconds
+      && observed + 1e-7 >= latestSample.sampleTimeSeconds,
+    'INVALID_CLOCK', 'The TCP observation clock must remain finite and monotonic.');
+    lastObservationClockSeconds = observed;
     return { ...poseFromState(state), sampleTimeSeconds: latestSample.sampleTimeSeconds,
+      observedTimeSeconds: Math.max(observed, latestSample.sampleTimeSeconds), moving: state.moving === true,
       worldRevision: state.worldRevision, robotRevision: state.robotRevision, sequence: latestSample.sequence };
   }
 
@@ -313,7 +323,7 @@ export function createRobotTcpPusher({
           pushing = true;
         }
         run.stage = waypoint.stage;
-        const request = { ...waypoint.position, yawRad: waypoint.yawRad, speedMmS: prepared.speedMmS,
+        const request = { ...waypoint.position, yawRad: waypoint.yawRad, speedMmS: prepared.speedMmS, timingMode: 'realtime',
           expectedWorldRevision: run.worldRevision, signal: run.abort.signal, operationToken: run.leaseToken };
         const validation = controller.validateMoveRequest(request);
         requireValue(validation.ok, 'PUSH_MOTION_FAILED', `The controller rejected the ${waypoint.stage} waypoint: ${validation.reason}.`);
@@ -389,7 +399,10 @@ export function createRobotTcpPusher({
     subscribe(listener) {
       requireValue(typeof listener === 'function', 'INVALID_PARAMETER', 'A TCP sample listener is required.');
       listeners.add(listener);
-      listener(getSample());
+      try { listener(getSample()); } catch (error) {
+        listeners.delete(listener);
+        throw error;
+      }
       return () => listeners.delete(listener);
     },
     setTargetPose(pose) { targetPose = checkedPose(pose); return cloneValue(targetPose); },

@@ -4,6 +4,8 @@
 
 Normal TRUNK checkout; `codex/p0-downstream-integration-prep`, based on accepted/pushed Level2 `c24c7f135359a8c80aa859724b640afb2c6e7fd5`. Keep draft PR7, PlanN and unrelated user assets. No main merge, deployment, second controller/board/clock, or collision-limit changes.
 
+Foundation published at **9a0a9e922059df47ab6cc66c4f94b1903bfd2f91**, with remote SHA verified. Subsequent contact-timeline repair remains separate from that checkpoint. The two unrelated JS paths reported dirty are normalized-blob-identical to HEAD; no functional user code was omitted. User Blender changes remain outside this work.
+
 ## Implemented
 
 - Lazy Level3-only `tcp_contact` production mode. Levels1/2 do not initialize Train physics or its frame subscription.
@@ -31,12 +33,26 @@ Earlier diagnostic folders remain historical; do not combine separate runs as a 
 
 ## Concrete geometry blockers
 
+### New contact/pacing evidence (verified follow-up to 9a0a9e9)
+
+Full verification after these repairs and the separate Simple timing follow-up passed **637/637 JavaScript tests, 20/20 reliability, 173 JS + 4 Python syntax and repository checks**. Remote attribution-only changes through `ac004577` are preserved. This is checkpoint verification, not the uncompleted Level 3 physical acceptance gate.
+
+Measured TCP history now consumes each interval once in bounded full-island substeps (at most1/120s and1mm or smaller part-based limit). Queue/lag is bounded and explicit; no time is discarded to manufacture success. Residual pusher/solid overlap beyond0.25mm fails closed. Independent review reproduced and fixed subscription cleanup and endpoint-rounding edge cases. Focused Train/adapter/Mission group185/185 passes; new controller pacing5/5 and existing controller9/9 pass separately.
+
+The first native rerun correctly rejected a second defect: existing absolute motion deadlines emitted overdue ~5.72mm TCP samples only0.30ms apart (~19,056mm/s observed), despite a120mm/s validated profile. An opt-in `timingMode: 'realtime'` in the existing controller now waits each physical profile interval after the preceding sample's observers. The TCP adapter alone requests it; normal Simple/Bridge scheduling and global playback are unchanged. Unsupported zero-duration moving profiles reject rather than receive fabricated timestamps.
+
+Fresh Chrome148 evidence `output/playwright/level3-train-realtime-current/diagnostic.json`:31 native tools,6 actual controller moves/118 samples,230 observed renderer frames, position/orientation mismatch0 (render position roundoff~1.3e-13mm), debug visibility/revisions and cleanup pass. Physics records10 pusher contacts/15 impulses; maximum pusher penetration0.08035mm and residual0.000005mm. It then truthfully fails `TRAIN_CONTACT_FAILED / TERRAIN_CONTACT_RESIDUAL`: actual `Entry_Structure` leaves4.91974mm solid penetration. Same Mission returns BUILD, no pending move/lease, console0errors/0warnings/0exceptions. Main opened all3 screenshots. The screenshot FPS remained single-digit/low-teens; no performance or full physical push/fall/crossing acceptance is claimed.
+
+Earlier sampling/clock-probe folders remain failed diagnostic evidence. This repair does not remove the launch/tunnel/receiving geometry blocker below or establish the required failure-repair-success journey.
+
 Current route ENTRY(465,-111.2,144.448), EXIT(835,-111.2,144.448), span370mm. Current Train dimensions are unchanged.
 
 - Entry_Structure floor136.174mm:8.274mm step to rail top; actual rear-car wall overlap reproduced.
 - Tunnel floor132.934mm and ceiling158.148mm: only13.7mm headroom above rail, incompatible with current34mm-high lead body.
 - Tunnel width about25.23mm; current rail-spanning footprint crosses its positive wall by at least0.552mm.
 - Solid tunnel end wall near machineX872.3 leaves37.2mm beyond EXIT: insufficient for the existing whole consist.
+
+The recorded current consist is A 88×34×34mm, B/C 70.4×30×32mm with 12.8mm gaps: total length 254.4mm. Whole-consist receiving clearance is therefore materially larger than the 37.2mm pocket. This is a geometry decision, not something solved by changing the success threshold.
 
 User approval requested for bounded production entrance/tunnel/rail-transition corrections while keeping the current shared bridge/terrain placement and original source assets. No correction has been made yet. Do not compensate by shrinking acceptance to the lead car, hiding walls, changing robot limits, or treating water/metadata as physical support.
 

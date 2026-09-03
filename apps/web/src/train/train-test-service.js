@@ -12,7 +12,10 @@ import { createPushProfile } from './train-push-profile.js';
 import { createPusherAdapter } from './pusher-adapter.js';
 import { createTrainPhysics } from './train-physics.js';
 import { createAcceptedRailContactProvider } from './train-contact-support.js';
-import { boxRadiusAlong, measuredKinematicCollider, tcpPoseToRouteCollider } from './train-kinematic-contact.js';
+import {
+  boxRadiusAlong, contactError, createKinematicContactTimeline, measuredKinematicCollider,
+  TCP_CONTACT_LIMITS, tcpPoseToRouteCollider
+} from './train-kinematic-contact.js';
 import { createPerformanceRecorder } from './performance-recorder.js';
 import {
   createRouteFrame,
@@ -185,8 +188,8 @@ export function createTrainTestService(options = {}) {
   const solidContactProvider = options.solidContactProvider || (surfaceProvider.queryBodyContacts ? surfaceProvider : null);
   const physics = options.physics || createTrainPhysics(options.physicsSettings || {});
   const pusherAdapter = options.pusherAdapter || createPusherAdapter({ mode: 'placeholder' });
-  if (physicalContact && (typeof pusherAdapter.getPose !== 'function' || typeof pusherAdapter.getSample !== 'function')) {
-    throw new TypeError('tcp_contact requires an authoritative TCP adapter with getPose() and getSample().');
+  if (physicalContact && ['getPose', 'getSample', 'subscribe'].some(key => typeof pusherAdapter[key] !== 'function')) {
+    throw new TypeError('tcp_contact requires an authoritative TCP adapter with getPose(), getSample() and subscribe().');
   }
   const preconditions = options.preconditions || createTrainTestPreconditionAdapter(options.preconditionDependencies || {});
   const listeners = new Set();
@@ -247,7 +250,12 @@ export function createTrainTestService(options = {}) {
   let frozenResetPoses = [];
   let lastPrepareError = null;
   let railContactProvider = null;
-  let previousTcpCollider = null;
+  let contactTimeline = null;
+  let unsubscribeTcpSamples = null;
+  let contactSubscriptionActive = false;
+  let contactPendingError = null;
+  let contactLastAdvanceSeconds = 0;
+  let contactLastAdvanceSubsteps = 0;
   let lastMeasuredCollider = null;
   let contactSampleCount = 0;
   let contactInputError = null;
@@ -372,7 +380,11 @@ export function createTrainTestService(options = {}) {
   }
 
   function resetPhysicalContact({ initializeBodies = true } = {}) {
-    previousTcpCollider = null;
+    disconnectTcpSamples();
+    contactTimeline = null;
+    contactPendingError = null;
+    contactLastAdvanceSeconds = 0;
+    contactLastAdvanceSubsteps = 0;
     lastMeasuredCollider = null;
     contactSampleCount = 0;
     contactInputError = null;
@@ -553,6 +565,7 @@ export function createTrainTestService(options = {}) {
   }
 
   function finishCrossed() {
+    disconnectTcpSamples();
     state = TRAIN_STATES.CROSSED;
     result = {
       success: true,
@@ -569,6 +582,7 @@ export function createTrainTestService(options = {}) {
   }
 
   function finishFailed(settleTimedOut = false) {
+    disconnectTcpSamples();
     poses = physics.freeze();
     state = TRAIN_STATES.FAILED;
     result = {
@@ -675,10 +689,26 @@ export function createTrainTestService(options = {}) {
     profile = physicalContact ? null : createPushProfile({ pushDistanceMm, trainSpeedMmPerSecond });
     if (physicalContact) {
       try {
-        previousTcpCollider = checkedTcpSample();
-        lastMeasuredCollider = measuredKinematicCollider(previousTcpCollider, previousTcpCollider, TRAIN_FIXED_DT_SECONDS);
-        contactStartForwardMm = previousTcpCollider.position.x;
+        const sample = pusherAdapter.getSample();
+        const initial = checkedTcpSample(sample);
+        if (sample.moving !== false) throw new Error('The authoritative TCP must be stationary when contact is armed.');
+        disconnectTcpSamples();
+        contactTimeline = createKinematicContactTimeline({ bodies: poses, initial, observedTimeSeconds: sample.observedTimeSeconds });
+        contactPendingError = null;
+        contactInputError = null;
+        contactSubscriptionActive = true;
+        unsubscribeTcpSamples = pusherAdapter.subscribe(raw => {
+          if (!contactSubscriptionActive || contactPendingError) return;
+          try { contactTimeline.recordSource(checkedTcpSample(raw)); }
+          catch (error) { contactPendingError = error; }
+        });
+        if (typeof unsubscribeTcpSamples !== 'function') throw new TypeError('The TCP subscription must provide cleanup.');
+        if (contactPendingError) throw contactPendingError;
+        lastMeasuredCollider = measuredKinematicCollider(initial, initial, TRAIN_FIXED_DT_SECONDS);
+        contactStartForwardMm = initial.position.x;
+        elapsedSeconds = 0;
       } catch (error) {
+        disconnectTcpSamples();
         return { ok: false, reason: 'INVALID_TCP_SAMPLE', message: error.message, snapshot: getSnapshot() };
       }
     }
@@ -728,8 +758,7 @@ export function createTrainTestService(options = {}) {
     return { ok: true, snapshot: getSnapshot() };
   }
 
-  function checkedTcpSample() {
-    const sample = pusherAdapter.getSample();
+  function checkedTcpSample(sample = pusherAdapter.getSample()) {
     if (!Number.isFinite(sample?.sampleTimeSeconds) || sample.sampleTimeSeconds < 0
       || !Number.isSafeInteger(sample?.sequence) || sample.sequence < 0) {
       throw new TypeError('TCP contact requires a finite monotonic timestamp and sample sequence.');
@@ -743,27 +772,34 @@ export function createTrainTestService(options = {}) {
     return sampled;
   }
 
-  function consumeMeasuredCollider(dt) {
-    const current = checkedTcpSample();
-    const previous = previousTcpCollider ?? current;
-    const changedPose = Math.hypot(...['x', 'y', 'z'].map(axis => current.position[axis] - previous.position[axis])) > 1e-8
-      || quaternionAngularError(current.rotation, previous.rotation) > 1e-8;
-    if (current.sequence < previous.sequence || current.sampleTimeSeconds < previous.sampleTimeSeconds
-      || (changedPose && (current.sequence === previous.sequence || current.sampleTimeSeconds <= previous.sampleTimeSeconds))) {
-      throw new Error('TCP contact samples are stale or have a non-monotonic motion interval.');
+  function disconnectTcpSamples() {
+    contactSubscriptionActive = false;
+    const unsubscribe = unsubscribeTcpSamples;
+    unsubscribeTcpSamples = null;
+    if (typeof unsubscribe === 'function') unsubscribe();
+  }
+
+  function getContactTiming() {
+    if (!physicalContact || !contactTimeline) return null;
+    return { ...contactTimeline.getSnapshot(), tracking: contactSubscriptionActive,
+      lastAdvanceSeconds: contactLastAdvanceSeconds, lastAdvanceSubsteps: contactLastAdvanceSubsteps };
+  }
+
+  function samplePhysicalContact() {
+    if (!physicalContact || !contactSubscriptionActive) return false;
+    try {
+      if (contactPendingError) throw contactPendingError;
+      const sample = pusherAdapter.getSample();
+      const collider = checkedTcpSample(sample);
+      contactTimeline.observe({ collider, observedTimeSeconds: sample.observedTimeSeconds, moving: sample.moving });
+      pusherLocalPose = collider;
+      return true;
+    } catch (error) {
+      contactInputError = error.message;
+      contactPendingError = error;
+      finishPhysicalFailure(error.code === 'TCP_SAMPLE_BACKLOG' ? error.code : 'INVALID_TCP_SAMPLE', 'TRAIN_CONTACT_FAILED', error.message);
+      return false;
     }
-    const newSample = current.sequence !== previous.sequence;
-    // Catch-up physics steps must not replay a robot movement or turn the
-    // physics dt into a fabricated TCP velocity. Only real sample time counts.
-    const intervalSeconds = newSample ? current.sampleTimeSeconds - previous.sampleTimeSeconds : dt;
-    lastMeasuredCollider = measuredKinematicCollider(newSample ? previous : current, current, intervalSeconds);
-    previousTcpCollider = current;
-    pusherLocalPose = current;
-    if (newSample) contactSampleCount += 1;
-    if (Number.isFinite(contactStartForwardMm)) {
-      pushDistanceTravelledMm = Math.max(pushDistanceTravelledMm, current.position.x - contactStartForwardMm);
-    }
-    return lastMeasuredCollider;
   }
 
   function crossingEvidence() {
@@ -787,11 +823,14 @@ export function createTrainTestService(options = {}) {
       }),
       hasMeasuredContactImpulse: diagnostics.physicalContact.impulseCount > 0,
       noBodyIntersection: diagnostics.currentMaximumBodyOverlapDepthMm <= 0.1,
-      noSolidObstruction: diagnostics.physicalContact.solidCollisionCount === 0
+      noSolidObstruction: diagnostics.physicalContact.solidCollisionCount === 0,
+      measuredTimelineCaughtUp: Boolean(contactTimeline && !contactPendingError
+        && contactTimeline.getSnapshot().lagSeconds <= TCP_CONTACT_LIMITS.timeEpsilonSeconds)
     };
   }
 
   function finishPhysicalFailure(cause, outcome = 'TRAIN_BLOCKED', message = null) {
+    disconnectTcpSamples();
     if (pusherEngaged) pusherAdapter.onPushEnd({ reason: cause, speedMmPerSecond: currentSpeedMmPerSecond, motionMode });
     pusherEngaged = false;
     poses = physics.freeze();
@@ -807,22 +846,49 @@ export function createTrainTestService(options = {}) {
     emit(outcome);
   }
 
-  function contactStep(dt) {
-    const priorSpeed = currentSpeedMmPerSecond;
-    let collider;
-    try { collider = consumeMeasuredCollider(dt); }
-    catch (error) {
-      contactInputError = error.message;
-      finishPhysicalFailure('INVALID_TCP_SAMPLE', 'TRAIN_CONTACT_FAILED', error.message);
-      return;
+  function contactStep(budgetSeconds, { sampleContact = true } = {}) {
+    contactLastAdvanceSeconds = 0;
+    contactLastAdvanceSubsteps = 0;
+    if (!(Number.isFinite(budgetSeconds) && budgetSeconds > 0)) {
+      throw contactError('TCP_CONTACT_STEP_UNBOUNDED', 'A positive contact integration budget is required.');
     }
-    try {
-      poses = physics.step(dt, { motionMode, surfaceProvider, solidContactProvider, railContactProvider, kinematicCollider: collider });
-    } catch (error) {
-      contactInputError = error.message;
-      finishPhysicalFailure('CONTACT_QUERY_FAILED', 'TRAIN_CONTACT_FAILED', error.message);
-      return;
+    if (sampleContact && !samplePhysicalContact()) return false;
+    if (!contactTimeline || !contactSubscriptionActive) return false;
+    while (contactLastAdvanceSeconds + TCP_CONTACT_LIMITS.timeEpsilonSeconds < budgetSeconds
+      && contactLastAdvanceSubsteps < TCP_CONTACT_LIMITS.maximumSubstepsPerTick && contactSubscriptionActive) {
+      const priorSpeed = currentSpeedMmPerSecond;
+      let slice;
+      try {
+        if (contactPendingError) throw contactPendingError;
+        slice = contactTimeline.nextSlice(budgetSeconds - contactLastAdvanceSeconds);
+        if (!slice) break;
+        poses = physics.step(slice.durationSeconds, { motionMode, surfaceProvider, solidContactProvider,
+          railContactProvider, kinematicCollider: slice.collider });
+        contactTimeline.commit(slice);
+      } catch (error) {
+        contactInputError = error.message;
+        contactPendingError = error;
+        finishPhysicalFailure(error.code || 'CONTACT_QUERY_FAILED', 'TRAIN_CONTACT_FAILED', error.message);
+        return false;
+      }
+      lastMeasuredCollider = slice.collider;
+      contactSampleCount = contactTimeline.getSnapshot().consumedSampleCount;
+      contactLastAdvanceSeconds += slice.durationSeconds;
+      contactLastAdvanceSubsteps += 1;
+      elapsedSeconds += slice.durationSeconds;
+      pushDistanceTravelledMm = Math.max(pushDistanceTravelledMm, slice.collider.position.x - contactStartForwardMm);
+      try { evaluateContactStep(slice.durationSeconds, priorSpeed); }
+      catch (error) {
+        contactInputError = error.message;
+        contactPendingError = error;
+        finishPhysicalFailure(error.code || 'CONTACT_OBSERVATION_FAILED', 'TRAIN_CONTACT_FAILED', error.message);
+        return false;
+      }
     }
+    return contactLastAdvanceSubsteps > 0;
+  }
+
+  function evaluateContactStep(dt, priorSpeed) {
     currentSpeedMmPerSecond = poses.reduce((sum, pose) => sum + pose.linearVelocity.x, 0) / poses.length;
     currentAccelerationMmPerSecondSquared = (currentSpeedMmPerSecond - priorSpeed) / dt;
     for (const pose of poses) {
@@ -941,7 +1007,7 @@ export function createTrainTestService(options = {}) {
     }
   }
 
-  function step(dt = TRAIN_FIXED_DT_SECONDS) {
+  function step(dt = TRAIN_FIXED_DT_SECONDS, stepOptions = {}) {
     if (dt === 0) {
       if (state === TRAIN_STATES.POSITIONING_PUSHER) positioningStep();
       return false;
@@ -953,12 +1019,13 @@ export function createTrainTestService(options = {}) {
     const started = now();
     const fixed = clamp(Number(dt) || TRAIN_FIXED_DT_SECONDS, 0.001, 0.05);
     const before = state;
+    let advanced = true;
     if (state === TRAIN_STATES.POSITIONING_PUSHER) {
       positioningStep();
       performanceStats.positioningSteps += 1;
     } else if (physicalContact && [TRAIN_STATES.PUSHING, TRAIN_STATES.RUNNING_SUPPORTED, TRAIN_STATES.FALLING].includes(state)) {
       const physicsStepsBefore = physics.getCounts().physicsSteps;
-      contactStep(fixed);
+      advanced = contactStep(Number(dt), stepOptions);
       performanceStats.physicsSteps += physics.getCounts().physicsSteps - physicsStepsBefore;
       if (before === TRAIN_STATES.PUSHING) performanceStats.pushingSteps += 1;
       if (before === TRAIN_STATES.RUNNING_SUPPORTED) performanceStats.supportedSteps += 1;
@@ -975,13 +1042,13 @@ export function createTrainTestService(options = {}) {
       resetStep(fixed);
       performanceStats.resetSteps += 1;
     }
-    if (before !== TRAIN_STATES.RESETTING) elapsedSeconds += fixed;
+    if (!physicalContact && before !== TRAIN_STATES.RESETTING) elapsedSeconds += fixed;
     performanceStats.fixedSteps += 1;
     performanceStats.lastStepMs = now() - started;
     performanceStats.maximumStepMs = Math.max(performanceStats.maximumStepMs, performanceStats.lastStepMs);
     recorder.record('serviceStepMs', performanceStats.lastStepMs);
     emit('STEP');
-    return true;
+    return advanced;
   }
 
   function runForSeconds(seconds, dt = TRAIN_FIXED_DT_SECONDS) {
@@ -1000,6 +1067,7 @@ export function createTrainTestService(options = {}) {
   }
 
   function resetTrain(resetOptions = {}) {
+    disconnectTcpSamples();
     const instant = resetOptions === true || Boolean(resetOptions.instant);
     try { refreshContext({ refreshSupport: true }); } catch {}
     result = null;
@@ -1062,6 +1130,7 @@ export function createTrainTestService(options = {}) {
 
   function stopTest() {
     if ([TRAIN_STATES.POSITIONING_PUSHER, TRAIN_STATES.PUSH_READY, TRAIN_STATES.PUSHING, TRAIN_STATES.RUNNING_SUPPORTED, TRAIN_STATES.FALLING].includes(state)) {
+      disconnectTcpSamples();
       if (pusherEngaged) pusherAdapter.onPushEnd({ reason: 'STOPPED', speedMmPerSecond: currentSpeedMmPerSecond });
       pusherEngaged = false;
       state = TRAIN_STATES.STOPPED;
@@ -1141,12 +1210,25 @@ export function createTrainTestService(options = {}) {
   }
 
   function getPusherSnapshot() {
-    const adapter = pusherAdapter.getSnapshot();
-    const localPose = physicalContact ? tcpPoseToRouteCollider(routeFrame, adapter.pose, pusherSizeMm()) : pusherLocalPose;
-    const publicPose = physicalContact ? cloneValue(adapter.pose) : pusherPublicPose(pusherLocalPose);
+    let adapter, localPose, publicPose, observationError = null;
+    try {
+      adapter = pusherAdapter.getSnapshot();
+      localPose = physicalContact ? tcpPoseToRouteCollider(routeFrame, adapter.pose, pusherSizeMm()) : pusherLocalPose;
+      publicPose = physicalContact ? cloneValue(adapter.pose) : pusherPublicPose(pusherLocalPose);
+    } catch (error) {
+      if (!physicalContact) throw error;
+      observationError = error.message;
+      adapter = { visible: pusherVisible, sample: null };
+      // A failed clock must not hide the failure result or display a historical
+      // collider as today's TCP. The pose can still be read independently.
+      try {
+        publicPose = pusherAdapter.getPose();
+        localPose = tcpPoseToRouteCollider(routeFrame, publicPose, pusherSizeMm());
+      } catch { publicPose = null; localPose = null; }
+    }
     return {
       mode: pusherAdapter.mode,
-      visible: pusherVisible && adapter.visible !== false,
+      visible: pusherVisible && adapter.visible !== false && Boolean(publicPose),
       engaged: pusherEngaged,
       sizeMm: { xMm: pusherSizeMm().x, yMm: pusherSizeMm().y, zMm: pusherSizeMm().z },
       routeLocal: localPose ? {
@@ -1170,8 +1252,9 @@ export function createTrainTestService(options = {}) {
       pushElapsedSeconds,
       ...(physicalContact ? {
         authority: 'RobotController.TCP',
+        observationError,
         sample: cloneValue(adapter.sample ?? null),
-        collider: { position: cloneValue(localPose.position), rotation: cloneValue(localPose.rotation), size: pusherSizeMm() },
+        collider: localPose ? { position: cloneValue(localPose.position), rotation: cloneValue(localPose.rotation), size: pusherSizeMm() } : null,
         startReady: actualPusherAtStart()
       } : {})
     };
@@ -1249,6 +1332,7 @@ export function createTrainTestService(options = {}) {
         sampleCount: contactSampleCount,
         inputError: contactInputError,
         pushFinished: physicalPushFinished,
+        sampling: getContactTiming(),
         lastStepCollider: cloneValue(lastMeasuredCollider),
         rail: railContactProvider?.getSummary() ?? null,
         crossing: crossingEvidence(),
@@ -1282,6 +1366,8 @@ export function createTrainTestService(options = {}) {
   }
 
   function dispose() {
+    disconnectTcpSamples();
+    contactTimeline = null;
     physics.reset();
     listeners.clear();
     state = TRAIN_STATES.STOPPED;
@@ -1297,6 +1383,9 @@ export function createTrainTestService(options = {}) {
   return Object.freeze({
     subscribe,
     getState: () => state,
+    getMotionMode: () => motionMode,
+    getContactTiming,
+    samplePhysicalContact,
     getResult: () => cloneValue(result),
     getSnapshot,
     getPoses: () => cloneValue(poses),

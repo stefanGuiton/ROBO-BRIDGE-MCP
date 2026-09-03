@@ -18,11 +18,15 @@ const smallTestProfile = () => ({
 function measuredTestPusher(frame) {
   let actual = { frame: 'main-demo-machine-mm', positionMm: routeLocalPointToMachine(frame, { x: -80, y: 50, z: 30 }),
     rotationQuaternion: routeLocalQuaternionToMachine(frame, identityQuaternion()) };
-  let target = null, time = 10, sequence = 0, pushing = false, visible = true, notifyCount = 0;
+  let target = null, time = 10, sampleTime = 10, sequence = 0, moving = false, pushing = false, visible = true, notifyCount = 0;
+  const listeners = new Set();
+  const publish = () => { sampleTime = time; sequence += 1; for (const listener of listeners) listener(adapter.getSample()); };
   const adapter = {
     mode: 'tcp_contact',
     getPose: () => clone(actual),
-    getSample: () => ({ ...clone(actual), sampleTimeSeconds: time, sequence, worldRevision: sequence, robotRevision: sequence }),
+    getSample: () => ({ ...clone(actual), sampleTimeSeconds: sampleTime, observedTimeSeconds: time, moving,
+      sequence, worldRevision: sequence, robotRevision: sequence }),
+    subscribe(listener) { listeners.add(listener); listener(adapter.getSample()); return () => listeners.delete(listener); },
     setTargetPose(pose) { target = clone(pose); },
     getTargetPose: () => clone(target),
     // Deliberately untrustworthy readiness shortcuts: the service must ignore both.
@@ -33,16 +37,17 @@ function measuredTestPusher(frame) {
     reset(pose) { target = clone(pose); pushing = false; },
     setVisible(value) { visible = Boolean(value); },
     getSnapshot: () => ({ pose: clone(actual), sample: adapter.getSample(), pushing, visible }),
-    setActual(pose, seconds = dt) { actual = clone(pose); time += seconds; sequence += 1; },
+    setActual(pose, seconds = dt) { actual = clone(pose); time += seconds; moving = false; publish(); },
     moveForward(distanceMm, seconds = dt) {
       actual = { ...clone(target), positionMm: {
         xMm: target.positionMm.xMm + frame.forward.x * distanceMm,
         yMm: target.positionMm.yMm + frame.forward.y * distanceMm,
         zMm: target.positionMm.zMm + frame.forward.z * distanceMm
       } };
-      time += seconds; sequence += 1;
+      time += seconds; moving = true; publish();
     },
-    corruptSample() { time -= 1; sequence -= 1; },
+    elapse(seconds) { time += seconds; moving = false; },
+    corruptSample() { time -= 1; sampleTime -= 1; sequence -= 1; },
     get notifyCount() { return notifyCount; }
   };
   return adapter;
@@ -90,6 +95,19 @@ function assertChain(snapshot) {
   assert.equal(snapshot.counts.couplerJoints, 2);
   assert.equal(snapshot.couplers.length, 2);
   assert.ok(snapshot.couplers.every(coupler => coupler.constraintType !== 'analytic-spacing'));
+}
+
+function observedStep(system, seconds = dt) {
+  system.pusher.elapse(seconds);
+  return system.service.step(seconds);
+}
+
+function runObservedToTerminal(system, maximumSeconds = 20) {
+  for (let index = 0; index < Math.ceil(maximumSeconds / dt); index++) {
+    if (['FAILED', 'CROSSED', 'STOPPED'].includes(system.service.getState())) break;
+    observedStep(system);
+  }
+  return system.service.getSnapshot();
 }
 
 test('factory forwards explicit contact/profile settings and idle render follows actual TCP without physics', () => {
@@ -165,7 +183,7 @@ test('TCP already at the start pose never auto-arms contact physics before the o
   assert.equal(system.service.armPhysicalPush().ok, true);
   assert.equal(system.service.getState(), 'PUSHING');
   assert.equal(system.service.getSnapshot().counts.physicsSteps, 0);
-  system.service.step(dt);
+  observedStep(system);
   assert.equal(system.service.getSnapshot().counts.physicsSteps, 1);
   unsubscribe();
   system.dispose();
@@ -175,7 +193,7 @@ test('stationary TCP leaves the linked train stationary even when a nonzero targ
   const system = rig();
   system.arm();
   const before = system.service.getPoses();
-  for (let index = 0; index < 240; index += 1) system.service.step(dt);
+  for (let index = 0; index < 240; index += 1) observedStep(system);
   const snapshot = system.service.getSnapshot();
   assert.equal(snapshot.state, 'PUSHING');
   snapshot.poses.forEach((pose, index) => {
@@ -188,18 +206,22 @@ test('stationary TCP leaves the linked train stationary even when a nonzero targ
   system.dispose();
 });
 
-test('measured sample time supplies contact speed and catch-up steps never replay a TCP sweep', () => {
+test('measured sample time supplies contact speed and its interval is consumed once across catch-up steps', () => {
   const system = rig();
   system.arm();
   system.pusher.moveForward(1, 1 / 60);
   system.service.step(dt);
   let snapshot = system.service.getSnapshot();
   assert.ok(Math.abs(snapshot.physicalContact.lastStepCollider.linearVelocity.x - 60) < 1e-6);
-  assert.equal(snapshot.physicalContact.sampleCount, 1);
+  assert.equal(snapshot.physicalContact.sampleCount, 0, 'only the first half of this source interval has been integrated');
   system.service.step(dt);
   snapshot = system.service.getSnapshot();
-  assert.equal(snapshot.physicalContact.lastStepCollider.linearVelocity.x, 0);
+  assert.ok(Math.abs(snapshot.physicalContact.lastStepCollider.linearVelocity.x - 60) < 1e-6);
   assert.equal(snapshot.physicalContact.sampleCount, 1);
+  observedStep(system);
+  snapshot = system.service.getSnapshot();
+  assert.equal(snapshot.physicalContact.lastStepCollider.linearVelocity.x, 0);
+  assert.equal(snapshot.physicalContact.sampleCount, 1, 'the completed interval is not replayed');
   system.dispose();
 });
 
@@ -219,7 +241,7 @@ for (const yawDeg of [0, 90]) test(`physical contact/coast crosses only after al
       assert.notEqual(snapshot.state, 'CROSSED');
     }
     if (['CROSSED', 'FAILED', 'STOPPED'].includes(snapshot.state)) break;
-    system.service.step(dt);
+    observedStep(system);
   }
   const crossed = system.service.getSnapshot();
   assert.equal(crossed.state, 'CROSSED', JSON.stringify(crossed.result));
@@ -236,7 +258,7 @@ test('partial support causes a physical drop/derail with the same bodies/coupler
   system.push();
   let falling = null;
   for (let index = 0; index < 2400 && !['FAILED', 'CROSSED'].includes(system.service.getState()); index += 1) {
-    system.service.step(dt);
+    observedStep(system);
     if (system.service.getState() === 'FALLING') falling ??= system.service.getSnapshot();
   }
   const failed = system.service.getSnapshot();
@@ -258,7 +280,7 @@ test('partial support causes a physical drop/derail with the same bodies/coupler
   assertChain(system.service.getSnapshot());
   system.arm();
   system.push();
-  assert.equal(system.service.runToTerminal(20).state, 'CROSSED');
+  assert.equal(runObservedToTerminal(system, 20).state, 'CROSSED');
   system.dispose();
 });
 
@@ -267,7 +289,7 @@ test('a wholly unsupported consist physically falls below the former fallback fl
   profile.leadStartForwardMm = 120;
   const system = rig({ columns: 0, includeTrack: false, trainProfile: profile });
   system.arm();
-  const snapshot = system.service.runToTerminal(20);
+  const snapshot = runObservedToTerminal(system, 20);
   assert.equal(snapshot.state, 'FAILED');
   assert.equal(snapshot.result.outcome, 'TRAIN_FELL');
   assert.equal(snapshot.result.settleTimedOut, true, 'empty space cannot report resting on a fallback floor');
@@ -280,7 +302,7 @@ test('a wholly unsupported consist physically falls below the former fallback fl
 test('structural support without accepted rails cannot turn a physical traverse into CROSSED', () => {
   const system = rig({ includeTrack: false, flatEverywhere: true });
   system.arm(); system.push();
-  const snapshot = system.service.runToTerminal(20);
+  const snapshot = runObservedToTerminal(system, 20);
   assert.equal(snapshot.state, 'FAILED');
   assert.equal(snapshot.result.cause, 'UNPROVEN_CONTINUOUS_RAIL_SUPPORT');
   assert.equal(snapshot.physicalContact.rail.acceptedTrackCount, 0);
@@ -292,7 +314,7 @@ test('structural support without accepted rails cannot turn a physical traverse 
 test('a permissive local support ratio cannot substitute for a fully accepted structural BuildPlan', () => {
   const system = rig({ missingOneStructuralPart: true });
   system.arm(); system.push();
-  const snapshot = system.service.runToTerminal(20);
+  const snapshot = runObservedToTerminal(system, 20);
   assert.equal(snapshot.physicalContact.rail.allSupported, true);
   assert.equal(snapshot.physicalContact.rail.allRequiredPartsAccepted, false);
   assert.equal(snapshot.physicalContact.rail.missingRequiredPlacementCount, 1);
@@ -306,7 +328,7 @@ test('a train narrower than the actual rail gauge cannot receive rail support', 
   profile.bodySizesMm.forEach(size => { size.zMm = 20; });
   const system = rig({ trainProfile: profile });
   system.arm(); system.push();
-  const snapshot = system.service.runToTerminal(20);
+  const snapshot = runObservedToTerminal(system, 20);
   assert.equal(snapshot.state, 'FAILED');
   assert.equal(snapshot.result.outcome, 'TRAIN_FELL');
   assert.equal(snapshot.physicalContact.crossing.allBodiesHadRailContact, false);
@@ -321,7 +343,7 @@ test('solid-contact provider reaches the same physics path and a real mesh wall 
   wall.name = 'authored-test-wall'; wall.position.set(150, 50, 0);
   const system = rig({ meshes: [floor, wall] });
   system.arm(); system.push();
-  const snapshot = system.service.runToTerminal(20);
+  const snapshot = runObservedToTerminal(system, 20);
   assert.equal(snapshot.state, 'FAILED');
   assert.equal(snapshot.result.cause, 'TERRAIN_OBSTRUCTION');
   assert.ok(snapshot.physicalContact.diagnostics.solidCollisionCount > 0);

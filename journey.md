@@ -1,5 +1,12 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — Simple smooth cadence and measured Train pacing follow-up
+
+- User requested the configurable one-second setting in the next push. Coordinated a narrow Level1 task in shared TRUNK, then independent Sol review fixed global-playback restoration (including second-cycle pre-rate failure) and truthful failed-attempt overruns. Same controller/board/clock/stream; normal2000ms,1333ms faster,1000ms minimum, bounded1..40 simulation playback, no motion-limit changes.
+- Native Chrome 148 final strengthened wall check: one generic plan, 2/2 physical refill presses, one continuous start, 12 unique blue placements in 12,748.7 ms; six overruns (maximum 308.1 ms), 238 moving frames, previous rate restored, console 0/0/0. Native Human tower regression passed 7/7 checks: one actual blue Human adoption plus 11 robot placements, unchanged colour, camera/settings and clean console. Main inspected screenshots. This is observed simulation cadence, not guaranteed one-second or frame-rate performance. Full verification passed 637/637 JS, 20/20 reliability, syntax and repository checks. Preserved three remote attribution-only commits through ac004577 before publication.
+- Train history now substeps measured intervals once with unchanged solver limits. Native testing exposed overdue controller pose bursts (~19,056mm/s observed from nominal120mm/s); optional contact-only realtime requests now preserve each physical profile interval after observer work. New controller tests reproduced3failures before repair, then5/5 passed plus9existing; Train group185/185.
+- New native Train diagnostic:10contacts/15impulses,0.000005mm residual pusher penetration, exact TCP/rendered/collider alignment; real Entry_Structure still leaves4.91974mm solid penetration and fails closed. Same Mission BUILD, robot idle/lease released, console0/0/0. All3screenshots opened. Terrain/bridge/source assets are unchanged; requested geometry-clearance approval and complete Level3 failure-repair-success remain outstanding. No main merge/deployment or completed Level3 claim.
+
 ## 2026-09-03 — Level 3 TCP foundation and truthful obstruction diagnosis
 
 - Level2 published at c24c7f1 with exact66/66 regression before Level3 began. Sol subagents implemented/reviewed physical-contact service, revision/cancellation tests and results projection; root integrated the existing main scene and authorities.
