@@ -1,5 +1,13 @@
 # P0 Downstream Integration — Progress Handoff
 
+## Latest — Simple WebMCP hero, 2026-09-03
+
+User subsequently reported "looks good!": scene visual approval received. Automated evidence remains state-only; no mouse-driven human takeover or external-agent transport acceptance is claimed. Publishing this checkpoint to the existing draft PR6 without retarget/merge.
+
+Final acceptance: focused27/27; Chrome148 native28unique tools, single1/1, wall9/9, tower24/24 (robot23 + human-blue ADOPTED1), dependencies/duplicate avoidance PASS, speed2000→1333→1000, no overruns, shared authorities and original bridge plan preserved across mode resets, console0errors/0warnings. Visual USER-VERIFY PENDING. This section is part of the pushed checkpoint; resolve the exact SHA from its commit/PR6 head. No full bridge audit or hero:3 run in this task.
+
+User approved the Simple WebMCP 20-minute plan, superseding the previous stop only for its focused acceptance checks. Read `docs/SIMPLE_WEBMCP_HERO.md`. Current branch remains `codex/p0-downstream-integration-prep`, based on `8ce113d`; publish a checkpoint without merging/retargeting PR6. Added Simple/Bridge toggle using existing reset/authority chain, preferredColour and human-blue ADOPTED, one background stream control tool, 2000→1333→1000ms cadence. Native catalogue now28, historical27-tool claims below apply to older commits. No screenshots; user owns visuals. Table defaults updated per screenshot, no rotations changed. State-only evidence is `output/playwright/simple-webmcp/acceptance.json`; targeted unit suites replace a full audit for this rescue checkpoint. Preserve unrelated assets and all earlier bridge work.
+
 ## User-approved checkpoint — 2026-09-03 (latest)
 
 User reports the visual check worked and explicitly requests push. Publish the accelerated-simulation implementation on the existing `codex/p0-downstream-integration-prep` branch / draft PR #6, without retargeting or merging. This entry is included in that checkpoint; use its Git commit / PR head for the exact SHA. Previous local/uncommitted statements below are historical. No additional tests were run for publication, per the user's request to defer further review to Oracle. Prior evidence remains: 372/372 JS, 20/20 reliability, native 27 tools, mixed-mode 276/276 correct and CROSSED/COMPLETE/reset, hero:1 journey PASS; hero:3 stopped after its first pass and is NOT a 3/3 result. User assets and generated evidence stay out of the commit.

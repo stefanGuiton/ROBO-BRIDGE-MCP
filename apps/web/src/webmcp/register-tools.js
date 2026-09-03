@@ -29,9 +29,10 @@ function boundedJson(value, maxChars = 12000) {
     candidate.truncated = true;
     candidate.returnedCount = returnedCount;
     candidate.totalAvailable ??= totalAvailable;
-    if (Array.isArray(candidate.objects) && Number.isInteger(candidate.cursor)) {
-      candidate.returnedCount = candidate.objects.length;
-      candidate.nextCursor = candidate.cursor + candidate.objects.length < candidate.totalAvailable ? candidate.cursor + candidate.objects.length : null;
+    const page = candidate.objects ?? candidate.entries;
+    if (Array.isArray(page) && Number.isInteger(candidate.cursor)) {
+      candidate.returnedCount = page.length;
+      candidate.nextCursor = candidate.cursor + page.length < candidate.totalAvailable ? candidate.cursor + page.length : null;
     }
   }
   const text = JSON.stringify(candidate);
@@ -98,7 +99,8 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
             items:{type:'object',properties:{
               placementId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
               brickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
-              colour:{type:'string',enum:PALETTE},
+              colour:{type:['string','null'],enum:[...PALETTE,null],description:'Strict target colour; null accepts any colour.'},
+              preferredColour:{type:'string',enum:PALETTE,description:'Preferred source colour only. Compatible human placements of another colour are ADOPTED.'},
               xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},
               yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},
               zMm:{type:'number',minimum:0,maximum:workspace.zMaxMm},
@@ -127,6 +129,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           placementId:placement.placementId??null,
           brickId:placement.brickId??null,
           colour:placement.colour??null,
+          preferredColour:placement.preferredColour??null,
           position:[placement.xMm,placement.yMm,placement.zMm].every(Number.isFinite)
             ? {xMm:placement.xMm,yMm:placement.yMm,zMm:placement.zMm}
             : null,

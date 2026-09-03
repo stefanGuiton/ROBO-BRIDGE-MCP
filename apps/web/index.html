@@ -27,7 +27,12 @@
       </div>
     </section>
 
-    <section style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
+    <section class="demo-mode-control" aria-label="Demo mode">
+      <label>DEMO MODE <select data-demo-mode title="Switching modes resets the current build"><option value="simple">SIMPLE BRICKS</option><option value="bridge">BRIDGE</option></select></label>
+      <div class="simple-only"><small data-simple-status>0/0 · 2000 ms/cycle · READY</small>
+        <button type="button" data-simple-reset>RESET SIMPLE DEMO</button><button type="button" data-simple-stop>STOP BUILD</button></div>
+    </section>
+    <section data-bridge-controls style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
       <button type="button" data-construction-action="start">BUILD BRIDGE</button>
       <select data-construction-count aria-label="Parts per batch"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
       <button type="button" data-construction-action="next">PLACE NEXT</button>

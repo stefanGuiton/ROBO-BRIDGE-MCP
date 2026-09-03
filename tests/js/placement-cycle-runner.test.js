@@ -63,3 +63,22 @@ test('planned cycle rejects unsafe timing, overlap, and oversized streams', asyn
   assert.equal((await runner.run({ cycleTimeMs: 249 })).reason, 'invalid_cycle_time');
   assert.equal((await runner.run({ cycleTimeMs: 1000 })).reason, 'cycle_placement_limit');
 });
+
+test('cadence changes apply at cycle boundaries without losing the existing queue', async () => {
+  let now = 0, revision = 0, remaining = 4, runner;
+  const starts = [];
+  const coordinator = {
+    getState: () => ({ queue: [{ proposalId: 'next', expectedWorldRevision: revision }], stream: { remainingPlacements: remaining } }),
+    async execute() {
+      starts.push(now); now += 100; remaining--; revision++;
+      if (remaining === 3) runner.setCycleTime(1333);
+      if (remaining === 2) runner.setCycleTime(1000);
+      return { ok: true, placementId: String(revision), remainingPlacements: remaining, worldRevision: revision };
+    }
+  };
+  runner = new PlannedPlacementCycleRunner({ coordinator, controller: { getState: () => ({ worldRevision: revision }) }, clock: () => now, wait: async ms => { now += ms; } });
+  const result = await runner.run({ cycleTimeMs: 2000 });
+  assert.equal(result.ok, true);
+  assert.deepEqual(starts, [0, 2000, 3333, 4333]);
+  assert.equal(result.completedPlacements, 4);
+});

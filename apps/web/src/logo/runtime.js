@@ -145,7 +145,7 @@ function targetObject(target) {
   };
 }
 
-export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, fastPlacement = null, workcellProfile = null, getUserCamera = null, captureCamera = null, placementPreviewObserver = null, beforeReset = null }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, fastPlacement = null, placementCycleRunner = null, workcellProfile = null, getUserCamera = null, captureCamera = null, placementPreviewObserver = null, beforeReset = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
 
   function worldRevision() { return controller.getState().worldRevision; }
@@ -253,7 +253,9 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           coordinateFrame: 'machine-mm-rad',
           toolOrientation: 'fixed-down-auto-yaw',
           graspTcpOffsetMm: BRICK_SPEC.capture.tcpAboveCentreMm,
-          recommendedClearanceZMm: workcellProfile?.safeClearanceZMm ?? 400,
+          recommendedClearanceZMm: fastPlacement?.workcellProfile?.safeClearanceZMm ?? workcellProfile?.safeClearanceZMm ?? 400,
+          brickDimensions: { logicalLengthMm: 32, logicalWidthMm: 16, bodyHeightMm: BRICK_SPEC.bodyHeightMm, studPitchMm: BRICK_SPEC.studPitchMm },
+          matBounds: workcellProfile ? clone(workcellProfile.matBounds) : null,
           recommendedTransferTcp: clone(workcellProfile?.recommendedTransferTcp ?? { xMm: 600, yMm: 0, zMm: 450 }),
           workcellProfileId: workcellProfile?.id ?? 'challenge-evidence-v2',
           supplyZone: workcellProfile ? clone(workcellProfile.supplyZone) : null,
@@ -333,7 +335,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       },
       getStreamStatus(request = {}) {
         return fastPlacement
-          ? fastPlacement.getStreamStatus(request)
+          ? { ...fastPlacement.getStreamStatus(request), execution: placementCycleRunner ? { running: placementCycleRunner.getState().running, cycleTimeMs: placementCycleRunner.cycleTimeMs } : null }
           : { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
       },
       planQueue(request = {}) {

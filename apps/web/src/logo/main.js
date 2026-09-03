@@ -30,10 +30,13 @@ import { createMainDemoTrainIntegration } from '../train-integration/index.js';
 import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
 import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acceptance.js';
 import { THREE } from '../render/real-gripper-visual.js';
+import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
+import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
 const robotShowcaseMode = params.get('showcase') === 'robot-basics';
+let demoMode = 'bridge';
 
 function makeRoundBlueprint() {
   const compiled = compileImageData(makePattern('diagonal', 64), {
@@ -53,7 +56,9 @@ const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
 const workcellProfile = { ...createV8WorkcellProfile(playerSettings) };
 const makePlayerBricks = () => {
-  const generated = makeReachableV8Spawn(playerSettings, workcellProfile, robotShowcaseMode ? {
+  const generated = makeReachableV8Spawn(playerSettings, workcellProfile, demoMode === 'simple' ? {
+    count: SIMPLE_DEMO_COLOURS.length, colours: SIMPLE_DEMO_COLOURS, yawRad: 0
+  } : robotShowcaseMode ? {
     count: ROBOT_SHOWCASE_INVENTORY.length,
     colours: ROBOT_SHOWCASE_INVENTORY
   } : {});
@@ -84,6 +89,8 @@ if (placementAuthority && !controller.setPlacementAuthority(placementAuthority))
 }
 const fastPlacement = placementAuthority ? new PlacementLookaheadCoordinator({ controller, placementAuthority, workcellProfile }) : null;
 const placementCycleRunner = fastPlacement ? new PlannedPlacementCycleRunner({ coordinator: fastPlacement, controller }) : null;
+const streamControl = placementCycleRunner ? createPlacementStreamControl({ runner: placementCycleRunner, coordinator: fastPlacement, controller,
+  canStart: () => !mainDemoConstruction?.preparedBuild }) : null;
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
@@ -95,6 +102,7 @@ const runtime = createLogoRoboRuntime({
   controller,
   board,
   beforeReset: async () => {
+    await streamControl?.stop();
     const state = await mainDemoMission?.service.getMissionState();
     if (mainDemoConstruction?.preparedBuild || (state && state.phase !== 'DESIGN')) {
       throw Object.assign(new Error('Use reset_mission while a mission build is active.'), {
@@ -108,6 +116,7 @@ const runtime = createLogoRoboRuntime({
   humanBuildAdapter,
   placementAuthority,
   fastPlacement,
+  placementCycleRunner,
   workcellProfile: evidenceMode ? null : workcellProfile,
   getUserCamera: () => renderer.getUserCameraConfig(),
   captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options),
@@ -209,7 +218,7 @@ playerSettingsStore.subscribe((key) => {
 });
 let moreBricksBurst = 0;
 function spawnMoreBricks() {
-  if (!evidenceMode && mainDemoConstruction) {
+  if (!evidenceMode && demoMode === 'bridge' && mainDemoConstruction) {
     if (!mainDemoConstruction.preparedBuild) return { ok: false, reason: 'Start BUILD BRIDGE first to use the shared source feeder.' };
     if (mainDemoMission?.service.phase === 'TEST') return { ok: false, reason: 'Finish the train test before refilling sources.' };
     let result;
@@ -482,6 +491,8 @@ async function executeFastPlacement({ signal } = {}) {
 
 async function runPlannedCycle({ signal = null } = {}) {
   if (!placementCycleRunner || !fastPlacement) return { ok: false, reason: 'runtime_unavailable' };
+  if (demoMode === 'simple') return streamControl.tool.execute({ action: 'start', expectedWorldRevision: controller.worldRevision,
+    cycleTimeMs: Math.max(1000, Math.min(10000, Number(cycleTimeInput?.value ?? 2000))) }, { signal });
   const state = fastPlacement.getState();
   const cycleTimeMs = Number(cycleTimeInput?.value ?? state.stream?.cycleTimeMs ?? 1000);
   setStatus('CYCLING');
@@ -728,7 +739,7 @@ if (fastPlacementForm && fastPlacement) {
   fastPlacement.subscribe((state) => {
     const cycleRunning = placementCycleRunner?.getState().running ?? false;
     if (cycleTimeInput && !cycleRunning && state.stream?.cycleTimeMs) {
-      cycleTimeInput.value = String(state.stream.cycleTimeMs);
+      cycleTimeInput.value = String(demoMode === 'simple' ? placementCycleRunner.cycleTimeMs : state.stream.cycleTimeMs);
       if (cycleTimeOutput) cycleTimeOutput.textContent = `${state.stream.cycleTimeMs} ms`;
     }
     if (cycleStartButton) cycleStartButton.disabled = cycleRunning || (state.stream?.remainingPlacements ?? 0) === 0;
@@ -940,8 +951,26 @@ for (const button of document.querySelectorAll('[data-construction-action]')) bu
     $('[data-construction-status]').textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
   } catch (error) { $('[data-construction-status]').textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
 });
+const demoModeControl = !evidenceMode ? createDemoModeControl({ controller, board, runtime, streamControl, coordinator: fastPlacement, workcellProfile,
+  challenge: mainDemoChallenge, bridge: mainDemoBridge, train: mainDemoTrain, mission: mainDemoMission?.service,
+  renderer, setMode: value => { demoMode = value; }, originalBlueprint: blueprint }) : null;
+if (demoModeControl) {
+  $('[data-demo-mode]').addEventListener('change', async event => {
+    const result = await demoModeControl.change(event.target.value);
+    if (!result.ok) showToast(result.reason);
+  });
+  $('[data-simple-reset]').addEventListener('click', () => demoModeControl.change('simple', { reset: true }));
+  $('[data-simple-stop]').addEventListener('click', () => streamControl.stop());
+  const initialMode = params.get('demo') === 'simple' || (!params.has('demo') && !params.has('submissionGate') && !robotShowcaseMode) ? 'simple' : 'bridge';
+  const result = await demoModeControl.change(initialMode);
+  if (!result.ok) addLog(`Demo mode: ${result.reason}`, 'bad');
+}
 renderer.start();
 setInterval(() => {
+  if (streamControl && demoMode === 'simple') {
+    const stream = streamControl.getState();
+    $('[data-simple-status]').textContent = `${stream.satisfiedPlacements}/${stream.totalPlacements} · ${stream.cycleTimeMs} ms/cycle · ${stream.running ? 'RUNNING' : stream.lastResult?.reason ?? fastPlacement.getState().status}`;
+  }
   const performance = renderer.getPerformance();
   const fpsText = performance.fps ? performance.fps.toFixed(0) : '—';
   const frameText = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
@@ -988,7 +1017,11 @@ setInterval(() => {
 window.addEventListener('resize', () => renderer.render());
 
 try {
-  const additionalTools = mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? [];
+  const bridgeTools = (mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? []).map(tool => ({ ...tool,
+    execute: (input, options) => demoMode === 'simple' && !tool.annotations?.readOnlyHint
+      ? { ok: false, reason: 'wrong_mode', message: 'Select BRIDGE mode before changing a bridge mission.', worldRevision: controller.worldRevision }
+      : tool.execute(input, options) }));
+  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : [])];
   const result = await registerWebMcpTools(runtime, updateToolDiagnostics, additionalTools);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
@@ -1026,6 +1059,8 @@ const publicRuntime = Object.freeze({
   humanBuildAdapter,
   fastPlacement,
   placementCycleRunner,
+  streamControl,
+  demoModeControl,
   connectionGraph,
   playerSettingsStore,
   playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,

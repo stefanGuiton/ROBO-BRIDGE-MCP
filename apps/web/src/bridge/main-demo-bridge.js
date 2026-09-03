@@ -66,6 +66,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
   let hologramGroup = null;
   let hologramSnapshot = null;
   let constructionBoard = null;
+  let visible = true;
 
   function refreshHologram() {
     const buildPlan = host.buildPlan;
@@ -83,6 +84,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     });
     alignThreeYUpHologramToMachineZUp(nextGroup);
     nextGroup.renderOrder = 3;
+    nextGroup.visible = visible;
     nextGroup.traverse((object) => {
       object.renderOrder = 3;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -117,6 +119,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     host,
     bridgeDesign,
     refreshHologram,
+    setVisible(value) { visible = Boolean(value); if (hologramGroup) hologramGroup.visible = visible; },
     setConstructionBoard(board) { constructionBoard = board; refreshHologram(); },
     get hologramGroup() { return hologramGroup; },
     get hologramSnapshot() { return structuredClone(hologramSnapshot); },

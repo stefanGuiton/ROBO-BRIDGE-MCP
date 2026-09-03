@@ -56,7 +56,7 @@ test('tool catalogues keep 19 configurable instead of permanent', async () => {
   assert.equal(catalogues.current.minimum, 19);
   assert.equal(catalogues.current.exact, 19);
   assert.equal(catalogues.final.exact, undefined);
-  assert.equal(catalogues.final.targetApprox, 27);
+  assert.equal(catalogues.final.targetApprox, 28);
   assert.ok(catalogues.final.requiredNames.includes('get_bridge_build_plan'));
 });
 

@@ -15,6 +15,7 @@ import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { createLogoRoboToolHandlers } from '../../apps/web/src/webmcp/tool-handlers.js';
 import { createRuntimeBridge } from '../../apps/web/src/webmcp/runtime-bridge.js';
 import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell-profile.js';
+import { SIMPLE_DEMO_CLEARANCE_MM } from '../../apps/web/src/logo/simple-demo-mode.js';
 
 const supplied = JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url), 'utf8'));
 const settings = { ...PLAYER_FALLBACK_SETTINGS, ...supplied };
@@ -50,7 +51,8 @@ function makeHarness({ brickCount = 12, timeScale = 0 } = {}) {
     getBricks: () => controller.getBricks(), profile
   });
   assert.equal(controller.setPlacementAuthority(authority), true);
-  const lookahead = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
+  // Exercise the production flat-table transfer policy with current table defaults.
+  const lookahead = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: { ...profile, safeClearanceZMm: SIMPLE_DEMO_CLEARANCE_MM } });
   const runtime = createLogoRoboRuntime({ controller, board, placementAuthority: authority, fastPlacement: lookahead, workcellProfile: profile });
   const handlers = createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) });
   const centre = {

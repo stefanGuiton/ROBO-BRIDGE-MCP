@@ -195,13 +195,15 @@ export function makeReachableV8Spawn(settings, profile, {
   count: requestedCount = settings.spawnCount,
   occupied = [],
   seed = settings.seed,
-  colours = null
+  colours = null,
+  yawRad = null
 } = {}) {
   if (!profile?.supplyZone || !profile?.workspace || !profile?.layout) {
     return { ok: false, reason: 'invalid_workcell_profile', records: [], diagnostics: { rejected: [] } };
   }
   const rng = seededRng(seed);
   const count = Math.max(1, Math.min(50, Math.round(requestedCount)));
+  if (yawRad !== null && !Number.isFinite(yawRad)) return { ok: false, reason: 'invalid_yaw', records: [] };
   if (Array.isArray(colours) && (colours.length < count || colours.slice(0, count).some((colour) => !V8_BRICK_PALETTE.some((entry) => entry.colour === colour)))) {
     return { ok: false, reason: 'invalid_colour_sequence', records: [], diagnostics: { requestedCount: count } };
   }
@@ -231,7 +233,7 @@ export function makeReachableV8Spawn(settings, profile, {
       xMm,
       yMm,
       profile.looseBrickCentreZMm,
-      Math.round(rng() * 2) * Math.PI / 2
+      yawRad ?? Math.round(rng() * 2) * Math.PI / 2
     );
     if (accepted.some((other) => Math.hypot(other.position.xMm - xMm, other.position.yMm - yMm) < 38)) {
       rejected.push({ attempt, reason: 'spawn_overlap', xMm, yMm });

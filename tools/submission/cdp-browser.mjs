@@ -184,7 +184,7 @@ export class ChromiumSession {
     const viewport = options.viewport ?? [1440, 900];
     const userDataDirectory = await mkdtemp(path.join(os.tmpdir(), 'robo-bridge-submission-'));
     let stderr = '';
-    const child = spawn(executable, browserArguments(userDataDirectory, viewport), {
+    const child = spawn(executable, [...browserArguments(userDataDirectory, viewport), ...(options.args ?? [])], {
       stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'],
       detached: process.platform !== 'win32',
       windowsHide: true,

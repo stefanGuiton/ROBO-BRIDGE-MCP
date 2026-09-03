@@ -185,6 +185,16 @@ Only production integration files, tests, the exact GLB, and this journey are in
 - Async reset cancels/waits controller state including unrelated motion/latched parts, startup rollback is closure-safe; known errors/recovery fields preserved; active missions reject primitive reset; scene inventory reads have revision-bound paging.
 - Final combined verification356/356 JS,20/20 reliability PASS. No-screenshot gate changes17/17 focused tests PASS. Release/fingerprint boundaries exclude user Downloads, Blender sources, temporary extraction and artifacts (469 selected source files, production Terrain7 included). Browser launch denied by approval service; console/native27-tool/hero evidence not refreshed. Local demo/assetHTTP200. Detailed resume/evidence in`docs/TERRAIN7_PROGRESS.md`; no final readiness claim.
 
+## 2026-09-03 — Simple Bricks WebMCP recording checkpoint
+
+- User then reported "looks good!" after code landed. Recorded user visual approval and prepared scoped publication to the existing draft PR6; no merge or retarget.
+
+- Followed the user's Simple WebMCP rescue plan, no subagents/screenshots/bridge collision work. Same downstream branch, no retarget or merge.
+- Added Simple/Bridge selector, shared reset fence, 24 red+4 blue aligned sources, preferredColour versus strict colour, existing ADOPTED reconciliation and a single continuous stream control tool. Existing authority chain is unchanged; native catalogue is now28 tools.
+- Flat-table250mm transfer avoids the legacy400mm wrist singularity from the updated supply layout; no IK/collision/workspace limits changed. Cadence defaults2000ms, live1333ms, hard minimum1000ms; one existing runner. Bounded status pagination now preserves its cursor.
+- Focused27/27 checks PASS. Chrome148 state-only browser PASS: single1/1, wall9/9, tower24/24 with robot23+human-blue1 ADOPTED, unique sources, dependent continuation, live speed changes, unchanged authority identities/bridge plan through mode switches, console0errors/0warnings. No screenshots; user visual acceptance pending. Native registration and registered callback execution, not external-agent transport acceptance.
+- Evidence `output/playwright/simple-webmcp/acceptance.json` remains local/ignored. Handoff `docs/SIMPLE_WEBMCP_HERO.md` contains recording instructions, exact limits and publication scope. Prior bridge/full verification remains historical; no hero:3 or final readiness claim.
+
 ## 2026-09-03 — Terrain-max Z-hop and browser retry
 
 - User authorized a headless retry, then supplied the simple terrain-max Z-hop addendum. Terrain7 checkpoint23f254b was already pushed; PR6 remains draft with Construction base, unmerged.
