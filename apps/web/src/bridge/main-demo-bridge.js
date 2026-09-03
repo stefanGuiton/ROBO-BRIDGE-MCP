@@ -120,7 +120,12 @@ export async function createMainDemoBridge({ renderer, challenge, settingsStore 
     host,
     bridgeDesign,
     refreshHologram,
-    setVisible(value) { visible = Boolean(value); if (hologramGroup) hologramGroup.visible = visible; },
+    setVisible(value) {
+      visible = Boolean(value);
+      if (hologramGroup) hologramGroup.visible = visible;
+      renderer.render();
+    },
+    get visible() { return visible; },
     setConstructionBoard(board) { constructionBoard = board; refreshHologram(); },
     get hologramGroup() { return hologramGroup; },
     get hologramSnapshot() { return structuredClone(hologramSnapshot); },

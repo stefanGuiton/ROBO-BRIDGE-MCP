@@ -37,9 +37,17 @@
       <div class="simple-only"><small data-simple-status>0/0 · 2000 ms/cycle · READY</small>
         <button type="button" data-simple-reset>RESET SIMPLE DEMO</button><button type="button" data-simple-stop>STOP BUILD</button></div>
     </section>
-    <section data-bridge-controls style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
+    <section data-bridge-controls class="bridge-controls" aria-label="Bridge construction">
+      <div class="level2-only level2-hologram-controls" aria-label="Level 2 hologram appearance">
+        <label><input type="checkbox" data-level2-hologram-visible checked> HOLOGRAM</label>
+        <label>OPACITY <input type="range" min="0" max="1" step="0.05" data-level2-hologram-opacity></label>
+        <label>TINT <input type="color" data-level2-hologram-colour></label>
+      </div>
+      <small class="level2-only" data-level2-part-summary>AUTHORITATIVE BUILDPLAN</small>
       <button type="button" data-construction-action="reset">RESET BUILD</button>
       <button type="button" data-more-bridge-bricks>MORE BRICKS</button>
+      <button class="level2-only" type="button" data-level2-visual-test disabled>TEST BRIDGE</button>
+      <small class="level2-only" data-level2-visual-test-status>VISUAL TEST · NO PHYSICS</small>
     </section>
     <section id="bridge-hud" class="bridge-hud" data-bridge-hud data-state="compiling" aria-label="V4.6 bridge hologram status">
       <b data-bridge-family>V4.6 VIADUCT</b>

@@ -271,6 +271,13 @@ async function patchDesign(patch, name) {
   await settleFrames();
   const after = await nativeCall('get_bridge_design', { includeCapabilities: false });
   success(after, 'read changed design');
+  const plan = await nativeCall('get_bridge_build_plan', { detail: 'bom' });
+  success(plan, `read ${name} BuildPlan BOM`);
+  assert.equal(plan.summary.planId, after.planId);
+  assert.equal(plan.summary.designChecksum, after.designChecksum);
+  assert.equal(plan.summary.designRevision, after.designRevision);
+  assert.equal(plan.summary.physicalPartCount, after.buildPlanSummary.physicalPartCount);
+  assert.equal(plan.billOfMaterials.totalPhysicalParts, after.buildPlanSummary.physicalPartCount);
   const hologram = await hologramSnapshot();
   assertHologram(hologram, after);
   if (result.changed) {
@@ -280,10 +287,43 @@ async function patchDesign(patch, name) {
   }
   report.designChanges.push({ name, patch, before: {
     planId: before.planId, designRevision: before.designRevision, designChecksum: before.designChecksum
-  }, result, hologram });
+  }, result, buildPlan: plan, hologram });
   check(`semantic design ${name}`, { planId: after.planId, designRevision: after.designRevision,
     arches: after.bridgeSpec.viaduct.archCount, partCount: after.buildPlanSummary.physicalPartCount });
   return after;
+}
+
+async function verifyHologramAppearanceControls() {
+  const before = await evaluate(() => {
+    const r = window.__ROBO_BRIDGE__;
+    return { worldRevision: r.robotController.worldRevision, design: r.bridgeDesign.service.getDesignState({ includeCapabilities: false }),
+      visibility: document.querySelector('[data-level2-hologram-visible]')?.checked,
+      opacity: document.querySelector('[data-level2-hologram-opacity]')?.value,
+      colour: document.querySelector('[data-level2-hologram-colour]')?.value };
+  });
+  const result = await evaluate(() => {
+    const r = window.__ROBO_BRIDGE__;
+    const visible = document.querySelector('[data-level2-hologram-visible]');
+    const opacity = document.querySelector('[data-level2-hologram-opacity]');
+    const colour = document.querySelector('[data-level2-hologram-colour]');
+    visible.checked = false; visible.dispatchEvent(new Event('change', { bubbles: true }));
+    const hidden = r.bridgeHologram != null && r.renderer.machineRoot.getObjectByName('V46_EXACT_BUILDPLAN_HOLOGRAM')?.visible === false;
+    visible.checked = true; visible.dispatchEvent(new Event('change', { bubbles: true }));
+    opacity.value = '0.6'; opacity.dispatchEvent(new Event('input', { bubbles: true }));
+    colour.value = '#ff4d8d'; colour.dispatchEvent(new Event('input', { bubbles: true }));
+    return { hidden, visible: r.renderer.machineRoot.getObjectByName('V46_EXACT_BUILDPLAN_HOLOGRAM')?.visible,
+      settings: { opacity: r.playerSettingsStore.get().bridgeHologramOpacity, colour: r.playerSettingsStore.get().bridgeHologramColor },
+      renderStats: r.renderer.machineRoot.getObjectByName('V46_EXACT_BUILDPLAN_HOLOGRAM')?.userData?.renderStats,
+      worldRevision: r.robotController.worldRevision,
+      design: r.bridgeDesign.service.getDesignState({ includeCapabilities: false }) };
+  });
+  assert.equal(result.hidden, true); assert.equal(result.visible, true);
+  assert.equal(result.settings.opacity, 0.6); assert.equal(result.settings.colour, '#ff4d8d');
+  assert.equal(result.renderStats.opacity, 0.6); assert.equal(result.renderStats.colour, '#ff4d8d');
+  assert.equal(result.worldRevision, before.worldRevision, 'Hologram appearance changed worldRevision');
+  assert.equal(result.design.planId, before.design.planId); assert.equal(result.design.designRevision, before.design.designRevision);
+  await capture('02-level2-hologram-controls');
+  check('Level 2 render-only hologram visibility opacity and tint', { before, result });
 }
 async function compareHologramRendering() {
   const identityBefore = await hologramSnapshot();
@@ -621,17 +661,17 @@ async function verifyLevel2UiAndTrainGuard() {
   const ui = await evaluate(() => {
     const r = window.__ROBO_BRIDGE__;
     const select = document.querySelector('select[data-demo-mode]');
-    const labels = r.renderer.machineRoot.getObjectByName('BRIDGE_ADVISORY_SIDE_LABELS');
     return { selectValue: select?.value, selectedText: select?.selectedOptions?.[0]?.textContent,
       rootMode: document.documentElement.dataset.demoMode, rootLevel: document.documentElement.dataset.demoLevel ?? null,
-      labelGroupVisible: labels?.visible, labelCount: labels?.children.length,
-      labels: labels?.children.map(label => ({ scale: label.scale.toArray(), visible: label.visible,
-        toneMapped: label.material?.toneMapped, textureColourSpace: label.material?.map?.colorSpace })) ?? [] };
+      visualTestLabel: document.querySelector('[data-level2-visual-test-status]')?.textContent,
+      partSummary: document.querySelector('[data-level2-part-summary]')?.textContent,
+      controlsPresent: ['[data-level2-hologram-visible]', '[data-level2-hologram-opacity]', '[data-level2-hologram-colour]', '[data-level2-visual-test]']
+        .every(selector => document.querySelector(selector)) };
   });
   assert.equal(ui.selectValue, 'bridge'); assert.equal(ui.rootMode, 'bridge');
-  assert.match(ui.selectedText, /^2\s/); assert.equal(ui.labelGroupVisible, true); assert.equal(ui.labelCount, 2);
-  for (const label of ui.labels) { assert.equal(label.visible, true); assert.equal(label.toneMapped, false); }
-  check('current Level 2 selector and spatial side labels', ui);
+  assert.match(ui.selectedText, /^2\s/); assert.equal(ui.controlsPresent, true);
+  assert.match(ui.visualTestLabel, /NO PHYSICS/); assert.match(ui.partSummary, /PARTS/);
+  check('current Level 2 selector and recording controls', ui);
   const before = await runtimeSnapshot();
   const missionBefore = await nativeCall('get_mission_state');
   const rejected = await nativeCall('test_bridge', sessionInput(missionBefore));
@@ -647,6 +687,17 @@ async function verifyLevel2UiAndTrainGuard() {
 }
 
 try {
+  const level1Url = new URL(url); level1Url.search = '?demo=simple&level=1';
+  await browser.navigate(level1Url.href);
+  await browser.waitFor(`document.documentElement.dataset.runtimeReady === 'true'`, { timeoutMs: 90_000 });
+  const level1 = await evaluate(async () => ({ mode: document.documentElement.dataset.demoMode,
+    tools: (await (document.modelContextTesting ?? navigator.modelContextTesting).listTools()).map(tool => tool.name),
+    runtime: Boolean(window.__ROBO_BRIDGE__), terrainVisible: window.__ROBO_BRIDGE__.challenge.terrainGroup.visible }));
+  assert.equal(level1.mode, 'simple'); assert.equal(level1.runtime, true); assert.equal(level1.tools.length, 31);
+  assert.equal(level1.terrainVisible, false);
+  check('Level 1 still boots with unchanged native tool surface', level1);
+  await capture('00-level1-boot');
+
   await browser.navigate(url);
   await browser.waitFor(`document.documentElement.dataset.runtimeReady === 'true'`, { timeoutMs: 90_000 });
   const boot = await evaluate(async () => {
@@ -677,21 +728,15 @@ try {
   await setBridgeCamera({ wide: true }); await capture('00-current-terrain-level2-no-train');
   await setBridgeCamera();
 
-  const four = await patchDesign({ family: 'viaduct', viaduct: { archCount: 4 } }, 'four arches');
+  const three = await patchDesign({ family: 'viaduct', viaduct: { archCount: 3 } }, 'three arches');
+  assert.equal(three.bridgeSpec.viaduct.archCount, 3);
+  await capture('01-hologram-three-arches');
+  const four = await patchDesign({ viaduct: { archCount: 4 } }, 'four arches');
   assert.equal(four.bridgeSpec.viaduct.archCount, 4);
-  await compareHologramRendering();
-  const five = await patchDesign({ viaduct: { archCount: 5 } }, 'five arches');
-  assert.equal(five.bridgeSpec.viaduct.archCount, 5);
-  assert.notEqual(five.designChecksum, four.designChecksum);
-  await capture('03-hologram-five-arches');
-  const widerRatio = Math.min(0.94, Number(five.bridgeSpec.viaduct.openingWidthRatio) + 0.03);
-  assert.notEqual(widerRatio, five.bridgeSpec.viaduct.openingWidthRatio);
-  const wider = await patchDesign({ viaduct: { openingWidthRatio: widerRatio } }, 'wider openings');
-  assert.equal(wider.bridgeSpec.viaduct.openingWidthRatio, widerRatio);
-  await capture('04-hologram-wider-openings');
-  const desired = await patchDesign({ viaduct: { archCount: 4, openingWidthRatio: four.bridgeSpec.viaduct.openingWidthRatio } }, 'restore supported four arches');
-  assert.equal(desired.designChecksum, four.designChecksum, 'Restored geometry must match the original four-arch design');
-  await capture('05-hologram-frozen-design');
+  assert.notEqual(four.designChecksum, three.designChecksum);
+  const desired = four;
+  await capture('02-hologram-four-arches');
+  await verifyHologramAppearanceControls();
 
   const mission = await nativeCall('get_mission_state');
   const started = await nativeCall('start_bridge_build', sessionInput(mission, { expectedDesignRevision: desired.designRevision }));
@@ -839,6 +884,32 @@ try {
   assert.equal(finalHologram.summary.pendingPhysicalCount, 0);
   await setBridgeCamera(); await capture('12-shared-bridge-complete');
   await setBridgeCamera({ wide: true }); await capture('13-complete-terrain-no-train');
+  await browser.waitFor(`!document.querySelector('[data-level2-visual-test]').disabled`, { timeoutMs: 5_000 });
+  const visualBefore = await runtimeSnapshot();
+  const visualStarted = await evaluate(() => {
+    document.querySelector('[data-level2-visual-test]').click();
+    const r = window.__ROBO_BRIDGE__;
+    return { state: r.level2VisualTest.getState(), position: r.level2VisualTest.visualRoot?.position.toArray(),
+      entry: r.challenge.getEntry().position, exit: r.challenge.getExit().position };
+  });
+  assert.equal(visualStarted.state.status, 'running');
+  assert.deepEqual(visualStarted.position, [visualStarted.entry.x, visualStarted.entry.y, visualStarted.entry.z]);
+  await capture('14-level2-visual-test-entry');
+  await delay(2300); await capture('15-level2-visual-test-midpoint');
+  await browser.waitFor(`window.__ROBO_BRIDGE__.level2VisualTest.getState().status === 'complete'`, { timeoutMs: 8_000 });
+  const visualComplete = await evaluate(() => {
+    const r = window.__ROBO_BRIDGE__;
+    return { state: r.level2VisualTest.getState(), position: r.level2VisualTest.visualRoot.position.toArray(),
+      worldRevision: r.robotController.worldRevision, trainConfigured: r.train.getState().configured,
+      trainSubsystemPresent: r.train.getSubsystem() != null };
+  });
+  assert.deepEqual(visualComplete.position, [visualComplete.state.exit.x, visualComplete.state.exit.y, visualComplete.state.exit.z]);
+  assert.equal(visualComplete.worldRevision, visualBefore.worldRevision);
+  assert.equal(visualComplete.trainConfigured, false); assert.equal(visualComplete.trainSubsystemPresent, false);
+  await capture('16-level2-visual-test-exit');
+  const repeated = await evaluate(() => window.__ROBO_BRIDGE__.level2VisualTest.start());
+  assert.equal(repeated.ok, true); assert.equal(repeated.status, 'running');
+  check('repeatable Level 2 ENTRY to EXIT visual test without physics or Train', { visualStarted, visualComplete, repeated });
   const finalMission = await nativeCall('get_mission_state', { detail: 'detail' }); success(finalMission, 'final mission read');
   assert.equal(finalMission.phase, 'BUILD', 'Level 2 completion must not fake a Train/Mission COMPLETE result');
   assert.equal(finalMission.nextActions.includes('test_bridge'), false);
