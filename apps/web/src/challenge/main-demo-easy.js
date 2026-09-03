@@ -2,6 +2,7 @@
 
 import * as THREE from '../../vendor/three.module.min.js';
 import { createChallengeService } from './challenge-service.js';
+import { MAIN_DEMO_TERRAIN_URL } from './terrain-asset.js';
 
 export const MAIN_DEMO_EASY_PRESET = 'EASY';
 // X rebases the accepted bridge centre from machine X=820 to X=650.
@@ -75,7 +76,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
   const service = createChallengeService({
     THREE,
     terrain7: true,
-    terrainUrl: new URL('../../assets/terrain/Terrain_7_Main.glb', import.meta.url),
+    terrainUrl: MAIN_DEMO_TERRAIN_URL,
     machineMount: machineMountFromSettings(playerSettings),
     displayOffset: MAIN_DEMO_EASY_DISPLAY_OFFSET,
     challengeYawDeg: MAIN_DEMO_EASY_CHALLENGE_YAW_DEG

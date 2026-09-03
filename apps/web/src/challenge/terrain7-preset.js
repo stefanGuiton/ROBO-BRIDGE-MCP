@@ -1,17 +1,16 @@
 import * as THREE from '../../vendor/three.module.min.js';
 import { MAIN_DEMO_MACHINE_FRAME, MAIN_DEMO_DISPLAY_FRAME, MAIN_DEMO_MACHINE_MOUNT, normalizeMachineMount, machineToDisplay, displayBoundsToMachine } from './challenge-transforms.js';
+import { MAIN_DEMO_TERRAIN_ASSET } from './terrain-asset.js';
 
 export const TERRAIN7_WATER_DATUM_MM = -132.718;
 export const TERRAIN7_MODEL_SCALE = 2;
-export const TERRAIN7_ASSET = Object.freeze({
-  repoPath: 'Scene_and_3D_Files/Terrain_7_Main.glb', packagePath: 'assets/terrain/Terrain_7_Main.glb',
-  sha256: '419adc72b8fb408eea5060142890682fbcd03709b4cd4d292742286ba1518217', bytes: 31378000
-});
+// Compatibility name: this is the spatial contract, not an older asset copy.
+export const TERRAIN7_ASSET = MAIN_DEMO_TERRAIN_ASSET;
 export const TERRAIN7_OCCLUDERS = Object.freeze(['Terrain', 'Tunnel', 'Entry_Structure']);
 export const TERRAIN7_AUTHORED = Object.freeze({
   entry: Object.freeze({ x: 0, y: 0, z: 0 }),
   exit: Object.freeze({ x: 370.0000047683716, y: 0, z: 0 }),
-  bounds: Object.freeze({ min: { x: -386.583374, y: -439.004446, z: -288.883031 }, max: { x: 753.340354, y: 711.117441, z: 213.116915 } })
+  bounds: Object.freeze({ min: { x: -383.9064084618209, y: -416.47686020109506, z: -291.65059328079224 }, max: { x: 737.1571626116655, y: 705.4167423174955, z: 213.6959731578827 } })
 });
 
 // Read final transformed vertices, not the bounds of water/markers or a stale

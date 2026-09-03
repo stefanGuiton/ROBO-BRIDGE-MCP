@@ -9,9 +9,11 @@ import { TERRAIN7_ASSET, TERRAIN7_OCCLUDERS, TERRAIN7_WATER_DATUM_MM } from '../
 import { constructionHarness } from '../helpers/construction-harness.js';
 import { partsOverlap } from '../../apps/web/src/bricks/part-spec.js';
 import { auditPreparedGeometry } from '../../scripts/audit-construction-geometry.mjs';
+import { MAIN_DEMO_TERRAIN_URL } from '../../apps/web/src/challenge/terrain-asset.js';
 
-test('real Terrain7 GLB preserves authored nodes, anchors, water material and UV normal transform', async t => {
-  const bytes = await readFile(new URL('../../apps/web/assets/terrain/Terrain_7_Main.glb', import.meta.url));
+test('current Terrain9 GLB preserves Terrain7 anchors, water material and UV normal transform', async t => {
+  const bytes = await readFile(MAIN_DEMO_TERRAIN_URL);
+  assert.equal(bytes.byteLength, TERRAIN7_ASSET.bytes);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), TERRAIN7_ASSET.sha256);
   // Node has no pixel decoder: verify asset/material binding, not appearance.
   const originalDecoder = globalThis.createImageBitmap;
@@ -20,6 +22,8 @@ test('real Terrain7 GLB preserves authored nodes, anchors, water material and UV
   const service = createChallengeService({ terrain7: true, THREE, terrainUrl: 'fixture',
     fetchImpl: async () => ({ ok: true, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }) });
   const state = await service.load(), root = service.getTerrainGroup();
+  assert.equal(state.terrainAsset.packagePath, 'assets/terrain/Terrain_9_Main.glb');
+  assert.equal(state.terrainMetrics.triangleCount, TERRAIN7_ASSET.triangleCount);
   const entry = root.getObjectByName('ENTRY').getWorldPosition(new THREE.Vector3());
   const exit = root.getObjectByName('EXIT').getWorldPosition(new THREE.Vector3());
   for (const axis of ['x', 'y', 'z']) {

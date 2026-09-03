@@ -11,8 +11,9 @@ import { prepareBridgeBuild } from '../apps/web/src/bridge-construction/bridge-b
 import { V8_WORKSPACE } from '../apps/web/src/workcell/v8-workcell-profile.js';
 import { partBounds } from '../apps/web/src/bricks/part-spec.js';
 import { auditPreparedGeometry } from './audit-construction-geometry.mjs';
+import { MAIN_DEMO_TERRAIN_URL } from '../apps/web/src/challenge/terrain-asset.js';
 
-const bytes = await readFile(new URL('../apps/web/assets/terrain/Terrain_7_Main.glb', import.meta.url));
+const bytes = await readFile(MAIN_DEMO_TERRAIN_URL);
 const { root } = await decodeTerrainArrayBuffer(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), THREE,
   { decodeImage: async () => ({ width: 1, height: 1 }) }); // geometry/material references only
 const preset = buildTerrain7Preset('EASY', { authored: inspectTerrain7(root) });

@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ChromiumSession } from '../tools/submission/cdp-browser.mjs';
+import { MAIN_DEMO_TERRAIN_ASSET, MAIN_DEMO_TERRAIN_URL } from '../apps/web/src/challenge/terrain-asset.js';
 
 const argv = process.argv.slice(2);
 const writeEvidence = argv.includes('--write-evidence');
@@ -53,10 +54,10 @@ const preload = `(() => {
   };
 })();`;
 
-const assetPath = new URL('../apps/web/assets/terrain/Terrain_7_Main.glb', import.meta.url);
+const assetPath = MAIN_DEMO_TERRAIN_URL;
 report.harnessSha256 = createHash('sha256').update(await readFile(new URL(import.meta.url))).digest('hex');
 const asset = await readFile(assetPath);
-assert.equal(asset.toString('ascii', 0, 4), 'glTF', 'Terrain 7 must be hydrated GLB, not an LFS pointer');
+assert.equal(asset.toString('ascii', 0, 4), 'glTF', 'Active terrain must be hydrated GLB, not an LFS pointer');
 assert.equal(asset.readUInt32LE(4), 2);
 assert.equal(asset.readUInt32LE(8), asset.length);
 report.terrainAsset = { bytes: asset.length, sha256: createHash('sha256').update(asset).digest('hex') };
@@ -669,11 +670,11 @@ try {
   for (const name of ['get_bridge_design', 'update_bridge_design', 'start_bridge_build', 'get_build_progress', 'build_next_parts']) assert.ok(boot.names.includes(name));
   assert.equal(boot.terrain.loaded, true); assert.equal(boot.terrain.visible, true);
   assert.equal(boot.terrain.challengeId, 'terrain7-easy-aqueduct');
-  assert.ok(report.assetResponses.some(r => /Terrain_7_Main\.glb/.test(r.url) && r.status === 200), 'Terrain 7 binary did not load over HTTP');
+  assert.ok(report.assetResponses.some(r => new URL(r.url).pathname === `/${MAIN_DEMO_TERRAIN_ASSET.packagePath}` && r.status === 200), 'Current terrain binary did not load over HTTP');
   const initialState = await runtimeSnapshot(); assertNoTrain(initialState, 'boot');
-  check('native Level 2 Terrain 7 boot without Train', { ...boot, terrainAsset: report.terrainAsset });
+  check('native Level 2 current terrain boot without Train', { ...boot, terrainAsset: report.terrainAsset });
   await verifyLevel2UiAndTrainGuard();
-  await setBridgeCamera({ wide: true }); await capture('00-terrain7-level2-no-train');
+  await setBridgeCamera({ wide: true }); await capture('00-current-terrain-level2-no-train');
   await setBridgeCamera();
 
   const four = await patchDesign({ family: 'viaduct', viaduct: { archCount: 4 } }, 'four arches');
