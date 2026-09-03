@@ -1,0 +1,292 @@
+name: Final release current-head audit
+
+on:
+  push:
+    branches:
+      - oracle/p0-final-release-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CANDIDATE_SHA: 6ee1294cd558894797f95eec06bb811adf8c8639
+    steps:
+      - name: Check out exact current PR head
+        uses: actions/checkout@v4
+        with:
+          ref: 6ee1294cd558894797f95eec06bb811adf8c8639
+          fetch-depth: 0
+          lfs: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Confirm clean checkout and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          browser="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$browser"
+          echo "ROBO_BRIDGE_BROWSER=$browser" >> "$GITHUB_ENV"
+          {
+            echo "candidate_sha=$(git rev-parse HEAD)"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "python=$(python --version 2>&1)"
+            echo "browser=$($browser --version)"
+            echo "lfs=$(git lfs version)"
+          } | tee audit/environment.txt
+
+      - name: Terrain 7 and Git LFS audit
+        id: terrain
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs pull --include="Scene_and_3D_Files/Terrain_7_Main.glb,apps/web/assets/terrain/*.glb" --exclude=""
+          python - <<'PY' | tee audit/terrain.json
+          import hashlib, json
+          from pathlib import Path
+          paths = [
+              Path('Scene_and_3D_Files/Terrain_7_Main.glb'),
+              Path('apps/web/assets/terrain/Terrain_7_Main.glb'),
+              Path('apps/web/assets/terrain/Terrain_Optimised_10k.glb'),
+          ]
+          rows=[]
+          for path in paths:
+              data=path.read_bytes() if path.is_file() else b''
+              rows.append({'path':str(path),'exists':path.is_file(),'size':len(data),'magicHex':data[:4].hex(),
+                  'isGlb':data[:4] == b'glTF','isLfsPointer':data.startswith(b'version https://git-lfs.github.com/spec/v1'),
+                  'sha256':hashlib.sha256(data).hexdigest() if data else None})
+          print(json.dumps(rows, indent=2))
+          for row in rows[:2]:
+              assert row['exists'] and row['isGlb'] and not row['isLfsPointer'], row
+          PY
+
+      - name: apps/web static deployment audit
+        id: static
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee audit/static-deployment.json
+          import json, re
+          from html.parser import HTMLParser
+          from pathlib import Path
+          root=Path('apps/web').resolve(); errors=[]; warnings=[]; checked=set()
+          class Links(HTMLParser):
+              def __init__(self): super().__init__(); self.refs=[]
+              def handle_starttag(self, tag, attrs):
+                  values=dict(attrs)
+                  for key in ('src','href'):
+                      value=values.get(key)
+                      if value and not value.startswith(('#','data:','http://','https://','mailto:','javascript:')):
+                          self.refs.append(value.split('?',1)[0].split('#',1)[0])
+          index=root/'index.html'
+          if not index.is_file(): errors.append('apps/web/index.html missing')
+          else:
+              parser=Links(); parser.feed(index.read_text(encoding='utf-8'))
+              for ref in parser.refs:
+                  target=(root/ref.lstrip('/')).resolve()
+                  if not target.is_relative_to(root): errors.append(f'HTML path escapes root: {ref}')
+                  else:
+                      checked.add(str(target.relative_to(root)))
+                      if not target.is_file(): errors.append(f'HTML path missing or wrong case: {ref}')
+          import_re=re.compile(r'''(?:from\s*|import\s*\()\s*["']([^"']+)["']''')
+          url_re=re.compile(r'''new\s+URL\(\s*["']([^"']+)["']\s*,\s*import\.meta\.url\s*\)''')
+          asset_re=re.compile(r'''["']([^"']+\.(?:glb|gltf|png|jpe?g|webp|svg|hdr|exr|json|wasm))(?:\?[^"']*)?["']''',re.I)
+          for source in sorted(root.rglob('*.js')):
+              text=source.read_text(encoding='utf-8')
+              for spec in import_re.findall(text)+url_re.findall(text):
+                  if not spec.startswith('.'): continue
+                  target=(source.parent/spec).resolve()
+                  if not target.is_relative_to(root): errors.append(f'import escapes root: {source.relative_to(root)} -> {spec}')
+                  else:
+                      checked.add(str(target.relative_to(root)))
+                      if not target.is_file(): errors.append(f'import missing or wrong case: {source.relative_to(root)} -> {spec}')
+              for spec in asset_re.findall(text):
+                  if spec.startswith(('http://','https://','data:')): continue
+                  target=(source.parent/spec).resolve() if spec.startswith('.') else (root/spec.lstrip('/')).resolve()
+                  if target.is_relative_to(root):
+                      checked.add(str(target.relative_to(root)))
+                      if not target.is_file(): warnings.append(f'asset literal unresolved: {source.relative_to(root)} -> {spec}')
+              if 'file://' in text.lower(): errors.append(f'filesystem URL: {source.relative_to(root)}')
+              if re.search(r'''fetch\(\s*["'](?:https?://)?(?:localhost|127\.0\.0\.1)''',text,re.I): errors.append(f'localhost fetch: {source.relative_to(root)}')
+              if re.search(r'''fetch\(\s*["']/api/''',text,re.I): errors.append(f'server API fetch: {source.relative_to(root)}')
+              if re.search(r'''from\s*["']node:''',text): errors.append(f'Node-only browser import: {source.relative_to(root)}')
+          server=[name for name in ('functions','_worker.js','wrangler.toml','wrangler.json','wrangler.jsonc') if (root/name).exists()]
+          if server: errors.append('server/worker marker present: '+', '.join(server))
+          result={'indexExists':index.is_file(),'checkedReferences':len(checked),'errors':sorted(set(errors)),
+              'warnings':sorted(set(warnings)),'localhostRequired':False,'filesystemRequired':False,
+              'serverApiRequired':False,'pagesFunctionsRequired':False if not server else None,
+              'workersRequired':False if not server else None,'ok':not errors}
+          print(json.dumps(result,indent=2))
+          if errors: raise SystemExit(1)
+          PY
+
+      - name: Architecture singleton audit
+        id: architecture
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee audit/architecture.json
+          import json,re
+          from pathlib import Path
+          files={p:p.read_text(encoding='utf-8') for p in Path('apps/web/src').rglob('*.js')}
+          failures=[]; result={}
+          for name in ('BuildBoard','RobotController','RevisionClock','PlacementAuthority'):
+              definitions=[str(p) for p,t in files.items() if re.search(rf'\bclass\s+{name}\b',t)]
+              result[name+'Definitions']=definitions
+              if len(definitions)!=1: failures.append(f'{name} definition count={len(definitions)}')
+          registrars=[str(p) for p,t in files.items() if 'registerTool(' in t]
+          result['registrarFiles']=registrars
+          if len(registrars)!=1: failures.append(f'registrar file count={len(registrars)}')
+          result['requestAnimationFrameFiles']=[str(p) for p,t in files.items() if 'requestAnimationFrame(' in t]
+          result['failures']=failures; result['ok']=not failures
+          print(json.dumps(result,indent=2))
+          if failures: raise SystemExit(1)
+          PY
+
+      - name: Strong focused Simple tests
+        id: focused
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test --test-concurrency=1 tests/js/simple-*.test.js tests/js/held-brick-colour.test.js tests/js/player-pickup-audit.test.js tests/js/placement-stream.test.js tests/js/webmcp.test.js tests/js/submission-gate.test.js 2>&1 | tee audit/focused-simple.log
+
+      - name: Start local static app
+        shell: bash
+        run: |
+          python scripts/serve_web.py --port 8774 > audit/simple-server.log 2>&1 &
+          echo $! > audit/simple-server.pid
+          for n in $(seq 1 60); do curl -fsS http://127.0.0.1:8774/health && exit 0; sleep 1; done
+          cat audit/simple-server.log
+          exit 1
+
+      - name: Candidate built-in Simple browser acceptance
+        id: simple_browser
+        continue-on-error: true
+        env:
+          ROBO_SIMPLE_URL: http://127.0.0.1:8774/?demo=simple
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run simple:browser 2>&1 | tee audit/simple-browser.log
+
+      - name: Generate exact release-scenario browser audits
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source=Path('scripts/simple-webmcp-browser.mjs').read_text(encoding='utf-8')
+          marker='for (const shape of SIMPLE_DEMO_SCENARIOS) {'
+          assert marker in source
+          tower=source.replace(marker, "for (const shape of [{ prefix: 'tower', width: 2, height: 6, pattern: 'cross_laminated_tower' }]) {")
+          tower=tower.replace("'output/playwright/simple-webmcp/acceptance.json'", "'audit/tower12-acceptance.json'")
+          Path('audit/tower12-browser.mjs').write_text(tower,encoding='utf-8')
+          wall=source.replace(marker, "for (const shape of [{ prefix: 'wall35', width: 5, depth: 1, height: 7 }]) {")
+          wall=wall.replace('const placements = simplePlacements(shape, workspace);', "const placements = simplePlacements(shape, workspace).map(p => ({ ...p, colour: 'blue', preferredColour: 'blue' }));")
+          wall=wall.replace("'output/playwright/simple-webmcp/acceptance.json'", "'audit/wall35-acceptance.json'")
+          Path('audit/wall35-browser.mjs').write_text(wall,encoding='utf-8')
+          PY
+
+      - name: Exact 12-target tower browser acceptance
+        id: tower12
+        continue-on-error: true
+        env:
+          ROBO_SIMPLE_URL: http://127.0.0.1:8774/?demo=simple
+        shell: bash
+        run: |
+          set -o pipefail
+          node audit/tower12-browser.mjs --write-evidence 2>&1 | tee audit/tower12-browser.log
+
+      - name: Exact 35-target blue wall browser acceptance
+        id: wall35
+        continue-on-error: true
+        env:
+          ROBO_SIMPLE_URL: http://127.0.0.1:8774/?demo=simple
+        shell: bash
+        run: |
+          set -o pipefail
+          node audit/wall35-browser.mjs --write-evidence 2>&1 | tee audit/wall35-browser.log
+
+      - name: npm run verify
+        id: verify
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run verify 2>&1 | tee audit/verify.log
+
+      - name: npm run submission:smoke
+        id: smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run submission:smoke 2>&1 | tee audit/submission-smoke.log
+
+      - name: npm run submission:gate
+        id: gate
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run submission:gate 2>&1 | tee audit/submission-gate.log
+
+      - name: npm run webmcp:audit
+        id: webmcp
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run webmcp:audit 2>&1 | tee audit/webmcp-audit.log
+
+      - name: Record outcomes
+        if: always()
+        shell: bash
+        run: |
+          cat > audit/step-outcomes.txt <<EOF
+          candidate_sha=$CANDIDATE_SHA
+          terrain=${{ steps.terrain.outcome }}
+          static=${{ steps.static.outcome }}
+          architecture=${{ steps.architecture.outcome }}
+          focused_simple=${{ steps.focused.outcome }}
+          built_in_simple_browser=${{ steps.simple_browser.outcome }}
+          tower_12=${{ steps.tower12.outcome }}
+          wall_35_blue=${{ steps.wall35.outcome }}
+          verify=${{ steps.verify.outcome }}
+          submission_smoke=${{ steps.smoke.outcome }}
+          submission_gate=${{ steps.gate.outcome }}
+          webmcp_audit=${{ steps.webmcp.outcome }}
+          EOF
+          cat audit/step-outcomes.txt
+          if test -f audit/simple-server.pid; then kill "$(cat audit/simple-server.pid)" || true; fi
+          git status --short | tee audit/final-git-status.txt
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-release-current-head-audit
+          path: |
+            audit/
+            artifacts/submission-evidence/
+            output/playwright/simple-webmcp/
+          if-no-files-found: warn
+          retention-days: 14
