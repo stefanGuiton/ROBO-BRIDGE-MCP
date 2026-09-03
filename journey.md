@@ -1,5 +1,13 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — user-directed scene-layout controls
+
+- User superseded the release-clearance addendum: defer jaw and collision work, implement `CODEX_FINAL_SCENE_LAYOUT_CONTROLS_ADDENDUM.md`. Removed only this agent's unfinished release/collision edits; preserved prior Z-hop and user assets.
+- Added persisted table-yaw and robot-base XYZ/yaw sliders with numeric fields. Fixed world/BuildPlan coordinates are preserved; the controller definition's base matrix drives FK, IK, renderer, gripper and collision/diagnostic link positions. Table proxy bounds follow rotated corners. Idle/safety gates reject unsafe calibration; table rotation requires no active frozen BUILD.
+- Added **MORE BRICKS** buttons backed by the current Construction session and shared inventory/feeder. Up to six unused matching source identities per click, no accepted targets or completion changes; bridge/route/terrain exclusions remain enforced.
+- Targeted 4/4 and isolated headless Chrome interaction PASS; console 0 errors/0 warnings, no screenshots. Browser refill 8→14 sources with 0/303 accepted and 27 tools. Full verification PASS: 365/365 JS, 20/20 reliability, 156 JS / 4 Python syntax files. The obsolete legacy-mount UI assertion was updated for the requested replacement controls. Details: `docs/SCENE_LAYOUT_CONTROLS.md`.
+- User requested this checkpoint be pushed on the existing branch/draft PR #6; no merge or retarget. Fresh pre-publication focused checks: 37/37 PASS. VISUAL: USER-VERIFY PENDING. Next requested task: switch the hero to Viaduct; prior Aqueduct release-clearance evidence must not be represented as Viaduct evidence.
+
 ## Scope
 
 This checkpoint follows `Downloads/PLAN_Integrate Curated EASY Terrain into the Production Bridge MAIN_DEMO.md` and uses the accepted Oracle package at `Downloads/ORACLE_TERRAIN_CHALLENGE_V1(1).zip`.

@@ -1,3 +1,4 @@
+import { SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 const STORAGE_KEY = 'roboBridgeMainDemoPlayerV8';
 
 export const PLAYER_SOURCE_PROVENANCE = Object.freeze({
@@ -145,7 +146,11 @@ export const PLAYER_FALLBACK_SETTINGS = Object.freeze({
   robotMountXmm: -820,
   robotMountYmm: 170,
   robotMountZmm: 1200,
-  robotMountYawDeg: 0
+  robotMountYawDeg: 0,
+  robotBaseXmm: 0,
+  robotBaseYmm: 0,
+  robotBaseZmm: 0,
+  robotBaseYawDeg: 0
 });
 
 function sanitizeSettings(input = {}, allowedKeys = null) {
@@ -154,6 +159,7 @@ function sanitizeSettings(input = {}, allowedKeys = null) {
     (!allowed || allowed.has(key))
     && /^[A-Za-z][A-Za-z0-9_]*$/.test(key)
     && (value === null || ['boolean', 'number', 'string'].includes(typeof value))
+    && (!SCENE_LAYOUT_CONTROLS[key] || (Number.isFinite(value) && value >= SCENE_LAYOUT_CONTROLS[key].min && value <= SCENE_LAYOUT_CONTROLS[key].max))
   )));
 }
 
@@ -188,12 +194,15 @@ export class PlayerSettingsStore {
   constructor(settings) {
     this.value = { ...PLAYER_FALLBACK_SETTINGS, ...sanitizeSettings(settings), structuralCollapseEnabled: false };
     this.listeners = new Set();
+    this.guards = new Set();
   }
 
   get() { return this.value; }
 
   set(key, value) {
     if (!(key in this.value) || key === 'structuralCollapseEnabled') return false;
+    if (!(key in sanitizeSettings({ [key]: value }))) return false;
+    if ([...this.guards].some(guard => guard({ ...this.value, [key]: value }, [key]) === false)) return false;
     this.value[key] = value;
     this.persist();
     for (const listener of this.listeners) listener(key, value, this.value);
@@ -203,6 +212,7 @@ export class PlayerSettingsStore {
   setMany(values) {
     const sanitized = sanitizeSettings(values, Object.keys(this.value));
     if (!Object.keys(sanitized).length) return { ok: false, reason: 'no_valid_settings' };
+    if ([...this.guards].some(guard => guard({ ...this.value, ...sanitized }, Object.keys(sanitized)) === false)) return { ok: false, reason: 'layout_change_rejected' };
     for (const [key, value] of Object.entries(sanitized)) {
       if (key !== 'structuralCollapseEnabled') this.value[key] = value;
     }
@@ -225,6 +235,8 @@ export class PlayerSettingsStore {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+
+  addGuard(guard) { this.guards.add(guard); return () => this.guards.delete(guard); }
 
   exportJSON() {
     return JSON.stringify({ ...this.value, structuralCollapseEnabled: false }, null, 2);

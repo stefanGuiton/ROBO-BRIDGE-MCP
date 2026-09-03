@@ -22,6 +22,7 @@ import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } fro
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
 import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
+import { robotBasePoseFromSettings, SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
@@ -50,7 +51,7 @@ const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
 const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
-const workcellProfile = createV8WorkcellProfile(playerSettings);
+const workcellProfile = { ...createV8WorkcellProfile(playerSettings) };
 const makePlayerBricks = () => {
   const generated = makeReachableV8Spawn(playerSettings, workcellProfile, robotShowcaseMode ? {
     count: ROBOT_SHOWCASE_INVENTORY.length,
@@ -60,6 +61,7 @@ const makePlayerBricks = () => {
   return generated.records;
 };
 const controller = new RobotController({
+  basePose: robotBasePoseFromSettings(playerSettings),
   board,
   bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(),
   revisionClock,
@@ -180,9 +182,44 @@ const settingsPanelController = installPlayerSettingsPanel({
   search: $('[data-settings-search]'),
   onImportError: (error) => addLog(`Settings import rejected: ${error.message}`, 'bad')
 });
-playerSettingsStore.subscribe((key) => renderer.applySettings(key));
+playerSettingsStore.addGuard((next, keys) => {
+  const changed = keys.filter(key => next[key] !== playerSettings[key]);
+  if (!changed.some(key => SCENE_LAYOUT_CONTROLS[key] || /^robotMount/.test(key))) return true;
+  const status = $('[data-scene-layout-status]');
+  const reject = reason => { if (status) status.textContent = reason; return false; };
+  if (changed.some(key => /^robotMount/.test(key))) return reject('The world display frame is fixed. Use Robot Base XYZ instead.');
+  if (mainDemoMission?.service.phase === 'TEST') return reject('Finish the train test before changing layout.');
+  if (controller.operationState !== 'idle' || controller.pendingMoveCount || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy) || placementCycleRunner?.getState().running) return reject('Finish or cancel motion and release held parts before changing layout.');
+  if (changed.includes('tableYawDeg') && mainDemoConstruction?.preparedBuild) return reject('Reset BUILD before rotating the table; frozen targets will not be moved.');
+  if (changed.some(key => /^robotBase/.test(key))) {
+    const result = controller.setBasePose({ ...robotBasePoseFromSettings(next), expectedWorldRevision: controller.worldRevision });
+    if (!result.ok) return reject(`Base unchanged: ${result.reason}. Existing safety limits remain active.`);
+  }
+  if (status) status.textContent = 'Layout saved. World / BuildPlan coordinates unchanged. VISUAL: USER-VERIFY PENDING';
+  return true;
+});
+playerSettingsStore.subscribe((key) => {
+  if (key === 'tableYawDeg' || key === '*') {
+    const next = createV8WorkcellProfile(playerSettings);
+    Object.assign(workcellProfile, next);
+    controller.layout = { ...controller.layout, tableBounds: next.tableBounds, tableZMm: next.tableSurfaceZMm };
+    revisionClock.bump();
+  }
+  renderer.applySettings(key);
+});
 let moreBricksBurst = 0;
 function spawnMoreBricks() {
+  if (!evidenceMode && mainDemoConstruction) {
+    if (!mainDemoConstruction.preparedBuild) return { ok: false, reason: 'Start BUILD BRIDGE first to use the shared source feeder.' };
+    if (mainDemoMission?.service.phase === 'TEST') return { ok: false, reason: 'Finish the train test before refilling sources.' };
+    let result;
+    try { result = mainDemoConstruction.refillSources({ expectedWorldRevision: controller.worldRevision, count: 6 }); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    renderer.workbench.pressMoreBricks();
+    const status = $('[data-scene-layout-status]');
+    if (status) status.textContent = result.count ? `Added ${result.count} shared bridge sources. Targets unchanged.` : result.reason;
+    return result;
+  }
   const startIndex = controller.getBricks().length;
   const generated = makeReachableV8MoreSpawn(
     playerSettings,
@@ -198,7 +235,8 @@ function spawnMoreBricks() {
   renderer.workbench.pressMoreBricks();
   return { ...result, action: 'more_bricks' };
 }
-renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Added 10 V8 physics bricks'));
+renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Shared source inventory replenished'));
+for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, spawnMoreBricks, 'Shared source inventory replenished'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 

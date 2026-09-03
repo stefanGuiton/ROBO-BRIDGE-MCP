@@ -410,7 +410,7 @@ test('supplied V8 player settings are provenance-locked and production disables 
   }
 });
 
-test('V8 scene exposes all settings plus live robot mount controls in the tucked-away panel', async () => {
+test('V8 panel preserves settings and hides the legacy world mount in favour of robot base controls', async () => {
   const store = new PlayerSettingsStore({ ...PLAYER_FALLBACK_SETTINGS, tableWidthMm: 1750, matPanelsX: 4 });
   assert.deepEqual(
     ['robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'].map((key) => store.get()[key]),
@@ -426,7 +426,8 @@ test('V8 scene exposes all settings plus live robot mount controls in the tucked
   assert.match(html, /PLACE NEXT BRICK/);
   assert.match(panel, /20×20 Stud Build Mat/);
   assert.match(panel, /Robot Mount/);
-  assert.match(panel, /HIDDEN_SETTINGS = new Set\(\['verticalSpeedMmS', 'movementFollowsPitch'\]\)/);
+  assert.match(panel, /HIDDEN_SETTINGS = new Set\(\['verticalSpeedMmS', 'movementFollowsPitch', 'robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'\]\)/);
+  assert.match(panel, /SCENE_LAYOUT_CONTROLS\[key\]/);
   assert.match(workbench, /MAIN_DEMO_V8_MORE_BRICKS_BUTTON/);
   assert.match(workbench, /matPanelsX \* s\.matPanelStuds/);
 });

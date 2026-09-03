@@ -20,16 +20,18 @@ export const DEFAULT_FEEDER_SLOTS = deepFreeze(Array.from({ length: 18 }, (_, in
   xMm: 480 + (index % 6) * 100, yMm: 90 + Math.floor(index / 6) * 60, yawRad: 0
 })));
 
-export function allocateFeederSources(sources, existing = [], slots = DEFAULT_FEEDER_SLOTS) {
+export function allocateFeederSources(sources, existing = [], slots = DEFAULT_FEEDER_SLOTS, { excludedBounds = [], tableBounds = null, tableZMm = null } = {}) {
   const placed = [], occupied = [...existing];
   for (const source of sources) {
     for (const slot of slots) {
       // Long beams run across the table, not into the adjacent feeder row.
-      const pose = { ...slot, yawRad: source.physicalDimensions.lengthMm > 170 ? 0 : slot.yawRad };
+      const pose = { ...slot, ...(Number.isFinite(tableZMm) ? { zMm: Math.max(4, tableZMm) + source.physicalDimensions.heightMm / 2 } : {}), yawRad: source.physicalDimensions.lengthMm > 170 ? 0 : slot.yawRad };
       const brick = sourceToControllerBrick(source, pose), bounds = partBounds(brick);
       const expanded = { min: { ...bounds.min }, max: { ...bounds.max } };
       for (const axis of ['xMm', 'yMm']) { expanded.min[axis] -= 18; expanded.max[axis] += 18; }
       if (bounds.min.xMm < 300 || bounds.max.xMm > 1030 || bounds.max.yMm > 225 || bounds.min.yMm < -65) continue;
+      if (tableBounds && (bounds.min.xMm < tableBounds.minX || bounds.max.xMm > tableBounds.maxX || bounds.min.yMm < tableBounds.minY || bounds.max.yMm > tableBounds.maxY)) continue;
+      if (excludedBounds.some(box => boundsOverlap(expanded, box, 0))) continue;
       if (occupied.some(other => boundsOverlap(expanded, partBounds(other), 0))) continue;
       placed.push(brick); occupied.push(brick); break;
     }

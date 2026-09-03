@@ -238,6 +238,39 @@ export function createBridgeBuildSession({
     return getBridgeBuildProgress({ buildBoard, normalisedBuild: preparedBuild.normalisedBuild });
   }
 
+  function refillSources({ count = 6, excludedBounds = [] } = {}) {
+    requireStarted();
+    invariant(Number.isSafeInteger(count) && count >= 1 && count <= 12, 'INVALID_SETTINGS', 'Refill count must be 1..12.');
+    if (bridgeHost) assertPreparedBuildCurrent(preparedBuild, bridgeHost);
+    const accepted = acceptedPlacementMap(buildBoard), live = controller.getBricks();
+    const existing = new Set(live.map(b => b.id));
+    const pending = preparedBuild.normalisedBuild.placements.filter(p => !accepted.has(p.placementId));
+    const candidates = [], keys = [...new Set(pending.map(p => p.compatibilityKey))].sort();
+    // Round-robin current required classes; activate unused identities from the
+    // same inventory. Never manufacture targets or duplicate source IDs.
+    for (let index = 0; candidates.length < count; index++) {
+      let found = false;
+      for (const key of keys) {
+        const source = preparedBuild.inventory.compatibleSources(key).filter(s => !existing.has(s.sourceId))[index];
+        if (source) { candidates.push(source); found = true; }
+        if (candidates.length === count) break;
+      }
+      if (!found) break;
+    }
+    const bridgeExclusion = preparedBuild.normalisedBuild.placements.map(p => {
+      const box = partBounds(p);
+      // Reserve the whole bridge/track vertical retreat corridor, not just solids.
+      return { min: { ...box.min, zMm: -1e6 }, max: { ...box.max, zMm: 1e6 } };
+    });
+    const additions = allocateFeederSources(candidates, live, undefined, {
+      excludedBounds: [...bridgeExclusion, ...excludedBounds], tableBounds: controller.layout.tableBounds, tableZMm: controller.layout.tableZMm
+    });
+    if (!additions.length) return { ok: true, added: [], count: 0, reason: pending.length ? 'feeder_full_or_supply_exhausted' : 'build_complete', worldRevision: controller.worldRevision };
+    const result = controller.addLooseBricks(additions, { actor: 'bridge-source-feeder' });
+    invariant(result.ok, 'OPERATION_IN_PROGRESS', 'Finish the current operation before refilling.', result);
+    return { ok: true, added: additions.map(b => b.id), count: additions.length, worldRevision: controller.worldRevision };
+  }
+
   function getBuildState() {
     requireLive();
     return deepFreeze({
@@ -369,6 +402,7 @@ export function createBridgeBuildSession({
     startBuild,
     getBuildState,
     getBuildProgress,
+    refillSources,
     planNext,
     buildNextParts,
     cancelBuild,

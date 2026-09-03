@@ -165,7 +165,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       { id: 'structure-tray-front', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true },
       { id: 'structure-tray-back', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true }
     );
-    const fk = forwardKinematics(controller.getState().jointsRad);
+    const fk = forwardKinematics(controller.getState().jointsRad, controller.definition);
     if (fk.ok) {
       const points = [...fk.jointPositions, fk.tcp];
       for (let i = 0; i < points.length - 1; i += 1) {

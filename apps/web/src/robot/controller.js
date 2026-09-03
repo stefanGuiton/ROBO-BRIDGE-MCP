@@ -14,6 +14,7 @@ import { angleDistance, distance3, isFiniteNumber, wrapPi } from './math.js';
 import { CHALLENGE_LAYOUT, CHALLENGE_WORKSPACE, UR10_DEFINITION } from './ur10-definition.js';
 import { validateWorkspacePoint } from './workspace.js';
 import { RevisionClock } from '../state/revision-clock.js';
+import { basePoseMatrix } from '../workcell/scene-layout-settings.js';
 
 const clone = (value) => structuredClone(value);
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -67,6 +68,7 @@ function combineSignals(external, internal) {
 export class RobotController {
   constructor({
     definition = UR10_DEFINITION,
+    basePose = null,
     workspace = CHALLENGE_WORKSPACE,
     layout = CHALLENGE_LAYOUT,
     speedLimitMmS = 650,
@@ -79,7 +81,7 @@ export class RobotController {
     revisionClock = board?.revisionClock ?? new RevisionClock()
     ,placementAuthority = null
   } = {}) {
-    this.definition = definition;
+    this.definition = basePose ? Object.freeze({ ...definition, baseTransform: Object.freeze(basePoseMatrix(basePose)) }) : definition;
     this.workspace = workspace;
     this.layout = layout;
     this.speedLimitMmS = speedLimitMmS;
@@ -94,13 +96,13 @@ export class RobotController {
     this.listeners = new Set();
     this.robotRevision = 0;
     this.jointsRad = Array.from(definition.homeJointsRad);
-    const fk = forwardKinematics(this.jointsRad, definition);
+    const fk = forwardKinematics(this.jointsRad, this.definition);
     if (!fk.ok) throw new Error('Invalid configured home joints');
     this.tcp = { ...fk.tcp };
     this.moving = false;
     this.operationState = 'idle';
     this.heldBrickId = null;
-    this.toolYawRad = 0;
+    this.toolYawRad = basePose?.yawRad ?? 0;
     this.jawGapMm = UR10_GRIPPER.openGapMm;
     this.jawState = 'open';
     this.brickInTcp = null;
@@ -150,6 +152,7 @@ export class RobotController {
         brickYawInTcpRad: this.heldBrickId ? this.brickYawInTcpRad : null
       },
       jointsRad: Array.from(this.jointsRad),
+      baseTransform: Array.from(this.definition.baseTransform ?? basePoseMatrix()),
       speedLimitMmS: this.speedLimitMmS,
       accelerationLimitMmS2: this.accelerationLimitMmS2,
       jointSpeedLimitRadS: this.jointSpeedLimitRadS,
@@ -164,6 +167,23 @@ export class RobotController {
   }
 
   getWorkspace() { return clone(this.workspace); }
+  setBasePose({ xMm, yMm, zMm, yawRad = 0, expectedWorldRevision } = {}) {
+    if (expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', worldRevision: this.worldRevision };
+    if (this.operationState !== 'idle' || this.pendingMoveCount || this.operationBlocked() || this.bricks.some(b => b.heldBy)) return { ok: false, reason: 'operation_in_progress' };
+    if (![xMm, yMm, zMm, yawRad].every(isFiniteNumber) || Math.abs(xMm) > 300 || Math.abs(yMm) > 350 || zMm < -100 || zMm > 200 || Math.abs(yawRad) > Math.PI) return { ok: false, reason: 'invalid_input' };
+    const definition = Object.freeze({ ...this.definition, baseTransform: Object.freeze(basePoseMatrix({ xMm, yMm, zMm, yawRad })) });
+    if (JSON.stringify(definition.baseTransform) === JSON.stringify(this.definition.baseTransform ?? basePoseMatrix())) return { ok: true, worldRevision: this.worldRevision };
+    const fk = forwardKinematics(this.jointsRad, definition);
+    const workspace = validateWorkspacePoint(fk.tcp, this.workspace);
+    if (!workspace.ok) return workspace;
+    const collision = validateCollision({ tcp: fk.tcp, jointPositions: [...fk.jointPositions, fk.tcp], bricks: this.bricks, board: this.board }, this.layout);
+    if (!collision.ok) return collision;
+    this.definition = definition;
+    this.tcp = { ...fk.tcp };
+    this.toolYawRad = wrapPi(Math.atan2(fk.rotation[3], fk.rotation[0]));
+    this.#bumpRobot('base_pose_changed');
+    return { ok: true, worldRevision: this.worldRevision };
+  }
   getBricks() { return clone(this.bricks); }
 
   operationBlocked(operationToken = null) {
@@ -809,7 +829,7 @@ export class RobotController {
     const fk = forwardKinematics(this.jointsRad, this.definition);
     this.tcp = { ...fk.tcp };
     this.heldBrickId = null;
-    this.toolYawRad = 0;
+    this.toolYawRad = this.definition.baseTransform ? Math.atan2(this.definition.baseTransform[4], this.definition.baseTransform[0]) : 0;
     this.jawGapMm = UR10_GRIPPER.openGapMm;
     this.jawState = 'open';
     this.brickInTcp = null;

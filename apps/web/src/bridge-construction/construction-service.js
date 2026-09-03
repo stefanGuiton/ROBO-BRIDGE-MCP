@@ -98,6 +98,18 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
       if (!session) throw new Error('build_not_started');
       return session.planNext({ count });
     },
+    refillSources({ count = 6, expectedWorldRevision, signal } = {}) {
+      revision(expectedWorldRevision); idle();
+      if (signal?.aborted) throw new Error('aborted');
+      if (!session) throw new Error('build_not_started');
+      if (cycleRunner.getState().running) throw new Error('operation_in_progress');
+      const route = challenge?.getTrainRoute?.() ?? challenge?.getTrackRoute?.();
+      const routeBounds = route?.start && route?.end ? [{
+        min: { xMm: Math.min(route.start.x, route.end.x) - 24, yMm: Math.min(route.start.y, route.end.y) - 24, zMm: -1e6 },
+        max: { xMm: Math.max(route.start.x, route.end.x) + 24, yMm: Math.max(route.start.y, route.end.y) + 24, zMm: 1e6 }
+      }] : [];
+      return session.refillSources({ count, excludedBounds: [...machineTerrainBoxes(challenge), ...routeBounds] });
+    },
     async buildNextParts(count = 1, { expectedWorldRevision, signal, ...options } = {}) {
       revision(expectedWorldRevision); idle();
       if (!session) throw new Error('build_not_started');

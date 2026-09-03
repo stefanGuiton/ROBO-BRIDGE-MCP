@@ -210,17 +210,19 @@ export class RobotRenderer {
 
   playerObstacles() {
     const s = this.playerSettings;
+    const base = this.controller.getState().baseTransform;
+    const worldBase = this.machineRoot.localToWorld(new THREE.Vector3(base[3], base[7], base[11]));
     return [
       ...this.workbench.collisionBoxes(),
       ...this.environmentCollisionProxies,
       {
         kind: 'ROBOT_BASE',
-        minX: s.robotMountXmm - 125,
-        maxX: s.robotMountXmm + 125,
-        minY: s.robotMountYmm - 125,
-        maxY: s.robotMountYmm + 125,
-        minZ: s.robotMountZmm,
-        maxZ: s.robotMountZmm + 310
+        minX: worldBase.x - 125,
+        maxX: worldBase.x + 125,
+        minY: worldBase.y - 125,
+        maxY: worldBase.y + 125,
+        minZ: worldBase.z,
+        maxZ: worldBase.z + 310
       }
     ];
   }
@@ -801,7 +803,7 @@ export class RobotRenderer {
 
   updateRobot() {
     const state = this.controller.getState();
-    const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
+    const fk = forwardKinematics(state.jointsRad, this.controller.definition);
     if (!fk.ok) return;
     this.ur10.update(state.jointsRad, fk.frames);
     this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
@@ -1070,7 +1072,7 @@ export class RobotRenderer {
     const mountChanged = key === '*' || /^robotMount/.test(key);
     const lightingChanged = key === '*' || /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadow|sun|exposure|toneMapping)/.test(key);
     const floorChanged = key === '*' || /^floor/.test(key);
-    const collisionChanged = tableChanged || mountChanged || key === '*' || /^playerCollision/.test(key);
+    const collisionChanged = tableChanged || mountChanged || key === '*' || /^(playerCollision|robotBase)/.test(key);
     const brickGeometryChanged = key === '*' || /^(brickLengthMm|brickWidthMm|brickBodyHeightMm|studPitchMm|studDiameterMm|studHeightMm)$/.test(key);
     const brickMaterialChanged = key === '*' || /^(brickRoughness|brickMetalness)$/.test(key);
     const playerHeightChanged = key === '*' || key === 'playerEyeHeightMm';

@@ -1,5 +1,9 @@
 # P0 Downstream Integration — Progress Handoff
 
+## Latest task switch — 2026-09-03: scene-layout controls
+
+The user explicitly postponed collision and jaw-opening changes and requested `Downloads/CODEX_FINAL_SCENE_LAYOUT_CONTROLS_ADDENDUM.md` instead. The unfinished release/collision experiment was removed. This checkpoint adds settings sliders for table yaw and controller-backed robot base XYZ/yaw, plus shared frozen-plan **MORE BRICKS** refill. See `docs/SCENE_LAYOUT_CONTROLS.md` for controls, authority, restrictions and test evidence. Four targeted tests and isolated headless MAIN_DEMO interaction passed; full verification PASS: 365/365 JS + 20/20 reliability, 156 JS / 4 Python syntax files. Pre-publication focused checks: 37/37 PASS. No screenshots. User requested publication on `codex/p0-downstream-integration-prep` through existing draft PR #6, without merge/retarget; parent `ea7616574e99371db8cbccff6346bbc847d533f5`. Next user-directed task is `Downloads/CODEX_SWITCH_FINAL_HERO_TO_VIADUCT.md`; the old Aqueduct 46/303 blocker is not a Viaduct result.
+
 ## Current resume point — 2026-09-03 (supersedes the historical section below)
 
 Continue **only** `codex/p0-downstream-integration-prep`; do not merge/retarget PR5 or PR6. Single agent. No Oracle-loop workflow. User owns visual QA; no screenshots.
