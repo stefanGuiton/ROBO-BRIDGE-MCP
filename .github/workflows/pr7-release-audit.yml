@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: pr7-release-audit
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   focused-simple:
