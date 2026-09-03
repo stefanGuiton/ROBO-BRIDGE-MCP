@@ -56,10 +56,15 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
     if (input.type !== undefined && !TYPES.has(input.type)) return inputError('Unknown type filter.');
     const limit = input.limit === undefined ? 20 : input.limit;
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) return inputError('limit must be an integer from 1 to 20.');
+    const cursor = input.cursor ?? 0;
+    if (!Number.isSafeInteger(cursor) || cursor < 0) return inputError('cursor must be a non-negative safe integer.');
+    if ((cursor > 0 || input.expectedWorldRevision !== undefined) && !validateRevision(input.expectedWorldRevision)) return inputError('Paged reads require the first page worldRevision as expectedWorldRevision.');
     const snapshot = await bridge.world.getSnapshotData();
     if (snapshot?.ok === false) return snapshot;
+    if (input.expectedWorldRevision !== undefined && input.expectedWorldRevision !== snapshot.worldRevision) return machineError('stale_state', 'Scene changed; restart paging at cursor 0.', { worldRevision: snapshot.worldRevision, recoveryAction: 'Read cursor 0 again.' });
     const build = await bridge.game.getBuildState({ limit });
     if (build?.ok === false) return build;
+    if (bridge.getWorldRevision() !== snapshot.worldRevision) return machineError('stale_state', 'Scene changed during the read; retry.', { worldRevision: bridge.getWorldRevision() });
     let objects = snapshot.objects.filter((object) => ['brick', 'target'].includes(object.type));
     if (input.type !== undefined) objects = objects.filter((object) => object.type === input.type);
     if (input.colour !== undefined) objects = objects.filter((object) => String(object.colour).toLowerCase() === String(input.colour).toLowerCase());
@@ -68,9 +73,12 @@ export function createLogoRoboToolHandlers({ bridge, observationService = create
       ok: true,
       coordinateFrame: 'machine-mm-rad',
       worldRevision: snapshot.worldRevision,
-      objects: objects.slice(0, limit),
+      objects: objects.slice(cursor, cursor + limit),
+      cursor,
+      nextCursor: cursor + limit < objects.length ? cursor + limit : null,
+      returnedCount: objects.slice(cursor, cursor + limit).length,
       totalAvailable: objects.length,
-      truncated: objects.length > limit,
+      truncated: cursor + limit < objects.length,
       build
     };
   }

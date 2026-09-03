@@ -29,11 +29,13 @@ export class PlannedPlacementCycleRunner {
     this.wait = wait;
     this.abortController = null;
     this.lastResult = null;
+    this.cycleTimeMs = DEFAULT_PLACEMENT_CYCLE_MS;
   }
 
   getState() {
     return {
       running: Boolean(this.abortController),
+      cycleTimeMs: this.cycleTimeMs,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null
     };
   }
@@ -42,6 +44,12 @@ export class PlannedPlacementCycleRunner {
     if (!this.abortController) return { ok: true, cancelled: false };
     this.abortController.abort(new DOMException(reason, 'AbortError'));
     return { ok: true, cancelled: true };
+  }
+
+  setCycleTime(cycleTimeMs) {
+    if (!Number.isInteger(cycleTimeMs) || cycleTimeMs < MIN_PLACEMENT_CYCLE_MS || cycleTimeMs > MAX_PLACEMENT_CYCLE_MS) return { ok: false, reason: 'invalid_cycle_time' };
+    this.cycleTimeMs = cycleTimeMs;
+    return { ok: true, cycleTimeMs, applies: 'next_cycle' };
   }
 
   async run({ cycleTimeMs = null, physicalSpeedMmS = 650, maximumPlacements = 50, signal = null } = {}) {
@@ -61,6 +69,7 @@ export class PlannedPlacementCycleRunner {
 
     const abortController = new AbortController();
     this.abortController = abortController;
+    this.cycleTimeMs = requestedCycleMs;
     const forwardAbort = () => abortController.abort(signal.reason ?? new DOMException('Placement cycle cancelled', 'AbortError'));
     if (signal?.aborted) forwardAbort();
     else signal?.addEventListener('abort', forwardAbort, { once: true });
@@ -81,6 +90,7 @@ export class PlannedPlacementCycleRunner {
           return { ok: false, reason: 'stale_state', expectedWorldRevision: proposal.expectedWorldRevision, worldRevision, results };
         }
         const playbackMultiplier = 40;
+        const currentCycleMs = this.cycleTimeMs;
         const startedAt = this.clock();
         const result = await this.coordinator.execute({
           proposalId: proposal.proposalId,
@@ -90,10 +100,10 @@ export class PlannedPlacementCycleRunner {
         });
         const executionElapsedMs = this.clock() - startedAt;
         if (!result.ok) return { ...result, cycleTimeMs: requestedCycleMs, results };
-        const remainingDelayMs = Math.max(0, requestedCycleMs - executionElapsedMs);
+        const remainingDelayMs = Math.max(0, currentCycleMs - executionElapsedMs);
         if (remainingDelayMs > 0 && (result.remainingPlacements ?? 0) > 0) {
           await this.wait(remainingDelayMs, abortController.signal);
-        } else if (executionElapsedMs > requestedCycleMs) overruns += 1;
+        } else if (executionElapsedMs > currentCycleMs) overruns += 1;
         results.push({
           placementId: result.placementId,
           brickId: result.brickId,
@@ -102,6 +112,7 @@ export class PlannedPlacementCycleRunner {
           playbackDurationMs: result.playbackDurationMs,
           executionWallDurationMs: result.executionWallDurationMs,
           playbackMultiplier,
+          cycleTimeMs: currentCycleMs,
           cycleElapsedMs: this.clock() - startedAt
         });
       }
@@ -112,7 +123,7 @@ export class PlannedPlacementCycleRunner {
         ok: completed,
         reason: completed ? null : 'cycle_placement_limit',
         streamId: finalState.stream?.streamId ?? null,
-        cycleTimeMs: requestedCycleMs,
+        cycleTimeMs: this.cycleTimeMs,
         completedPlacements: results.length,
         remainingPlacements: finalState.stream?.remainingPlacements ?? null,
         overruns,

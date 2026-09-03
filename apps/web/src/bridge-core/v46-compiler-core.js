@@ -278,7 +278,10 @@ function createArchDefinition(request, settings, definitions) {
   const springOffsetLayers = Math.max(leftFootOffsetLayers, rightFootOffsetLayers, request.springLayer - baseLayer);
   const targetTopLayers = Math.max(springOffsetLayers + 1, request.targetTopLayer - baseLayer);
   const thicknessCells = Math.max(0.15, request.thicknessCells);
-  const thicknessWorld = thicknessCells * dy, springOffsetWorld = springOffsetLayers * dy, targetTopWorld = targetTopLayers * dy;
+  const minimumThicknessLayers = Math.max(1, Math.ceil(Math.max(0.5, sideThicknessCells) * dx / dy));
+  // Keep the crown inside the requested tier. Previously enforcing minimum
+  // thickness after sampling pushed ARCH_B above targetTop into the next tier.
+  const thicknessWorld = Math.max(thicknessCells, minimumThicknessLayers) * dy, springOffsetWorld = springOffsetLayers * dy, targetTopWorld = targetTopLayers * dy;
   const riseWorld = Math.max(dy * 0.25, targetTopWorld - springOffsetWorld - thicknessWorld);
   const style = request.style === 'B' ? 'B' : 'A';
   const topLayers = [], bottomLayers = [], reservedRuns = [], topSupportMap = [];
@@ -299,15 +302,18 @@ function createArchDefinition(request, settings, definitions) {
       topLayer = style === 'A' ? targetTopLayers : Math.ceil(outerY / dy);
     } else {
       const openingCell = xCell - 1;
-      const x = (openingCell + 0.5 - clearSpanCells * 0.5) * dx;
+      // Reserve the full cell envelope, not just the curve at its centre.
+      // Curved undersides reach lower at the outer edge of each opening cell.
+      const leftX = (openingCell - clearSpanCells * 0.5) * dx;
+      const rightX = leftX + dx;
+      const x = Math.abs(leftX) > Math.abs(rightX) ? leftX : rightX;
       const ratio = clamp(x / Math.max(0.0001, a), -1, 1);
       const innerY = springOffsetWorld + riseWorld * Math.sqrt(Math.max(0, 1 - ratio * ratio));
       bottomLayer = Math.max(springOffsetLayers, Math.floor(innerY / dy));
       topLayer = style === 'A' ? targetTopLayers : Math.ceil(outerY / dy);
     }
     if (style === 'B') topLayer = Math.min(targetTopLayers, topLayer);
-    const minimumThicknessLayers = Math.max(1, Math.ceil(Math.max(0.5, sideThicknessCells) * dx / dy));
-    topLayer = Math.max(bottomLayer + minimumThicknessLayers, topLayer);
+    topLayer = Math.min(targetTopLayers, Math.max(bottomLayer + minimumThicknessLayers, topLayer));
     bottomLayers.push(bottomLayer); topLayers.push(topLayer);
     reservedRuns.push({ xCell, y0: bottomLayer, y1: topLayer - 1 });
     topSupportMap.push({ xCell, topLayer });

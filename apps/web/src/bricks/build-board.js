@@ -14,6 +14,7 @@ function toTargetRecord(target) {
     ? target.yawDeg
     : Number(target.yawRad ?? BRICK_SPEC.canonicalYawRad) * 180 / Math.PI;
   return {
+    ...clone(target),
     id,
     targetId: id,
     colour: target.colour ?? null,
@@ -70,6 +71,29 @@ export class BuildBoard {
     return event;
   }
 
+  loadBlueprint(blueprint, { expectedWorldRevision } = {}) {
+    if (expectedWorldRevision !== this.worldRevision) throw new Error('stale_world_revision');
+    if (this.#brickToTarget.size || this.#placements.size) throw new Error('board_not_empty');
+    if (!blueprint?.blueprintId || !Array.isArray(blueprint.targets)) throw new TypeError('invalid_blueprint');
+    const records = blueprint.targets.map(toTargetRecord);
+    if (new Set(records.map(t => t.id)).size !== records.length || records.some(t => !t.id || t.occupiedBy
+      || ![t.position.xMm, t.position.yMm, t.position.zMm, t.yawRad].every(Number.isFinite))) throw new TypeError('invalid_targets');
+    this.#blueprintId = blueprint.blueprintId;
+    this.#targets = new Map(records.map(t => [t.id, t]));
+    this.#record('blueprint_loaded', { blueprintId: this.#blueprintId, count: records.length });
+    return this.getBuildState();
+  }
+
+  targetBlockReason(target, colour) {
+    if (target.occupiedBy) return 'target_occupied';
+    if (target.colour && target.colour !== colour) return 'wrong_colour';
+    if (target.bridgeConstruction) {
+      if ((target.dependencyIds ?? []).some(id => !this.#targets.get(id)?.correctness)) return 'support_not_ready';
+      if (target.requiresStructureComplete && [...this.#targets.values()].some(t => t.partClass !== 'TRACK_SEGMENT' && !t.correctness)) return 'structure_not_ready';
+    }
+    return null;
+  }
+
   reset() {
     let changed = this.#placements.size > 0;
     for (const target of this.#targets.values()) {
@@ -79,6 +103,7 @@ export class BuildBoard {
       target.claimOwner = 'none';
       target.correctness = false;
       target.completedBy = null;
+      target.executionMode = null;
     }
     this.#brickToTarget.clear();
     this.#placements.clear();
@@ -137,7 +162,7 @@ export class BuildBoard {
     return { ok: true, accepted: true, targetId, worldRevision: this.worldRevision };
   }
 
-  trySnapBrick({ brickId, colour, position, yawDeg, yawRad, actor = null }) {
+  trySnapBrick({ brickId, colour, position, yawDeg, yawRad, actor = null, targetId = null, executionMode = null }) {
     const effectiveYawDeg = Number.isFinite(yawDeg) ? yawDeg : Number(yawRad ?? 0) * 180 / Math.PI;
     if (!brickId || !position || ![position.xMm, position.yMm, position.zMm, effectiveYawDeg].every(Number.isFinite)) {
       return { ok: false, accepted: false, reason: 'invalid_input', worldRevision: this.worldRevision };
@@ -153,7 +178,8 @@ export class BuildBoard {
       const dy = position.yMm - target.position.yMm;
       const dz = position.zMm - target.position.zMm;
       const planar = Math.hypot(dx, dy);
-      if (planar > this.snapToleranceMm || Math.abs(dz) > this.zToleranceMm) continue;
+      if (targetId && target.id !== targetId) continue;
+      if (planar > this.snapToleranceMm || Math.abs(dz) > (target.bridgeConstruction ? 2 : this.zToleranceMm)) continue;
       if (Math.abs(effectiveYawDeg - target.yawDeg) > this.yawToleranceDeg) continue;
       if (target.occupiedBy) {
         if (!occupied || planar < occupied.planar) occupied = { target, planar };
@@ -170,14 +196,17 @@ export class BuildBoard {
     if (!best) return { ok: false, accepted: false, reason: 'no_snap_target', worldRevision: this.worldRevision };
 
     const target = best.target;
+    const blocked = this.targetBlockReason(target, colour);
+    if (blocked) return { ok: false, reason: blocked, worldRevision: this.worldRevision };
     target.occupiedBy = brickId;
     target.placedBrickId = brickId;
     target.correctness = true;
     target.completedBy = ['human', 'agent'].includes(actor) ? actor : null;
+    target.executionMode = executionMode;
     target.claimOwner = 'none';
     this.#brickToTarget.set(brickId, target.id);
     if (target.completedBy) this.#contributions[target.completedBy] += 1;
-    this.#record('snap', { targetId: target.id, brickId, colour, actor });
+    this.#record('snap', { targetId: target.id, brickId, colour, actor, ...(executionMode ? { executionMode } : {}) });
     const snappedPose = { xMm: target.position.xMm, yMm: target.position.yMm, zMm: target.position.zMm, yawDeg: target.yawDeg };
     return {
       ok: true,
@@ -238,6 +267,7 @@ export class BuildBoard {
     target.placedBrickId = null;
     target.correctness = false;
     target.completedBy = null;
+    target.executionMode = null;
     this.#brickToTarget.delete(brickId);
     this.#corrections += 1;
     this.#record('remove', { targetId, brickId, actor });

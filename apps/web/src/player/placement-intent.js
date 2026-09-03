@@ -124,9 +124,10 @@ export class PlacementIntentEngine {
 
   targetCandidate(target, carried) {
     const yawRad = Number.isFinite(target.yawRad) ? target.yawRad : Number.isFinite(target.yawDeg) ? target.yawDeg * Math.PI / 180 : 0;
+    const blocked = target.bridgeConstruction ? this.board.targetBlockReason(target, carried.colour) : target.occupiedBy ? 'TARGET_OCCUPIED' : null;
     return {
-      type: 'TARGET', status: target.occupiedBy ? 'BLOCKED' : 'VALID', valid: !target.occupiedBy,
-      blockedReason: target.occupiedBy ? 'TARGET_OCCUPIED' : null, targetId: target.id,
+      type: 'TARGET', status: blocked ? 'BLOCKED' : 'VALID', valid: !blocked,
+      blockedReason: blocked, targetId: target.id,
       placementType: 'blueprint-target', position: { ...target.position }, yawRad,
       carriedBrickId: carried.id, connection: null, connections: [], side: null,
       relativeRotationDeg: yawRad * 180 / Math.PI, studCount: 0, overhang: false
@@ -241,7 +242,7 @@ export class PlacementIntentEngine {
     let best = null;
     for (const target of this.board.getTargets()) {
       if (target.occupiedBy) continue;
-      const distance = Math.hypot(point.xMm - target.position.xMm, point.yMm - target.position.yMm);
+      const distance = Math.hypot(point.xMm - target.position.xMm, point.yMm - target.position.yMm, target.bridgeConstruction ? point.zMm - target.position.zMm : 0);
       if (distance <= maximumDistanceMm && (!best || distance < best.distance)) best = { target, distance };
     }
     return best?.target ?? null;

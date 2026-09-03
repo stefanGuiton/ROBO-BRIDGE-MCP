@@ -1,3 +1,4 @@
+import { createBridgePartVisual } from '../bridge-construction/part-visual.js';
 import * as THREE from '../../vendor/three.module.min.js';
 
 export const V8_COLOUR_HEX = Object.freeze({
@@ -57,6 +58,7 @@ function updateStudMatrices(studs, settings) {
 }
 
 export function createV8BrickVisual(brick, settings, factory, { ghost = false } = {}) {
+  if (brick?.bridgePart) return createBridgePartVisual(brick, factory.partRegistry, { ghost, opacity: settings.ghostOpacity });
   const material = new THREE.MeshStandardMaterial({
     color: colourHex(brick),
     roughness: ghost ? 0.35 : settings.brickRoughness,
@@ -81,6 +83,7 @@ export function createV8BrickVisual(brick, settings, factory, { ghost = false } 
 }
 
 export function applyV8BrickGeometry(body, settings, factory) {
+  if (body.userData.bridgePart) return;
   body.geometry = factory.body;
   body.userData.studs.geometry = factory.stud;
   updateStudMatrices(body.userData.studs, settings);
@@ -96,5 +99,6 @@ export function applyV8BrickMaterial(body, settings, brick = null) {
 }
 
 export function disposeV8BrickVisual(body) {
-  body.userData.material?.dispose?.();
+  if (body.userData.bridgePart) body.traverse(o => { o.geometry?.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m?.dispose()); });
+  else body.userData.material?.dispose?.();
 }

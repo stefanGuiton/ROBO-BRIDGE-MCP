@@ -233,12 +233,15 @@ export class V8Workbench {
     const s = this.settings;
     const result = [];
     const add = (kind, local, size) => {
-      const centre = this.worldPoint(new THREE.Vector3(local.x, local.y, local.z));
+      const bounds = new THREE.Box3();
+      for (const dx of [-0.5, 0.5]) for (const dy of [-0.5, 0.5]) for (const dz of [-0.5, 0.5]) {
+        bounds.expandByPoint(this.worldPoint(new THREE.Vector3(local.x + dx * size.x, local.y + dy * size.y, local.z + dz * size.z)));
+      }
       result.push({
         kind,
-        minX: centre.x - size.x / 2, maxX: centre.x + size.x / 2,
-        minY: centre.y - size.y / 2, maxY: centre.y + size.y / 2,
-        minZ: centre.z - size.z / 2, maxZ: centre.z + size.z / 2
+        minX: bounds.min.x, maxX: bounds.max.x,
+        minY: bounds.min.y, maxY: bounds.max.y,
+        minZ: bounds.min.z, maxZ: bounds.max.z
       });
     };
     add('WORKTABLE', { x: 0, y: 0, z: s.tableTopHeightMm - s.tableTopThicknessMm / 2 }, {

@@ -1,3 +1,4 @@
+import { captureOffset } from './part-spec.js';
 import { BRICK_SPEC } from './brick-spec.js';
 
 export function findLatchCandidate(tcp, bricks, heldBrickId = null) {
@@ -5,7 +6,7 @@ export function findLatchCandidate(tcp, bricks, heldBrickId = null) {
   const candidates = bricks.filter((brick) => {
     if (!brick.graspable || brick.heldBy || brick.placedTargetId || brick.placementType) return false;
     const xy = Math.hypot(tcp.xMm - brick.position.xMm, tcp.yMm - brick.position.yMm);
-    const expectedTcpZ = brick.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm;
+    const expectedTcpZ = brick.position.zMm + captureOffset(brick);
     return xy <= BRICK_SPEC.capture.xyToleranceMm &&
       Math.abs(tcp.zMm - expectedTcpZ) <= BRICK_SPEC.capture.zToleranceMm;
   });

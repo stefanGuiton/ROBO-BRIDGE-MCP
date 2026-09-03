@@ -1,3 +1,5 @@
+import { prepareBridgeBuild } from '../bridge-construction/bridge-build-session.js';
+import { createConstructionService, physicalBuildReport } from '../bridge-construction/construction-service.js';
 import { BuildBoard } from '../bricks/build-board.js';
 import { PlacementAuthority } from '../bricks/placement-authority.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
@@ -20,12 +22,21 @@ import { loadPlayerSettings, PlayerSettingsStore, PLAYER_SOURCE_PROVENANCE } fro
 import { installPlayerSettingsPanel } from '../player/player-settings-panel.js';
 import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spawn.js';
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
+import { robotBasePoseFromSettings, SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
+import { installEndpointSettings } from '../challenge/endpoint-settings.js';
+import { createMainDemoTrainIntegration } from '../train-integration/index.js';
+import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
+import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acceptance.js';
+import { THREE } from '../render/real-gripper-visual.js';
+import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
+import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
 const robotShowcaseMode = params.get('showcase') === 'robot-basics';
+let demoMode = 'bridge';
 
 function makeRoundBlueprint() {
   const compiled = compileImageData(makePattern('diagonal', 64), {
@@ -43,9 +54,11 @@ const revisionClock = new RevisionClock();
 const board = new BuildBoard(blueprint, { revisionClock, mode: 'co-build' });
 const playerSettingsStore = new PlayerSettingsStore(await loadPlayerSettings());
 const playerSettings = playerSettingsStore.get();
-const workcellProfile = createV8WorkcellProfile(playerSettings);
+const workcellProfile = { ...createV8WorkcellProfile(playerSettings) };
 const makePlayerBricks = () => {
-  const generated = makeReachableV8Spawn(playerSettings, workcellProfile, robotShowcaseMode ? {
+  const generated = makeReachableV8Spawn(playerSettings, workcellProfile, demoMode === 'simple' ? {
+    count: SIMPLE_DEMO_COLOURS.length, colours: SIMPLE_DEMO_COLOURS, yawRad: 0
+  } : robotShowcaseMode ? {
     count: ROBOT_SHOWCASE_INVENTORY.length,
     colours: ROBOT_SHOWCASE_INVENTORY
   } : {});
@@ -53,6 +66,7 @@ const makePlayerBricks = () => {
   return generated.records;
 };
 const controller = new RobotController({
+  basePose: robotBasePoseFromSettings(playerSettings),
   board,
   bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(),
   revisionClock,
@@ -75,6 +89,8 @@ if (placementAuthority && !controller.setPlacementAuthority(placementAuthority))
 }
 const fastPlacement = placementAuthority ? new PlacementLookaheadCoordinator({ controller, placementAuthority, workcellProfile }) : null;
 const placementCycleRunner = fastPlacement ? new PlannedPlacementCycleRunner({ coordinator: fastPlacement, controller }) : null;
+const streamControl = placementCycleRunner ? createPlacementStreamControl({ runner: placementCycleRunner, coordinator: fastPlacement, controller,
+  canStart: () => !mainDemoConstruction?.preparedBuild }) : null;
 const humanBuildAdapter = new HumanBuildAdapter({ controller, board, graph: connectionGraph, placementEngine });
 const renderer = new RobotRenderer(document.querySelector('#scene'), controller, {
   board,
@@ -85,10 +101,22 @@ const renderer = new RobotRenderer(document.querySelector('#scene'), controller,
 const runtime = createLogoRoboRuntime({
   controller,
   board,
+  beforeReset: async () => {
+    await streamControl?.stop();
+    const state = await mainDemoMission?.service.getMissionState();
+    if (mainDemoConstruction?.preparedBuild || (state && state.phase !== 'DESIGN')) {
+      throw Object.assign(new Error('Use reset_mission while a mission build is active.'), {
+        code: 'mission_reset_required', currentPhase: state?.phase, currentMissionId: state?.missionId,
+        currentRevision: controller.worldRevision, permittedNextActions: ['get_mission_state', 'reset_mission'],
+        recoveryAction: 'Call reset_mission with current mission and world revisions.'
+      });
+    }
+  },
   resetBricks: evidenceMode ? makeRoundBricks : makePlayerBricks,
   humanBuildAdapter,
   placementAuthority,
   fastPlacement,
+  placementCycleRunner,
   workcellProfile: evidenceMode ? null : workcellProfile,
   getUserCamera: () => renderer.getUserCameraConfig(),
   captureCamera: (descriptor, options) => renderer.captureInspectionCamera(descriptor, options),
@@ -163,9 +191,44 @@ const settingsPanelController = installPlayerSettingsPanel({
   search: $('[data-settings-search]'),
   onImportError: (error) => addLog(`Settings import rejected: ${error.message}`, 'bad')
 });
-playerSettingsStore.subscribe((key) => renderer.applySettings(key));
+playerSettingsStore.addGuard((next, keys) => {
+  const changed = keys.filter(key => next[key] !== playerSettings[key]);
+  if (!changed.some(key => SCENE_LAYOUT_CONTROLS[key] || /^robotMount/.test(key))) return true;
+  const status = $('[data-scene-layout-status]');
+  const reject = reason => { if (status) status.textContent = reason; return false; };
+  if (changed.some(key => /^robotMount/.test(key))) return reject('The world display frame is fixed. Use Robot Base XYZ instead.');
+  if (mainDemoMission?.service.phase === 'TEST') return reject('Finish the train test before changing layout.');
+  if (controller.operationState !== 'idle' || controller.pendingMoveCount || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy) || placementCycleRunner?.getState().running) return reject('Finish or cancel motion and release held parts before changing layout.');
+  if (changed.includes('tableYawDeg') && mainDemoConstruction?.preparedBuild) return reject('Reset BUILD before rotating the table; frozen targets will not be moved.');
+  if (changed.some(key => /^robotBase/.test(key))) {
+    const result = controller.setBasePose({ ...robotBasePoseFromSettings(next), expectedWorldRevision: controller.worldRevision });
+    if (!result.ok) return reject(`Base unchanged: ${result.reason}. Existing safety limits remain active.`);
+  }
+  if (status) status.textContent = 'Layout saved. World / BuildPlan coordinates unchanged. VISUAL: USER-VERIFY PENDING';
+  return true;
+});
+playerSettingsStore.subscribe((key) => {
+  if (key === 'tableYawDeg' || key === '*') {
+    const next = createV8WorkcellProfile(playerSettings);
+    Object.assign(workcellProfile, next);
+    controller.layout = { ...controller.layout, tableBounds: next.tableBounds, tableZMm: next.tableSurfaceZMm };
+    revisionClock.bump();
+  }
+  renderer.applySettings(key);
+});
 let moreBricksBurst = 0;
 function spawnMoreBricks() {
+  if (!evidenceMode && demoMode === 'bridge' && mainDemoConstruction) {
+    if (!mainDemoConstruction.preparedBuild) return { ok: false, reason: 'Start BUILD BRIDGE first to use the shared source feeder.' };
+    if (mainDemoMission?.service.phase === 'TEST') return { ok: false, reason: 'Finish the train test before refilling sources.' };
+    let result;
+    try { result = mainDemoConstruction.refillSources({ expectedWorldRevision: controller.worldRevision, count: 6 }); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    renderer.workbench.pressMoreBricks();
+    const status = $('[data-scene-layout-status]');
+    if (status) status.textContent = result.count ? `Added ${result.count} shared bridge sources. Targets unchanged.` : result.reason;
+    return result;
+  }
   const startIndex = controller.getBricks().length;
   const generated = makeReachableV8MoreSpawn(
     playerSettings,
@@ -181,7 +244,8 @@ function spawnMoreBricks() {
   renderer.workbench.pressMoreBricks();
   return { ...result, action: 'more_bricks' };
 }
-renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Added 10 V8 physics bricks'));
+renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Shared source inventory replenished'));
+for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, spawnMoreBricks, 'Shared source inventory replenished'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 
@@ -427,6 +491,8 @@ async function executeFastPlacement({ signal } = {}) {
 
 async function runPlannedCycle({ signal = null } = {}) {
   if (!placementCycleRunner || !fastPlacement) return { ok: false, reason: 'runtime_unavailable' };
+  if (demoMode === 'simple') return streamControl.tool.execute({ action: 'start', expectedWorldRevision: controller.worldRevision,
+    cycleTimeMs: Math.max(1000, Math.min(10000, Number(cycleTimeInput?.value ?? 2000))) }, { signal });
   const state = fastPlacement.getState();
   const cycleTimeMs = Number(cycleTimeInput?.value ?? state.stream?.cycleTimeMs ?? 1000);
   setStatus('CYCLING');
@@ -673,7 +739,7 @@ if (fastPlacementForm && fastPlacement) {
   fastPlacement.subscribe((state) => {
     const cycleRunning = placementCycleRunner?.getState().running ?? false;
     if (cycleTimeInput && !cycleRunning && state.stream?.cycleTimeMs) {
-      cycleTimeInput.value = String(state.stream.cycleTimeMs);
+      cycleTimeInput.value = String(demoMode === 'simple' ? placementCycleRunner.cycleTimeMs : state.stream.cycleTimeMs);
       if (cycleTimeOutput) cycleTimeOutput.textContent = `${state.stream.cycleTimeMs} ms`;
     }
     if (cycleStartButton) cycleStartButton.disabled = cycleRunning || (state.stream?.remainingPlacements ?? 0) === 0;
@@ -775,6 +841,9 @@ function updateToolDiagnostics(event) {
 
 let mainDemoChallenge = null;
 let mainDemoBridge = null;
+let mainDemoConstruction = null;
+let mainDemoTrain = null;
+let mainDemoMission = null;
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -785,6 +854,65 @@ try {
     challenge: mainDemoChallenge.bridgeChallenge,
     onHologramChanged: updateBridgeHologramStatus
   });
+  if (!evidenceMode) {
+    const initial = prepareBridgeBuild({ host: mainDemoBridge.host, workspace: controller.workspace });
+    const bottom = physicalBuildReport(initial).physicalBoundsMm.min.zMm;
+    if (bottom < workcellProfile.placementSurfaceZMm) {
+      const elevation = mainDemoChallenge.getActiveChallenge().tuning.buildElevationMm + 4 - bottom;
+      await mainDemoChallenge.elevateForConstruction(mainDemoBridge.host, elevation);
+      addLog('Challenge elevation corrected from live physical bounds: ' + elevation.toFixed(2) + ' mm', 'ok');
+    }
+    mainDemoTrain = createMainDemoTrainIntegration({
+      challengeService: mainDemoChallenge,
+      THREE,
+      machineRoot: renderer.machineRoot,
+      requestRender: () => renderer.render(),
+      pusher: { mode: 'placeholder' },
+      preconditions: {
+        isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
+        isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
+        isGripperHoldingPart: () => Boolean(controller.heldBrick())
+      }
+    });
+    renderer.addFrameListener(deltaSeconds => mainDemoTrain.updateFrame(deltaSeconds));
+    mainDemoConstruction = createConstructionService({ bridgeHost: mainDemoBridge.host, challenge: mainDemoChallenge,
+      buildBoard: board, controller, placementAuthority, placementCoordinator: fastPlacement, cycleRunner: placementCycleRunner,
+      onPrepared: prepared => {
+        renderer.brickFactory.partRegistry = prepared?.registry ?? null;
+        mainDemoBridge.setConstructionBoard(prepared ? board : null);
+        if (prepared) mainDemoTrain.prepare({ preparedBuild: prepared, buildBoard: board });
+        else if (mainDemoTrain.getState().configured) mainDemoTrain.reset({ instant: true, reason: 'construction_reset' });
+      }
+    });
+    mainDemoMission = await createProductionMissionRuntime({
+      bridgeHost: mainDemoBridge.host,
+      bridgeDesignPackage: mainDemoBridge.bridgeDesign,
+      challengeService: mainDemoChallenge,
+      challengeMetadata: {
+        EASY: { label: 'Curated EASY', bridgeChallengeId: mainDemoChallenge.bridgeChallenge.id }
+      },
+      constructionSession: createMainDemoConstructionSession(mainDemoConstruction, () => controller.worldRevision),
+      getAcceptedBuildBoardSnapshot: () => board,
+      trainIntegration: mainDemoTrain,
+      robotController: controller,
+      runtime,
+      eventSink: event => addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok')
+    });
+    controller.subscribe(event => {
+      if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup'].includes(event.type)) mainDemoBridge.refreshHologram();
+    });
+    const endpointPanel = await installEndpointSettings({ groups: document.querySelector('[data-settings-groups]'), challenge: mainDemoChallenge,
+      bridgeHost: mainDemoBridge.host, getSettings: () => playerSettingsStore.get(),
+      beforeApply: () => {
+        if (mainDemoConstruction.preparedBuild) throw new Error('Reset BUILD before moving ENTRY or EXIT.');
+        if (controller.operationState !== 'idle' || controller.operationBlocked() || controller.getBricks().some(b => b.heldBy)) throw new Error('Finish or cancel the current movement before moving endpoints.');
+      }
+    });
+    if (params.get('settings') === 'bridge-endpoints') {
+      settingsPanelController?.setOpen(true);
+      requestAnimationFrame(() => endpointPanel?.section.scrollIntoView({ block: 'start' }));
+    }
+  }
   const bridgeState = mainDemoBridge.host.getCompileState();
   addLog(`V4.6 ${mainDemoBridge.host.settings.family} ready: ${bridgeState.planId}`, 'ok');
 } catch (error) {
@@ -796,8 +924,53 @@ try {
   addLog(`V4.6 bridge unavailable: ${error?.code ?? error?.message ?? 'compile failed'}`, 'bad');
 }
 
+for (const button of document.querySelectorAll('[data-construction-action]')) button.addEventListener('click', async () => {
+  const action = button.dataset.constructionAction;
+  try {
+    if (!mainDemoConstruction) throw new Error('construction_unavailable');
+    const options = { expectedWorldRevision: controller.worldRevision };
+    const state = mainDemoMission ? await mainDemoMission.service.getMissionState() : null;
+    const missionInput = state?.ok ? {
+      expectedMissionId: state.missionId,
+      expectedMissionRevision: state.revisions.missionRevision,
+      expectedWorldRevision: state.revisions.worldRevision
+    } : null;
+    const result = action === 'start' && mainDemoMission ? await mainDemoMission.service.startBridgeBuild({
+      ...missionInput,
+      expectedDesignRevision: mainDemoBridge.host.designRevision
+    }) : action === 'next' && mainDemoMission ? await mainDemoMission.service.buildNextParts({
+      ...missionInput,
+      count: Number($('[data-construction-count]').value)
+    }) : action === 'reset' && mainDemoMission ? await mainDemoMission.service.resetMission({
+      ...missionInput,
+      confirm: true
+    }) : action === 'start' ? mainDemoConstruction.startBuild(options)
+      : action === 'next' ? await mainDemoConstruction.buildNextParts(Number($('[data-construction-count]').value), options)
+      : action === 'cancel' ? mainDemoConstruction.cancelBuild(options) : mainDemoConstruction.reset(options);
+    const progress = mainDemoConstruction.getBuildProgress();
+    $('[data-construction-status]').textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
+  } catch (error) { $('[data-construction-status]').textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
+});
+const demoModeControl = !evidenceMode ? createDemoModeControl({ controller, board, runtime, streamControl, coordinator: fastPlacement, workcellProfile,
+  challenge: mainDemoChallenge, bridge: mainDemoBridge, train: mainDemoTrain, mission: mainDemoMission?.service,
+  renderer, setMode: value => { demoMode = value; }, originalBlueprint: blueprint }) : null;
+if (demoModeControl) {
+  $('[data-demo-mode]').addEventListener('change', async event => {
+    const result = await demoModeControl.change(event.target.value);
+    if (!result.ok) showToast(result.reason);
+  });
+  $('[data-simple-reset]').addEventListener('click', () => demoModeControl.change('simple', { reset: true }));
+  $('[data-simple-stop]').addEventListener('click', () => streamControl.stop());
+  const initialMode = params.get('demo') === 'simple' || (!params.has('demo') && !params.has('submissionGate') && !robotShowcaseMode) ? 'simple' : 'bridge';
+  const result = await demoModeControl.change(initialMode);
+  if (!result.ok) addLog(`Demo mode: ${result.reason}`, 'bad');
+}
 renderer.start();
 setInterval(() => {
+  if (streamControl && demoMode === 'simple') {
+    const stream = streamControl.getState();
+    $('[data-simple-status]').textContent = `${stream.satisfiedPlacements}/${stream.totalPlacements} · ${stream.cycleTimeMs} ms/cycle · ${stream.running ? 'RUNNING' : stream.lastResult?.reason ?? fastPlacement.getState().status}`;
+  }
   const performance = renderer.getPerformance();
   const fpsText = performance.fps ? performance.fps.toFixed(0) : '—';
   const frameText = performance.meanFrameMs ? `${performance.meanFrameMs.toFixed(2)} ms` : '— ms';
@@ -844,7 +1017,12 @@ setInterval(() => {
 window.addEventListener('resize', () => renderer.render());
 
 try {
-  const result = await registerWebMcpTools(runtime, updateToolDiagnostics, mainDemoBridge?.bridgeDesign.tools ?? []);
+  const bridgeTools = (mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? []).map(tool => ({ ...tool,
+    execute: (input, options) => demoMode === 'simple' && !tool.annotations?.readOnlyHint
+      ? { ok: false, reason: 'wrong_mode', message: 'Select BRIDGE mode before changing a bridge mission.', worldRevision: controller.worldRevision }
+      : tool.execute(input, options) }));
+  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : [])];
+  const result = await registerWebMcpTools(runtime, updateToolDiagnostics, additionalTools);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
     else { webmcpEl.textContent = 'WEBMCP UNAVAILABLE'; webmcpEl.dataset.kind = 'warning'; addLog(`WebMCP unavailable: ${result.reason}`, 'bad'); }
@@ -853,6 +1031,24 @@ try {
   if (webmcpEl) { webmcpEl.textContent = 'WEBMCP FAILED'; webmcpEl.dataset.kind = 'warning'; }
   addLog('WebMCP registration failed', 'bad');
 }
+
+const submissionAcceptance = params.get('submissionGate') === '1' && mainDemoBridge && mainDemoConstruction && mainDemoTrain && mainDemoMission
+  ? createMainDemoSubmissionAcceptance({
+    bridgeHost: mainDemoBridge.host,
+    board,
+    controller,
+    placementAuthority,
+    placementCoordinator: fastPlacement,
+    cycleRunner: placementCycleRunner,
+    humanBuildAdapter,
+    construction: mainDemoConstruction,
+    train: mainDemoTrain,
+    mission: mainDemoMission.service,
+    missionTools: mainDemoMission.missionTools,
+    renderer,
+    getLeakSnapshot: () => window.__ROBO_BRIDGE_QA__?.leakSnapshot?.() ?? null
+  })
+  : null;
 
 const publicRuntime = Object.freeze({
   version: '3.1.0-main-demo-player-v8',
@@ -863,6 +1059,8 @@ const publicRuntime = Object.freeze({
   humanBuildAdapter,
   fastPlacement,
   placementCycleRunner,
+  streamControl,
+  demoModeControl,
   connectionGraph,
   playerSettingsStore,
   playerSourceProvenance: PLAYER_SOURCE_PROVENANCE,
@@ -870,6 +1068,11 @@ const publicRuntime = Object.freeze({
   blueprint,
   renderer,
   challenge: mainDemoChallenge,
+  construction: mainDemoConstruction,
+  train: mainDemoTrain,
+  mission: mainDemoMission?.service ?? null,
+  missionRuntime: mainDemoMission,
+  submissionAcceptance,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
   get bridgeHologram() { return mainDemoBridge?.hologramSnapshot ?? null; },

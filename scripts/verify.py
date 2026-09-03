@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED_SOURCE_PARTS = {
     '.git', '.venv', '.playwright-cli', '.test-dist', '.npm-cache', 'ARCHIVE', 'dist',
     'downloads from oracle', 'evidence', 'output', '__pycache__', '.pytest_cache', '.cache',
-    'node_modules', 'Scene_and_3D_Files'
+    'node_modules', 'Scene_and_3D_Files', 'Downloads', 'artifacts', 'apps.zip', 'Downloads.zip'
 }
 
 
@@ -31,7 +31,7 @@ def source_fingerprint() -> str:
     digest = hashlib.sha256()
     entries: list[tuple[str, Path]] = []
     for current, directories, filenames in os.walk(ROOT):
-        directories[:] = sorted(name for name in directories if name not in EXCLUDED_SOURCE_PARTS)
+        directories[:] = sorted(name for name in directories if name not in EXCLUDED_SOURCE_PARTS and not name.startswith('.oracle-stage-'))
         current_path = Path(current)
         for filename in filenames:
             if filename in EXCLUDED_SOURCE_PARTS:

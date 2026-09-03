@@ -1,3 +1,4 @@
+import { partSize } from '../bricks/part-spec.js';
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
 import { createCameraRig } from '../perception/camera-rig.js';
 import { objectWorldCorners } from '../perception/projection.js';
@@ -110,7 +111,7 @@ function brickObject(brick) {
     type: 'brick',
     colour: brick.colour,
     position: clone(brick.position),
-    bounds: { xMm: BRICK_SPEC.lengthMm, yMm: BRICK_SPEC.widthMm, zMm: BRICK_SPEC.bodyHeightMm },
+    bounds: partSize(brick),
     yawDeg: Number(brick.yawRad ?? 0) * 180 / Math.PI,
     state,
     held: Boolean(brick.heldBy),
@@ -144,7 +145,7 @@ function targetObject(target) {
   };
 }
 
-export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, fastPlacement = null, workcellProfile = null, getUserCamera = null, captureCamera = null, placementPreviewObserver = null }) {
+export function createLogoRoboRuntime({ controller, board, resetBricks = null, humanBuildAdapter = null, placementAuthority = null, fastPlacement = null, placementCycleRunner = null, workcellProfile = null, getUserCamera = null, captureCamera = null, placementPreviewObserver = null, beforeReset = null }) {
   if (!controller || !board) throw new TypeError('controller and board are required');
 
   function worldRevision() { return controller.getState().worldRevision; }
@@ -164,7 +165,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       { id: 'structure-tray-front', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.minY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true },
       { id: 'structure-tray-back', type: 'structure', position: { xMm: (tray.minX + tray.maxX) / 2, yMm: tray.maxY, zMm: tray.floorZ + tray.wallHeight / 2 }, bounds: { xMm: tray.maxX - tray.minX, yMm: wall, zMm: tray.wallHeight }, visible: true, occluder: true }
     );
-    const fk = forwardKinematics(controller.getState().jointsRad);
+    const fk = forwardKinematics(controller.getState().jointsRad, controller.definition);
     if (fk.ok) {
       const points = [...fk.jointPositions, fk.tcp];
       for (let i = 0; i < points.length - 1; i += 1) {
@@ -252,7 +253,9 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
           coordinateFrame: 'machine-mm-rad',
           toolOrientation: 'fixed-down-auto-yaw',
           graspTcpOffsetMm: BRICK_SPEC.capture.tcpAboveCentreMm,
-          recommendedClearanceZMm: workcellProfile?.safeClearanceZMm ?? 400,
+          recommendedClearanceZMm: fastPlacement?.workcellProfile?.safeClearanceZMm ?? workcellProfile?.safeClearanceZMm ?? 400,
+          brickDimensions: { logicalLengthMm: 32, logicalWidthMm: 16, bodyHeightMm: BRICK_SPEC.bodyHeightMm, studPitchMm: BRICK_SPEC.studPitchMm },
+          matBounds: workcellProfile ? clone(workcellProfile.matBounds) : null,
           recommendedTransferTcp: clone(workcellProfile?.recommendedTransferTcp ?? { xMm: 600, yMm: 0, zMm: 450 }),
           workcellProfileId: workcellProfile?.id ?? 'challenge-evidence-v2',
           supplyZone: workcellProfile ? clone(workcellProfile.supplyZone) : null,
@@ -306,6 +309,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
         });
       },
       async reset(request = {}) {
+        if (beforeReset) await beforeReset(request);
         const state = await controller.reset({ bricks: resetBricks ? resetBricks() : controller.getBricks() });
         fastPlacement?.invalidateStream?.('reset');
         return { ok: true, state, worldRevision: state.worldRevision, expectedWorldRevision: request.expectedWorldRevision };
@@ -331,7 +335,7 @@ export function createLogoRoboRuntime({ controller, board, resetBricks = null, h
       },
       getStreamStatus(request = {}) {
         return fastPlacement
-          ? fastPlacement.getStreamStatus(request)
+          ? { ...fastPlacement.getStreamStatus(request), execution: placementCycleRunner ? { running: placementCycleRunner.getState().running, cycleTimeMs: placementCycleRunner.cycleTimeMs } : null }
           : { ok: false, reason: 'placement_unavailable', worldRevision: worldRevision() };
       },
       planQueue(request = {}) {

@@ -1,5 +1,3 @@
-import { configureTerrainMaterial, configureTerrainMesh } from './terrain-material.js';
-
 const COMPONENTS = Object.freeze({
   5120: Int8Array,
   5121: Uint8Array,
@@ -54,23 +52,32 @@ function accessorArray(glb, accessorIndex) {
   return { array: out, itemSize, normalized: Boolean(accessor.normalized) };
 }
 
-async function textureFromImage(glb, imageIndex, THREE, { colour = false } = {}) {
+async function textureFromImage(glb, imageIndex, THREE, { colour = false, info = {}, sampler = {}, decodeImage } = {}) {
   const image = glb.json.images?.[imageIndex];
   if (!image || image.bufferView === undefined) return null;
   const view = glb.json.bufferViews[image.bufferView];
   const bytes = glb.bin.subarray(view.byteOffset ?? 0, (view.byteOffset ?? 0) + view.byteLength);
   const blob = new Blob([bytes], { type: image.mimeType ?? 'application/octet-stream' });
-  const bitmap = await createImageBitmap(blob, { imageOrientation: 'none' });
+  const bitmap = await decodeImage(blob, { imageOrientation: 'none' });
   const texture = new THREE.Texture(bitmap);
   texture.flipY = false;
   if (colour) texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
+  const wrap = { 33071: THREE.ClampToEdgeWrapping, 33648: THREE.MirroredRepeatWrapping, 10497: THREE.RepeatWrapping };
+  texture.wrapS = wrap[sampler.wrapS] ?? THREE.RepeatWrapping;
+  texture.wrapT = wrap[sampler.wrapT] ?? THREE.RepeatWrapping;
+  const transform = info.extensions?.KHR_texture_transform;
+  if (transform) {
+    texture.offset.fromArray(transform.offset ?? [0, 0]);
+    texture.repeat.fromArray(transform.scale ?? [1, 1]);
+    texture.rotation = transform.rotation ?? 0;
+  }
   texture.needsUpdate = true;
   return texture;
 }
 
-async function makeMaterial(glb, materialIndex, THREE) {
+async function makeMaterial(glb, materialIndex, THREE, decodeImage) {
   const source = glb.json.materials?.[materialIndex] ?? {};
   const pbr = source.pbrMetallicRoughness ?? {};
   const material = new THREE.MeshStandardMaterial({
@@ -78,38 +85,46 @@ async function makeMaterial(glb, materialIndex, THREE) {
     opacity: pbr.baseColorFactor?.[3] ?? 1,
     metalness: pbr.metallicFactor ?? 1,
     roughness: pbr.roughnessFactor ?? 1,
-    transparent: (pbr.baseColorFactor?.[3] ?? 1) < 1
+    transparent: source.alphaMode === 'BLEND',
+    alphaTest: source.alphaMode === 'MASK' ? (source.alphaCutoff ?? 0.5) : 0,
+    side: source.doubleSided ? THREE.DoubleSide : THREE.FrontSide
   });
+  material.name = source.name ?? `terrain-material-${materialIndex}`;
+  const texture = async (info, colour = false) => {
+    const definition = glb.json.textures[info.index];
+    return textureFromImage(glb, definition.source, THREE, { colour, info, sampler: glb.json.samplers?.[definition.sampler], decodeImage });
+  };
   if (pbr.baseColorTexture) {
-    const texInfo = glb.json.textures[pbr.baseColorTexture.index];
-    material.map = await textureFromImage(glb, texInfo.source, THREE, { colour: true });
+    material.map = await texture(pbr.baseColorTexture, true);
   }
   if (source.normalTexture) {
-    const texInfo = glb.json.textures[source.normalTexture.index];
-    material.normalMap = await textureFromImage(glb, texInfo.source, THREE);
+    material.normalMap = await texture(source.normalTexture);
     material.normalScale.set(source.normalTexture.scale ?? 1, source.normalTexture.scale ?? 1);
   }
   if (pbr.metallicRoughnessTexture) {
-    const texInfo = glb.json.textures[pbr.metallicRoughnessTexture.index];
-    const combined = await textureFromImage(glb, texInfo.source, THREE);
+    const combined = await texture(pbr.metallicRoughnessTexture);
     material.metalnessMap = combined;
     material.roughnessMap = combined;
   }
-  return configureTerrainMaterial(material, THREE);
+  return material;
 }
 
-export async function decodeTerrainArrayBuffer(buffer, THREE) {
+export async function decodeTerrainArrayBuffer(buffer, THREE, { decodeImage = (blob, options) => createImageBitmap(blob, options) } = {}) {
   const decodeStarted = performance.now();
   const glbParseStarted = performance.now();
   const glb = parseGlb(buffer);
   const glbParseMs = performance.now() - glbParseStarted;
-  if (glb.json.extensionsRequired?.length) throw new Error(`unsupported_glb_extensions:${glb.json.extensionsRequired.join(',')}`);
+  const unsupported = (glb.json.extensionsRequired ?? []).filter(name => name !== 'KHR_texture_transform');
+  if (unsupported.length) throw new Error(`unsupported_glb_extensions:${unsupported.join(',')}`);
   const root = new THREE.Group();
   root.name = 'ROBO_BRIDGE_TERRAIN_ROOT';
   let primitiveCount = 0;
   let triangleCount = 0;
   const materialCache = new Map();
+  const meshTemplates = [];
   for (const meshDef of glb.json.meshes ?? []) {
+    const group = new THREE.Group();
+    group.name = meshDef.name ?? '';
     for (const primitive of meshDef.primitives ?? []) {
       if ((primitive.mode ?? 4) !== 4) throw new Error('terrain_requires_triangles');
       const geometry = new THREE.BufferGeometry();
@@ -128,17 +143,48 @@ export async function decodeTerrainArrayBuffer(buffer, THREE) {
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       const key = primitive.material ?? -1;
-      if (!materialCache.has(key)) materialCache.set(key, await makeMaterial(glb, primitive.material, THREE));
-      const mesh = configureTerrainMesh(new THREE.Mesh(geometry, materialCache.get(key)));
-      root.add(mesh);
+      if (!materialCache.has(key)) materialCache.set(key, await makeMaterial(glb, primitive.material, THREE, decodeImage));
+      const mesh = new THREE.Mesh(geometry, materialCache.get(key));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
       primitiveCount += 1;
     }
+    meshTemplates.push(group);
   }
+  // Preserve the authored hierarchy/TRS. Flattening mesh definitions loses the
+  // ENTRY/EXIT anchors and moves Terrain 7's rotated meshes to the wrong place.
+  const nodes = (glb.json.nodes ?? []).map((source, index) => {
+    const node = source.mesh === undefined ? new THREE.Group() : meshTemplates[source.mesh].clone(true);
+    node.name = source.name ?? `terrain-node-${index}`;
+    if (source.matrix) {
+      node.matrix.fromArray(source.matrix);
+      node.matrix.decompose(node.position, node.quaternion, node.scale);
+    } else {
+      node.position.fromArray(source.translation ?? [0, 0, 0]);
+      node.quaternion.fromArray(source.rotation ?? [0, 0, 0, 1]);
+      node.scale.fromArray(source.scale ?? [1, 1, 1]);
+    }
+    if (node.name === 'Plane') node.traverse(object => {
+      if (!object.isMesh) return;
+      object.castShadow = false;
+      object.renderOrder = 2;
+      if (object.material.transparent) object.material.depthWrite = false;
+    });
+    return node;
+  });
+  for (const [index, source] of (glb.json.nodes ?? []).entries()) {
+    for (const child of source.children ?? []) nodes[index].add(nodes[child]);
+  }
+  const sceneNodes = glb.json.scenes?.[glb.json.scene ?? 0]?.nodes;
+  if (sceneNodes) for (const index of sceneNodes) root.add(nodes[index]);
+  else for (const node of nodes.length ? nodes.filter(node => !node.parent) : meshTemplates) root.add(node);
+  root.updateMatrixWorld(true);
   const decodeMs = performance.now() - decodeStarted;
   return {
     root,
     metrics: Object.freeze({
-      meshCount: root.children.length,
+      meshCount: meshTemplates.length,
       primitiveCount,
       triangleCount,
       materialCount: materialCache.size,
@@ -150,13 +196,13 @@ export async function decodeTerrainArrayBuffer(buffer, THREE) {
   };
 }
 
-export async function loadTerrainAsset({ url, THREE, fetchImpl = fetch }) {
+export async function loadTerrainAsset({ url, THREE, fetchImpl = fetch, decodeImage }) {
   const loadStarted = performance.now();
   const response = await fetchImpl(url);
   if (!response.ok) throw new Error(`terrain_fetch_failed:${response.status}`);
   const buffer = await response.arrayBuffer();
   const fetchMs = performance.now() - loadStarted;
-  const decoded = await decodeTerrainArrayBuffer(buffer, THREE);
+  const decoded = await decodeTerrainArrayBuffer(buffer, THREE, { decodeImage });
   return {
     ...decoded,
     metrics: Object.freeze({ ...decoded.metrics, bytes: buffer.byteLength, fetchMs, loadMs: performance.now() - loadStarted })

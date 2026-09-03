@@ -1,4 +1,4 @@
-import { BRICK_SPEC } from '../bricks/brick-spec.js';
+import { captureOffset } from '../bricks/part-spec.js';
 import { RobotError } from './controller.js';
 
 const clone = (value) => structuredClone(value);
@@ -22,6 +22,7 @@ export class FastPlacementCoordinator {
     this.proposal = null;
     this.listeners = new Set();
     this.activeAbortController = null;
+    this.travelPolicy = null;
   }
 
   subscribe(listener) {
@@ -39,7 +40,7 @@ export class FastPlacementCoordinator {
     return this.controller.getBricks()
       .filter((brick) => !brick.heldBy && !brick.snapped && !brick.placedTargetId && !brick.placementType && brick.graspable !== false)
       .filter((brick) => brick.reachability?.reachable !== false)
-      .map((brick) => ({ id: brick.id, colour: brick.colour, position: clone(brick.position), yawRad: brick.yawRad ?? 0 }));
+      .map((brick) => clone(brick));
   }
 
   preview({ brickId = null, position = null, yawRad = 0, supportBrickId = null, supportSide = 'M', carriedSide = null } = {}) {
@@ -66,22 +67,23 @@ export class FastPlacementCoordinator {
     const pickupTcp = {
       xMm: brick.position.xMm,
       yMm: brick.position.yMm,
-      zMm: brick.position.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+      zMm: brick.position.zMm + captureOffset(brick)
     };
     const requiredTcp = preview.requiredTcp ?? {
       xMm: candidatePosition.xMm,
       yMm: candidatePosition.yMm,
-      zMm: candidatePosition.zMm + BRICK_SPEC.capture.tcpAboveCentreMm
+      zMm: candidatePosition.zMm + captureOffset(brick)
     };
-    const clearanceZMm = this.workcellProfile.safeClearanceZMm;
+    const clearanceZMm = this.travelPolicy?.safeTcpTravelZMm ?? this.workcellProfile.safeClearanceZMm;
+    const travelBlocked = this.travelPolicy && Math.max(pickupTcp.zMm, requiredTcp.zMm) > clearanceZMm;
     const currentTcp = this.controller.getState().tcp;
     const approximatePhysicalDistanceMm = distance3(currentTcp, { ...pickupTcp, zMm: clearanceZMm })
       + Math.abs(clearanceZMm - pickupTcp.zMm) * 2
       + Math.hypot(requiredTcp.xMm - pickupTcp.xMm, requiredTcp.yMm - pickupTcp.yMm)
       + Math.abs(clearanceZMm - requiredTcp.zMm) * 2;
     this.proposal = {
-      status: preview.ok ? 'VALID' : 'INVALID',
-      reason: preview.ok ? null : preview.reason,
+      status: preview.ok && !travelBlocked ? 'VALID' : 'INVALID',
+      reason: travelBlocked ? 'terrain_travel_plane_below_target' : preview.ok ? null : preview.reason,
       expectedWorldRevision: revisionBefore,
       brickId: brick.id,
       brick,
@@ -92,6 +94,7 @@ export class FastPlacementCoordinator {
       pickupTcp,
       requiredTcp,
       clearanceZMm,
+      travelPolicy: this.travelPolicy ? clone(this.travelPolicy) : null,
       approximatePhysicalDistanceMm
     };
     this.emit();
@@ -160,8 +163,12 @@ export class FastPlacementCoordinator {
     this.proposal = { ...proposal, status: 'EXECUTING', reason: null };
     this.emit();
     const stages = [];
+    let activeStage = null;
+    let requestedTcp = null;
     let physicalDurationMs = 0;
     const move = async (stage, target, speed = physicalSpeedMmS) => {
+      activeStage = stage;
+      requestedTcp = clone(target);
       const result = await this.controller.moveTool({
         ...target,
         speedMmS: Math.min(speed, physicalSpeedMmS),
@@ -169,7 +176,7 @@ export class FastPlacementCoordinator {
         operationToken: lease.token,
         signal: abortController.signal
       });
-      stages.push({ stage, durationMs: result.durationMs, diagnostics: result.diagnostics });
+      stages.push({ stage, requestedTcp: clone(target), durationMs: result.durationMs, diagnostics: result.diagnostics });
       physicalDurationMs += result.durationMs;
       return result;
     };
@@ -177,7 +184,12 @@ export class FastPlacementCoordinator {
     const targetTcp = proposal.requiredTcp;
     const pickupApproach = { ...pickupTcp, zMm: proposal.clearanceZMm };
     const targetApproach = { ...targetTcp, zMm: proposal.clearanceZMm };
+    const verticalToTravel = async stage => {
+      const current = this.controller.getState();
+      return move(stage, { ...current.tcp, zMm: proposal.clearanceZMm, yawRad: current.toolYawRad });
+    };
     try {
+      if (proposal.travelPolicy) await verticalToTravel('initial_z_hop');
       await move('pickup_approach', pickupApproach);
       await move('pickup_descend', pickupTcp, Math.min(physicalSpeedMmS, 420));
       const capture = await this.controller.latch({
@@ -196,7 +208,8 @@ export class FastPlacementCoordinator {
       const orientedTargetTcp = Number.isFinite(targetToolYawRad)
         ? { ...targetTcp, yawRad: targetToolYawRad }
         : targetTcp;
-      await move('pickup_lift', pickupApproach);
+      if (proposal.travelPolicy) await verticalToTravel('pickup_lift');
+      else await move('pickup_lift', pickupApproach);
       await move('target_transfer', orientedTargetApproach);
       await move('target_descend', orientedTargetTcp, Math.min(physicalSpeedMmS, 420));
       const release = await this.controller.unlatch({
@@ -211,7 +224,8 @@ export class FastPlacementCoordinator {
       });
       if (!release.ok) throw new RobotError(release.reason, release);
       stages.push({ stage: 'unlatch', placementType: release.placementType, targetId: release.targetId });
-      await move('target_retreat', orientedTargetApproach);
+      if (proposal.travelPolicy) await verticalToTravel('target_retreat');
+      else await move('target_retreat', orientedTargetApproach);
       this.proposal = null;
       this.emit();
       return {
@@ -232,7 +246,7 @@ export class FastPlacementCoordinator {
       const reason = error?.code ?? (abortController.signal.aborted ? 'cancelled' : 'internal_error');
       this.proposal = { ...proposal, status: reason === 'stale_state' ? 'STALE' : 'INVALID', reason };
       this.emit();
-      return { ok: false, reason, details: error?.details ?? {}, stages, worldRevision: this.controller.getState().worldRevision };
+      return { ok: false, reason, details: { ...(error?.details ?? {}), stage: activeStage, requestedTcp, startTcp: this.controller.getState().tcp, travelPolicy: proposal.travelPolicy }, stages, worldRevision: this.controller.getState().worldRevision };
     } finally {
       this.activeAbortController = null;
       this.controller.endExclusiveOperation(lease.token);

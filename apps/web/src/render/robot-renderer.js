@@ -83,6 +83,7 @@ export class RobotRenderer {
     this.lastFrame = 0;
     this.fps = 0;
     this.frameTimes = [];
+    this.frameListeners = new Set();
     this.drag = null;
     this.brickMeshes = new Map();
     this.targetMeshes = new Map();
@@ -209,17 +210,19 @@ export class RobotRenderer {
 
   playerObstacles() {
     const s = this.playerSettings;
+    const base = this.controller.getState().baseTransform;
+    const worldBase = this.machineRoot.localToWorld(new THREE.Vector3(base[3], base[7], base[11]));
     return [
       ...this.workbench.collisionBoxes(),
       ...this.environmentCollisionProxies,
       {
         kind: 'ROBOT_BASE',
-        minX: s.robotMountXmm - 125,
-        maxX: s.robotMountXmm + 125,
-        minY: s.robotMountYmm - 125,
-        maxY: s.robotMountYmm + 125,
-        minZ: s.robotMountZmm,
-        maxZ: s.robotMountZmm + 310
+        minX: worldBase.x - 125,
+        maxX: worldBase.x + 125,
+        minY: worldBase.y - 125,
+        maxY: worldBase.y + 125,
+        minZ: worldBase.z,
+        maxZ: worldBase.z + 310
       }
     ];
   }
@@ -377,6 +380,13 @@ export class RobotRenderer {
       visuals.group.visible = false;
       return;
     }
+    const previewBrick = this.frameBricks.find(b => b.id === (preview.carriedBrickId ?? preview.brickId));
+    const visualKey = previewBrick?.bridgePart?.registryKey ?? 'generic';
+    if (visuals.partKey !== visualKey) {
+      visuals.ghost.removeFromParent(); disposeV8BrickVisual(visuals.ghost);
+      visuals.ghost = createV8BrickVisual(previewBrick ?? { colour: 'green' }, this.playerSettings, this.brickFactory, { ghost: true });
+      visuals.group.add(visuals.ghost); visuals.partKey = visualKey;
+    }
     visuals.group.visible = true;
     const position = preview.previewPosition ?? preview.position;
     const yawRad = preview.previewYawRad ?? preview.yawRad ?? 0;
@@ -471,10 +481,13 @@ export class RobotRenderer {
     if (this.protectedBrickId) return { ok: false, reason: 'supporting_brick', brickId: this.protectedBrickId };
     if (!this.highlightedBrickId) return { ok: false, reason: 'no_pick_target' };
     const brick = this.controller.getBricks().find((candidate) => candidate.id === this.highlightedBrickId);
+    if (brick && this.terrainBlocksMachinePoint(brick.position)) return { ok: false, reason: 'terrain_occluded' };
     const result = this.humanBuildAdapter.pickup(this.highlightedBrickId);
     if (result.ok && brick) {
       this.heldVisual.pickup(brick);
-      this.heldGhost.userData.material.color.setHex(colourHex(brick));
+      this.heldGhost.removeFromParent(); disposeV8BrickVisual(this.heldGhost);
+      this.heldGhost = createV8BrickVisual(brick, this.playerSettings, this.brickFactory);
+      this.machineRoot.add(this.heldGhost);
       this.heldGhost.visible = true;
       this.highlightedBrickId = null;
     }
@@ -495,6 +508,9 @@ export class RobotRenderer {
   }
 
   releaseHeldPlacement() {
+    // Refresh against the camera at click time, not a potentially stale frame.
+    const preview = this.humanBuildAdapter.getPreview();
+    if (preview?.position && this.terrainBlocksMachinePoint(preview.position)) return { ok: false, reason: 'terrain_occluded' };
     const pose = this.heldVisual.getVisualPose();
     const result = this.humanBuildAdapter.release();
     if (result.ok) {
@@ -577,7 +593,20 @@ export class RobotRenderer {
 
   centreHits(objects) {
     this.raycaster.setFromCamera(this.ndcCentre, this.camera);
-    return this.raycaster.intersectObjects(objects, false);
+    // Bridge custom parts are nested exact-geometry groups. Recursive picking keeps
+    // the Player path identical for standard bricks, arches and track segments.
+    return this.raycaster.intersectObjects(objects, true);
+  }
+
+  setTerrainOccluders(meshes = []) { this.terrainOccluders = [...meshes]; }
+
+  terrainBlocksWorldPoint(point) {
+    this.scene.updateMatrixWorld(true);
+    return terrainOccludesPoint({ origin: this.camera.getWorldPosition(new THREE.Vector3()), point, occluders: this.terrainOccluders }).blocked;
+  }
+
+  terrainBlocksMachinePoint(position) {
+    return this.terrainBlocksWorldPoint(this.machineRoot.localToWorld(new THREE.Vector3(position.xMm, position.yMm, position.zMm)));
   }
 
   updatePlayerInteraction(bricks = this.frameBricks) {
@@ -589,7 +618,8 @@ export class RobotRenderer {
         ...this.batcher.pickMeshes(),
         this.workbench.moreBricksButton
       ].filter((mesh) => mesh.visible);
-      const hit = this.centreHits(pickMeshes)[0] ?? null;
+      let hit = this.centreHits(pickMeshes)[0] ?? null;
+      if (hit && this.terrainBlocksWorldPoint(hit.point)) hit = null;
       this.highlightedMoreBricks = Boolean(hit?.object?.userData?.moreBricks);
       this.workbench.setMoreBricksHighlighted(this.highlightedMoreBricks);
       const aimedBrickId = this.highlightedMoreBricks ? null : this.brickIdFromHit(hit);
@@ -598,8 +628,8 @@ export class RobotRenderer {
       for (const [id, mesh] of this.brickMeshes) {
         const highlighted = id === this.highlightedBrickId;
         const protectedBrick = id === this.protectedBrickId;
-        mesh.material.emissive?.setHex(protectedBrick ? 0xff8a24 : highlighted ? 0xffffff : 0x000000);
-        mesh.material.emissiveIntensity = protectedBrick ? 0.24 : highlighted ? 0.28 : 0;
+        mesh.userData.material?.emissive?.setHex(protectedBrick ? 0xff8a24 : highlighted ? 0xffffff : 0x000000);
+        mesh.userData.material.emissiveIntensity = protectedBrick ? 0.24 : highlighted ? 0.28 : 0;
       }
       return;
     }
@@ -659,6 +689,13 @@ export class RobotRenderer {
         connection: null
       };
     }
+    if (carried.bridgePart && candidate?.type === 'TARGET') {
+      const verified = this.controller.placementAuthority.preview({ brickId: carried.id, position: candidate.position, yawRad: candidate.yawRad });
+      if (!verified.ok) candidate = { ...candidate, valid: false, status: 'BLOCKED', blockedReason: verified.reason };
+    }
+    if (candidate?.type !== 'CARRY' && candidate?.position && this.terrainBlocksMachinePoint(candidate.position)) {
+      candidate = { ...candidate, valid: false, status: 'BLOCKED', blockedReason: 'terrain_occluded' };
+    }
     const signature = JSON.stringify(candidate);
     if (signature !== this.lastPreviewSignature) {
       this.humanBuildAdapter.setPreview(candidate);
@@ -699,6 +736,11 @@ export class RobotRenderer {
     for (const target of targets) {
       seen.add(target.id);
       let mesh = this.targetMeshes.get(target.id);
+      if (!mesh && target.bridgeConstruction && this.brickFactory.partRegistry) {
+        mesh = createV8BrickVisual({ bridgePart: { registryKey: target.registryKey, material: target.displayMaterial }, displayColour: target.displayMaterial.colourHex }, this.playerSettings, this.brickFactory, { ghost: true });
+        mesh.traverse(o => { o.userData.targetId = target.id; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m) m.opacity = 0; }); });
+        this.machineRoot.add(mesh); this.targetMeshes.set(target.id, mesh);
+      }
       if (!mesh) {
         const colour = BRICK_COLOURS[target.colour] ?? BRICK_COLOURS.white;
         mesh = makeBox(
@@ -710,7 +752,7 @@ export class RobotRenderer {
         this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
-      mesh.visible = this.playerSettings.robotTargetsVisible === true && !target.occupiedBy;
+      mesh.visible = (target.bridgeConstruction || this.playerSettings.robotTargetsVisible === true) && !target.occupiedBy;
       mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
       mesh.rotation.z = target.yawRad ?? 0;
     }
@@ -725,7 +767,8 @@ export class RobotRenderer {
       ...(this.board?.getPlacements?.() ?? []).map((placement) => placement.brickId)
     ]);
     const animatedBrickId = this.snapAnimation?.brickId ?? null;
-    const batchPlacedIds = new Set([...placedIds].filter((id) => id !== animatedBrickId));
+    const bridgeIds = new Set(bricks.filter(b => b.bridgePart).map(b => b.id));
+    const batchPlacedIds = new Set([...placedIds].filter((id) => id !== animatedBrickId && !bridgeIds.has(id)));
     const brickById = new Map(bricks.map((brick) => [brick.id, brick]));
     const batchSignature = `${animatedBrickId ?? '-'}:${[...batchPlacedIds].sort().map((id) => {
       const brick = brickById.get(id);
@@ -743,7 +786,7 @@ export class RobotRenderer {
         const body = createV8BrickVisual(brick, this.playerSettings, this.brickFactory);
         body.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
         body.name = `BRICK_${brick.id}`;
-        body.userData.brickId = brick.id;
+        body.traverse((object) => { object.userData.brickId = brick.id; });
         this.machineRoot.add(body);
         mesh = body;
         this.brickMeshes.set(brick.id, mesh);
@@ -760,7 +803,7 @@ export class RobotRenderer {
 
   updateRobot() {
     const state = this.controller.getState();
-    const fk = forwardKinematics(state.jointsRad, UR10_DEFINITION);
+    const fk = forwardKinematics(state.jointsRad, this.controller.definition);
     if (!fk.ok) return;
     this.ur10.update(state.jointsRad, fk.frames);
     this.gripper.update(fk.frames[6], state.gripper.jawGapMm);
@@ -992,6 +1035,7 @@ export class RobotRenderer {
           this.stepSnapAnimation(this.physicsStepSeconds);
           this.loosePhysics.step(this.physicsStepSeconds);
         }
+        for (const listener of this.frameListeners) listener(delta / 1000);
       }
       this.lastFrame = now;
       this.workbench.update(now);
@@ -1002,6 +1046,12 @@ export class RobotRenderer {
   }
 
   stop() { this.running = false; }
+
+  addFrameListener(listener) {
+    if (typeof listener !== 'function') throw new TypeError('frame listener must be a function');
+    this.frameListeners.add(listener);
+    return () => this.frameListeners.delete(listener);
+  }
 
   setMoreBricksHandler(handler) { this.moreBricksHandler = handler; }
 
@@ -1022,7 +1072,7 @@ export class RobotRenderer {
     const mountChanged = key === '*' || /^robotMount/.test(key);
     const lightingChanged = key === '*' || /^(backgroundBrightness|environmentIntensity|keyLight|keyX|keyY|keyZ|fillIntensity|rimIntensity|shadow|sun|exposure|toneMapping)/.test(key);
     const floorChanged = key === '*' || /^floor/.test(key);
-    const collisionChanged = tableChanged || mountChanged || key === '*' || /^playerCollision/.test(key);
+    const collisionChanged = tableChanged || mountChanged || key === '*' || /^(playerCollision|robotBase)/.test(key);
     const brickGeometryChanged = key === '*' || /^(brickLengthMm|brickWidthMm|brickBodyHeightMm|studPitchMm|studDiameterMm|studHeightMm)$/.test(key);
     const brickMaterialChanged = key === '*' || /^(brickRoughness|brickMetalness)$/.test(key);
     const playerHeightChanged = key === '*' || key === 'playerEyeHeightMm';
@@ -1115,3 +1165,4 @@ export class RobotRenderer {
     };
   }
 }
+import { terrainOccludesPoint } from '../player/terrain-occlusion.js';

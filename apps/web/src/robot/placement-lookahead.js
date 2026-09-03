@@ -32,6 +32,7 @@ function normalizeDestination(source, fallbackId = null) {
     placementId: source?.placementId ?? fallbackId,
     brickId: source?.brickId ?? null,
     colour: source?.colour ?? null,
+    preferredColour: source?.preferredColour ?? null,
     position: position ? clone(position) : null,
     yawRad: Number(source?.yawRad ?? 0),
     supportBrickId: source?.supportBrickId ?? null,
@@ -46,6 +47,7 @@ function validateDestination(destination, { requirePlacementId = true } = {}) {
   if (requirePlacementId && !PLACEMENT_ID.test(destination.placementId ?? '')) return 'invalid_placement_id';
   if (destination.brickId !== null && !PLACEMENT_ID.test(destination.brickId)) return 'invalid_brick_id';
   if (destination.colour !== null && (typeof destination.colour !== 'string' || !destination.colour)) return 'invalid_colour';
+  if (destination.preferredColour !== null && (typeof destination.preferredColour !== 'string' || !destination.preferredColour)) return 'invalid_colour';
   if (!Number.isFinite(destination.yawRad)) return 'invalid_yaw';
   if (!finitePosition(destination.position) && !destination.supportBrickId && !destination.supportPlacementId) return 'missing_destination';
   if (destination.position !== null && !finitePosition(destination.position)) return 'invalid_position';
@@ -193,7 +195,8 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     if (preferred) return preferred;
     const fallbackAnchor = previous?.brick?.position ?? anchor;
     const target = finitePosition(destination.position) ? destination.position : anchor;
-    return colourMatched
+    const preferredColours = colourMatched.filter(brick => brick.colour === destination.preferredColour);
+    return (preferredColours.length ? preferredColours : colourMatched)
       .map((brick) => ({
         brick,
         cost: distance3(fallbackAnchor, brick.position) + distance3(brick.position, target) * 0.35
@@ -203,10 +206,11 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
 
   trajectoryFor(proposal, anchor) {
     if (!proposal.pickupTcp || !proposal.requiredTcp) return null;
-    const safeZ = Math.max(proposal.clearanceZMm, proposal.pickupTcp.zMm + 24, proposal.requiredTcp.zMm + 24);
+    const safeZ = proposal.travelPolicy ? proposal.clearanceZMm : Math.max(proposal.clearanceZMm, proposal.pickupTcp.zMm + 24, proposal.requiredTcp.zMm + 24);
     const sourceApproach = { ...proposal.pickupTcp, zMm: safeZ };
     const targetApproach = { ...proposal.requiredTcp, zMm: safeZ };
     const waypoints = [
+      ...(proposal.travelPolicy ? [{ stage: 'initial_z_hop', action: 'move', tcp: { ...clone(anchor), zMm: safeZ } }] : []),
       { stage: 'source_approach', action: 'move', tcp: clone(sourceApproach) },
       { stage: 'source_descend', action: 'move', tcp: clone(proposal.pickupTcp) },
       { stage: 'capture', action: 'latch', brickId: proposal.brickId },
@@ -272,6 +276,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
 
   expectedColour(entry) {
     if (entry.request.colour) return entry.request.colour;
+    if (entry.request.preferredColour) return null;
     const requested = this.controller.getBricks().find((brick) => brick.id === entry.request.brickId);
     return requested?.colour ?? null;
   }
@@ -286,6 +291,11 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
   }
 
   evaluateOccupancy(entry, placed = this.authoritativePlacements()) {
+    const boardTarget = this.placementAuthority.board.getTarget(entry.placementId);
+    if (boardTarget?.bridgeConstruction) {
+      const brick = placed.find(b => b.id === boardTarget.occupiedBy);
+      return { compatible: brick ?? null, conflict: null };
+    }
     const target = this.expectedTarget(entry);
     if (!target) return { compatible: null, conflict: null };
     const expected = { position: target, yawRad: entry.request.yawRad ?? 0 };
@@ -573,6 +583,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       sourceReassigned: Boolean(entry.sourceReassigned),
       actualBrickId: entry.actualBrickId,
       actor: entry.actor,
+      preferredColour: entry.request.preferredColour,
       targetPosition: this.expectedTarget(entry) ? clone(this.expectedTarget(entry)) : null,
       targetYawDeg: Number(entry.request.yawRad ?? 0) * 180 / Math.PI,
       supportPlacementId: entry.request.supportPlacementId,

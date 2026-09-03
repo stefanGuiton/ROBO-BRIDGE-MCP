@@ -28,7 +28,12 @@ function boundedJson(value, maxChars = 12000) {
   if (truncated) {
     candidate.truncated = true;
     candidate.returnedCount = returnedCount;
-    candidate.totalAvailable = totalAvailable;
+    candidate.totalAvailable ??= totalAvailable;
+    const page = candidate.objects ?? candidate.entries;
+    if (Array.isArray(page) && Number.isInteger(candidate.cursor)) {
+      candidate.returnedCount = page.length;
+      candidate.nextCursor = candidate.cursor + page.length < candidate.totalAvailable ? candidate.cursor + page.length : null;
+    }
   }
   const text = JSON.stringify(candidate);
   if (text.length <= maxChars) return text;
@@ -48,7 +53,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
   return [
     {
       name:'get_scene_state', description:'Read the bounded authoritative brick and target inventory, placement state, build state, and exact world revision shared by the human and robot.',
-      inputSchema:{type:'object',properties:{colour:{type:'string',enum:PALETTE},type:{type:'string',enum:['brick','target']},limit:LIMIT},additionalProperties:false},
+      inputSchema:{type:'object',properties:{colour:{type:'string',enum:PALETTE},type:{type:'string',enum:['brick','target']},limit:LIMIT,cursor:{type:'integer',minimum:0,default:0},expectedWorldRevision:{...REVISION,description:'Required after cursor 0: use the first page worldRevision; restart paging if stale.'}},additionalProperties:false},
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getSceneState(input)
     },
     {
@@ -85,7 +90,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
       annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.getPlacementStreamStatus(input)
     },
     {
-      name:'plan_placement_queue', description:'Read-only logical placement planning. Stream mode accepts bounded replace/append chunks with stable placementId values while materializing at most five ghost proposals. Omit stream fields for the legacy one-to-five replacement form.',
+      name:'plan_placement_queue', description:'Create or update bounded logical placement-stream and ghost proposal state. Stream mode accepts replace/append chunks with stable placementId values while materializing at most five ghost proposals. Omit stream fields for the legacy one-to-five replacement form.',
       inputSchema:{
         type:'object',
         properties:{
@@ -94,7 +99,8 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
             items:{type:'object',properties:{
               placementId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
               brickId:{type:'string',minLength:1,maxLength:64,pattern:'^[A-Za-z0-9_.:-]+$'},
-              colour:{type:'string',enum:PALETTE},
+              colour:{type:['string','null'],enum:[...PALETTE,null],description:'Strict target colour; null accepts any colour.'},
+              preferredColour:{type:'string',enum:PALETTE,description:'Preferred source colour only. Compatible human placements of another colour are ADOPTED.'},
               xMm:{type:'number',minimum:workspace.xMinMm,maximum:workspace.xMaxMm},
               yMm:{type:'number',minimum:workspace.yMinMm,maximum:workspace.yMaxMm},
               zMm:{type:'number',minimum:0,maximum:workspace.zMaxMm},
@@ -113,7 +119,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           expectedWorldRevision:REVISION
         },required:['placements','expectedWorldRevision'],additionalProperties:false
       },
-      annotations:{readOnlyHint:true,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
+      annotations:{readOnlyHint:false,untrustedContentHint:false}, execute:(input)=>handlers.planPlacementQueue({
         expectedWorldRevision:input.expectedWorldRevision,
         ...(input.streamId===undefined?{}:{streamId:input.streamId}),
         ...(input.mode===undefined?{}:{mode:input.mode}),
@@ -123,6 +129,7 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
           placementId:placement.placementId??null,
           brickId:placement.brickId??null,
           colour:placement.colour??null,
+          preferredColour:placement.preferredColour??null,
           position:[placement.xMm,placement.yMm,placement.zMm].every(Number.isFinite)
             ? {xMm:placement.xMm,yMm:placement.yMm,zMm:placement.zMm}
             : null,
@@ -170,9 +177,17 @@ export function getLogoRoboToolDefinitions(handlers, workspace = { xMinMm:470, x
   ];
 }
 
+export function resolveWebMcpModelContext(root = globalThis) {
+  const documentContext = root?.document?.modelContext;
+  if (documentContext?.registerTool) return documentContext;
+  const navigatorContext = root?.navigator?.modelContext;
+  if (navigatorContext?.registerTool) return navigatorContext;
+  return null;
+}
+
 export async function registerWebMcpTools(runtime = null, onLifecycle = () => {}, additionalTools = []) {
-  const modelContext = globalThis.document?.modelContext;
-  if (!modelContext?.registerTool) return { ok:false, reason:'document.modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
+  const modelContext = resolveWebMcpModelContext();
+  if (!modelContext) return { ok:false, reason:'WebMCP modelContext is unavailable. Use a WebMCP-enabled secure browser context.' };
   const bridge = createRuntimeBridge(runtime ?? globalThis.__LOGO_ROBO_RUNTIME__ ?? null);
   if (!bridge.availability.ok) return { ok:false, reason:'runtime_unavailable', missing:bridge.availability.missing };
   if (!Array.isArray(additionalTools)) return { ok:false, reason:'invalid_additional_tools' };

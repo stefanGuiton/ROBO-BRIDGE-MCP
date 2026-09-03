@@ -27,8 +27,22 @@
       </div>
     </section>
 
+    <section class="demo-mode-control" aria-label="Demo mode">
+      <label>DEMO MODE <select data-demo-mode title="Switching modes resets the current build"><option value="simple">SIMPLE BRICKS</option><option value="bridge">BRIDGE</option></select></label>
+      <div class="simple-only"><small data-simple-status>0/0 · 2000 ms/cycle · READY</small>
+        <button type="button" data-simple-reset>RESET SIMPLE DEMO</button><button type="button" data-simple-stop>STOP BUILD</button></div>
+    </section>
+    <section data-bridge-controls style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
+      <button type="button" data-construction-action="start">BUILD BRIDGE</button>
+      <select data-construction-count aria-label="Parts per batch"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+      <button type="button" data-construction-action="next">PLACE NEXT</button>
+      <button type="button" data-construction-action="cancel">CANCEL</button>
+      <button type="button" data-construction-action="reset">RESET BUILD</button>
+      <button type="button" data-more-bridge-bricks>MORE BRICKS</button>
+      <small data-construction-status>Design · shared Human + Codex parts</small>
+    </section>
     <section id="bridge-hud" class="bridge-hud" data-bridge-hud data-state="compiling" aria-label="V4.6 bridge hologram status">
-      <b data-bridge-family>V4.6 AQUEDUCT</b>
+      <b data-bridge-family>V4.6 VIADUCT</b>
       <span data-bridge-revision>COMPILING EXACT BUILDPLAN</span>
       <small data-bridge-plan>ONE AUTHORITATIVE BRIDGE HOST</small>
     </section>
@@ -76,6 +90,7 @@
           <div class="tool-list" data-tool-list><span data-status="pending">awaiting secure context</span></div><div class="event-log" data-log aria-live="polite"><p><time>BOOT</time><span>Runtime ready</span></p></div>
         </div>
       </details>
+      <div class="panel-actions"><button type="button" data-more-bridge-bricks>MORE BRICKS</button></div>
       <div id="settings-sections" data-settings-groups></div>
       <details class="settings-group"><summary>Settings Files / LUT</summary><div class="settings-group-body settings-body file-controls"><label class="toggle-line"><input type="checkbox" data-color-grading> Enable colour grading</label><label class="file-button">LOAD .CUBE LUT<input type="file" accept=".cube,text/plain" data-lut-file></label><button type="button" data-clear-lut>CLEAR LUT</button></div></details>
       <div class="panel-actions stack"><button type="button" data-action="reset">Reset Same Seed</button><button type="button" data-new-seed>New Seed</button><button type="button" data-copy-player-settings>Copy Settings JSON</button><button type="button" data-export-player-settings>Download Settings JSON</button><label class="file-button">Load Settings JSON<input type="file" accept=".json,application/json" data-import-player-settings></label><button type="button" data-reset-brick-settings>Reset Real Brick Dimensions</button><button type="button" class="danger" data-reset-player-settings>Reset All</button></div>

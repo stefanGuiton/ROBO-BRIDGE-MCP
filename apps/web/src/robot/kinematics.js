@@ -41,7 +41,7 @@ export function forwardKinematics(joints, definition = UR10_DEFINITION) {
   const validation = validateJointState(joints, definition);
   if (!validation.ok) return { ok: false, ...validation };
 
-  let transform = mat4Identity();
+  let transform = definition.baseTransform ? Array.from(definition.baseTransform) : mat4Identity();
   const frames = [transform];
   const jointPositions = [transformPoint(transform)];
   for (let i = 0; i < 6; i += 1) {
@@ -206,13 +206,17 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
   if (!target || ![target.xMm, target.yMm, target.zMm].every(isFiniteNumber)) {
     return { ok: false, reason: 'invalid_input' };
   }
-  const radial = Math.hypot(target.xMm, target.yMm);
+  const base = definition.baseTransform ?? mat4Identity();
+  const dx = target.xMm - base[3], dy = target.yMm - base[7];
+  const localX = base[0] * dx + base[4] * dy, localY = base[1] * dx + base[5] * dy;
+  const localZ = target.zMm - base[11];
+  const radial = Math.hypot(localX, localY);
   // The V8 workbench mounts the robot flange frame directly on the tabletop.
   // Its calibrated gripper TCP reaches 12.5 mm above that plane when grasping
   // a 9.6 mm brick, so the former challenge-tray-only 40 mm guard incorrectly
   // rejected physically valid tabletop pickups. Table penetration remains
   // fail-closed in the collision layer.
-  if (radial > 1280 || radial < 220 || target.zMm < 8 || target.zMm > 900) {
+  if (radial > 1280 || radial < 220 || localZ < 8 || localZ > 900) {
     return { ok: false, reason: 'outside_workspace', diagnostics: { radialMm: radial } };
   }
   const reference = validateJointState(previousJoints, definition).ok
@@ -224,7 +228,7 @@ export function inverseKinematics(target, previousJoints = UR10_DEFINITION.homeJ
     cloneJoints(definition.homeJointsRad),
     reference.map((value, i) => i === 0 ? value + Math.PI : value),
     reference.map((value, i) => i === 2 ? value - 0.75 : value),
-    [Math.atan2(target.yMm, target.xMm), -3.4, 1.7, 0.2, -Math.PI / 2, Math.atan2(target.yMm, target.xMm) + Math.PI / 2]
+    [Math.atan2(localY, localX), -3.4, 1.7, 0.2, -Math.PI / 2, Math.atan2(localY, localX) + Math.PI / 2]
   ];
 
   const solutions = [];

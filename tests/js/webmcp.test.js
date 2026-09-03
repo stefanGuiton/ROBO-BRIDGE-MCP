@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerWebMcpTools, getLogoRoboToolDefinitions } from '../../apps/web/src/webmcp/register-tools.js';
+import { registerWebMcpTools, getLogoRoboToolDefinitions, resolveWebMcpModelContext } from '../../apps/web/src/webmcp/register-tools.js';
 import { createLiveHarness } from '../helpers/live-harness.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -36,7 +36,7 @@ test('registers one bounded primitive production surface with exact controller l
   assert.equal(queue.inputSchema.properties.mode.enum.length, 2);
   assert.equal(queue.inputSchema.properties.cycleTimeMs.default, 1000);
   assert.equal(queue.inputSchema.properties.cycleTimeMs.minimum, 250);
-  assert.equal(queue.annotations.readOnlyHint, true);
+  assert.equal(queue.annotations.readOnlyHint, false);
   assert.equal(streamStatus.inputSchema.properties.limit.maximum, 50);
   assert.equal(streamStatus.annotations.readOnlyHint, true);
   assert.equal(execute.annotations.readOnlyHint, false);
@@ -97,6 +97,13 @@ test('without modelContext the application gets a clean progressive-enhancement 
   const result = await registerWebMcpTools(runtime);
   assert.equal(result.ok, false);
   assert.match(result.reason, /modelContext/);
+});
+
+test('modelContext resolver accepts the native navigator surface without creating a shim', () => {
+  const native = { registerTool() {} };
+  assert.equal(resolveWebMcpModelContext({ document: {}, navigator: { modelContext: native } }), native);
+  assert.equal(resolveWebMcpModelContext({ document: { modelContext: native }, navigator: {} }), native);
+  assert.equal(resolveWebMcpModelContext({ document: {}, navigator: {} }), null);
 });
 
 test('runtime internal exceptions are not mislabeled as runtime unavailable and do not expose raw details', async () => {

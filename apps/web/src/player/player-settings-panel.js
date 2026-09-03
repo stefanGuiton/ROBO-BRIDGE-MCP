@@ -1,4 +1,6 @@
+import { SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 const GROUP_RULES = [
+  ['Scene Layout', /^(tableYawDeg|robotBase)/],
   ['Player', /^(mouse|invertY|pitch|fov|cameraZoom|nearClip|farClip|player|moveSpeed|verticalSpeed|sprint|acceleration|deceleration|movementDamping|maximumSpeed|unlimitedPickup|maximumPickup|selectionHighlight|hold)/],
   ['Mobile Controls', /^mobile/],
   ['Physics', /^(gravity|physicsHz|maximumSubsteps|maximumCatchup|brickMass|pendulum|angularDamping|linearDamping|maximumAngular|pivotAcceleration|pickup)/],
@@ -26,7 +28,7 @@ const SELECT_OPTIONS = Object.freeze({
   connectionOverhangGhostStyle: ['Yellow', 'Green']
 });
 
-const HIDDEN_SETTINGS = new Set(['verticalSpeedMmS', 'movementFollowsPitch']);
+const HIDDEN_SETTINGS = new Set(['verticalSpeedMmS', 'movementFollowsPitch', 'robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg']);
 
 function labelFor(key) {
   return key
@@ -61,6 +63,26 @@ function makeControl(key, value, store) {
   const name = document.createElement('span');
   name.textContent = labelFor(key);
   name.title = key;
+  const layout = SCENE_LAYOUT_CONTROLS[key];
+  if (layout) {
+    row.classList.add('scene-layout-row');
+    name.textContent = layout.label;
+    const controls = document.createElement('span');
+    controls.className = 'scene-layout-inputs';
+    const slider = document.createElement('input'), number = document.createElement('input');
+    slider.type = 'range'; number.type = 'number';
+    for (const input of [slider, number]) {
+      input.min = layout.min; input.max = layout.max; input.step = layout.step;
+      input.value = value; input.setAttribute('aria-label', `${layout.label}${input === slider ? ' slider' : ''}`);
+      input.dataset[input === slider ? 'layoutSlider' : 'setting'] = key;
+      input.addEventListener(input === slider ? 'input' : 'change', () => {
+        store.set(key, Number(input.value));
+        slider.value = number.value = String(store.get()[key]);
+      });
+    }
+    store.subscribe(() => { slider.value = number.value = String(store.get()[key]); });
+    controls.append(slider, number); row.append(name, controls); return row;
+  }
   let input;
   if (typeof value === 'boolean') {
     input = document.createElement('input');
@@ -112,7 +134,7 @@ export function installPlayerSettingsPanel({ store, panel, groups, search, onImp
   for (const name of [...GROUP_RULES.map(([group]) => group), 'Advanced']) {
     const details = document.createElement('details');
     details.className = 'settings-group';
-    details.open = ['Player', 'Physics', 'Placement', '20×20 Stud Build Mat'].includes(name);
+    details.open = ['Scene Layout', 'Player', 'Physics', 'Placement', '20×20 Stud Build Mat'].includes(name);
     const summary = document.createElement('summary');
     summary.textContent = name;
     const body = document.createElement('div');
@@ -125,6 +147,10 @@ export function installPlayerSettingsPanel({ store, panel, groups, search, onImp
     if (HIDDEN_SETTINGS.has(key)) continue;
     sections.get(groupFor(key)).body.append(makeControl(key, value, store));
   }
+  const layoutInfo = document.createElement('small');
+  layoutInfo.dataset.sceneLayoutStatus = '';
+  layoutInfo.textContent = 'Base XYZ: offsets from the current base in the fixed world frame. Stop motion before tuning; reset BUILD before rotating the table.';
+  sections.get('Scene Layout').body.append(layoutInfo);
   for (const { details, body } of sections.values()) if (!body.childElementCount) details.remove();
 
   const setOpen = (open) => {

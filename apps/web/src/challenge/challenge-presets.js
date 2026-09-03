@@ -7,6 +7,7 @@ import {
   makeBridgeCoreTransform,
   makeDisplayBridgeTransform,
   makeTerrainTransform,
+  machineToDisplay,
   normalizeMachineMount,
   sourceToDisplay,
   transformedTerrainBounds
@@ -94,14 +95,33 @@ function makeSegments(start, end) {
   ]);
 }
 
-export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0 } = {}) {
+export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0, buildElevationMm = 0, endpoints = null } = {}) {
   machineMount = normalizeMachineMount(machineMount);
   displayOffset = normalizeDisplayOffset(displayOffset);
   const raw = RAW[id];
   if (!raw) throw new Error(`unknown_preset:${id}`);
-  const verticalScale = COMMON.horizontalScale * raw.verticalRatio;
+  let requestedEntry = null, requestedExit = null;
+  if (endpoints) {
+    if (![endpoints.entry?.x, endpoints.entry?.y, endpoints.entry?.z, endpoints.exit?.x, endpoints.exit?.y, endpoints.exit?.z].every(Number.isFinite)) throw new Error('Endpoint XYZ values must be finite numbers.');
+    if (Math.abs(endpoints.entry.z - endpoints.exit.z) > 1e-7) throw new Error('The Aqueduct requires level ENTRY and EXIT heights.');
+    requestedEntry = machineToDisplay(endpoints.entry, machineMount);
+    requestedExit = machineToDisplay(endpoints.exit, machineMount);
+    const span = Math.hypot(requestedExit.x - requestedEntry.x, requestedExit.y - requestedEntry.y);
+    if (span < 32 || span > 2000) throw new Error('ENTRY to EXIT distance must be between 32 and 2000 mm.');
+    buildElevationMm = requestedEntry.z - raw.deckDisplayZ - displayOffset.z;
+    challengeYawDeg = Math.atan2(requestedExit.y - requestedEntry.y, requestedExit.x - requestedEntry.x) * 180 / Math.PI - 90;
+  }
+  if (!Number.isFinite(buildElevationMm) || raw.deckDisplayZ - COMMON.tableTopDisplayZ + buildElevationMm <= 1) throw new Error('Endpoint height must be above the terrain floor.');
+  const horizontalScale = requestedEntry
+    ? Math.hypot(requestedExit.x - requestedEntry.x, requestedExit.y - requestedEntry.y) / (raw.exitSourceX - raw.entrySourceX)
+    : COMMON.horizontalScale;
+  // Preserve the curated footprint and its tabletop contact. Elevate the bank
+  // crossing and bridge together, scaling terrain height about its minimum.
+  const verticalScale = COMMON.horizontalScale * raw.verticalRatio
+    * (1 + buildElevationMm / (raw.deckDisplayZ - COMMON.tableTopDisplayZ));
+  const deckDisplayZ = raw.deckDisplayZ + displayOffset.z + buildElevationMm;
   const terrainOrigin = {
-    horizontalScale: COMMON.horizontalScale,
+    horizontalScale,
     verticalScale,
     worldX: COMMON.displayX + displayOffset.x,
     worldY: COMMON.displayY + displayOffset.y,
@@ -113,7 +133,9 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
     y: 0,
     z: COMMON.corridorSourceZ
   };
-  const displayPivot = sourceToDisplay(sourcePivot, unrotatedTerrainTransform);
+  const displayPivot = requestedEntry
+    ? { x: (requestedEntry.x + requestedExit.x) / 2, y: (requestedEntry.y + requestedExit.y) / 2 }
+    : sourceToDisplay(sourcePivot, unrotatedTerrainTransform);
   const terrainTransform = makeTerrainTransform({
     ...terrainOrigin,
     yawDeg: challengeYawDeg,
@@ -124,8 +146,8 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
   const terrainBoundsMachine = displayBoundsToMachine(terrainBoundsDisplay, machineMount);
   const entryDisplay = sourceToDisplay({ x: raw.entrySourceX, y: 0, z: COMMON.corridorSourceZ }, terrainTransform);
   const exitDisplay = sourceToDisplay({ x: raw.exitSourceX, y: 0, z: COMMON.corridorSourceZ }, terrainTransform);
-  entryDisplay.z = raw.deckDisplayZ + displayOffset.z;
-  exitDisplay.z = raw.deckDisplayZ + displayOffset.z;
+  entryDisplay.z = deckDisplayZ;
+  exitDisplay.z = deckDisplayZ;
   const entryMachine = displayToMachine(entryDisplay, machineMount);
   const exitMachine = displayToMachine(exitDisplay, machineMount);
   const routeLength = Math.hypot(exitMachine.x - entryMachine.x, exitMachine.y - entryMachine.y);
@@ -142,17 +164,23 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
   });
   const entry = endpoint(entryMachine, entryDisplay, routeDirection, raw.corridorWidthMm);
   const exit = endpoint(exitMachine, exitDisplay, { x: -routeDirection.x, y: -routeDirection.y, z: 0 }, raw.corridorWidthMm);
-  const bridgeTransform = makeBridgeCoreTransform(entryMachine, exitMachine);
+  const baseBridgeTransform = makeBridgeCoreTransform(
+    { ...entryMachine, z: entryMachine.z - buildElevationMm },
+    { ...exitMachine, z: exitMachine.z - buildElevationMm }
+  );
+  const bridgeTransform = Object.freeze({ ...baseBridgeTransform,
+    translationMm: Object.freeze({ ...baseBridgeTransform.translationMm, zMm: buildElevationMm })
+  });
   const displayBridgeTransform = makeDisplayBridgeTransform(entryDisplay, exitDisplay);
   const bridgeCorridor = Object.freeze({
     coordinateFrame: MAIN_DEMO_MACHINE_FRAME.id,
     centre: Object.freeze({ x: (entryMachine.x + exitMachine.x) / 2, y: (entryMachine.y + exitMachine.y) / 2, z: entryMachine.z }),
-    displayCentre: Object.freeze({ x: (entryDisplay.x + exitDisplay.x) / 2, y: (entryDisplay.y + exitDisplay.y) / 2, z: raw.deckDisplayZ + displayOffset.z }),
+    displayCentre: Object.freeze({ x: (entryDisplay.x + exitDisplay.x) / 2, y: (entryDisplay.y + exitDisplay.y) / 2, z: deckDisplayZ }),
     direction: routeDirection,
     lengthMm: routeLength,
     widthMm: raw.corridorWidthMm,
     deckZMm: entryMachine.z,
-    displayDeckZMm: raw.deckDisplayZ + displayOffset.z,
+    displayDeckZMm: deckDisplayZ,
     minZMm: 0,
     maxZMm: entryMachine.z + 160
   });
@@ -165,7 +193,7 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
     direction: routeDirection,
     lengthMm: routeLength,
     deckZMm: entryMachine.z,
-    displayDeckZMm: raw.deckDisplayZ + displayOffset.z,
+    displayDeckZMm: deckDisplayZ,
     segments: makeSegments(entryMachine, exitMachine)
   });
   const collisionProxy = createCollisionProxy({
@@ -173,7 +201,7 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
     entryDisplay,
     exitDisplay,
     tableTopZ: COMMON.tableTopDisplayZ + displayOffset.z,
-    deckDisplayZ: raw.deckDisplayZ + displayOffset.z,
+    deckDisplayZ,
     protectedHalfWidthMm: raw.protectedHalfWidthMm,
     displayRouteDirection,
     machineMount
@@ -228,13 +256,15 @@ export function buildPreset(id, { machineMount = MAIN_DEMO_MACHINE_MOUNT, displa
       fov: raw.camera.fov
     }),
     tuning: Object.freeze({
-      horizontalScaleMmPerSourceMetre: COMMON.horizontalScale,
+      horizontalScaleMmPerSourceMetre: horizontalScale,
       verticalScaleRatio: raw.verticalRatio,
       verticalScaleMmPerSourceMetre: verticalScale,
       corridorSourceZ: COMMON.corridorSourceZ,
       tableTopDisplayZMm: COMMON.tableTopDisplayZ + displayOffset.z,
       displayOffset,
-      challengeYawDeg
+      challengeYawDeg,
+      buildElevationMm,
+      endpoints: endpoints ? structuredClone(endpoints) : null
     })
   });
 }

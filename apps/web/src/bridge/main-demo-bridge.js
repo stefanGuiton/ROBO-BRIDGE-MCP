@@ -18,6 +18,21 @@ export const MAIN_DEMO_BRIDGE_INITIAL_SETTINGS = Object.freeze({
   aqBottomCount: 2
 });
 
+// Type 2 hero. BridgeHost supplies the tested Viaduct family preset; the
+// challenge still owns the authored 370mm span and water-to-deck height.
+// Keep the production brick grid and one-layer deck, with no cap above track.
+export const TERRAIN7_BRIDGE_INITIAL_SETTINGS = Object.freeze({
+  family: 'viaduct',
+  voxelSize: 8,
+  brickHeightRatio: 0.6,
+  // Six need >=384mm; five at the tested opening width have unsupported
+  // feet. Four keep the tested proportions and pass the exact/support audit.
+  viArchCount: 4,
+  viPenetration: 0,
+  capHeight: 0,
+  deckThickness: 4.8
+});
+
 function alignThreeYUpHologramToMachineZUp(group) {
   // Bridge Core's reusable Three adapter emits conventional Three.js Y-up
   // geometry. MAIN_DEMO renders its authoritative machine frame directly as
@@ -42,7 +57,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
   if (!challenge) throw new TypeError('The authoritative EASY bridge challenge is required.');
 
   const host = await createBridgeHost({
-    initialSettings: MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
+    initialSettings: challenge.id === 'terrain7-easy-aqueduct' ? TERRAIN7_BRIDGE_INITIAL_SETTINGS : MAIN_DEMO_BRIDGE_INITIAL_SETTINGS,
     challenge,
     challengePolicy: 'locked',
     compilerOptions: { preferWorker: true }
@@ -50,10 +65,16 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
 
   let hologramGroup = null;
   let hologramSnapshot = null;
+  let constructionBoard = null;
+  let visible = true;
 
   function refreshHologram() {
     const buildPlan = host.buildPlan;
     const snapshot = createHologramSnapshot(buildPlan, host.worldTransform, { limit: 5000 });
+    if (constructionBoard) {
+      const accepted = new Set(constructionBoard.getTargets().filter(t => t.occupiedBy).map(t => t.id));
+      snapshot.placements = snapshot.placements.filter(p => !accepted.has(p.placementId));
+    }
     const nextGroup = createThreeBridgeHologram({
       THREE,
       snapshot,
@@ -63,6 +84,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     });
     alignThreeYUpHologramToMachineZUp(nextGroup);
     nextGroup.renderOrder = 3;
+    nextGroup.visible = visible;
     nextGroup.traverse((object) => {
       object.renderOrder = 3;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -97,6 +119,8 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     host,
     bridgeDesign,
     refreshHologram,
+    setVisible(value) { visible = Boolean(value); if (hologramGroup) hologramGroup.visible = visible; },
+    setConstructionBoard(board) { constructionBoard = board; refreshHologram(); },
     get hologramGroup() { return hologramGroup; },
     get hologramSnapshot() { return structuredClone(hologramSnapshot); },
     dispose() {
