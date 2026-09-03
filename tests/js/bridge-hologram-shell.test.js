@@ -151,6 +151,37 @@ test('hidden or empty holograms create no invisible depth occluder and reject in
   } finally { disposeThreeBridgeHologram(hidden); disposeThreeBridgeHologram(empty); }
 });
 
+test('hologram colour override tints every visible material without changing placement geometry', () => {
+  const group = makeHologram({ depthPrepass: true, opacity: 0.25, colour: '#123456' });
+  try {
+    assert.equal(group.userData.renderStats.opacity, 0.25);
+    assert.equal(group.userData.renderStats.colour, '#123456');
+    assert.equal(placementIds(group).length, snapshot.placements.length);
+    assert.ok(meshes(group, 'colour').flatMap(materials).every(item => colourHex(item) === '#123456' && item.opacity === 0.25));
+    assert.throws(() => makeHologram({ colour: 'blue' }), /colour/);
+  } finally { disposeThreeBridgeHologram(group); }
+});
+
+test('MAIN_DEMO refreshes the hologram when presentation settings change', async () => {
+  const machineRoot = new THREE.Group(), listeners = new Set();
+  const settings = { bridgeHologramOpacity: 0.41, bridgeHologramColor: '#abcdef' };
+  const settingsStore = {
+    get: () => settings,
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }
+  };
+  const demo = await createMainDemoBridge({ renderer: { machineRoot, render() {} }, challenge, settingsStore });
+  try {
+    assert.equal(demo.hologramRenderStats.opacity, 0.41);
+    assert.equal(demo.hologramRenderStats.colour, '#abcdef');
+    const previous = demo.hologramGroup;
+    settings.bridgeHologramOpacity = 0.18;
+    for (const listener of listeners) listener('bridgeHologramOpacity', 0.18, settings);
+    assert.notEqual(demo.hologramGroup, previous);
+    assert.equal(demo.hologramRenderStats.opacity, 0.18);
+  } finally { demo.dispose(); }
+  assert.equal(listeners.size, 0);
+});
+
 test('MAIN_DEMO shows only pending current-plan targets and refresh never changes live board revisions', async () => {
   const machineRoot = new THREE.Group(), notifications = [];
   const demo = await createMainDemoBridge({ renderer: { machineRoot, render() {} }, challenge,

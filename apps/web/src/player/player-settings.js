@@ -72,6 +72,8 @@ export const PLAYER_FALLBACK_SETTINGS = Object.freeze({
   snapSearchRadiusMm: 22,
   snapDurationS: 0.18,
   ghostOpacity: 0.34,
+  bridgeHologramOpacity: 0.3,
+  bridgeHologramColor: '#58cfff',
   allowPickingPlacedBricks: true,
   brickCollisionEnabled: true,
   brickLengthMm: 31.8,
@@ -163,6 +165,8 @@ function sanitizeSettings(input = {}, allowedKeys = null) {
     && /^[A-Za-z][A-Za-z0-9_]*$/.test(key)
     && (value === null || ['boolean', 'number', 'string'].includes(typeof value))
     && (!SCENE_LAYOUT_CONTROLS[key] || (Number.isFinite(value) && value >= SCENE_LAYOUT_CONTROLS[key].min && value <= SCENE_LAYOUT_CONTROLS[key].max))
+    && (key !== 'bridgeHologramOpacity' || (Number.isFinite(value) && value >= 0 && value <= 1))
+    && (key !== 'bridgeHologramColor' || /^#[0-9a-f]{6}$/i.test(value))
   )));
 }
 

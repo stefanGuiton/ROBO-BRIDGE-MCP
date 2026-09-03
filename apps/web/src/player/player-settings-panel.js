@@ -5,6 +5,7 @@ const GROUP_RULES = [
   ['Mobile Controls', /^mobile/],
   ['Physics', /^(gravity|physicsHz|maximumSubsteps|maximumCatchup|brickMass|pendulum|angularDamping|linearDamping|maximumAngular|pivotAcceleration|pickup)/],
   ['Placement', /^(placement|heldCollision|gridPitch|snap|ghostOpacity|allowPicking|brickCollision|collision|heldSurface|brickConnections|connection|autoCapture|structuralCollapse)/],
+  ['Bridge Hologram', /^bridgeHologram/],
   ['Brick', /^(brickLength|brickWidth|brickBody|studPitch|studDiameter|studHeight|brickRoughness|brickMetalness)/],
   ['Table', /^(table|leg)/],
   ['20×20 Stud Build Mat', /^(mat|gridVisible|gridColor|gridOpacity)/],
@@ -103,7 +104,9 @@ function makeControl(key, value, store) {
     input = document.createElement('input');
     if (typeof value === 'number') {
       input.type = 'number';
-      input.step = String(numberStep(value));
+      if (key === 'bridgeHologramOpacity') {
+        input.min = '0'; input.max = '1'; input.step = '0.01';
+      } else input.step = String(numberStep(value));
       input.value = String(value);
       input.addEventListener('change', () => {
         const next = Number(input.value);

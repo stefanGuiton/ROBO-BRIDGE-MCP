@@ -3,22 +3,6 @@ import assert from 'node:assert/strict';
 import { createLevelGatedTrain } from '../../apps/web/src/train-integration/level-gated-train.js';
 import { guardDemoLevelTools } from '../../apps/web/src/logo/demo-level-tools.js';
 import { createDemoModeControl } from '../../apps/web/src/logo/simple-demo-mode.js';
-import { bridgeSideLabelPositions } from '../../apps/web/src/bridge/bridge-side-labels.js';
-import { inverseTransformPointFromMainDemo } from '../../apps/web/src/bridge-core/world-transform.js';
-
-test('Human/Codex visual labels use the same lateral bridge frame after rotation and translation', () => {
-  const plan = { anchors: { bridgeStartX: -100, bridgeEndX: 200, roadY: 64, bridgeCentreZ: 9 },
-    geometry: { sliceArray: { count: 3, pitch: 8 }, grid: { dx: 8, dy: 4.8 } } };
-  for (const yawDeg of [0, 45, 90]) {
-    const world = { yawDeg, scale: 2, translationMm: { xMm: 630, yMm: -10, zMm: 4 } };
-    const labels = bridgeSideLabelPositions(plan, world);
-    const human = inverseTransformPointFromMainDemo(labels.human, world);
-    const agent = inverseTransformPointFromMainDemo(labels.agent, world);
-    assert.ok(human.z < 9 && agent.z > 9);
-    assert.ok(Math.abs(human.x - 50) < 1e-8 && Math.abs(agent.x - 50) < 1e-8);
-    assert.ok(human.y > 64 && agent.y > 64);
-  }
-});
 
 test('Levels 1/2 never construct Train, physics, root or frame subscription', () => {
   let created = 0, frames = 0;

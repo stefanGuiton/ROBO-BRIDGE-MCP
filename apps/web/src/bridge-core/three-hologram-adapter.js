@@ -45,6 +45,7 @@ export function createThreeBridgeHologram({
   snapshot,
   buildPlan,
   opacity = 0.34,
+  colour = null,
   depthPrepass = false,
   renderOrder = 0,
   machinePositionToThree = null,
@@ -60,6 +61,9 @@ export function createThreeBridgeHologram({
   if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
     throw new BridgeCoreError('INVALID_SETTINGS', 'Hologram opacity must be between zero and one.', { opacity });
   }
+  if (colour !== null && !/^#[0-9a-f]{6}$/i.test(colour)) {
+    throw new BridgeCoreError('INVALID_SETTINGS', 'Hologram colour must be a six-digit hex colour.', { colour });
+  }
   const toPosition = machinePositionToThree ?? ((point) => defaultPosition(THREE, point));
   const group = new THREE.Group();
   group.name = name;
@@ -74,6 +78,7 @@ export function createThreeBridgeHologram({
   const stats = {
     mode: useDepthPrepass ? 'exact-depth-prepass' : 'transparent',
     opacity,
+    colour,
     placementCount: snapshot.placements.length,
     colourMeshCount: 0,
     depthMeshCount: 0,
@@ -130,7 +135,7 @@ export function createThreeBridgeHologram({
     const first = placements[0];
     const size = first.localSizeMm;
     const geometry = new THREE.BoxGeometry(size.xMm, size.yMm, size.zMm);
-    const mesh = new THREE.InstancedMesh(geometry, material(THREE, first.colourHex, opacity, useDepthPrepass), placements.length);
+    const mesh = new THREE.InstancedMesh(geometry, material(THREE, colour ?? first.colourHex, opacity, useDepthPrepass), placements.length);
     const matrix = new THREE.Matrix4();
     const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3(1, 1, 1);
@@ -161,8 +166,8 @@ export function createThreeBridgeHologram({
     geometry.setAttribute('normal', new THREE.BufferAttribute(source.normals, 3));
     const first = placements[0];
     const materials = definition.partClass === 'TRACK_SEGMENT'
-      ? [material(THREE, '#888888', opacity, useDepthPrepass), material(THREE, first.trackMaterials?.sleepers, opacity, useDepthPrepass), material(THREE, first.trackMaterials?.rails, opacity, useDepthPrepass)]
-      : [material(THREE, first.colourHex, opacity, useDepthPrepass)];
+      ? [material(THREE, colour ?? '#888888', opacity, useDepthPrepass), material(THREE, colour ?? first.trackMaterials?.sleepers, opacity, useDepthPrepass), material(THREE, colour ?? first.trackMaterials?.rails, opacity, useDepthPrepass)]
+      : [material(THREE, colour ?? first.colourHex, opacity, useDepthPrepass)];
     geometryGroups({ ...source, addGroup: geometry.addGroup.bind(geometry) }, materials);
     const mesh = new THREE.InstancedMesh(geometry, materials, placements.length);
     const matrix = new THREE.Matrix4();

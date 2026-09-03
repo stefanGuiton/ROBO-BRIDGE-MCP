@@ -413,6 +413,10 @@ test('supplied V8 player settings are provenance-locked and production disables 
 
 test('V8 panel preserves settings and hides the legacy world mount in favour of robot base controls', async () => {
   const store = new PlayerSettingsStore({ ...PLAYER_FALLBACK_SETTINGS, tableWidthMm: 1750, matPanelsX: 4 });
+  assert.equal(store.set('bridgeHologramOpacity', 0.2), true);
+  assert.equal(store.set('bridgeHologramColor', '#123456'), true);
+  assert.equal(store.set('bridgeHologramOpacity', 1.1), false);
+  assert.equal(store.set('bridgeHologramColor', 'blue'), false);
   assert.deepEqual(
     ['robotMountXmm', 'robotMountYmm', 'robotMountZmm', 'robotMountYawDeg'].map((key) => store.get()[key]),
     [-820, 170, 1200, 0]

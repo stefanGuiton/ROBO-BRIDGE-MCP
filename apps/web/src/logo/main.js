@@ -24,7 +24,6 @@ import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spa
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { robotBasePoseFromSettings, SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
-import { createBridgeSideLabels } from '../bridge/bridge-side-labels.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
@@ -907,10 +906,10 @@ try {
   mainDemoBridge = await createMainDemoBridge({
     renderer,
     challenge: mainDemoChallenge.bridgeChallenge,
+    settingsStore: playerSettingsStore,
     onHologramChanged: updateBridgeHologramStatus
   });
   if (!evidenceMode) {
-    renderer.bridgeSideLabels = createBridgeSideLabels({ renderer, bridgeHost: mainDemoBridge.host });
     const initial = prepareBridgeBuild({ host: mainDemoBridge.host, workspace: controller.workspace });
     const bottom = physicalBuildReport(initial).physicalBoundsMm.min.zMm;
     if (bottom < workcellProfile.placementSurfaceZMm) {
@@ -1021,8 +1020,9 @@ for (const button of document.querySelectorAll('[data-construction-action]')) bu
       : action === 'next' ? await mainDemoConstruction.buildNextParts(Number($('[data-construction-count]').value), options)
       : action === 'cancel' ? mainDemoConstruction.cancelBuild(options) : mainDemoConstruction.reset(options);
     const progress = mainDemoConstruction.getBuildProgress();
-    $('[data-construction-status]').textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
-  } catch (error) { $('[data-construction-status]').textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
+    const status = $('[data-construction-status]');
+    if (status) status.textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
+  } catch (error) { const status = $('[data-construction-status]'); if (status) status.textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
 });
 const demoModeControl = !evidenceMode ? createDemoModeControl({ controller, board, runtime, streamControl, coordinator: fastPlacement, workcellProfile,
   challenge: mainDemoChallenge, bridge: mainDemoBridge, train: mainDemoTrain, mission: mainDemoMission?.service,
@@ -1045,10 +1045,7 @@ setInterval(() => {
   void updateLevel3Results().catch(error => addLog(`Results unavailable: ${error.message}`, 'bad'));
   if (mainDemoConstruction && demoMode !== 'simple') {
     const progress = mainDemoConstruction.getBuildProgress();
-    const sides = progress.collaboration?.byAdvisorySide;
     $('[data-collaboration-status]').textContent = `${demoMode === 'bridge' ? 'LEVEL 2 · NO TRAIN' : 'LEVEL 3 · TRAIN'} · ${progress.completed}/${progress.total ?? '—'} ${progress.status.toUpperCase()}`;
-    $('[data-human-side]').textContent = `Human · negative-width side${sides ? `: ${sides.human.completed}/${sides.human.total}` : ''}`;
-    $('[data-agent-side]').textContent = `Codex · positive side + centre${sides ? `: ${sides.agent.completed}/${sides.agent.total}` : ''}`;
     const modes = progress.byExecutionMode;
     $('[data-build-actors]').textContent = modes ? `Accepted: Human ${modes.human} · Robot ${modes.robot} · Accelerated ${modes.simulated_fast_forward}` : 'Freeze the current design to start shared construction.';
   }

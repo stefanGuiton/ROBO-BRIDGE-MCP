@@ -50,7 +50,7 @@ function alignThreeYUpHologramToMachineZUp(group) {
   return group;
 }
 
-export async function createMainDemoBridge({ renderer, challenge, onHologramChanged = () => {} } = {}) {
+export async function createMainDemoBridge({ renderer, challenge, settingsStore = null, onHologramChanged = () => {} } = {}) {
   if (!renderer?.machineRoot?.add || typeof renderer.render !== 'function') {
     throw new TypeError('The MAIN_DEMO renderer machine frame is required.');
   }
@@ -80,11 +80,13 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     snapshot.summary.pendingPhysicalCount = snapshot.placements.length;
     snapshot.summary.acceptedPhysicalCount = snapshot.page.returnedCount - snapshot.placements.length;
     snapshot.page.returnedCount = snapshot.placements.length;
+    const settings = settingsStore?.get?.() ?? {};
     const nextGroup = createThreeBridgeHologram({
       THREE,
       snapshot,
       buildPlan,
-      opacity: 0.74,
+      opacity: settings.bridgeHologramOpacity ?? 0.3,
+      colour: settings.bridgeHologramColor ?? null,
       depthPrepass: true,
       renderOrder: 3,
       name: 'V46_EXACT_BUILDPLAN_HOLOGRAM'
@@ -108,6 +110,10 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
   const unsubscribe = host.subscribe((event) => {
     if (event.type === 'compile_committed' && !event.initial) refreshHologram();
   });
+  const unsubscribeSettings = settingsStore?.subscribe?.((key, _value, _settings, change) => {
+    const changedKeys = key === '*' ? change?.changedKeys ?? [] : [key];
+    if (changedKeys.some(name => name === 'bridgeHologramOpacity' || name === 'bridgeHologramColor')) refreshHologram();
+  }) ?? (() => {});
   const bridgeDesign = createBridgeDesignPackage({ host });
 
   return Object.freeze({
@@ -121,6 +127,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     get hologramRenderStats() { return structuredClone(hologramGroup?.userData.renderStats ?? null); },
     dispose() {
       unsubscribe();
+      unsubscribeSettings();
       disposeThreeBridgeHologram(hologramGroup);
       hologramGroup = null;
       hologramSnapshot = null;

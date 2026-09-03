@@ -31,9 +31,6 @@
       <label>DEMO LEVEL <select data-demo-mode title="Simple resets the build; Levels 2 and 3 share the frozen bridge"><option value="simple">1 · SIMPLE BRICKS</option><option value="bridge">2 · VIADUCT (NO TRAIN)</option><option value="train">3 · TRAIN (EXPERIMENTAL)</option></select></label>
       <div class="bridge-only" data-collaboration-hud>
         <b data-collaboration-status>DESIGN · SHARED BRIDGE</b>
-        <span class="human-side" data-human-side>Human: negative-width side</span>
-        <span class="agent-side" data-agent-side>Codex: positive-width side + centre</span>
-        <small>Sides are suggestions. Either actor may place any compatible part.</small>
         <small data-build-actors></small>
       </div>
       <span data-human-guide hidden style="color:#8a5100;font-weight:700" aria-live="polite"></span>
@@ -41,13 +38,8 @@
         <button type="button" data-simple-reset>RESET SIMPLE DEMO</button><button type="button" data-simple-stop>STOP BUILD</button></div>
     </section>
     <section data-bridge-controls style="position:absolute;right:16px;bottom:18px;padding:10px;background:#fffE;border-radius:10px;z-index:5" aria-label="Bridge construction">
-      <button type="button" data-construction-action="start">BUILD BRIDGE</button>
-      <select data-construction-count aria-label="Parts per batch"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
-      <button type="button" data-construction-action="next">PLACE NEXT</button>
-      <button type="button" data-construction-action="cancel">CANCEL</button>
       <button type="button" data-construction-action="reset">RESET BUILD</button>
       <button type="button" data-more-bridge-bricks>MORE BRICKS</button>
-      <small data-construction-status>Design · shared Human + Codex parts</small>
     </section>
     <section id="bridge-hud" class="bridge-hud" data-bridge-hud data-state="compiling" aria-label="V4.6 bridge hologram status">
       <b data-bridge-family>V4.6 VIADUCT</b>
