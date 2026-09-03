@@ -11,6 +11,7 @@ import { PlacedBrickBatcher } from '../player/placed-brick-batcher.js';
 import { PlayerCapsuleSolver } from '../player/player-collision.js';
 import { PlayerController } from '../player/player-controller.js';
 import { V8Workbench } from './v8-workbench.js';
+import { pendingHumanGuide, previewHumanGuide } from '../player/pending-placement-guide.js';
 import {
   applyV8BrickGeometry,
   applyV8BrickMaterial,
@@ -640,6 +641,7 @@ export class RobotRenderer {
     const carried = bricks.find((brick) => brick.id === active.brickId);
     if (!carried) return;
     const supportMeshes = [
+      ...(this.humanGuideMesh?.visible ? [this.humanGuideMesh] : []),
       ...this.targetMeshes.values(),
       ...this.brickMeshes.values(),
       ...this.batcher.pickMeshes(),
@@ -649,6 +651,11 @@ export class RobotRenderer {
     this.workbench.setMoreBricksHighlighted(false);
     let candidate = null;
     for (const hit of hits) {
+      if (hit.object.userData?.pendingHumanGuide) {
+        candidate = previewHumanGuide({ guide: this.humanGuide, carried, authority: this.controller.placementAuthority,
+          yawRad: this.humanBuildAdapter.placementEngine.rotationQuarterTurns * Math.PI / 2 });
+        if (candidate) break;
+      }
       const targetId = hit.object.userData?.targetId;
       if (targetId) {
         const target = this.board.getTarget(targetId);
@@ -734,6 +741,7 @@ export class RobotRenderer {
   }
 
   syncTargets() {
+    this.syncHumanGuide();
     const targets = this.board?.getTargets?.() ?? [];
     const seen = new Set();
     for (const target of targets) {
@@ -761,6 +769,34 @@ export class RobotRenderer {
     }
     for (const [id, mesh] of this.targetMeshes) {
       if (!seen.has(id)) { this.machineRoot.remove(mesh); this.targetMeshes.delete(id); }
+    }
+  }
+
+  syncHumanGuide() {
+    const carriedId = this.humanBuildAdapter?.getState?.().heldBrickId;
+    const carried = carriedId ? this.controller.getBricks().find(brick => brick.id === carriedId) : null;
+    this.humanGuide = globalThis.document?.documentElement?.dataset?.demoMode === 'bridge' ? null : pendingHumanGuide(this.fastPlacement, carried);
+    if (!this.humanGuideMesh && this.humanGuide) {
+      this.humanGuideMesh = makeBox({ xMm: 32, yMm: 16, zMm: 9.6 }, this.humanGuide.position,
+        new THREE.MeshBasicMaterial({ color: 0xffc040, transparent: true, opacity: 0.33, depthWrite: false }));
+      this.humanGuideMesh.name = 'SIMPLE_PENDING_HUMAN_TARGET';
+      this.humanGuideMesh.userData.pendingHumanGuide = true;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(this.humanGuideMesh.geometry), new THREE.LineBasicMaterial({ color: 0xffad00 }));
+      this.humanGuideMesh.add(edges);
+      this.machineRoot.add(this.humanGuideMesh);
+    }
+    if (this.humanGuideMesh) {
+      this.humanGuideMesh.visible = Boolean(this.humanGuide);
+      if (this.humanGuide) {
+        const p = this.humanGuide.position;
+        this.humanGuideMesh.position.set(p.xMm, p.yMm, p.zMm);
+        this.humanGuideMesh.rotation.z = this.humanGuide.yawRad;
+      }
+    }
+    const label = globalThis.document?.querySelector?.('[data-human-guide]');
+    if (label) {
+      label.hidden = !this.humanGuide;
+      label.textContent = this.humanGuide ? `HUMAN SLOT · aim at amber brick · yaw ${Math.round(this.humanGuide.yawRad * 180 / Math.PI)}° · R to rotate · click to place` : '';
     }
   }
 

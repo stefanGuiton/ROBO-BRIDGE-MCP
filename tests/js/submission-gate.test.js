@@ -56,7 +56,11 @@ test('tool catalogues keep 19 configurable instead of permanent', async () => {
   assert.equal(catalogues.current.minimum, 19);
   assert.equal(catalogues.current.exact, 19);
   assert.equal(catalogues.final.exact, undefined);
-  assert.equal(catalogues.final.targetApprox, 28);
+  assert.equal(catalogues.final.targetApprox, 31);
+  assert.equal(new Set(catalogues.final.requiredNames).size, 31);
+  for (const name of ['request_more_bricks', 'get_scene_settings', 'update_scene_settings']) {
+    assert.ok(catalogues.final.requiredNames.includes(name));
+  }
   assert.ok(catalogues.final.requiredNames.includes('get_bridge_build_plan'));
 });
 

@@ -241,8 +241,8 @@ export class RobotController {
     return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
   }
 
-  addLooseBricks(bricks, { actor = 'human' } = {}) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
+  addLooseBricks(bricks, { actor = 'human', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!Array.isArray(bricks) || bricks.length < 1 || bricks.length > 50) {

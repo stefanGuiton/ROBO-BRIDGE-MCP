@@ -1,5 +1,18 @@
 # Simple WebMCP hero — 2026-09-03
 
+## Active launch-readiness update (Level 1 acceptance in progress)
+
+This section supersedes the old deferred-audit/publication instructions below. Current work follows `Downloads/OVERALL_PLAN_LAUNCH_READY.md` on `codex/p0-downstream-integration-prep`; do not merge or deploy. See `docs/LAUNCH_READY_PROGRESS.md` for gate status.
+
+- Wall planning now supports positive integer width, height and depth; the mandatory strict-blue wall is 5 x 7 x 1 = 35 targets. The recording tower is six alternating layers with two bricks per layer = 12 targets; ten layers remains supported.
+- Native registration now includes 31 unique tools: the existing 28 plus `request_more_bricks`, `get_scene_settings`, and `update_scene_settings`, using the same registrar.
+- `request_more_bricks({expectedWorldRevision})` moves the empty robot to the shared rendered button and presses twice. Refill occurs only after verified TCP contact. Human clicks use the same demand-aware dispenser. Sources have unique IDs, validated reachable feeder poses and unchanged colours; no accepted targets are fabricated. If the feeder fills before enough sources are available, consume sources, request another physical double press, then resume the same plan.
+- `get_scene_settings({})` returns current presentation values, supported bounds and revision. `update_scene_settings({brightness, tableColor, expectedWorldRevision})` atomically changes the existing settings store. Brightness is renderer exposure in 0.1..4; table colour accepts #RRGGBB or supported simple names such as `dark grey`. Existing motion/layout guards still apply.
+- An amber pending-slot guide is derived from the live stream. Match its yaw using R, aim at it while holding a compatible brick, then click to release normally. Pickup alone never accepts a target. Strict target colour is enforced; a red preference with no strict colour permits a blue Human contribution.
+- Test-only `tests/helpers/human-simulator.js` drives HumanBuildAdapter pickup/validated-preview/release and labels evidence `simulation: true`. It is not loaded by production, never writes ADOPTED directly and does not replace actual pointer acceptance.
+
+Repeat browser acceptance explicitly with `node scripts/level1-launch-browser.mjs --write-evidence`; screenshots are local evidence, not a substitute for inspecting board state. Full browser/visual acceptance is still in progress; do not treat this implementation summary as the Level 1 completion gate.
+
 ## Open follow-up — brick interjection test needs tweaking
 
 The latest user-driven 10-level tower rerun stopped at **6/20**, after an off-plan blue placement (yaw0 where the pending level required yaw90), followed by a second blue brick on top. Both pickups and placed records retained blue. Improve the interjection test's pending-slot alignment/rotation guidance and blocked-build recovery expectations; do not treat arbitrary off-plan insertions as successful adoption. The earlier correctly aligned **19 robot + 1 human = 20/20** run is separate evidence. No further interjection fix is included in this checkpoint.

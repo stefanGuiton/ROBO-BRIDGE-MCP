@@ -18,6 +18,7 @@ import {
 } from '../../apps/web/src/robot/simple-structure-planner.js';
 import { RevisionClock } from '../../apps/web/src/state/revision-clock.js';
 import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell-profile.js';
+import { SIMPLE_DEMO_CLEARANCE_MM } from '../../apps/web/src/logo/simple-demo-mode.js';
 
 const supplied = JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url), 'utf8'));
 const settings = { ...PLAYER_FALLBACK_SETTINGS, ...supplied };
@@ -63,7 +64,11 @@ function makeHarness(colours, { timeScale = 0 } = {}) {
     profile
   });
   assert.equal(controller.setPlacementAuthority(authority), true);
-  const coordinator = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
+  // The production Simple mode uses a 250 mm transfer clearance. Keep this
+  // planner/integration harness on that same safe, non-singular path policy.
+  const simpleProfile = { ...profile, safeClearanceZMm: SIMPLE_DEMO_CLEARANCE_MM };
+  const coordinator = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: simpleProfile });
+  assert.equal(coordinator.workcellProfile.safeClearanceZMm, SIMPLE_DEMO_CLEARANCE_MM);
   return { profile, generated, board, controller, graph, authority, coordinator };
 }
 
@@ -125,7 +130,9 @@ test('simple planner produces deterministic single and three-wide four-high wall
   assert.equal(first.blockCount, 12);
   assert.equal(first.designChecksum, second.designChecksum);
   assert.deepEqual(first.placements, second.placements);
-  assert.deepEqual(first.placements.slice(0, 3).map((placement) => placement.position.xMm), [780, 812, 844]);
+  assert.deepEqual(first.placements.slice(0, 3).map((placement) => placement.position.xMm), [
+    first.origin.xMm - 32, first.origin.xMm, first.origin.xMm + 32
+  ]);
   assert.ok(first.placements.slice(3).every((placement) => placement.dependsOnPlacementIds.length === 3));
   const webMcpPlacements = toWebMcpPlacements(first);
   assert.equal(webMcpPlacements.length, 12);
@@ -146,8 +153,8 @@ test('cross-laminated tower alternates two-brick layers by ninety degrees', () =
     if (layer > 0) assert.ok(row.every((placement) => placement.dependsOnPlacementIds.length === 2));
   }
   assert.deepEqual(tower.origin, {
-    xMm: 812,
-    yMm: -120,
+    xMm: 768,
+    yMm: 30,
     zMm: profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2
   });
 });

@@ -32,6 +32,9 @@ import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acce
 import { THREE } from '../render/real-gripper-visual.js';
 import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
 import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
+import { createSceneSettingsTools } from '../webmcp/scene-settings-tools.js';
+import { createSimpleSourceRefill } from '../workcell/simple-source-refill.js';
+import { createMoreBricksButton } from '../workcell/more-bricks-button.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -207,7 +210,15 @@ playerSettingsStore.addGuard((next, keys) => {
   if (status) status.textContent = 'Layout saved. World / BuildPlan coordinates unchanged. VISUAL: USER-VERIFY PENDING';
   return true;
 });
-playerSettingsStore.subscribe((key) => {
+playerSettingsStore.subscribe((key, _value, _settings, change) => {
+  if (key === '*' && change?.changedKeys?.length
+    && change.changedKeys.every(name => ['exposure', 'tableColor'].includes(name))) {
+    // A presentation-only batch must not reset the orbit/player camera,
+    // rebuild brick geometry or reapply the live machine transform.
+    revisionClock.bump();
+    for (const name of change.changedKeys) renderer.applySettings(name);
+    return;
+  }
   if (key === 'tableYawDeg' || key === '*') {
     const next = createV8WorkcellProfile(playerSettings);
     Object.assign(workcellProfile, next);
@@ -217,7 +228,18 @@ playerSettingsStore.subscribe((key) => {
   renderer.applySettings(key);
 });
 let moreBricksBurst = 0;
-function spawnMoreBricks() {
+const simpleSourceRefill = createSimpleSourceRefill({ controller, coordinator: fastPlacement,
+  settings: playerSettings, profile: workcellProfile,
+  getExclusions: () => {
+    const anchor = renderer.workbench.getMoreBricksAnchor?.();
+    return anchor ? [{ xMm: anchor.pose.xMm, yMm: anchor.pose.yMm, radiusMm: anchor.radiusMm + 20 }] : [];
+  }
+});
+function spawnMoreBricks(options = {}) {
+  if (!evidenceMode && demoMode === 'simple') {
+    const result = simpleSourceRefill(options);
+    return result;
+  }
   if (!evidenceMode && demoMode === 'bridge' && mainDemoConstruction) {
     if (!mainDemoConstruction.preparedBuild) return { ok: false, reason: 'Start BUILD BRIDGE first to use the shared source feeder.' };
     if (mainDemoMission?.service.phase === 'TEST') return { ok: false, reason: 'Finish the train test before refilling sources.' };
@@ -244,8 +266,15 @@ function spawnMoreBricks() {
   renderer.workbench.pressMoreBricks();
   return { ...result, action: 'more_bricks' };
 }
-renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Shared source inventory replenished'));
-for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, spawnMoreBricks, 'Shared source inventory replenished'));
+const moreBricksButton = createMoreBricksButton({ controller, settings: playerSettings, profile: workcellProfile,
+  refill: spawnMoreBricks,
+  onPress: () => renderer.workbench.pressMoreBricks(),
+  canRequest: ({ actor }) => !humanBuildAdapter.getState().heldBrickId
+    && (actor === 'human' || (demoMode === 'simple' && !placementCycleRunner?.getState().running))
+});
+const activateMoreBricks = () => moreBricksButton.activateHuman({ expectedWorldRevision: controller.worldRevision });
+renderer.setMoreBricksHandler(() => handleAction(null, activateMoreBricks, 'Shared source inventory replenished'));
+for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, activateMoreBricks, 'Shared source inventory replenished'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 
@@ -575,7 +604,7 @@ function stageV8ParityConnection() {
 }
 
 const actions = {
-  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
+  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks: activateMoreBricks, runOnePickPlace, runRound, captureCamera,
   planSimpleStructure: (spec = {}) => {
     const availableColourCounts = {};
     for (const brick of fastPlacement?.availableBricks?.() ?? []) {
@@ -1021,7 +1050,10 @@ try {
     execute: (input, options) => demoMode === 'simple' && !tool.annotations?.readOnlyHint
       ? { ok: false, reason: 'wrong_mode', message: 'Select BRIDGE mode before changing a bridge mission.', worldRevision: controller.worldRevision }
       : tool.execute(input, options) }));
-  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : [])];
+  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : []), moreBricksButton.tool,
+    ...createSceneSettingsTools({ settingsStore: playerSettingsStore, revisionClock,
+      canUpdate: () => !controller.moving && !controller.pendingMoveCount && controller.operationState === 'idle'
+        && !controller.operationBlocked() && !humanBuildAdapter.getState().heldBrickId })];
   const result = await registerWebMcpTools(runtime, updateToolDiagnostics, additionalTools);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
@@ -1060,6 +1092,7 @@ const publicRuntime = Object.freeze({
   fastPlacement,
   placementCycleRunner,
   streamControl,
+  moreBricksButton,
   demoModeControl,
   connectionGraph,
   playerSettingsStore,

@@ -27,8 +27,15 @@ function stableHash(value) {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-function integer(value, fallback) {
-  return Number.isInteger(value) ? value : fallback;
+function requestedValue(spec, keys, fallback) {
+  const key = keys.find((candidate) => spec[candidate] !== undefined);
+  return key === undefined
+    ? { value: fallback, provided: false }
+    : { value: spec[key], provided: true };
+}
+
+function positiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
 }
 
 function normalizeQuarterTurn(yawDeg = 0) {
@@ -81,29 +88,32 @@ function worldPosition(origin, localX, localY, layer, baseYawRad) {
   };
 }
 
-function wallPlacements({ colour, widthBricks, heightLayers, origin, baseYawRad, prefix }) {
+function wallPlacements({ colour, widthBricks, depthBricks, heightLayers, origin, baseYawRad, prefix }) {
   const placements = [];
   for (let layer = 0; layer < heightLayers; layer += 1) {
     const priorLayer = layer > 0
-      ? Array.from({ length: widthBricks }, (_, column) => placementId(prefix, layer - 1, column))
+      ? Array.from({ length: widthBricks * depthBricks }, (_, slot) => placementId(prefix, layer - 1, slot))
       : [];
-    for (let column = 0; column < widthBricks; column += 1) {
-      placements.push({
-        placementId: placementId(prefix, layer, column),
-        colour,
-        position: worldPosition(
-          origin,
-          (column - (widthBricks - 1) / 2) * BRICK_SPEC.studPitchMm * 4,
-          0,
-          layer,
-          baseYawRad
-        ),
-        yawRad: baseYawRad,
-        supportPlacementId: layer > 0 ? placementId(prefix, layer - 1, column) : null,
-        dependsOnPlacementIds: priorLayer,
-        supportSide: 'M',
-        carriedSide: layer > 0 ? 'M' : null
-      });
+    for (let depth = 0; depth < depthBricks; depth += 1) {
+      for (let column = 0; column < widthBricks; column += 1) {
+        const slot = depth * widthBricks + column;
+        placements.push({
+          placementId: placementId(prefix, layer, slot),
+          colour,
+          position: worldPosition(
+            origin,
+            (column - (widthBricks - 1) / 2) * BRICK_SPEC.studPitchMm * 4,
+            (depth - (depthBricks - 1) / 2) * BRICK_SPEC.studPitchMm * 2,
+            layer,
+            baseYawRad
+          ),
+          yawRad: baseYawRad,
+          supportPlacementId: layer > 0 ? placementId(prefix, layer - 1, slot) : null,
+          dependsOnPlacementIds: [...priorLayer],
+          supportSide: 'M',
+          carriedSide: layer > 0 ? 'M' : null
+        });
+      }
     }
   }
   return placements;
@@ -179,28 +189,42 @@ function validatePlan(placements, { profile, colour, availableColourCounts = nul
 export function createSimpleStructurePlan(spec = {}, options = {}) {
   const structure = String(spec.structure ?? spec.type ?? 'single').toLowerCase();
   const colour = String(spec.colour ?? spec.color ?? 'red').toLowerCase();
-  const widthBricks = structure === 'single' ? 1 : integer(spec.widthBricks ?? spec.width, structure === 'wall' ? 3 : 2);
-  const heightLayers = structure === 'single' ? 1 : integer(spec.heightLayers ?? spec.height, structure === 'wall' ? 4 : 5);
-  const blockCount = spec.blockCount === undefined ? null : integer(spec.blockCount, null);
+  const widthRequest = requestedValue(spec, ['widthBricks', 'width'], structure === 'single' ? 1 : structure === 'wall' ? 3 : 2);
+  const heightRequest = requestedValue(spec, ['heightLayers', 'height'], structure === 'single' ? 1 : structure === 'wall' ? 4 : 5);
+  const depthRequest = requestedValue(spec, ['depthBricks', 'depth'], 1);
+  const widthBricks = widthRequest.value;
+  const heightLayers = heightRequest.value;
+  const depthBricks = depthRequest.value;
+  const blockCountProvided = spec.blockCount !== undefined;
+  const blockCount = blockCountProvided ? spec.blockCount : null;
   const baseTurns = normalizeQuarterTurn(spec.yawDeg ?? 0);
   const profile = options.profile ?? null;
   const origin = spec.origin ? clone(spec.origin) : defaultOrigin(profile, baseTurns ?? 0);
   const errors = [];
   if (!SIMPLE_STRUCTURE_TYPES.includes(structure)) errors.push('unsupported_structure');
   if (!SIMPLE_STRUCTURE_COLOURS.includes(colour)) errors.push('unsupported_colour');
-  if (!Number.isInteger(widthBricks) || widthBricks < 1 || widthBricks > 12) errors.push('invalid_width');
-  if (!Number.isInteger(heightLayers) || heightLayers < 1 || heightLayers > 20) errors.push('invalid_height');
+  if (!positiveInteger(widthBricks) || widthBricks > 12) errors.push('invalid_width');
+  if (!positiveInteger(heightLayers) || heightLayers > 20) errors.push('invalid_height');
+  if (!positiveInteger(depthBricks) || depthBricks > 12) errors.push('invalid_depth');
+  if (structure === 'single' && (widthBricks !== 1 || heightLayers !== 1 || depthBricks !== 1)) {
+    errors.push('single_dimensions_must_be_one');
+  }
   if (structure === 'cross_laminated_tower' && widthBricks !== 2) errors.push('tower_width_must_be_two');
+  if (structure === 'cross_laminated_tower' && depthBricks !== 1) errors.push('tower_depth_must_be_one');
   if (baseTurns === null) errors.push('yaw_must_be_quarter_turn');
   if (!origin || ![origin.xMm, origin.yMm, origin.zMm].every(Number.isFinite)) errors.push('invalid_origin');
   const expectedCount = structure === 'single' ? 1
-    : structure === 'wall' ? widthBricks * heightLayers
+    : structure === 'wall' ? widthBricks * depthBricks * heightLayers
       : widthBricks * heightLayers;
-  if (blockCount !== null && blockCount !== expectedCount) errors.push('block_count_mismatch');
+  if (blockCountProvided && !positiveInteger(blockCount)) errors.push('invalid_block_count');
+  if (blockCountProvided && positiveInteger(blockCount) && blockCount !== expectedCount) errors.push('block_count_mismatch');
   if (expectedCount > 50) errors.push('structure_exceeds_single_mcp_chunk');
   if (errors.length) return { ok: false, reason: 'invalid_structure_spec', errors };
 
   const canonical = { structure, colour, widthBricks, heightLayers, origin, yawDeg: baseTurns * 90 };
+  // Keep the historical depth-one wall identity stable. Depth is part of the
+  // canonical design only when it changes the generated geometry.
+  if (structure === 'wall' && depthBricks !== 1) canonical.depthBricks = depthBricks;
   const planId = `simple-${structure.replaceAll('_', '-')}-${stableHash(canonical)}`;
   const prefix = planId.slice(0, 48);
   const baseYawRad = baseTurns * quarterTurn;
@@ -210,7 +234,7 @@ export function createSimpleStructurePlan(spec = {}, options = {}) {
         supportPlacementId: null, dependsOnPlacementIds: [], supportSide: 'M', carriedSide: null
       }]
     : structure === 'wall'
-      ? wallPlacements({ colour, widthBricks, heightLayers, origin, baseYawRad, prefix })
+      ? wallPlacements({ colour, widthBricks, depthBricks, heightLayers, origin, baseYawRad, prefix })
       : towerPlacements({ colour, heightLayers, origin, baseYawRad, prefix });
   const validation = validatePlan(placements, {
     profile,
@@ -226,6 +250,7 @@ export function createSimpleStructurePlan(spec = {}, options = {}) {
     colour,
     widthBricks,
     heightLayers,
+    depthBricks,
     blockCount: placements.length,
     origin: clone(origin),
     yawDeg: baseTurns * 90,

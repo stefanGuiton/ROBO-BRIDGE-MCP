@@ -515,9 +515,10 @@ test('human bridge placement preserves its preview anchor and both support conne
   const adapter = new HumanBuildAdapter({ controller, board, graph, placementEngine });
   const [left, right, bridge] = generated.records;
   const baseZ = profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2;
+  const baseY = profile.buildZone.minY + settings.gridPitchMm;
 
   for (const [brick, xMm] of [[left, 700], [right, 732]]) {
-    const preview = authority.preview({ brickId: brick.id, position: { xMm, yMm: -220, zMm: baseZ }, yawRad: 0 });
+    const preview = authority.preview({ brickId: brick.id, position: { xMm, yMm: baseY, zMm: baseZ }, yawRad: 0 });
     assert.equal(preview.ok, true);
     assert.equal(controller.beginHumanCarry(brick.id).ok, true);
     const result = controller.commitHumanPlacement({

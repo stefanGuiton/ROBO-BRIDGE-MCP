@@ -4,7 +4,10 @@ const STORAGE_KEY = 'roboBridgeMainDemoPlayerV8';
 export const PLAYER_SOURCE_PROVENANCE = Object.freeze({
   sourceDemoSha256: '1a9e333dde43a9b223bca47c586e32b5a276f3faf90c6140f2c764a36b947bb9',
   oracleDefaultSettingsSha256: '10ed9e86601f5daab465d0eb7a966907b4841a1618fb31a207d3a7945a6deccb',
+  // Keep the original Oracle-supplied identity intact; the checked-in
+  // settings now include the approved table-layout update below.
   suppliedSettingsSha256: '3e9a58a4b23b96d4ce98a1cd77b8c123ebf14270c1806016da49620713cbc9b9',
+  currentSettingsSha256: '4981820d752002e68c51eafaf2af5129eda3f4fdbd553558b885ca9b17020c65',
   sourceTestReportSha256: '0f78b4d37a17c67a449165a370231b6289f4af778f37eba8306e90885229e632'
 });
 
@@ -218,7 +221,9 @@ export class PlayerSettingsStore {
     }
     this.value.structuralCollapseEnabled = false;
     this.persist();
-    for (const listener of this.listeners) listener('*', null, this.value);
+    // Preserve one atomic notification while allowing render consumers to
+    // avoid resetting unrelated geometry/camera state for a small patch.
+    for (const listener of this.listeners) listener('*', null, this.value, { changedKeys: Object.keys(sanitized) });
     return { ok: true, count: Object.keys(sanitized).length };
   }
 

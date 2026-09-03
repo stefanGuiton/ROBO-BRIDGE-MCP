@@ -196,7 +196,8 @@ export function makeReachableV8Spawn(settings, profile, {
   occupied = [],
   seed = settings.seed,
   colours = null,
-  yawRad = null
+  yawRad = null,
+  excludedCircles = []
 } = {}) {
   if (!profile?.supplyZone || !profile?.workspace || !profile?.layout) {
     return { ok: false, reason: 'invalid_workcell_profile', records: [], diagnostics: { rejected: [] } };
@@ -226,6 +227,10 @@ export function makeReachableV8Spawn(settings, profile, {
     const xMm = zone.minX + 24 + column * spacingX + (rng() - 0.5) * 3;
     const yMm = zone.minY + 24 + row * spacingY + (rng() - 0.5) * 3;
     if (xMm > zone.maxX - 20 || yMm > zone.maxY - 20) continue;
+    if (excludedCircles.some(circle => Math.hypot(xMm - circle.xMm, yMm - circle.yMm) < circle.radiusMm)) {
+      rejected.push({ attempt, reason: 'reserved_control_area', xMm, yMm });
+      continue;
+    }
     const palette = colourForReachableIndex(index, rng, colours);
     const record = makeRecord(
       `${idPrefix}-${startIndex + index}`,

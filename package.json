@@ -16,6 +16,7 @@
     "test:submission": "node --test --test-concurrency=1 tests/js/submission-gate.test.js",
     "construction:player-browser": "node scripts/construction-player-browser.mjs",
     "simple:browser": "node scripts/simple-webmcp-browser.mjs --write-evidence",
+    "level1:browser": "node scripts/level1-launch-browser.mjs",
     "submission:gate": "node tools/submission/submission-gate.mjs",
     "submission:smoke": "node tools/submission/submission-gate.mjs --smoke --hero-attempts 1 --reset-cycles 3",
     "webmcp:audit": "node tools/submission/submission-gate.mjs --browser-only --catalogue minimum --hero-attempts 0 --reset-cycles 1 --output artifacts/submission-evidence/webmcp-audit",

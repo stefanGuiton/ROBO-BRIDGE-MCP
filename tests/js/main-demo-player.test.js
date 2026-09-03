@@ -394,7 +394,8 @@ test('supplied V8 player settings are provenance-locked and production disables 
   const path = fileURLToPath(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url));
   const bytes = await readFile(path);
   const normalizedBytes = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
-  assert.equal(createHash('sha256').update(normalizedBytes).digest('hex'), PLAYER_SOURCE_PROVENANCE.suppliedSettingsSha256);
+  assert.equal(createHash('sha256').update(normalizedBytes).digest('hex'), PLAYER_SOURCE_PROVENANCE.currentSettingsSha256);
+  assert.equal(PLAYER_SOURCE_PROVENANCE.suppliedSettingsSha256, '3e9a58a4b23b96d4ce98a1cd77b8c123ebf14270c1806016da49620713cbc9b9');
   const attributes = await readFile(fileURLToPath(new URL('../../.gitattributes', import.meta.url)), 'utf8');
   assert.match(attributes, /^apps\/web\/config\/player\/LOGO_ROBO_PLAYER_SETTINGS\.json -text$/m);
   const supplied = JSON.parse(bytes.toString('utf8'));
@@ -474,10 +475,10 @@ test('locked V8 seed reproduces the original immediate 12-brick multicolour spaw
     position: Object.values(brick.position).map((value) => Number(value.toFixed(4))),
     yawRad: Number(brick.yawRad.toFixed(6))
   })), [
-    { colour: 'blue', position: [-666.679, -236.6628, 1204.8], yawRad: 0.746199 },
-    { colour: 'white', position: [-619.6378, -237.222, 1204.8], yawRad: 3.673034 },
-    { colour: 'yellow', position: [-572.752, -236.7345, 1204.8], yawRad: 5.891398 },
-    { colour: 'purple', position: [-524.4297, -236.7476, 1204.8], yawRad: 1.774049 }
+    { colour: 'blue', position: [-666.679, -491.6628, 1204.8], yawRad: 0.746199 },
+    { colour: 'white', position: [-619.6378, -492.222, 1204.8], yawRad: 3.673034 },
+    { colour: 'yellow', position: [-572.752, -491.7345, 1204.8], yawRad: 5.891398 },
+    { colour: 'purple', position: [-524.4297, -491.7476, 1204.8], yawRad: 1.774049 }
   ]);
   assert.ok(bricks.every((brick) => brick.position.zMm === supplied.tableTopHeightMm + supplied.brickBodyHeightMm / 2));
 });
@@ -494,8 +495,8 @@ test('MORE BRICKS deterministically adds ten physical launch records without rep
     velocity: brick.initialVelocityMps.map((value) => Number(value.toFixed(6))),
     spin: brick.initialAngularVelocityRadS.map((value) => Number(value.toFixed(6)))
   })), [
-    { colour: 'orange', position: [-645, -192.7218, 1269.8], velocity: [-0.026279, -0.017203, 0.047627], spin: [0.533923, -0.15917, 1.333971] },
-    { colour: 'black', position: [-591, -194.7956, 1291.8], velocity: [0.01161, -0.025243, 0.036362], spin: [-0.818007, -0.340853, 0.838226] }
+    { colour: 'orange', position: [-645, -447.7218, 1269.8], velocity: [-0.026279, -0.017203, 0.047627], spin: [0.533923, -0.15917, 1.333971] },
+    { colour: 'black', position: [-591, -449.7956, 1291.8], velocity: [0.01161, -0.025243, 0.036362], spin: [-0.818007, -0.340853, 0.838226] }
   ]);
 });
 
@@ -514,14 +515,14 @@ test('MAIN_DEMO preserves the V8 HUD, controls, snap animation, and additive MOR
   assert.match(css, /\.panel\.closed\{transform:translateX\(calc\(100% \+ 28px\)\)/);
   assert.match(css, /#angle-pill\{bottom:calc\(78px \+ env\(safe-area-inset-bottom\)\)/);
   assert.match(css, /#reticle-status\{bottom:calc\(46px \+ env\(safe-area-inset-bottom\)\)/);
-  assert.match(main, /function spawnMoreBricks\(\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
-  assert.match(main, /spawnMoreBricks, runOnePickPlace/);
+  assert.match(main, /function spawnMoreBricks\(options = \{\}\)[\s\S]*controller\.addLooseBricks[\s\S]*renderer\.launchSpawnedBricks/);
+  assert.match(main, /spawnMoreBricks:\s*activateMoreBricks,\s*runOnePickPlace/);
   assert.doesNotMatch(main, /SNAP \$\{preview\.mode/);
   assert.match(main, /getUserCamera: \(\) => renderer\.getUserCameraConfig\(\)[\s\S]*captureCamera: \(descriptor, options\) => renderer\.captureInspectionCamera\(descriptor, options\)/);
   assert.match(main, /function captureCamera\([\s\S]*runtime\.world\.captureCamera/);
   assert.match(renderer, /snapNaturalFrequencyHz[\s\S]*snapDampingRatio[\s\S]*snapOvershootMm/);
   assert.match(renderer, /captureInspectionCamera\([\s\S]*WebGLRenderTarget[\s\S]*readRenderTargetPixels/);
-  assert.match(workbench, /CylinderGeometry\(50, 50, 24, 32\)/);
+  assert.match(workbench, /CylinderGeometry\(anchor\.radiusMm, anchor\.radiusMm, anchor\.heightMm, 32\)/);
   assert.match(workbench, /context\.rotate\(-Math\.PI \/ 2\)/);
   assert.match(workbench, /Impact[\s\S]*context\.fillText\('MORE', 0, -56\)[\s\S]*context\.fillText\('BRICKS', 0, 56\)/);
 });

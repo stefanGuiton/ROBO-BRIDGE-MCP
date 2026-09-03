@@ -30,7 +30,7 @@ try {
   await browser.waitFor(`document.documentElement.dataset.runtimeReady === 'true'`, { timeoutMs: 90000 });
   const boot = await evaluate(() => ({ native: Boolean(navigator.modelContext?.registerTool), names: [...window.__simpleTools.keys()], mode: __ROBO_BRIDGE__.demoModeControl.getState().mode,
     terrain: __ROBO_BRIDGE__.challenge.terrainGroup.visible, hologram: __ROBO_BRIDGE__.renderer.machineRoot.getObjectByName('V46_EXACT_BUILDPLAN_HOLOGRAM').visible }));
-  assert.equal(boot.native, true); assert.equal(boot.names.length, 28); assert.equal(boot.mode, 'simple'); assert.equal(boot.terrain, false); assert.equal(boot.hologram, false);
+  assert.equal(boot.native, true); assert.equal(boot.names.length, 31); assert.equal(new Set(boot.names).size, 31); assert.equal(boot.mode, 'simple'); assert.equal(boot.terrain, false); assert.equal(boot.hologram, false);
   check('native registration and Simple mode', boot);
   await evaluate(() => { const r = __ROBO_BRIDGE__; window.__simpleAuthorities = [r.robotController, r.board, r.fastPlacement, r.placementCycleRunner]; });
   for (const shape of SIMPLE_DEMO_SCENARIOS) {
@@ -83,7 +83,7 @@ try {
       sameAuthorities: window.__simpleAuthorities.every((a, i) => a === [r.robotController, r.board, r.fastPlacement, r.placementCycleRunner][i]),
       count: window.__simpleTools.size };
   });
-  assert.equal(modes.sameAuthorities, true); assert.equal(modes.samePlan, true); assert.equal(modes.visible, true); assert.equal(modes.count, 28);
+  assert.equal(modes.sameAuthorities, true); assert.equal(modes.samePlan, true); assert.equal(modes.visible, true); assert.equal(modes.count, 31);
   check('mode reset and preserved bridge', modes);
   report.console = browser.console;
   assert.equal(browser.console.errors.length + browser.console.exceptions.length, 0, JSON.stringify(browser.console));

@@ -1,5 +1,9 @@
 # P0 Downstream Integration — Progress Handoff
 
+> **ACTIVE TASK:** user authorized `Downloads/OVERALL_PLAN_LAUNCH_READY.md` on 2026-09-03, with subagents, actual browser screenshots/inspection and milestone commits/pushes. Resume from `docs/LAUNCH_READY_PROGRESS.md`. Level1 comes first; do not implement Level2/3 before the preceding gate passes. Main synchronization at14441e3 preserves PlanN. No main merge or Cloudflare deployment. This supersedes older stop-testing/single-agent/no-screenshot instructions below.
+
+> **START HERE after missing chat/restart:** read [HANDOFF_CURRENT.md](HANDOFF_CURRENT.md), consolidated on 2026-09-03 at approximately13:20 BST. Local/remote branch checkpoint is29953f0, PR #7 is draft against main, and PR #6 is already merged. Remote main now contains MASTER_PLAN versionM; this branch still has olderJ. The entries below are chronological history, not all current instructions. The new consolidated handoff is local documentation until separately published.
+
 ## Current publication checkpoint — 2026-09-03
 
 User requested publication of the alternating tower and pickup-colour/logging fixes on `codex/p0-downstream-integration-prep`, without another merge. This supersedes the local/uncommitted publication status in the historical entries below. Only intended runtime, tests and documentation are included; user assets and generated evidence remain untouched.
