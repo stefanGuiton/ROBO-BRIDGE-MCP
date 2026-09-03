@@ -109,7 +109,7 @@ function refreshPanel() {
   const label = guide.layer && guide.slot ? `LAYER ${guide.layer} · SLOT ${guide.slot}` : guide.placementId;
   slot.textContent = `${label} · ${guide.placementId}`;
   pose.textContent = `X ${guide.targetPosition.xMm} · Y ${guide.targetPosition.yMm} · Z ${guide.targetPosition.zMm} mm · YAW ${guide.targetYawDeg}°`;
-  rule.textContent = 'Before stream start: place one blue brick here. Release only on the normal VALID snap preview.';
+  rule.textContent = 'Before stream start: place one blue brick here. Release only on the normal VALID placement preview.';
 }
 
 export function installSimpleHumanSlotGuide() {
