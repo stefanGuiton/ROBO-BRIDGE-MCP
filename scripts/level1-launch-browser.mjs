@@ -21,7 +21,7 @@ const output = path.resolve(process.env.ROBO_LEVEL1_OUTPUT ?? 'output/playwright
 const report = {
   browser: null,
   url,
-  visual: 'USER-VERIFY PENDING',
+  visual: 'INDEPENDENT IMAGE REVIEW REQUIRED',
   screenshots: [],
   checks: [],
   console: null,
@@ -51,7 +51,7 @@ function isSuccess(result) {
 const preload = `(() => {
   window.__level1Tools = new Map();
   window.__level1DuplicateTools = [];
-  const context = navigator.modelContext;
+  const context = document.modelContext ?? navigator.modelContext;
   if (!context) return;
   const prototype = Object.getPrototypeOf(context);
   const original = prototype && prototype.registerTool;
@@ -72,14 +72,19 @@ report.browser = browser.version.product;
 
 const evaluate = (fn, argument = null, options = {}) => browser.evaluate(`(${fn.toString()})(${JSON.stringify(argument)})`, options);
 const nativeCall = (name, input = {}) => evaluate(async ({ name, input }) => {
-  if (!navigator.modelContextTesting?.executeTool) throw new Error('native_model_context_testing_unavailable');
-  return navigator.modelContextTesting.executeTool(name, JSON.stringify(input));
+  const testing = document.modelContextTesting ?? navigator.modelContextTesting;
+  if (!testing?.executeTool) throw new Error('native_model_context_testing_unavailable');
+  return testing.executeTool(name, JSON.stringify(input));
 }, { name, input }).then(parseToolResult);
 
-async function capture(name) {
+async function capture(name, dataUrl = null) {
   if (!writeEvidence) return null;
   const file = path.join(output, `${name}.png`);
-  await browser.screenshot(file);
+  if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/png;base64,')) {
+    await writeFile(file, Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64'));
+  } else {
+    await browser.screenshot(file);
+  }
   report.screenshots.push(file);
   return file;
 }
@@ -421,10 +426,79 @@ async function readCameraState() {
   });
 }
 
+async function installMotionFrameObserver() {
+  return evaluate(({ includeImage }) => {
+    const r = window.__ROBO_BRIDGE__;
+    if (!r?.renderer?.addFrameListener) throw new Error('motion_frame_observer_unavailable');
+    window.__level1MotionFrames = {};
+    window.__level1MotionSawActive = false;
+    window.__level1MotionObserverCleanup?.();
+    const saveFrame = (phase, sample, approachDistance, contactDistance) => {
+      if (window.__level1MotionFrames[phase]) return;
+      // This render and canvas readback happen inside the same animation-frame
+      // callback that observed the measured TCP pose. No controller state is
+      // altered and no artificial pause is introduced.
+      r.renderer.render();
+      const dataUrl = includeImage ? r.renderer.canvas.toDataURL('image/png') : null;
+      window.__level1MotionFrames[phase] = {
+        phase,
+        tcp: sample.tcp,
+        status: sample.status,
+        active: sample.active,
+        pressesCompleted: sample.pressesCompleted,
+        approachDistance,
+        contactDistance,
+        dataUrl
+      };
+    };
+    window.__level1MotionObserverCleanup = r.renderer.addFrameListener(() => {
+      const anchor = r.moreBricksButton.getAnchor();
+      const state = r.moreBricksButton.getState();
+      const tcp = r.robotController.getState().tcp;
+      const sample = {
+        tcp: { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm },
+        status: state.status,
+        active: state.active,
+        pressesCompleted: state.pressesCompleted
+      };
+      if (sample.active || sample.status === 'moving' || sample.status === 'pressing') window.__level1MotionSawActive = true;
+      if (!window.__level1MotionSawActive) return;
+      const approachDistance = Math.hypot(
+        tcp.xMm - anchor.pose.xMm,
+        tcp.yMm - anchor.pose.yMm,
+        tcp.zMm - anchor.safeApproachZMm
+      );
+      const contactDistance = Math.hypot(
+        tcp.xMm - anchor.pressedTcp.xMm,
+        tcp.yMm - anchor.pressedTcp.yMm,
+        tcp.zMm - anchor.pressedTcp.zMm
+      );
+      if (sample.pressesCompleted === 0 && approachDistance <= 18) {
+        saveFrame('approach', sample, approachDistance, contactDistance);
+      }
+      if (contactDistance <= 12) saveFrame('contact', sample, approachDistance, contactDistance);
+      if (sample.pressesCompleted >= 1 && approachDistance <= 18) {
+        saveFrame('retreat', sample, approachDistance, contactDistance);
+      }
+    });
+    return { ok: true };
+  }, { includeImage: writeEvidence });
+}
+
+async function clearMotionFrameObserver() {
+  return evaluate(() => {
+    window.__level1MotionObserverCleanup?.();
+    window.__level1MotionObserverCleanup = null;
+    return true;
+  });
+}
+
 async function captureRefillMotion() {
   const deadline = Date.now() + 120_000;
   let approachCaptured = false;
   let pressCaptured = false;
+  let retreatCaptured = false;
+  let sawActiveMotion = false;
   let latest = null;
   while (Date.now() < deadline) {
     latest = await evaluate(() => {
@@ -432,6 +506,11 @@ async function captureRefillMotion() {
       const anchor = r.moreBricksButton.getAnchor();
       const state = r.moreBricksButton.getState();
       const tcp = r.robotController.getState().tcp;
+      const frames = Object.fromEntries(Object.entries(window.__level1MotionFrames ?? {}).map(([phase, frame]) => {
+        const dataUrl = frame.dataUrlDelivered ? null : frame.dataUrl;
+        frame.dataUrlDelivered = true;
+        return [phase, { ...frame, dataUrl }];
+      }));
       return {
         button: { xMm: anchor.pose.xMm, yMm: anchor.pose.yMm, zMm: anchor.pose.zMm },
         safeApproachZMm: anchor.safeApproachZMm,
@@ -440,7 +519,8 @@ async function captureRefillMotion() {
         tcp,
         status: state.status,
         active: state.active,
-        pressesCompleted: state.pressesCompleted
+        pressesCompleted: state.pressesCompleted,
+        frames
       };
     });
     const approachDistance = Math.hypot(
@@ -453,18 +533,46 @@ async function captureRefillMotion() {
       latest.tcp.yMm - latest.pressedTcp.yMm,
       latest.tcp.zMm - latest.pressedTcp.zMm
     );
-    if (!approachCaptured && approachDistance <= 18) {
-      await capture('02-more-bricks-approach');
-      approachCaptured = true;
+    if (latest.active || latest.status === 'moving' || latest.status === 'pressing') sawActiveMotion = true;
+    const phases = [
+      ['approach', '02-more-bricks-approach'],
+      ['contact', '03-more-bricks-contact'],
+      ['retreat', '03-more-bricks-retreat']
+    ];
+    for (const [phase, filename] of phases) {
+      const frame = latest.frames?.[phase];
+      const alreadyCaptured = phase === 'approach' ? approachCaptured
+        : phase === 'contact' ? pressCaptured
+          : retreatCaptured;
+      if (!frame || alreadyCaptured) continue;
+      if (writeEvidence) assert.ok(frame.dataUrl, `${phase} frame readback unavailable`);
+      await capture(filename, frame.dataUrl);
+      if (phase === 'approach') approachCaptured = true;
+      if (phase === 'contact') pressCaptured = true;
+      if (phase === 'retreat') retreatCaptured = true;
     }
-    if (!pressCaptured && latest.status === 'pressing' && contactDistance <= 12) {
-      await capture('03-more-bricks-press');
-      pressCaptured = true;
-    }
-    if (!latest.active && latest.status !== 'moving' && latest.status !== 'pressing') break;
+    if (sawActiveMotion && !latest.active && latest.status !== 'moving' && latest.status !== 'pressing') break;
     await delay(40);
   }
-  return { approachCaptured, pressCaptured, latest };
+  const frameSummary = Object.fromEntries(Object.entries(latest?.frames ?? {}).map(([phase, frame]) => [phase, {
+    phase: frame.phase,
+    tcp: frame.tcp,
+    status: frame.status,
+    active: frame.active,
+    pressesCompleted: frame.pressesCompleted,
+    approachDistance: frame.approachDistance,
+    contactDistance: frame.contactDistance,
+    imageCaptured: writeEvidence && (phase === 'approach' ? approachCaptured
+      : phase === 'contact' ? pressCaptured
+        : retreatCaptured)
+  }]));
+  return {
+    approachCaptured,
+    pressCaptured,
+    retreatCaptured,
+    frames: frameSummary,
+    latest: latest ? { ...latest, frames: undefined } : null
+  };
 }
 
 async function clickCanvas(aim) {
@@ -480,12 +588,18 @@ async function humanAdoptFirstTarget(placements) {
   const source = await evaluate(() => window.__ROBO_BRIDGE__.robotController.getBricks()
     .find((brick) => brick.colour === 'blue' && !brick.heldBy && !brick.placedTargetId && !brick.placementType));
   assert.ok(source, 'blue source for human adoption is unavailable');
-  const target = placements[0];
   const sourceAim = await setHeroCamera(null, { sourceId: source.id });
   assert.equal(sourceAim.highlightedBrickId, source.id, JSON.stringify(sourceAim));
   await clickCanvas(sourceAim);
   await browser.waitFor(`__ROBO_BRIDGE__.humanBuildAdapter.getState().heldBrickId === ${JSON.stringify(source.id)}`, { timeoutMs: 3_000 });
-  const targetAim = await setHeroCamera({ xMm: target.xMm, yMm: target.yMm, zMm: target.zMm }, { guide: true });
+  // The pending-placement guide is the runtime's authoritative human target.
+  // It may intentionally choose a later eligible target, so never couple the
+  // real pointer path to a planner-array index.
+  const targetAim = await setHeroCamera(null, { guide: true });
+  const targetPlacementId = targetAim.humanGuide?.placementId ?? null;
+  assert.ok(targetPlacementId, JSON.stringify(targetAim));
+  const target = placements.find((placement) => placement.placementId === targetPlacementId);
+  assert.ok(target, JSON.stringify({ targetPlacementId, placements: placements.map((placement) => placement.placementId) }));
   assert.equal(targetAim.heldBrickId, source.id, JSON.stringify(targetAim));
   assert.equal(targetAim.preview?.valid, true, JSON.stringify(targetAim));
   await clickCanvas(targetAim);
@@ -502,8 +616,8 @@ try {
   await browser.navigate(url);
   await browser.waitFor(`document.documentElement.dataset.runtimeReady === 'true'`, { timeoutMs: 90_000 });
   const boot = await evaluate(() => ({
-    native: Boolean(navigator.modelContext?.registerTool),
-    testing: Boolean(navigator.modelContextTesting?.executeTool),
+    native: Boolean((document.modelContext ?? navigator.modelContext)?.registerTool),
+    testing: Boolean((document.modelContextTesting ?? navigator.modelContextTesting)?.executeTool),
     names: [...(window.__level1Tools?.keys?.() ?? [])],
     duplicates: [...(window.__level1DuplicateTools ?? [])],
     mode: window.__ROBO_BRIDGE__.demoModeControl?.getState?.().mode ?? document.documentElement.dataset.demoMode,
@@ -551,10 +665,18 @@ try {
   await planStream('level1-wall-5x7', wall.placements, 2000);
   const beforeRefill = await readRuntimeState();
   await setButtonCamera();
-  const refillPromise = requestPhysicalRefill('MORE BRICKS physical double press', beforeRefill.worldRevision);
+  await installMotionFrameObserver();
   const refillMotion = captureRefillMotion();
+  // Arm the real state sampler before invoking the native tool so the fast
+  // safe-approach and first retreat transitions cannot be missed.
+  await delay(120);
+  const refillPromise = requestPhysicalRefill('MORE BRICKS physical double press', beforeRefill.worldRevision);
   await refillPromise;
   const refillMotionResult = await refillMotion;
+  await clearMotionFrameObserver();
+  assert.equal(refillMotionResult.approachCaptured, true, JSON.stringify(refillMotionResult));
+  assert.equal(refillMotionResult.pressCaptured, true, JSON.stringify(refillMotionResult));
+  assert.equal(refillMotionResult.retreatCaptured, true, JSON.stringify(refillMotionResult));
   if (writeEvidence) check('MORE BRICKS motion evidence', refillMotionResult);
 
   // Mandatory 5 x 7 blue wall.  It is deliberately strict-colour, so an

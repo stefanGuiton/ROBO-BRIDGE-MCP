@@ -14,12 +14,18 @@ Started 2026-09-03. Governing task: `Downloads/OVERALL_PLAN_LAUNCH_READY.md`; us
 
 | Level | Status | Required checkpoint |
 | --- | --- | --- |
-| 1 Simple | IN PROGRESS | Blue single; 35-blue wall; six-layer12 tower; actual human ADOPTED+continuation; real robot double button press/shared refill; brightness/table tools; cadence; catalogue; screenshots/state/console; independent diff review |
+| 1 Simple | PASS — publishing checkpoint | Blue single;35-blue wall;12-target tower; actual Human ADOPTED+continuation; physical double-press/shared refill; settings/cadence;31 tools; state/images/console independently reviewed |
 | 2 Viaduct, no Train | NOT STARTED | Semantic design/hologram changes; advisory spatial actor split; shared board completion; explicit no-Train level; Level1 regression; visual/state review |
 | 3 Train physics | NOT STARTED | TCP-bound pusher contact; physical Train failure and crossing; Mission recovery/completion/stats; earlier-level regression; visual/state review |
 | Final release audit | NOT STARTED | Exact-head verify/smoke/gate/WebMCP and all-level browser checks; static apps/web and real GLB audit; no deployment |
 
 ## Level 1 implementation ownership
+
+### Accepted gate (supersedes in-progress notes below)
+
+Post-merge full verification:425/425 JavaScript,20/20 reliability,163JS+4Python syntax, required-files and removed-legacy checks PASS. Fresh Chrome148 full browser14/14 and legacy Simple8/8 PASS, console0errors/0warnings/0exceptions. Native31-tool surface, strict-blue35/35 unique wall with two legitimate2/2 button-press requests,6-layer12-target tower with actual canvas blue Human adoption +11 robot, settings/camera invariance and cadence all pass. Concurrent test-only Human Simulator5/5; guide4/4. Independent code review and main+Sol screenshot inspection PASS.
+
+The button screenshot defect was repeated overwriting of stored same-frame images by later CDP screenshots; corrected capture saves each phase once. The fresh contact image visibly touches the red button at measuredTCPZ26.517mm, versus approach/retreat~250mm, with new blue supply visible afterward. Use only the eight paths listed in `output/playwright/launch-level1/acceptance.json`; do not use stale unlisted `03-more-bricks-press.png`. Generated evidence is not staged. Publication uses the Push skill, explicit intended files and existing draftPR7; no force push/main merge. Exact SHA and checkpoint regression follow below after publication. All future subagents explicitly select GPT-5.6 Sol per the user.
 
 - Main: integration, shared refill/runtime/visual guidance, final verification/publication.
 - Refill reviewer: existing button/robot contact inspection and bounded shared-anchor/service design.
@@ -50,6 +56,8 @@ Remote publication preflight found parallel feature-branch work at `d9d7e216abcf
 Pre-merge full Level1 Chrome148 run PASS:14 checks,31 unique tools, blue single1/1,35/35 strict-blue wall (35 unique sources; physical refill resumed the same immutable plan), two requests each completing2/2 button presses, six-layer tower12/12 with actual canvas Human blue adoption1 plus11 robot,1333ms cadence and889→1000 floor, brightness/table changes with unchanged camera, console0errors/0warnings. Main opened all required categories of screenshots; contact and clearance poses are visible, wall and tower geometry readable, dark-table update correct. Some filename/HUD captures precede the final display refresh; authoritative completion is separately asserted. Evidence is local under `output/playwright/launch-level1/`, never staged. Preserve this result as pre-merge evidence; repeat after remote integration.
 
 ## User addendum — Level 2 full bridge observation
+
+Post-integration resume point: parallel remote work was safely merged at `6edffc4c3d8c07e93635944f52f5e00a566d35f6`; no force push or main merge. The amber marker and imported Human panel share the same suggested target, preferentially the second ready slot; actor permissions remain shared. Guide + Human Simulator9/9 and remote Simple hero9/9 pass. Independent exact merge review PASS. Full post-merge verification is running. The first post-merge browser attempt passed the native31-tool boot, blue single and physical2/2 refill but missed transient approach/retreat screenshot timing; the harness is being corrected and rerun. That attempt is not a full Level1 PASS. `5905386` is the earlier local implementation milestone, not the completed-level checkpoint.
 
 Watch a complete end-to-end bridge build driven by Codex through WebMCP, not only a partial/shared-board fixture. Include real robot pickup/placement of custom arch pieces. User permits a300ms start-to-start cycle target for this many-part Level2 test; keep existing motion/IK/collision safety, record overruns, and label any explicitly allowed accelerated fallback separately. This does not change Level1's normal2000ms / minimum1000ms cadence contract. Level2 implementation still waits for the Level1 checkpoint.
 
