@@ -1,0 +1,119 @@
+name: PR 7 release candidate audit
+
+on:
+  push:
+    branches:
+      - codex/p0-downstream-integration-prep
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr7-release-audit
+  cancel-in-progress: false
+
+jobs:
+  focused-simple:
+    name: Focused Simple and pickup tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax checks
+        run: |
+          node --check apps/web/src/logo/simple-human-slot-guide.js
+          node --check apps/web/src/logo/simple-demo-mode.js
+          node --check tests/helpers/simple-demo-harness.js
+          node --check tests/js/simple-webmcp-hero.test.js
+          node --check scripts/simple-webmcp-browser.mjs
+      - name: Focused release tests
+        run: >-
+          node --test --test-concurrency=1
+          tests/js/simple-webmcp-hero.test.js
+          tests/js/held-brick-colour.test.js
+          tests/js/player-pickup-audit.test.js
+
+  simple-browser:
+    name: Native Chrome Simple WebMCP path
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run browser acceptance
+        env:
+          ROBO_BRIDGE_SOFTWARE_GL: '1'
+        run: |
+          python scripts/serve_web.py --port 8774 >/tmp/robo-bridge-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8774/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8774/health
+          npm run simple:browser
+
+  verify:
+    name: npm run verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm run verify
+
+  submission-smoke:
+    name: npm run submission:smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm run submission:smoke
+
+  submission-gate:
+    name: npm run submission:gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm run submission:gate
+
+  webmcp-audit:
+    name: npm run webmcp:audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm run webmcp:audit
