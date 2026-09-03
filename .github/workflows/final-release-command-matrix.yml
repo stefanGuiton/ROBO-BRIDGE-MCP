@@ -1,0 +1,64 @@
+name: Final release command matrix
+
+on:
+  push:
+    branches:
+      - oracle/p0-final-release-audit
+
+permissions:
+  contents: read
+
+jobs:
+  command:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: submission-smoke
+            command: npm run submission:smoke
+          - key: submission-gate
+            command: npm run submission:gate
+          - key: webmcp-audit
+            command: npm run webmcp:audit
+    name: ${{ matrix.key }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CANDIDATE_SHA: 6ee1294cd558894797f95eec06bb811adf8c8639
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6ee1294cd558894797f95eec06bb811adf8c8639
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm exact clean checkout and browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          browser="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$browser"
+          echo "ROBO_BRIDGE_BROWSER=$browser" >> "$GITHUB_ENV"
+      - name: Run ${{ matrix.key }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p audit
+          ${{ matrix.command }} 2>&1 | tee "audit/${{ matrix.key }}.log"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-release-${{ matrix.key }}
+          path: |
+            audit/
+            artifacts/submission-evidence/
+          if-no-files-found: warn
+          retention-days: 14
