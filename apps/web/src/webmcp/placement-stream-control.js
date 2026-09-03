@@ -35,7 +35,8 @@ export function createPlacementStreamControl({ runner, coordinator, controller, 
     runner.setCycleTime(cycleTimeMs);
     if (input.action === 'start') {
       lastResult = null;
-      activeRun = runner.run({ cycleTimeMs, maximumPlacements: input.maximumPlacements ?? 50, signal });
+      activeRun = runner.run({ cycleTimeMs, maximumPlacements: input.maximumPlacements ?? 50,
+        timingMode: controller.board?.blueprintId === 'simple-bricks' ? 'simple-smooth' : 'cadence', signal });
       activeRun.then(result => { lastResult = result; });
     }
     return { ...getState(), accepted: input.action, minimumCycleTimeMs: 1000 };

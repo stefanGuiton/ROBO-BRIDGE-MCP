@@ -143,6 +143,50 @@ export class FastPlacementCoordinator {
     };
   }
 
+  // Timing estimate only: do not simulate a second controller or pre-accept a
+  // route. moveTool still plans/validates every leg against the live world.
+  async estimateCycleTiming({ proposal = this.proposal, physicalSpeedMmS = 650, previous = null, signal = null } = {}) {
+    if (signal?.aborted) return { ok: false, reason: 'cancelled' };
+    if (!proposal?.pickupTcp || !proposal.requiredTcp || proposal.travelPolicy) return { ok: false, reason: 'timing_unavailable' };
+    if (!Number.isFinite(physicalSpeedMmS) || physicalSpeedMmS <= 0 || physicalSpeedMmS > this.controller.speedLimitMmS) {
+      return { ok: false, reason: 'speed_limit' };
+    }
+    const state = this.controller.getState();
+    if (proposal.expectedWorldRevision !== state.worldRevision) return { ok: false, reason: 'stale_state' };
+    const pickupApproach = { ...proposal.pickupTcp, zMm: proposal.clearanceZMm };
+    const targetApproach = { ...proposal.requiredTcp, zMm: proposal.clearanceZMm };
+    const legs = [
+      ['pickup_approach', pickupApproach, physicalSpeedMmS],
+      ['pickup_descend', proposal.pickupTcp, Math.min(physicalSpeedMmS, 420)],
+      ['pickup_lift', pickupApproach, physicalSpeedMmS],
+      ['target_transfer', targetApproach, physicalSpeedMmS],
+      ['target_descend', proposal.requiredTcp, Math.min(physicalSpeedMmS, 420)],
+      ['target_retreat', targetApproach, physicalSpeedMmS]
+    ];
+    // Use the existing responsive, read-only validated profile for the first
+    // leg. Later legs use prior actual profiles, scaled for changed distances.
+    // This is deliberately an estimate: joint/yaw constraints and live edits
+    // can lengthen execution, and are never relaxed to meet the time budget.
+    const first = await this.controller.planMoveResponsive({ ...pickupApproach, speedMmS: physicalSpeedMmS,
+      expectedWorldRevision: state.worldRevision }, signal, this.controller.operationEpoch);
+    if (!first.ok) return first;
+    if (signal?.aborted) return { ok: false, reason: 'cancelled' };
+    if (this.controller.getState().worldRevision !== state.worldRevision) return { ok: false, reason: 'stale_state' };
+    let start = state.tcp;
+    const stages = legs.map(([stage, target, speedMmS], index) => {
+      const distanceMm = distance3(start, target);
+      start = target;
+      const sample = previous?.physicalSpeedMmS === physicalSpeedMmS ? previous.stages?.find(s => s.stage === stage) : null;
+      const reference = sample?.distanceMm > 1e-6 && sample.durationMs > 0 ? sample
+        : { distanceMm: Math.max(first.distanceMm, 1), durationMs: Math.max(first.durationMs, 1), speedMmS: physicalSpeedMmS };
+      const ratio = distanceMm / reference.distanceMm;
+      const durationMs = index === 0 ? first.durationMs
+        : reference.durationMs * Math.max(ratio, Math.sqrt(ratio)) * Math.max(1, reference.speedMmS / speedMmS);
+      return { stage, distanceMm, speedMmS, durationMs };
+    });
+    return { ok: true, physicalDurationMs: stages.reduce((sum, stage) => sum + stage.durationMs, 0), stages, physicalSpeedMmS };
+  }
+
   async execute({ physicalSpeedMmS = 650, playbackMultiplier = 20, signal = null } = {}) {
     const executionStartedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const state = this.getState();
