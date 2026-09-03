@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../../apps/web/vendor/three.module.min.js';
 import { constructionHarness } from '../helpers/construction-harness.js';
+import { TERRAIN7_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
 import { prepareBridgeBuild } from '../../apps/web/src/bridge-construction/bridge-build-session.js';
 import { sourceToControllerBrick } from '../../apps/web/src/bridge-construction/bridge-part-inventory.js';
 import { createV8BrickVisual, disposeV8BrickVisual } from '../../apps/web/src/player/v8-brick-visual.js';
@@ -10,7 +11,7 @@ import { captureBrickInTcp, heldBrickWorldPose } from '../../apps/web/src/robot/
 
 const fixtures = new Map();
 function visualFixture(terrain7 = false) {
-  if (!fixtures.has(terrain7)) fixtures.set(terrain7, constructionHarness({ terrain7 }).then(h => ({ ...h,
+  if (!fixtures.has(terrain7)) fixtures.set(terrain7, constructionHarness({ terrain7, ...(terrain7 ? { bridgeSettings: { ...TERRAIN7_BRIDGE_INITIAL_SETTINGS, bridgeWidthCells: 3 } } : {}) }).then(h => ({ ...h,
     prepared: prepareBridgeBuild({ host: h.host, workspace: h.controller.workspace })
   })));
   return fixtures.get(terrain7);
@@ -62,7 +63,7 @@ test('ARCH_A and ARCH_B use drawable full-geometry materials for loose, held and
 
 test('Terrain7 accepted arch visual uses exact compiler geometry at the authoritative proxy pose, without scale or origin drift', async () => {
   const { prepared, controller, board } = await visualFixture(true);
-  const placement = prepared.normalisedBuild.placements.find(placement => placement.placementId === 'bp_9453b510.c.0.1');
+  const placement = prepared.normalisedBuild.placements.find(placement => placement.placementId.endsWith('.c.0.1'));
   assert.equal(placement?.partClass, 'ARCH_B', 'replay regression must use the measured current Viaduct arch');
   const revision = controller.worldRevision;
   const { root } = visualFor(placement, prepared);
