@@ -1,5 +1,7 @@
 # Simple WebMCP hero — 2026-09-03
 
+Publication update: user subsequently requested **push and merge**, superseding the no-merge scope below. Accepted runtime checkpoint `d8173b9` is pushed; PR6 now targets main. Merge `e2d6100` preserves main's exact Plan2026-09-03-J and smoke page, with no runtime/test changes. Merge PR6 normally; leave PR5 unmerged. This publication authorization is not full bridge/hero:3 acceptance.
+
 Scope: user-approved `CODEX_SIMPLE_WEBMCP_HERO_20_MINUTE_PLAN (1).md`. Branch `codex/p0-downstream-integration-prep`, starting at `8ce113d`. No merge/retarget, no screenshots, no bridge collision work. User owns visual inspection and reported "looks good!" after the code landed. Scene visual approval is user-reported, not automated or proof of a mouse-driven takeover recording.
 
 ## What changed

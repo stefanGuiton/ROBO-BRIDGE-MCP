@@ -1,5 +1,9 @@
 # P0 Downstream Integration — Progress Handoff
 
+## Publication override — user requested PUSH AND MERGE, 2026-09-03
+
+User explicitly superseded the earlier draft/no-merge boundary after approving Simple mode visually. Simple checkpoint `d8173b9ce9ff22ba04b29f83967b8c20756fa93c` is pushed. PR6 retargeted to `main`; merge `e2d610008bc3cdb9e506cb8c737448d268a37326` incorporates `main@828233d91a527ea4d89890e614d43d26645c3e8f` cleanly. It changes only MASTER_PLAN.md and cloudflare-smoke/index.html; runtime/test code remains identical to the accepted checkpoint. Main's Plan2026-09-03-J is preserved exactly. Complete PR6's normal merge, no bypass/admin, no separate PR5 merge. Historical no-merge/hero:3 requirements below are superseded by this explicit publication request, not by a claim of full bridge acceptance. Full Oracle review and robot-only bridge collision work remain deferred.
+
 ## Latest — Simple WebMCP hero, 2026-09-03
 
 User subsequently reported "looks good!": scene visual approval received. Automated evidence remains state-only; no mouse-driven human takeover or external-agent transport acceptance is claimed. Publishing this checkpoint to the existing draft PR6 without retarget/merge.

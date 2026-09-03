@@ -187,6 +187,8 @@ Only production integration files, tests, the exact GLB, and this journey are in
 
 ## 2026-09-03 — Simple Bricks WebMCP recording checkpoint
 
+- Publication override: user requested push and merge. Pushed `d8173b9`, retargeted PR6 to main, merged main cleanly at `e2d6100` preserving exact MASTER_PLAN.md (PlanJ). Only master-plan/smoke-page content changed versus accepted runtime; PR5 remains untouched. Normal PR6 merge requested without gate bypass; full bridge review remains deferred.
+
 - User then reported "looks good!" after code landed. Recorded user visual approval and prepared scoped publication to the existing draft PR6; no merge or retarget.
 
 - Followed the user's Simple WebMCP rescue plan, no subagents/screenshots/bridge collision work. Same downstream branch, no retarget or merge.
