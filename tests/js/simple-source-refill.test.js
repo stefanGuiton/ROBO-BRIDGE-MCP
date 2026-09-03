@@ -10,6 +10,26 @@ test('shared dispenser prioritizes remaining strict/preferred plan colours witho
   assert.deepEqual(simpleRefillColours([{ status: 'ADOPTED', request: { colour: 'blue' } }, { status: 'PENDING', request: { preferredColour: 'yellow' } }], {}, 2), ['yellow', 'blue']);
 });
 
+test('shared dispenser accepts optional exact-colour inventory demand without recolouring existing bricks', () => {
+  const colours = simpleRefillColours([], { white: 2, black: 1, red: 14 }, 16, { white: 8, black: 8 });
+  assert.equal(colours.filter(colour => colour === 'white').length, 6);
+  assert.equal(colours.filter(colour => colour === 'black').length, 7);
+  assert.equal(colours.length, 16);
+  assert.deepEqual(simpleRefillColours([], {}, 8, { white: 32, black: 32 }), ['white', 'black', 'white', 'black', 'white', 'black', 'white', 'black']);
+  assert.equal(simpleRefillColours([], {}, 16, { chartreuse: 2 }), null);
+});
+
+test('simple refill creates requested white and black loose inventory through the shared dispenser', async () => {
+  const h = await simpleHarness();
+  const refill = createSimpleSourceRefill({ controller: h.controller, coordinator: h.coordinator, settings: h.engine.settings, profile: h.profile });
+  const result = refill({ colourDemand: { white: 8, black: 8 }, expectedWorldRevision: h.controller.worldRevision });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.inventoryAfter.availableByColour.white, 8);
+  assert.equal(result.inventoryAfter.availableByColour.black, 8);
+  const spawned = new Set(result.spawnedIds);
+  assert.ok(h.controller.getBricks().filter(brick => spawned.has(brick.id)).every(brick => ['white', 'black'].includes(brick.colour)));
+});
+
 test('two shared refills prioritize enough checked unique blue sources without accepting any target', async () => {
   const h = await simpleHarness();
   const plan = createSimpleStructurePlan({ structure: 'wall', width: 5, height: 7, colour: 'blue' }, { profile: h.profile });

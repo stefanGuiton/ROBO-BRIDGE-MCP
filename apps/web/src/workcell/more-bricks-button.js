@@ -11,6 +11,7 @@ const SAFE_APPROACH_Z_MM = 250;
 const MOTION_SPEED_MM_S = 500;
 const POSITION_TOLERANCE_MM = 1;
 const MIN_PRESS_DESCENT_MM = PRESS_DEPTH_MM - POSITION_TOLERANCE_MM;
+const REFILL_COLOURS = Object.freeze(['red', 'blue', 'yellow', 'green', 'orange', 'white', 'black', 'purple', 'teal']);
 
 const clone = (value) => value === undefined ? undefined : structuredClone(value);
 const finite = (value) => Number.isFinite(value);
@@ -18,6 +19,13 @@ const validRevision = (value) => Number.isSafeInteger(value) && value >= 0;
 
 function fail(reason, extra = {}) {
   return { ok: false, reason, ...extra };
+}
+
+function validColourDemand(value) {
+  if (value === undefined) return true;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([colour, count]) => REFILL_COLOURS.includes(colour)
+    && Number.isSafeInteger(count) && count >= 0 && count <= 5000);
 }
 
 function currentTcp(controller) {
@@ -348,7 +356,7 @@ export function createMoreBricksButton({
     };
   }
 
-  async function activateRefill({ anchor, actor, operationToken = null, signal = null, index, contactTcp, expectedWorldRevision = revision() }) {
+  async function activateRefill({ anchor, actor, operationToken = null, signal = null, index, contactTcp, colourDemand = null, expectedWorldRevision = revision() }) {
     if (signal?.aborted) return fail('cancelled', { worldRevision: revision() });
     const expected = checkExpected(expectedWorldRevision);
     if (!expected.ok) return expected;
@@ -357,7 +365,7 @@ export function createMoreBricksButton({
     let result;
     try {
       // This is the sole refill call site for both human and TCP activation.
-      result = await refill({ actor, operationToken, expectedWorldRevision: expected.worldRevision, signal, buttonId: BUTTON_ID, anchor: clone(anchor), contactTcp: clone(contactTcp) });
+      result = await refill({ actor, operationToken, expectedWorldRevision: expected.worldRevision, signal, buttonId: BUTTON_ID, anchor: clone(anchor), contactTcp: clone(contactTcp), colourDemand: clone(colourDemand) });
     } catch (error) {
       return fail(error?.code ?? 'refill_failed', { message: error?.message, inventoryBefore: before, inventoryAfter: inventorySnapshot(controller), worldRevision: revision() });
     }
@@ -459,6 +467,10 @@ export function createMoreBricksButton({
 
   async function execute(input = {}, { signal = null } = {}) {
     const expectedWorldRevision = input?.expectedWorldRevision;
+    if (!validColourDemand(input?.colourDemand)) {
+      const current = revision();
+      return withRetreatEvidence(fail('invalid_input', { pressesRequested: 2, pressesCompleted: 0, partialPresses: 0, worldRevisionBefore: current, worldRevisionAfter: current, worldRevision: current }));
+    }
     const ready = checkRobotReady(expectedWorldRevision);
     if (!ready.ok) {
       const current = revision();
@@ -531,7 +543,7 @@ export function createMoreBricksButton({
         if (signal?.aborted) { failure = fail('cancelled', { worldRevision: revision() }); break; }
         // Refill is intentionally after the fully completed pressed pose and
         // contact verification; contact/pre-contact never mutates inventory.
-        const refillResult = await activateRefill({ anchor: operationAnchor, actor: 'agent', operationToken, signal, index, contactTcp: pressed.tcp, expectedWorldRevision: currentRevision });
+        const refillResult = await activateRefill({ anchor: operationAnchor, actor: 'agent', operationToken, signal, index, contactTcp: pressed.tcp, colourDemand: input.colourDemand, expectedWorldRevision: currentRevision });
         pressEvidence.refill = refillResult;
         if (!refillResult.ok) { failure = refillResult; break; }
         spawnedDelta += refillResult.spawnedDelta;
@@ -548,6 +560,11 @@ export function createMoreBricksButton({
       active = false;
     }
     const inventoryAfter = inventorySnapshot(controller);
+    const remainingColourDemand = input.colourDemand
+      ? Object.fromEntries(Object.entries(input.colourDemand)
+        .map(([colour, target]) => [colour, Math.max(0, target - (inventoryAfter.availableByColour[colour] ?? 0))])
+        .filter(([, deficit]) => deficit > 0))
+      : {};
     const worldRevisionAfter = revision();
     const ok = !failure && pressesCompleted === 2;
     const result = {
@@ -561,6 +578,7 @@ export function createMoreBricksButton({
       partialPresses: pressesCompleted > 0 && pressesCompleted < 2 ? pressesCompleted : 0,
       inventoryBefore,
       inventoryAfter,
+      remainingColourDemand,
       spawnedDelta,
       spawnedIds,
       worldRevisionBefore,
@@ -577,10 +595,17 @@ export function createMoreBricksButton({
 
   const tool = Object.freeze({
     name: 'request_more_bricks',
-    description: 'Physically move the empty robot TCP to the shared MORE BRICKS button and press it twice. The button is the refill trigger; no direct spawn shortcut is exposed. Requires the latest exact worldRevision. Returns bounded inventory and press evidence.',
+    description: 'Physically move the empty robot TCP to the shared MORE BRICKS button and press it twice. Optionally request target available counts by colour for patterns such as checkerboards. The button remains the refill trigger; no direct spawn or recolour shortcut is exposed. Requires the latest exact worldRevision.',
     inputSchema: {
       type: 'object',
       properties: {
+        colourDemand: {
+          type: 'object',
+          description: 'Optional target counts of loose available bricks after refilling, subject to feeder capacity. Existing bricks are never recoloured.',
+          properties: Object.fromEntries(REFILL_COLOURS
+            .map(colour => [colour, { type: 'integer', minimum: 0, maximum: 5000 }])),
+          additionalProperties: false
+        },
         expectedWorldRevision: { type: 'integer', minimum: 0, description: 'Exact current worldRevision from the latest successful read or tool result.' }
       },
       required: ['expectedWorldRevision'],

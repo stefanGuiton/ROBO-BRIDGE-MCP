@@ -12,7 +12,30 @@ export function readSimpleInventory(controller) {
 
 // Shared dispenser rule: both a Human press and a Robot contact use the same
 // pending-plan demand. This supplies real sources, never accepted targets.
-export function simpleRefillColours(entries, availableByColour, count = 16) {
+function requestedRefillColours(colourDemand, availableByColour, count) {
+  if (colourDemand === undefined || colourDemand === null) return [];
+  if (typeof colourDemand !== 'object' || Array.isArray(colourDemand)) return null;
+  const deficits = {};
+  for (const colour of PALETTE) {
+    const target = colourDemand[colour];
+    if (target === undefined) continue;
+    if (!Number.isSafeInteger(target) || target < 0 || target > 5000) return null;
+    deficits[colour] = Math.max(0, target - (availableByColour[colour] ?? 0));
+  }
+  if (Object.keys(colourDemand).some(colour => !PALETTE.includes(colour))) return null;
+  const requested = [];
+  while (requested.length < count && PALETTE.some(colour => (deficits[colour] ?? 0) > 0)) {
+    for (const colour of PALETTE) {
+      if (requested.length >= count) break;
+      if ((deficits[colour] ?? 0) <= 0) continue;
+      requested.push(colour);
+      deficits[colour]--;
+    }
+  }
+  return requested;
+}
+
+export function simpleRefillColours(entries, availableByColour, count = 16, colourDemand = null) {
   const remaining = { ...availableByColour }, demand = [];
   for (const entry of entries ?? []) {
     if (TERMINAL.has(entry.status)) continue;
@@ -22,6 +45,22 @@ export function simpleRefillColours(entries, availableByColour, count = 16) {
     if ((remaining[colour] ?? 0) > 0) remaining[colour]--;
     else if (demand.length < count) demand.push(colour);
   }
+  const requested = requestedRefillColours(colourDemand, availableByColour, count);
+  if (requested === null) return null;
+  if (requested.length) {
+    const planCounts = Object.fromEntries(PALETTE.map(colour => [colour, demand.filter(value => value === colour).length]));
+    const requestedCounts = Object.fromEntries(PALETTE.map(colour => [colour, requested.filter(value => value === colour).length]));
+    demand.length = 0;
+    const mergedCounts = Object.fromEntries(PALETTE.map(colour => [colour, Math.max(planCounts[colour], requestedCounts[colour])]));
+    while (demand.length < count && PALETTE.some(colour => mergedCounts[colour] > 0)) {
+      for (const colour of PALETTE) {
+        if (demand.length >= count) break;
+        if (mergedCounts[colour] <= 0) continue;
+        demand.push(colour);
+        mergedCounts[colour]--;
+      }
+    }
+  }
   // With no outstanding deficit the dispenser remains useful without a plan.
   while (demand.length < count) demand.push(demand.length % 2 ? 'blue' : 'red');
   return demand;
@@ -29,13 +68,14 @@ export function simpleRefillColours(entries, availableByColour, count = 16) {
 
 export function createSimpleSourceRefill({ controller, coordinator, settings, profile, onSpawn = () => {}, getExclusions = () => [] }) {
   let burst = 0;
-  return ({ actor = 'human', operationToken = null, expectedWorldRevision = controller.worldRevision } = {}) => {
+  return ({ actor = 'human', operationToken = null, expectedWorldRevision = controller.worldRevision, colourDemand = null } = {}) => {
     if (expectedWorldRevision !== controller.worldRevision) return { ok: false, reason: 'stale_state', worldRevision: controller.worldRevision };
     if (controller.operationBlocked(operationToken) || controller.operationState !== 'idle' || controller.pendingMoveCount || controller.heldBrickId) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: controller.worldRevision };
     }
     const before = readSimpleInventory(controller), occupied = controller.getBricks();
-    const colours = simpleRefillColours(coordinator?.stream?.entries, before.availableByColour);
+    const colours = simpleRefillColours(coordinator?.stream?.entries, before.availableByColour, 16, colourDemand);
+    if (!colours) return { ok: false, reason: 'invalid_input', inventoryBefore: before, worldRevision: controller.worldRevision };
     // Keep stable unique IDs even after human edits/reset; no ID recolouring.
     const idPrefix = `simple-refill-${++burst}`;
     let generated;

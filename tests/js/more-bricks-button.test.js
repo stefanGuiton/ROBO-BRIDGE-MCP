@@ -165,6 +165,29 @@ test('request_more_bricks physically executes two real TCP presses and refills s
   assert.equal(human.refillCalls[0].actor, 'human');
 });
 
+test('request_more_bricks forwards optional colour demand through both physical presses', async () => {
+  const h = makeHarness();
+  const colourDemand = { white: 8, black: 8 };
+  const result = await h.button.tool.execute({ expectedWorldRevision: h.controller.worldRevision, colourDemand });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(h.refillCalls.length, 2);
+  assert.deepEqual(h.refillCalls.map(call => call.colourDemand), [colourDemand, colourDemand]);
+  assert.equal(h.button.tool.inputSchema.properties.colourDemand.properties.white.maximum, 5000);
+  assert.equal(h.button.tool.inputSchema.properties.colourDemand.additionalProperties, false);
+});
+
+test('request_more_bricks rejects invalid colour demand before robot motion', async () => {
+  const h = makeHarness();
+  const before = h.controller.getState();
+  const result = await h.button.tool.execute({ expectedWorldRevision: h.controller.worldRevision, colourDemand: { chartreuse: 2 } });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'invalid_input');
+  assert.equal(result.pressesCompleted, 0);
+  assert.deepEqual(h.controller.getState().tcp, before.tcp);
+  assert.equal(h.controller.worldRevision, before.worldRevision);
+  assert.equal(h.refillCalls.length, 0);
+});
+
 test('request_more_bricks does not refill when the press contact callback rejects', async () => {
   const h = makeHarness({ onPress: () => false });
   const before = h.controller.worldRevision;
