@@ -1,16 +1,12 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** FINAL HERO EXECUTION SPRINT — TERRAIN 7 CLEAN, CONSTRUCTION PATH NOW CRITICAL  
-**Plan version:** 2026-09-03-J  
-**Accepted production runtime baseline:** `ec3c9237c224210112acd0ba71ddc06ea95f9f91`  
-**Active final integration branch:** `codex/p0-downstream-integration-prep`  
-**Active final integration checkpoint:** `23f254bca37fdef2a283d09d5e2bfe9b77211d74`  
-**Draft final integration PR:** #6 — `P0 downstream Train, Mission, WebMCP and Construction prep`  
-**PR #6 base for now:** `codex/p0-construction-integration`  
-**Submission deadline:** 2026-09-03 13:00 PDT / 21:00 BST  
-**Canonical runtime:** `MAIN_DEMO` Player V8  
-**Canonical authority:** `RevisionClock` + `BuildBoard` + `PlacementAuthority` + `RobotController`  
-**Primary goal:** get one complete reliable hero loop working, then prove it three times, merge once, deploy and record.
+**Status:** THREE-LEVEL DEMO RELEASE — LEVEL 1 + LEVEL 2 ARE THE NEXT TWO-HOUR CRITICAL PATH  
+**Plan version:** 2026-09-03-N  
+**Production branch:** `main`  
+**Candidate Simple checkpoint:** `29953f01d994b9b877a7871e6c2aeda2dee3d77e` on `codex/p0-downstream-integration-prep`  
+**Draft PR:** #7 — `Fix pickup colours and alternating tower demo` — **NOT MERGED**  
+**Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
+**Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
 
@@ -18,943 +14,858 @@
 
 This file is the authoritative submission execution plan.
 
-If an older plan, Oracle package, prototype README, branch note, handoff file or chat instruction conflicts with this file, **this file wins for the submission sprint**.
+If an older handoff, README, Oracle package, branch note or chat instruction conflicts with this file, this file wins for the submission sprint.
 
-Evidence must always be tied to one exact commit. Never combine green results from different revisions into a fake release result.
+Evidence must remain tied to a concrete runtime/commit. Do not combine separate runs into a false release claim.
 
-Required hero loop:
+Canonical authority chain:
 
-`CURATED TERRAIN -> CODEX CO-DESIGN -> V4.6 BUILDPLAN -> EXACT HOLOGRAM -> FREEZE -> HUMAN + CODEX/UR10 BUILD -> EARLY TRAIN FAILURE -> CONTINUE/REPAIR -> TRAIN SUCCESS -> MISSION COMPLETE -> TRY AGAIN`
+```text
+RevisionClock / worldRevision
+-> BuildBoard
+-> PlacementAuthority
+-> RobotController
+-> Runtime
+-> Renderer / Player / Perception / WebMCP
+```
 
-Central narrative:
+Do not create a second BuildBoard, RobotController, RevisionClock, inventory truth, occupancy truth, render loop or WebMCP-only execution authority.
 
-**Codex decides. Deterministic systems execute. Human actions change the shared world. The runtime adapts. BuildBoard controls TEST. The train proves the result.**
-
-Hard authority chain:
-
-`RevisionClock -> BuildBoard + PlacementAuthority + RobotController -> Runtime -> Renderer / Player / Perception / WebMCP`
-
-Never create:
-
-- a second BuildBoard;
-- a second accepted inventory/occupancy truth;
-- a second RobotController;
-- a second RevisionClock;
-- a WebMCP-only bridge state;
-- a train-owned bridge-complete Boolean;
-- a mission-owned physical-part truth;
-- terrain-owned completion truth;
-- camera-owned target validity;
-- an instant-build shortcut;
-- direct completion/support setters;
-- joint-level WebMCP controls;
-- a second production render/frame loop.
-
-Do not restore NVIDIA Newton.
-
-Simulator evidence must never be described as physical UR10 readiness.
+Simulation evidence must never be described as physical UR10 readiness.
 
 ---
 
-# 1. Executive status — CURRENT TRUTH
+# 1. NEW RELEASE STRATEGY — THREE DEMO LEVELS
 
-The project is now beyond the previous geometry blocker.
+The submission is now intentionally split into three independently useful demo levels.
 
-Major P0 systems are integrated on PR #6. Terrain 7 is integrated. The final V4.6 geometry audit is clean. The immediate critical path is now **robot execution of the full 303-part Construction sequence**, followed immediately by Train CROSSED, Mission COMPLETE and hero reliability.
+The key rule is:
 
-Current critical path:
+```text
+LEVEL 1 = MUST WORK AND BECOME RECORDABLE FIRST
+LEVEL 2 = MUST WORK NEXT AND HAS NO TRAIN
+LEVEL 3 = FULL TRAIN + TRAIN PHYSICS; MUST NOT BLOCK LEVEL 1 OR LEVEL 2
+```
 
-`SAFE CONSTRUCTION TRAVEL -> 303/303 -> TRAIN CROSSED -> MISSION COMPLETE -> HERO:1 -> HERO:3 -> RETARGET PR #6 -> MERGE -> DEPLOY -> VIDEO/SUBMIT`
+The user may start recording Level 1 clips as soon as Level 1 is frozen.
 
-Do not start another subsystem.
+The user may then record Level 2 clips as soon as Level 2 is frozen.
 
-Do not launch another broad Oracle task.
+Level 3 can be recorded later if it reaches a stable state.
 
-Do not spend submission time on screenshot-driven self-inspection; the user owns visual inspection.
+This avoids waiting for the most complex Train/physics path before useful recording can begin.
+
+Target for the next two hours:
+
+```text
+FIRST HOUR: Level 1 fully working / recordable
+SECOND HOUR: Level 2 fully working / recordable
+AFTER THAT: Level 3 full Train/physics if time permits
+```
+
+Do not delay Level 1 or Level 2 for Level 3 work.
 
 ---
 
-# 2. Final working branch — single integration trunk
+# 2. LEVEL 1 — SIMPLE BRICKS — P0 / PRIMARY FOUNDATION
 
-Use only:
+Level 1 is the complete Simple Bricks WebMCP workcell.
+
+The user must be able to use natural language to request structures and settings.
+
+Representative requests:
 
 ```text
-branch: codex/p0-downstream-integration-prep
-current published checkpoint: 23f254bca37fdef2a283d09d5e2bfe9b77211d74
-PR: #6
-status: draft / unmerged / current final integration trunk
+Place one blue brick on the mat.
+
+Build a blue wall 5 bricks wide and 7 bricks high, one brick deep.
+
+Build a red tower six layers tall using two bricks per layer.
+
+Move 50% faster.
+
+Make the scene brighter.
+
+Make the table dark grey.
 ```
 
-PR #6 contains the Construction parent work plus downstream Train, Mission, WebMCP, Submission Gate, Terrain 7 and current hardening.
+## Level 1 structure capabilities
 
-Do not merge PR #5 separately.
+Level 1 must support:
 
-Do not merge PR #6 yet.
+```text
+single brick
+requested brick colour
+wall width
+wall height
+wall depth
+tower height / layers
+tower dimensions / bricks per layer
+Human + Codex collaborative placement
+conversational placement speed
+scene visual settings through WebMCP
+```
 
-All remaining code changes go to PR #6's branch.
+The model should reason about geometry using generic tools.
 
-When the final runtime passes the freeze gate:
+Do not add shape-specific `build_wall` or `build_tower` WebMCP tools unless absolutely necessary as a last release-rescue measure.
 
-1. retarget PR #6 to `main`;
-2. rerun final checks on the exact PR #6 head;
-3. merge PR #6 only;
-4. close PR #5 as superseded;
-5. deploy that exact merged/release SHA.
+Preferred path:
+
+```text
+natural language
+-> scene/workspace read
+-> generic placement planning
+-> dependency plan
+-> authoritative BuildBoard
+-> RobotController / Human placement
+-> shared state readback
+```
 
 ---
 
-# 3. PR #6 downstream integration — COMPLETE ENOUGH TO PRESERVE
+# 3. LEVEL 1 — INVENTORY / REFILL IS NOW P0
 
-Initial downstream checkpoint `eae3ba1415f6e4edeb8fa6be92526c8e92036787` integrated:
+A ChatGPT Work local code-level test created the correct **35-target** plan for a 5 x 7 blue wall.
 
-- current Train runtime into the existing MAIN_DEMO scene/frame loop;
-- current ChallengeService and BuildBoard authority;
-- Mission orchestration;
-- exactly 27 WebMCP tools through one registrar;
-- Submission Gate;
-- real native `modelContext` path on the tested browser seam without a fake production shim;
-- all five then-live bridge part classes usable by Human and Codex;
-- real Player mouse placement into authoritative BuildBoard state.
+The real RobotController and BuildBoard executed four blue placements, then stopped because only four blue source bricks were available.
 
-Reported downstream verification at that checkpoint included:
+Evidence classification:
 
 ```text
-345/345 JavaScript PASS
-20/20 reliability PASS
-Train 49/49 PASS
-Mission package 114/114 PASS
-focused Construction/Player 37/37 PASS
-real Player mouse placement PASS
-0 console errors/warnings in that Player acceptance run
+35-target wall planner: PASS
+real placement path: PARTIAL PASS
+BuildBoard: 4/35 blue placements
+stop reason: no more blue bricks
+visible Work browser acceptance: NOT PROVEN
+native Work Site Tools: NOT PROVEN
 ```
 
-Do not redo these integrations unless a current regression demonstrates a real problem.
+Therefore Level 1 requires a legitimate source/inventory strategy that can satisfy requested structures within the supported workspace.
+
+Required behaviour:
+
+```text
+requested plan determines required BOM / source count
+-> existing refill/inventory authority supplies enough compatible bricks
+-> robot never fabricates accepted BuildBoard completion
+-> unique source IDs remain valid
+-> colour semantics remain correct
+```
+
+Do not fake completed targets.
+
+Do not bypass source identity.
+
+Use the existing legitimate inventory/reset/refill seam where possible.
+
+A 5 x 7 x 1 blue wall must not stop after four bricks merely because the initial visible blue source pool is four.
 
 ---
 
-# 4. Terrain 7 — INTEGRATED
+# 4. LEVEL 1 — HUMAN + CODEX COLLABORATION
 
-Current Terrain 7 checkpoint:
+Level 1 must support a Human building along with Codex.
 
-```text
-23f254bca37fdef2a283d09d5e2bfe9b77211d74
-```
-
-Production Terrain 7 asset fingerprint reported by Codex:
+Required guided behaviour:
 
 ```text
-SHA256 419adc72b8fb408eea5060142890682fbcd03709b4cd4d292742286ba1518217
+Human places compatible brick into a valid pending target
+-> worldRevision changes
+-> placement stream reconciles
+-> target becomes ADOPTED
+-> actor = human
+-> actualBrickId retained
+-> robot does not duplicate the slot
+-> dependencies continue
+-> build completes
 ```
 
-Authoring intent:
+A general arbitrary off-plan replanner is not required for submission.
+
+The intended valid slot and orientation should be obvious enough for the user to place correctly during recording.
+
+Known evidence from PR #7:
 
 ```text
-ENTRY = (0.000, 0.000, 0.000) m
-EXIT  = (0.370, 0.000, 0.000) m
-ENTRY -> EXIT = +X
-span = 370 mm
-yaw = 0 degrees in terrain-local coordinates
+correctly aligned collaborative run: 20/20
+19 robot COMPLETED
+1 Human ADOPTED
+no duplicate
+robot continued
 ```
 
-Final water object:
+Known limitation:
 
 ```text
-Plane
+off-plan Human insertion caused a later 20-target run to stop at 6/20
 ```
 
-Final authoritative build/foundation datum:
-
-```text
-Z = -132.718 mm
-```
-
-Terrain 7 implementation now preserves named node hierarchy, authored transforms, materials and water normal/UV transforms.
-
-One ChallengeService preset owns:
-
-- terrain;
-- ENTRY / EXIT;
-- bridge/route transform;
-- build datum;
-- Train route;
-- Human terrain occlusion.
-
-No second terrain/support authority is allowed.
+Do not weaken BuildBoard legality to accept arbitrary placements.
 
 ---
 
-# 5. Final support rule — FIXED WATER DATUM
+# 5. LEVEL 1 — FINAL TOWER SEMANTICS
 
-The old manual 3D support-floor / stair-step strategy is permanently superseded for P0.
-
-Final support rule:
+The final recording request remains:
 
 ```text
-one constant horizontal support datum
-Z = -132.718 mm
+Build a tower six layers tall using two red bricks per layer.
 ```
 
-Do NOT use:
+Required result:
 
-- manually authored supportTopMap;
-- terrain-height stair-stepping;
-- per-cell floor blocks;
-- a separate floor-authoring runtime.
+```text
+2 bricks per layer
+6 layers
+12 placement targets
+12/12 satisfied
+```
 
-Current implementation reports compiler-local support mapped coherently through the existing ChallengeService/compiler seam.
+PR #7 also contains a useful 10-level / 20-brick alternating cross-laminated tower capability.
 
-Water is visual/datum reference only.
+That capability may remain, but it must not silently replace the 12-target recording requirement.
 
-Water is NOT:
-
-- Human placement occlusion;
-- Train support truth;
-- BuildBoard truth;
-- Mission completion truth.
+Both specifications may coexist if the natural-language planner distinguishes them correctly.
 
 ---
 
-# 6. Human terrain occlusion — IMPLEMENTED, USER VISUAL CHECK PENDING
+# 6. LEVEL 1 — WEBMCP TOOL SURFACE + SCENE SETTINGS
 
-Human-only click-through prevention is implemented.
-
-Required invariant remains:
+Current merged baseline before the new Level 1 settings requirement was:
 
 ```text
-camera -> terrain -> target = block Human interaction
-camera -> target -> terrain = allow Human interaction
-```
-
-Solid terrain can occlude Human placement.
-
-Water and authored markers are excluded.
-
-Occlusion must never change:
-
-- BuildPlan;
-- BuildBoard;
-- Agent/Robot target legality;
-- Train support;
-- Mission completion.
-
-Codex should not spend time taking screenshots.
-
-Visual status should be reported as:
-
-```text
-VISUAL: USER-VERIFY PENDING
-```
-
-until the user checks it.
-
----
-
-# 7. FINAL V4.6 BUILDPLAN — GEOMETRY BLOCKER SOLVED
-
-Current final Terrain 7 compile:
-
-```text
-planId: bp_818c1694
-checksum: 818c1694
-parts: 303
-PartRegistry: pr_55ecaf7f
-```
-
-Current BOM:
-
-```text
-108 × 1x1x1
-159 × 1x2x1
-3 × 1x20x1
-21 × ARCH_A
-9 × ARCH_B
-3 × TRACK_SEGMENT
-```
-
-All six non-zero classes permit both Human and Agent.
-
-Final Aqueduct tuning reported at checkpoint:
-
-```text
-top/middle/bottom: 4 / 3 / 3
-offset: 0.4
-support bands: 2.4
-deck: 4.8
-standard brick scale: 2
-```
-
-Most important current result:
-
-```text
-exact prohibited internal part-part intersections: 0
-track enclosing-proxy overlaps: 0
-```
-
-The former 21-intersection blocker is therefore obsolete for the final Terrain 7 plan.
-
-Do not reopen the old BuildPlan.
-
-Do not do more V4.6 compiler work unless a new exact geometry failure is demonstrated on `bp_818c1694` or a later intentional final plan.
-
----
-
-# 8. Current verification checkpoint
-
-At `23f254b...` Codex reports:
-
-```text
-npm run verify: 356/356 JavaScript PASS
-reliability: 20/20 PASS
-154 production JavaScript syntax checks PASS
-4 Python syntax checks PASS
-screenshot-free gate hardening: 17/17 PASS
-```
-
-Construction diagnostic progression:
-
-```text
-46 / 303 accepted
-Human: 1
-Agent: 45
-```
-
-Shared-source reassignment PASS.
-
-Human completion of an Agent-intended target / adoption PASS.
-
-Terrain 7 Train failure path currently passes:
-
-```text
-TRAIN_FELL / SUPPORT_LOSS
-```
-
-A completed-board fixture still proves CROSSED at unit level, but that fixture is NOT final hero proof.
-
-Final CROSSED must come from the physically executable authoritative final board.
-
----
-
-# 9. CURRENT BLOCKER — post-placement retreat collision
-
-Current exact blocker:
-
-```text
-placement: bp_818c1694.s.12.0
-placement accepted successfully after unlatch
-then empty-tool retreat collides with source:
-bridge-src.eecff488.009
-```
-
-No collision bypass is allowed.
-
-No workspace widening is allowed.
-
-No BuildBoard force acceptance is allowed.
-
-This is now a motion/travel-policy problem, not a bridge-geometry problem.
-
----
-
-# 10. FINAL SIMPLE MOTION POLICY — TERRAIN-MAX Z-HOP
-
-Use a simple 3D-printer-style travel policy for the submission runtime.
-
-After every successful placement:
-
-```text
-PLACE
--> UNLATCH
--> MOVE STRAIGHT UP ONLY
--> REACH GLOBAL SAFE TRAVEL HEIGHT
--> X/Y TRAVEL
--> DESCEND FOR NEXT APPROACH
-```
-
-Likewise after a source pick where appropriate:
-
-```text
-LATCH
--> VERTICAL LIFT
--> SAFE TRAVEL HEIGHT
--> HORIZONTAL TRAVEL
--> TARGET APPROACH
-```
-
-Do not make a diagonal/lateral low-level retreat immediately after unlatch.
-
-## 10.1 Safe travel height
-
-Derive one deterministic travel plane from the final solid Terrain 7 challenge:
-
-```text
-terrainMaxZ = maximum Z of solid Terrain 7 geometry
-```
-
-Exclude:
-
-- water Plane;
-- ENTRY / EXIT markers;
-- lights;
-- cameras;
-- holograms;
-- ghosts/debug helpers.
-
-Include solid terrain/challenge structures that can obstruct travel.
-
-Because the TCP is not necessarily the top/bottom of the physical tool, derive the actual TCP travel Z as:
-
-```text
-safeTcpTravelZ
-= terrainMaxZ
-+ required gripper/tool vertical clearance
-+ tiny numerical safety margin
-```
-
-The gripper/tool clearance must come from the existing collision proxy dimensions, not an arbitrary large constant.
-
-If the derived safe Z lies outside the current workspace, fail clearly. Never widen the workspace just to make the Z-hop fit.
-
-Every motion segment still passes through the existing:
-
-- IK;
-- workspace checks;
-- collision checks;
-- RobotController;
-- PlacementAuthority.
-
-No teleporting.
-
-No collision bypass.
-
-No general path-planner project.
-
----
-
-# 11. Immediate execution goal — RUN TO 303/303
-
-After implementing the global Z-hop travel rule:
-
-1. rerun Construction from a clean deterministic state;
-2. confirm the previous 46/303 retreat blocker is gone;
-3. do NOT stop at 47/303;
-4. continue through the full final sequence;
-5. if another genuine blocker appears, capture structured evidence and fix that demonstrated blocker only;
-6. rerun until `303/303` or a fundamentally different hard blocker is proven.
-
-Final Construction acceptance must exercise all six non-zero classes:
-
-```text
-1x1x1
-1x2x1
-1x20x1
-ARCH_A
-ARCH_B
-TRACK_SEGMENT
-```
-
-Record accepted counts per class.
-
-Do not claim complete Construction acceptance if one required class never has an executable placement path.
-
----
-
-# 12. Construction reset/error hardening — IMPLEMENTED AT CURRENT CHECKPOINT
-
-Current Terrain 7 checkpoint reports:
-
-- asynchronous Construction reset fences runner/controller idle and held-part state;
-- startup rollback no longer relies on unsafe `this.reset()` binding;
-- runtime errors preserve known codes/recovery fields;
-- low-level workcell reset rejects active missions with `mission_reset_required`;
-- scene reads now have bounded revision-checked cursor paging;
-- runtime availability includes the required placement methods.
-
-Preserve these fixes.
-
-Do not reopen them unless current tests fail.
-
----
-
-# 13. WebMCP final contract
-
-PR #6 integrated the intended semantic surface.
-
-Release requirement:
-
-```text
-27 unique tools
+28 unique WebMCP tools
 1 registrar
-MissionService ready
-ConstructionService ready
-TrainService ready
 ```
 
-Expected composition:
+Do **not** treat 28 as a permanent fixed count if Level 1 requires bounded new generic settings tools.
+
+The final tool count must be audited and frozen after the Level 1 settings surface is complete.
+
+Prefer a small generic settings surface rather than one tool per visual property.
+
+Conceptually the surface should support operations equivalent to:
 
 ```text
-14 low-level
-+ 5 bridge-design
-+ 8 mission/terrain
-= 27
+read scene settings
+update supported scene settings
 ```
 
-Mission/Terrain tools:
+Supported Level 1 visual controls should include, where the runtime exposes them safely:
 
 ```text
-get_mission_state
-get_terrain_options
-select_terrain
-start_bridge_build
-get_build_progress
-build_next_parts
-test_bridge
-reset_mission
+scene / light brightness
+table colour
+other already-supported presentation settings that are useful in the demo
 ```
 
-Flagship sequence:
+Use existing naming conventions if suitable tools already exist.
+
+Do not create a second renderer or state authority.
+
+Settings updates must flow into the existing Player/runtime configuration.
+
+Cadence controls remain:
 
 ```text
-get_mission_state
--> update_bridge_design
--> start_bridge_build
--> build_next_parts
--> get_build_progress
--> test_bridge -> TRAIN_FELL
--> build_next_parts
--> test_bridge -> CROSSED
--> COMPLETE
+normal = 2000 ms/cycle
+50% faster = about 1333 ms/cycle
+hard minimum = 1000 ms/cycle
 ```
 
-`plan_placement_queue` must remain truthfully annotated as mutating (`readOnlyHint: false`).
-
-`reset_workcell` must not undermine an active mission; use `reset_mission` for mission recovery/reset.
-
-Do not redesign WebMCP now.
+Changing cadence must not weaken IK, collision, workspace or placement authority.
 
 ---
 
-# 14. Train final acceptance
+# 7. LEVEL 1 — RECORDING GATE
 
-Train package/integration is already present.
-
-Current required final proof must use the same final runtime, ChallengeService and BuildBoard:
+Level 1 becomes recordable when the exact candidate SHA proves:
 
 ```text
-early incomplete BuildBoard
+single requested-colour brick: PASS
+5 x 7 x 1 blue wall planning: 35 targets
+5 x 7 x 1 blue wall execution: 35/35
+requested tower: 12/12
+Human valid-slot placement: ADOPTED
+no duplicate after ADOPTED
+build continues after Human contribution
+requested colour preserved
+inventory/refill supports the requested BOM
+speed change works
+scene brightness can be changed through WebMCP
+Table colour can be changed through WebMCP
+final WebMCP catalogue audited
+one registrar
+mode reset/toggle works
+0 blocking console errors
+```
+
+Once this gate passes:
+
+```text
+FREEZE LEVEL 1
+RECORD LEVEL 1 CLIPS IMMEDIATELY
+DO NOT WAIT FOR LEVEL 2 OR LEVEL 3
+```
+
+---
+
+# 8. LEVEL 2 — COLLABORATIVE BRIDGE — NO TRAIN
+
+**There is no Train in Level 2.**
+
+**There is no Train physics in Level 2.**
+
+Train, Train testing, Train success/failure and Train physics belong only to Level 3.
+
+Level 2 is purely the conversational Bridge design + Human/Codex collaborative construction demonstration.
+
+Final Bridge family:
+
+```text
+V4.6 Type 2 Viaduct
+```
+
+The user should be able to request semantic Bridge changes such as:
+
+```text
+Build a viaduct with four arches.
+
+Try five arches.
+
+Make the openings wider.
+```
+
+Existing generic Bridge design tools should update the design and regenerate the exact BuildPlan/hologram.
+
+Do not create arch-count-specific tools.
+
+---
+
+# 9. LEVEL 2 — HUMAN + CODEX BUILD THE BRIDGE TOGETHER
+
+Level 2 should demonstrate shared construction without requiring a Train test.
+
+Desired journey:
+
+```text
+user selects / changes Bridge design
+-> deterministic Bridge compiler creates BuildPlan
+-> hologram / pending targets appear
+-> work is divided between Human and Codex
+-> Human builds one side / region
+-> Codex builds the other side / region
+-> both write into the same BuildBoard authority
+-> progress updates continuously
+-> bridge reaches authoritative construction completion
+```
+
+The exact split can be simple and deterministic.
+
+For example:
+
+```text
+Human = left side / assigned region
+Codex = right side / assigned region
+```
+
+or another clear spatial partition that fits the existing planner.
+
+The goal is to make the collaboration obvious and intuitive on video.
+
+Do not redesign the Bridge compiler.
+
+Do not fix the old robot retreat collision as part of this Level 2 time box unless it directly blocks the selected bounded Level 2 recording path.
+
+Use existing authoritative placement / accelerated-simulation seams only where they are explicitly labelled and truthful.
+
+---
+
+# 10. LEVEL 2 — RECORDING GATE
+
+Level 2 becomes recordable when the release candidate proves:
+
+```text
+Terrain 7 loads
+Viaduct is selected
+user can change arch count conversationally
+BuildPlan / hologram updates correctly
+Human and Codex can contribute to the same Bridge plan
+shared BuildBoard records both actors correctly
+no duplicate accepted placement
+progress state is readable
+selected bounded Bridge build reaches its intended completion state
+0 blocking console errors
+NO TRAIN is required or invoked
+```
+
+Once this gate passes:
+
+```text
+FREEZE LEVEL 2
+RECORD LEVEL 2 CLIPS
+DO NOT WAIT FOR LEVEL 3
+```
+
+---
+
+# 11. LEVEL 3 — FULL TRAIN + TRAIN PHYSICS
+
+Level 3 is the full ambitious simulation.
+
+Only Level 3 contains:
+
+```text
+Train
+Train physics
+Train collision/support behaviour
+Train falling / derailment
+failure detection
+repair / retest
+CROSSED
+Mission COMPLETE
+full success / statistics presentation
+```
+
+Desired Level 3 journey:
+
+```text
+BUILD
 -> TEST
--> TRAIN_FELL / SUPPORT_LOSS
+-> incomplete/unsupported Bridge can cause Train failure/fall
 -> same mission returns to BUILD
-
-complete physically executable final BuildBoard
+-> repair / completion
 -> TEST
+-> Train physically crosses
 -> CROSSED
+-> COMPLETE
+-> final statistics / result presentation
 ```
 
-Water datum is not Train support.
+Level 3 should be intuitive and visually strong, but it is a stretch layer for the current submission sprint.
 
-Do not use a separate completed-board fixture as the flagship release proof.
+**Level 3 must never block recording or submission of Level 1 or Level 2.**
 
 ---
 
-# 15. Mission final acceptance
+# 12. LEVEL 3 — EXISTING EVIDENCE / LIMITATIONS
 
-Required final state journey:
+Historical normal simulated robot-only Viaduct progression reached:
 
 ```text
-DESIGN
--> BUILD
--> TEST
--> TRAIN_FELL
--> BUILD
--> continue accepted construction
--> TEST
--> CROSSED
--> COMPLETE exactly once
--> TRY AGAIN / reset_mission
--> new missionId
--> DESIGN
+183 / 276
 ```
 
-Old mission IDs must fail after reset.
+then stopped on an empty-gripper retreat collision.
 
-Failure recovery must retain accepted construction from the same frozen mission.
+This collision is not a Level 1 or Level 2 blocker.
 
----
-
-# 16. User/Codex division of labour — TIME CRITICAL
-
-## Codex owns
-
-- implementation;
-- automated tests;
-- geometry/intersection checks;
-- BuildBoard/authority correctness;
-- Robot execution;
-- browser state assertions when allowed;
-- console checks;
-- WebMCP checks;
-- Train/Mission logic;
-- hero execution;
-- commits and pushes.
-
-## User owns
-
-- visual appearance;
-- terrain placement judgement;
-- water appearance;
-- bridge visual placement;
-- camera framing;
-- obvious clipping/art judgement;
-- final recording-quality judgement.
-
-Codex should not take screenshots unless explicitly requested.
-
-Whenever visual judgement is needed, return a tiny checklist and mark:
+Existing explicit mixed simulation evidence remains:
 
 ```text
-VISUAL: USER-VERIFY PENDING
+Human: 1
+normal simulated UR10: 3
+accelerated simulated placements: 272
+276 / 276 accepted
+incorrect: 0
+TRAIN_FELL -> BUILD -> CROSSED -> COMPLETE
+reset -> new missionId
 ```
 
-Then continue with any machine-verifiable work that does not depend on the answer.
-
----
-
-# 17. Current terrain visibility diagnostics — DO NOT TURN INTO A NEW BLOCKER YET
-
-Current offline/conservative diagnostics report:
+Safe claim:
 
 ```text
-100 potential bridge-vs-terrain overlaps
-303 centres blocked from at least one of five synthetic views
-59 centres blocked from all five synthetic QA views
-0 missing declared dependencies / above-datum targets lacking declared support
+the deterministic shared board can be completed through explicitly labelled mixed simulation
 ```
 
-These are not yet proof of a real Player/hero blocker.
+Do not claim all 276 Bridge parts were robot-executed.
 
-Do not halt Construction to solve them automatically.
-
-The user will visually inspect.
-
-Only promote a visibility/burial case to P0 if an actual required Human interaction in the hero is demonstrably impossible.
+Level 3 may build on this existing work if time remains.
 
 ---
 
-# 18. Submission Gate / reliability sequence
+# 13. TERRAIN / SCENE INVARIANTS
 
-Do not spend time polishing non-blocking audit output until full Construction can complete.
+Production Terrain asset:
 
-As soon as 303/303 works and Train/Mission complete on the same board, run on ONE exact commit:
+```text
+Scene_and_3D_Files/Terrain_7_Main.glb
+```
+
+Reported SHA256:
+
+```text
+419adc72b8fb408eea5060142890682fbcd03709b4cd4d292742286ba1518217
+```
+
+Build/water datum:
+
+```text
+Z = -132.718 mm
+```
+
+Approved Terrain orientation is intentionally diagonal relative to the camera.
+
+Do not straighten it.
+
+Approved table baseline remains frozen except for user-controlled presentation properties such as colour/brightness:
+
+```text
+X = -100 mm
+Y = 200 mm
+Width = 1750 mm
+Depth = 1200 mm
+Top height = 1200 mm
+```
+
+Final deployment must serve the real GLB binary, not a Git LFS pointer.
+
+---
+
+# 14. PR #7 — CURRENT LEVEL 1 CANDIDATE
+
+PR #7 remains draft and unmerged.
+
+Candidate checkpoint:
+
+```text
+29953f01d994b9b877a7871e6c2aeda2dee3d77e
+```
+
+Reported focused validation:
+
+```text
+14 / 14 PASS
+```
+
+PR #7 contains useful Level 1 work:
+
+```text
+alternating tower planning
+pickup colour persistence
+source material refresh
+Human pickup diagnostics/logging
+focused browser pickup checks
+```
+
+It is not release-approved solely because focused tests pass.
+
+Level 1 review must now also cover:
+
+```text
+12-target recording tower
+requested colour structures
+inventory/refill for larger requested BOMs
+Human valid-slot ADOPTED path
+scene brightness / table colour WebMCP settings
+final tool catalogue
+```
+
+Do not merge automatically.
+
+---
+
+# 15. CLOUDFLARE — PIPELINE IS PROVEN
+
+Do not spend more time experimenting with hosting.
+
+Working Git-connected project:
+
+```text
+robo-bridge-mcp-git
+```
+
+Public URL:
+
+```text
+https://robo-bridge-mcp-git.pages.dev
+```
+
+Proven configuration:
+
+```text
+GitHub repository: stefanGuiton/ROBO-BRIDGE-MCP
+repository visibility: PRIVATE
+production branch: main
+root directory: /
+build command: exit 0
+current output: cloudflare-smoke
+Pages Functions: none
+server compute: none
+```
+
+Automatic deployment is proven:
+
+```text
+private repo
+-> push main
+-> github:push detected
+-> automatic Pages deployment
+-> public site updates
+```
+
+Observed redeploy time was about 20-30 seconds.
+
+Old Direct Upload project remains:
+
+```text
+robo-bridge-mcp
+https://robo-bridge-mcp.pages.dev
+```
+
+User instruction:
+
+```text
+DO NOT DELETE ANYTHING.
+```
+
+Do not modify or delete the old project.
+
+Do not create more Pages projects.
+
+Do not enable Workers, Pages Functions, D1, R2, AI, Queues, Durable Objects or other server compute.
+
+---
+
+# 16. FINAL CLOUDFLARE SWITCH
+
+Only after the intended release candidate is frozen on `main`, change the existing `robo-bridge-mcp-git` project from:
+
+```text
+Build output directory: cloudflare-smoke
+```
+
+to:
+
+```text
+Build output directory: apps/web
+```
+
+Keep:
+
+```text
+repo: stefanGuiton/ROBO-BRIDGE-MCP
+production branch: main
+root directory: /
+Git integration: enabled
+```
+
+Then verify:
+
+```text
+index.html -> 200
+Terrain 7 GLB -> 200 and real binary
+textures/assets -> 200
+Three/vendor modules -> 200
+Chrome opens page
+canvas renders
+Player controls initialise
+WebMCP tools are discoverable where supported
+no blocking console errors
+no Pages Functions
+no server compute
+```
+
+Level 1 and Level 2 should be tested on the public deployment before final submission where practical.
+
+---
+
+# 17. TWO-HOUR EXECUTION PLAN
+
+## PHASE A — LEVEL 1 — FIRST HOUR
+
+Priority order:
+
+```text
+1. fix legitimate inventory/refill so requested colours/BOMs can complete
+2. prove one requested-colour brick
+3. prove 5 x 7 x 1 blue wall = 35/35
+4. prove final 6-layer / 12-target tower
+5. prove guided Human valid-slot ADOPTED + no duplicate + continuation
+6. expose/audit useful scene settings through WebMCP
+7. prove brightness change
+8. prove table-colour change
+9. audit final WebMCP catalogue + registrar
+10. browser/console regression
+11. freeze Level 1 recording candidate
+```
+
+As soon as Level 1 is stable, recording may begin.
+
+## PHASE B — LEVEL 2 — SECOND HOUR
+
+Priority order:
+
+```text
+1. load Terrain 7 + Viaduct reliably
+2. conversational arch-count/design change
+3. regenerate exact BuildPlan/hologram
+4. establish clear Human/Codex Bridge work split
+5. record both actors into the same BuildBoard
+6. complete the selected bounded Bridge construction path
+7. verify progress/readback
+8. console regression
+9. freeze Level 2 recording candidate
+```
+
+**Do not add or test Train in this phase.**
+
+As soon as Level 2 is stable, record Level 2 clips.
+
+## PHASE C — LEVEL 3 — AFTER LEVEL 1 + LEVEL 2
+
+Only then spend remaining engineering time on:
+
+```text
+Train
+Train physics
+fall/derailment
+support failure
+repair/retest
+CROSSED / COMPLETE
+full statistics / final simulation presentation
+```
+
+---
+
+# 18. TIME-BOXED RELEASE TESTS
+
+Use the strongest tests that fit the remaining time:
 
 ```bash
 npm run verify
 npm run submission:smoke
 npm run submission:gate
 npm run webmcp:audit
-npm run hero:1
 ```
 
-If `hero:1` passes:
+But focused level acceptance takes priority over chasing unrelated historical failures.
 
-```bash
-npm run hero:3
-```
+Do not weaken tests.
 
-`hero:3` is the minimum functional freeze gate.
-
-If time remains after freeze:
-
-```bash
-npm run hero:10
-npm run release:evidence
-```
-
-Do not block the submission on hero:10 if hero:3 is stable and the deadline is at risk.
+Do not make robot-only 276/276 or the old Bridge retreat collision a Level 1/2 blocker.
 
 ---
 
-# 19. Browser / GPU acceptance
+# 19. RECORDING STRATEGY — RECORD IN INDEPENDENT CLIPS
 
-Previous performance Oracle lifecycle results were reassuring:
+Do not require one perfect uninterrupted demo session.
 
-- no duplicate production RAF detected;
-- no progressive reset/listener leak in bounded soak tests;
-- pointer-lock lifecycle stable;
-- registrar lifecycle stable.
+Record stable clips as each level becomes ready.
 
-However, that Oracle could not create WebGL, so its render-disabled FPS data is not GPU evidence.
+## Level 1 clips
 
-Before recording, on the user's actual machine perform a short real browser check:
+Capture:
 
 ```text
-actual WebGL rendering
-one intended frame authority
-no blocking console errors
-no progressive reset slowdown
-no repeated >33.3 ms frame storm
-Train TEST visually stable
-Terrain 7/water materials load
+single requested-colour brick
+large requested-colour wall
+requested tower
+Human collaboration / ADOPTED
+speed change
+brightness change
+table colour change
+WebMCP state/tool interaction
 ```
 
-The user performs visual judgement.
+## Level 2 clips
+
+Capture:
+
+```text
+Terrain + Viaduct
+conversational arch-count/design change
+hologram / plan change
+Human takes one Bridge region
+Codex takes the other region
+shared progress / BuildBoard
+Bridge construction completion
+```
+
+**No Train footage belongs to Level 2.**
+
+## Level 3 clips — only if stable
+
+Capture:
+
+```text
+Train physics
+failure / falling if useful
+repair
+retest
+successful crossing
+full result/stats
+```
+
+The final under-3-minute edit can combine the strongest Level 1, Level 2 and optional Level 3 clips.
 
 ---
 
-# 20. Strict execution order — FROM NOW
-
-## NOW-1 — Z-hop motion policy
-
-Implement the global terrain-max safe travel plane and vertical-lift/horizontal-travel/vertical-approach policy.
-
-Checkpoint:
-
-```text
-old 46/303 retreat collision removed
-```
-
-## NOW-2 — Full Construction progression
-
-Run repeatedly until:
-
-```text
-303 / 303
-```
-
-or a genuinely different hard blocker is proven.
-
-Fix demonstrated execution blockers only.
-
-## NOW-3 — Train + Mission on the completed real board
-
-Prove:
-
-```text
-TRAIN_FELL
--> same mission BUILD
--> complete board
--> CROSSED
--> COMPLETE
-```
-
-## NOW-4 — hero:1
-
-Run the complete flagship workflow on one exact commit.
-
-## NOW-5 — hero:3
-
-Three consecutive successful hero journeys are the functional freeze gate.
-
-## NOW-6 — final branch consolidation
-
-Once green:
-
-```text
-push final PR #6 head
-retarget PR #6 to main
-rerun final gate on exact head
-merge PR #6 only
-close PR #5 as superseded
-record release SHA
-```
-
-## NOW-7 — deploy
-
-Preferred route:
-
-```text
-GitHub final release SHA
--> Cloudflare Pages
--> clean/incognito browser
--> native WebMCP/tool check
-```
-
-Verify Terrain 7 is a real deployed GLB, not a Git LFS pointer.
-
-## NOW-8 — video / submission
-
-Record only after the strongest stable functional freeze.
-
-Target video length:
-
-```text
-2:20–2:40
-under 3 minutes
-```
-
-Protect the story:
-
-```text
-WebMCP design
--> exact hologram
--> Human + Codex shared build
--> early TRAIN_FELL
--> continue/repair
--> CROSSED
--> MISSION COMPLETE
-```
-
----
-
-# 21. Scope cuts until hero:3
-
-Do NOT spend time on:
-
-- advanced support-floor authoring;
-- terrain stair-step voxels;
-- extra terrain variants;
-- extra bridge families;
-- structural-collapse expansion;
-- trees/grass/environment polish;
-- renderer rewrite;
-- new physics engine;
-- BVH unless measured and absolutely necessary;
-- physical UR10 deployment;
-- train GLB visual replacement before functional freeze;
-- screenshot evidence generation;
-- non-blocking UI polish.
-
-A reliable functional demo beats additional polish.
-
----
-
-# 22. Canonical package/reference inventory
-
-Keep these as reference/evidence only; current PR #6 code is the integration authority.
-
-## Construction
-
-```text
-ORACLE_BRIDGE_CONSTRUCTION_RUNTIME_V1.zip
-```
-
-## Train
-
-```text
-ORACLE_TRAIN_MAIN_DEMO_ADAPTERS_V1(1).zip
-```
-
-Earlier package evidence included 47/47 Node, 10/10 browser, 7/7 Construction compatibility and source-equivalence checks. PR #6 later reported Train 49/49.
-
-## Mission
-
-```text
-ORACLE_MISSION_INTEGRATION_ADAPTERS_V1(1).zip
-```
-
-Package evidence:
-
-```text
-114/114 PASS
-```
-
-## Submission Gate
-
-```text
-ORACLE_SUBMISSION_GATE_CURRENT_RUNTIME_V1(1).zip
-```
-
-## Adversarial Hero QA
-
-```text
-ORACLE_P0_ADVERSARIAL_HERO_QA_V1.zip
-```
-
-Its reset/error findings have now been incorporated into the current Terrain 7 checkpoint.
-
-## Browser Performance / Soak QA
-
-```text
-ORACLE_BROWSER_PERFORMANCE_SOAK_QA_V1.zip
-```
-
-No progressive bounded-lifecycle leak was found; GPU rendering still requires the final user's-machine check.
-
-## Independent WebMCP Judge Audit
-
-```text
-ORACLE_WEBMCP_JUDGE_AUDIT_FINAL_V1.zip
-```
-
-Judge assessment of the earlier accepted 19-tool runtime:
-
-```text
-6.6 / 10 current
-9.1 / 10 potential after P0 integration/fixes
-```
-
-The missing 27-tool semantic integration identified by that audit is now present on PR #6 and must be reverified on the final release commit.
-
-## Release / Deployment Readiness
-
-```text
-ORACLE_RELEASE_DEPLOYMENT_READINESS_V1
-```
-
-Use its Cloudflare/release guidance after hero freeze, updated for Terrain 7 and the final native WebMCP seam.
-
----
-
-# 23. Final release acceptance checklist
-
-One exact release commit should prove all of the following:
-
-1. Terrain 7 loads.
-2. Authored water material/normal map loads.
-3. ENTRY / EXIT and challenge frame are coherent.
-4. Build datum is `Z = -132.718 mm` through the real challenge/support seam.
-5. Human terrain click-through prevention is active.
-6. Water does not block Human placement.
-7. Final V4.6 BuildPlan has zero prohibited internal intersections.
-8. Every non-zero BOM class is represented in PartRegistry.
-9. Human and Agent are legal for every required hero class.
-10. Human places at least one real frozen-plan target.
-11. Agent executes a meaningful sequence through real RobotController/collision checks.
-12. Global Z-hop travel prevents low-level lateral retreat collisions without bypassing safety.
-13. Full final Construction can reach 303/303.
-14. Human source theft -> Agent source reassignment still works.
-15. Human completion of an Agent target -> ADOPTED still works.
-16. Atomic reset remains safe during motion/held-part state.
-17. Early TEST reads BuildBoard only and produces TRAIN_FELL.
-18. Same frozen mission returns to BUILD.
-19. Accepted construction persists after Train failure.
-20. Completed final board produces CROSSED.
-21. Mission enters COMPLETE exactly once from CROSSED.
-22. TRY AGAIN / reset_mission creates a new missionId.
-23. Old mission operations fail after reset.
-24. Final native WebMCP surface has exactly 27 unique tools through one registrar.
-25. Tool annotations and recovery errors remain truthful/actionable.
-26. No duplicate RAF/body/listener/service authority.
-27. No blocking console errors/unhandled rejections.
-28. Real GPU/browser behavior is stable enough to record.
-29. `hero:1` passes.
-30. `hero:3` passes.
-
----
-
-# 24. Final claim safety
+# 20. CLAIM SAFETY
+
+Safe:
+
+- Codex controls a deterministic browser workcell through WebMCP;
+- Codex can inspect state, plan generic placements and execute them through shared authorities;
+- correctly aligned Human contributions can be adopted into the active plan;
+- requested structure colours/dimensions can be model-planned within supported limits once release acceptance proves them;
+- scene presentation settings can be changed conversationally once final acceptance proves the settings surface;
+- Human and Codex can share one Bridge BuildPlan/BuildBoard in Level 2;
+- Level 2 does not require Train simulation;
+- Level 3 contains the Train/physics mission;
+- Cloudflare serves static browser assets;
+- explicit accelerated simulation remains clearly labelled when used.
 
 Do not claim:
 
+- arbitrary off-plan Human replanning unless proven;
 - physical UR10 readiness;
-- physical one-second bridge cycles;
 - physical collision safety;
-- physical reliability/accuracy;
-- 120 FPS based on the render-disabled Oracle environment;
-- a completed Train crossing based only on a fixture;
-- visual PASS where only the user can verify it.
-
-Safe core claim:
-
-**The human and Codex share one deterministic browser world and one frozen BuildPlan; WebMCP lets Codex understand, change, build and test the mission, while Train outcomes prove whether the shared construction succeeded.**
+- all 276 Bridge parts robot-executed;
+- physical one-second cycles;
+- physical accuracy/repeatability;
+- 120 FPS without real rendered evidence.
 
 ---
 
-# 25. Final principle
+# 21. HARD SCOPE CUTS
 
-**Terrain 7 is solved enough to move on. Internal V4.6 geometry is clean. Do not reopen those problems.**
+Until Level 1 and Level 2 are recordable, do not spend time on:
 
-**The immediate blocker is executable robot travel. Use the simple terrain-max Z-hop policy, run Construction all the way to 303/303, then immediately unlock Train CROSSED, Mission COMPLETE and hero:3.**
+```text
+Train or Train physics
+Bridge retreat collision repair
+new path planner
+arbitrary off-plan Human replanning
+new terrain variants
+new bridge families
+Aqueduct resurrection
+physics rewrite
+renderer rewrite
+trees/grass
+reflection systems
+physical robot deployment
+extra dashboards
+large refactors
+new Cloudflare projects
+server-side Cloudflare architecture
+```
 
-**User = eyes. Codex = implementation/test engine.**
+After Level 1 and Level 2 are recorded, Train/Train physics may resume as Level 3 work.
 
-**Once hero:3 passes, stop feature work, consolidate PR #6 into main, deploy, record and submit.**
+---
+
+# 22. FINAL RELEASE PRINCIPLE
+
+**The release is now progressive.**
+
+**Level 1 is the complete Simple Bricks WebMCP workcell and must be recordable first.**
+
+**Level 2 is collaborative Viaduct design/build with Human + Codex sharing the same authoritative build state. There is NO TRAIN in Level 2.**
+
+**Level 3 is the only level containing Train, Train testing and Train physics.**
+
+**Do not wait for Level 3 before recording Level 1 or Level 2.**
+
+**The next two hours are for making Level 1 and Level 2 stable, browser-proven and recordable.**
