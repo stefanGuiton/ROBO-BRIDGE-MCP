@@ -82,6 +82,7 @@ export async function runFutureAcceptance({
     timeoutMs: providerTimeoutMs
   });
   tests.push(trainFailure.test, trainSuccess.test);
+  if (trainSuccess.test.status === STATUS.FAIL) process.stdout.write(JSON.stringify(trainSuccess.test.details) + '\n');
   process.stdout.write(`[${trainFailure.test.status}] HERO LOOP ${trainFailure.test.id}\n`);
   process.stdout.write(`[${trainSuccess.test.status}] HERO LOOP ${trainSuccess.test.id}\n`);
   const mission = await providerAcceptance({

@@ -1011,6 +1011,7 @@ const submissionAcceptance = params.get('submissionGate') === '1' && mainDemoBri
     construction: mainDemoConstruction,
     train: mainDemoTrain,
     mission: mainDemoMission.service,
+    missionTools: mainDemoMission.missionTools,
     renderer,
     getLeakSnapshot: () => window.__ROBO_BRIDGE_QA__?.leakSnapshot?.() ?? null
   })

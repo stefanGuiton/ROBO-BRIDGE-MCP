@@ -8,6 +8,7 @@ export function getBridgeBuildProgress({ buildBoard, normalisedBuild } = {}) {
   const targets = new Map(buildBoard.getTargets().map((target) => [target.targetId ?? target.id, target]));
   const byPartClass = {};
   const byActor = { human: 0, agent: 0, unknown: 0 };
+  const byExecutionMode = { simulated_fast_forward: 0, robot: 0, human: 0, unknown: 0 };
   let completed = 0;
   for (const placement of normalisedBuild.placements) {
     const target = targets.get(placement.placementId);
@@ -19,6 +20,7 @@ export function getBridgeBuildProgress({ buildBoard, normalisedBuild } = {}) {
     byPartClass[placement.partClass].completed += 1;
     const actor = normaliseActor(target.completedBy);
     byActor[actor ?? 'unknown'] += 1;
+    byExecutionMode[target.executionMode === 'simulated_fast_forward' ? 'simulated_fast_forward' : actor === 'agent' ? 'robot' : actor === 'human' ? 'human' : 'unknown'] += 1;
   }
   const total = normalisedBuild.placements.length;
   return deepFreeze({
@@ -33,6 +35,7 @@ export function getBridgeBuildProgress({ buildBoard, normalisedBuild } = {}) {
     percent: total ? completed / total * 100 : 100,
     status: completed === total ? 'complete' : completed ? 'building' : 'ready',
     contributions: byActor,
+    byExecutionMode,
     byPartClass
   });
 }

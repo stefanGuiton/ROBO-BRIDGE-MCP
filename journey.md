@@ -1,5 +1,21 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — user visual check worked; checkpoint publication requested
+
+- User confirmed the demo worked visually and requested push of the accelerated-simulation checkpoint on the existing branch / draft PR #6. No additional testing, no retarget or merge. Prior 372/372 JS and mixed-mode hero evidence retained; hero:3 remains incomplete. User binaries/imports and generated evidence excluded. Exact checkpoint identity is the Git commit containing this entry.
+
+## 2026-09-03 — explicit fast-forward, then user visual handoff
+
+- Added optional bounded `simulated_fast_forward` to existing build_next_parts; default robot path and collision/IK/workspace checks unchanged. Same frozen plan, shared inventory, PlacementAuthority and BuildBoard; all accelerated parts explicitly labelled.
+- Browser: 1 Human-adapter + 3 real UR10 + 272 accelerated = 276/276 correct; early TRAIN_FELL, same BUILD, final CROSSED/COMPLETE, reset/new ID. Native 27 tools; zero console errors/warnings. Final verify 372/372 JS and reliability PASS. Full gate 73 PASS / 1 dirty-worktree FAIL / 3 SKIPPED.
+- User stopped all additional tests, taking visual inspection and assigning later full review to Oracle. Stopped hero:3 after first flagship PASS; no 3/3 claim. Main demo 8774 healthy; in-app open requested. Implementation local/uncommitted, nothing merged/retargeted. See `docs/SIMULATED_FAST_FORWARD_PROGRESS.md` and latest `handoff_progress.md`.
+
+## 2026-09-03 — Viaduct backed up; collision work deferred
+
+- Pushed and SHA-verified `0a23db03a7a350a726f4be41e826d9bd66e8af8d` on `codex/p0-downstream-integration-prep`; updated existing draft PR #6, with no merge or retarget.
+- User then deferred collision fixes. Removed only the unfinished collision/release experiment, leaving checkpoint collision behaviour and user assets intact. Focused regression **20/20 PASS** after restoration.
+- Last verified physical build remains **183/276**. CROSSED/COMPLETE/hero gates are not proven; PR #5 remains untouched. See the latest handoff section for resume instructions.
+
 ## 2026-09-03 — published layout checkpoint; switched final hero to Viaduct
 
 - Pushed `9998ef3966ca34262b54e5227fd692a06cbbe651` and verified remote SHA. Updated existing draft PR #6, no merge/retarget.

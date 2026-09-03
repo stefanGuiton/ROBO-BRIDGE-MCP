@@ -142,11 +142,13 @@ function browserArguments(userDataDirectory, viewport) {
     '--mute-audio',
     '--hide-scrollbars',
     '--enable-webgl',
-    '--ignore-gpu-blocklist',
-    '--enable-unsafe-swiftshader',
-    '--use-angle=swiftshader',
-    '--use-gl=angle'
+    '--ignore-gpu-blocklist'
   ];
+  // Full built scenes can saturate CPU software rasterisation on Windows.
+  // Use Chrome's normal GPU backend there; retain an explicit software option.
+  if (process.platform !== 'win32' || process.env.ROBO_BRIDGE_SOFTWARE_GL === '1') {
+    args.push('--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--use-gl=angle');
+  }
   if (process.platform === 'linux' && (typeof process.getuid !== 'function' || process.getuid() === 0 || process.env.CI)) args.push('--no-sandbox');
   return args;
 }

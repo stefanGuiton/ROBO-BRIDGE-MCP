@@ -1,7 +1,9 @@
 # Terrain7 Viaduct hero — 2026-09-03
 
 Branch: `codex/p0-downstream-integration-prep`.
-Published parent HEAD: `9998ef3966ca34262b54e5227fd692a06cbbe651` (Scene Layout checkpoint, local/remote SHA verified). Viaduct work is local after that commit. PR #6 stays draft on its existing base; no merge or retarget.
+Published Viaduct HEAD: **`0a23db03a7a350a726f4be41e826d9bd66e8af8d`**, local/remote SHA verified on the branch above. Parent Scene Layout checkpoint: `9998ef3966ca34262b54e5227fd692a06cbbe651`. PR #6 stays draft on its existing base; no merge or retarget.
+
+Latest user direction: defer collision fixes. The subsequent unfinished collision/release experiment was removed; production source is back at the pushed checkpoint, with existing collision checks intact. Focused regression after restoration: **20/20 PASS**. Physical progress remains the previously verified **183/276**, not a completed bridge. Train CROSSED, Mission COMPLETE and hero:1/3 have not been established. The conditional final merge gate remains unsatisfied.
 
 Scope: `Downloads/CODEX_SWITCH_FINAL_HERO_TO_VIADUCT.md`. Single agent; no Oracle-loop workflow, screenshots or visual claims. Stop at the next real execution blocker. User owns visual inspection.
 

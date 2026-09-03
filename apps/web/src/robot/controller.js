@@ -324,6 +324,30 @@ export class RobotController {
     return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 
+  // Explicit simulator-only placement. No TCP/joint motion or motion-safety claim.
+  // Source state remains here; validation/occupancy remains in PlacementAuthority.
+  commitSimulatedPlacement({ brickId, targetId, expectedWorldRevision, signal } = {}) {
+    if (signal?.aborted) return { ok: false, reason: 'cancelled' };
+    if (!Number.isSafeInteger(expectedWorldRevision) || expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state' };
+    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) return { ok: false, reason: 'operation_in_progress' };
+    const brick = this.bricks.find(b => b.id === brickId), target = this.board?.getTarget(targetId);
+    if (!brick?.bridgePart || !target?.bridgeConstruction || !this.placementAuthority) return { ok: false, reason: 'invalid_input' };
+    if (brick.heldBy || brick.snapped || brick.placedTargetId || brick.placementType) return { ok: false, reason: 'source_unavailable' };
+    const executionMode = 'simulated_fast_forward';
+    const accepted = this.placementAuthority.commit({ brickId, position: target.position, yawRad: target.yawRad, actor: 'agent', executionMode });
+    if (!accepted.ok) return accepted;
+    brick.position = { ...accepted.position };
+    brick.yawRad = accepted.yawRad;
+    brick.snapped = accepted.snapped;
+    brick.placedTargetId = accepted.targetId;
+    brick.placementType = accepted.placementType;
+    brick.executionMode = executionMode;
+    brick.ownership = null;
+    delete brick.freeQuaternion;
+    this.#bumpRobot('simulated_placement', { brickId, targetId, actor: 'agent', executionMode }, { bumpWorld: false });
+    return { ...accepted, executionMode, robotExecuted: false, motionCollisionVerified: false, worldRevision: this.worldRevision };
+  }
+
   commitHumanPlacement({
     brickId, position, yawRad = 0, connection = null, placementType = 'free-build',
     supportBrickId = null, supportSide = null, carriedSide = null

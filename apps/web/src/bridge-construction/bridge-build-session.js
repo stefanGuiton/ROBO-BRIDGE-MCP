@@ -156,7 +156,7 @@ function activateSources({ placements, controller, inventory }) {
   return { ok: true, added: bounded.map((brick) => brick.id), skipped: false };
 }
 
-function eligibleBatch(preparedBuild, buildBoard, count) {
+function eligibleBatch(preparedBuild, buildBoard, count, simulated = false) {
   const accepted = acceptedPlacementMap(buildBoard);
   const selected = [];
   const selectedIds = new Set();
@@ -171,7 +171,7 @@ function eligibleBatch(preparedBuild, buildBoard, count) {
     partBounds(a).max.zMm - partBounds(b).max.zMm || a.placementId.localeCompare(b.placementId));
   for (const placement of accessOrder) {
     if (selected.length >= count) break;
-    if (!placement.robotTarget.reachable || accepted.has(placement.placementId)) continue;
+    if ((!simulated && !placement.robotTarget.reachable) || accepted.has(placement.placementId)) continue;
     if (placement.requiresStructureComplete && !structureComplete) continue;
     const dependenciesReady = placement.dependencyIds.every((dependencyId) => accepted.has(dependencyId) || selectedIds.has(dependencyId));
     if (!dependenciesReady) continue;
@@ -200,6 +200,7 @@ export function createBridgeBuildSession({
   let batchSequence = 0;
   let lastPlan = null;
   let lastExecution = null;
+  let cancellationEpoch = 0;
 
   const requireLive = () => invariant(!disposed, 'OPERATION_IN_PROGRESS', 'The bridge build session is disposed.');
   const requireStarted = () => {
@@ -348,6 +349,38 @@ export function createBridgeBuildSession({
   async function buildNextParts(count = 1, options = {}) {
     requireStarted();
     invariant(Number.isSafeInteger(count) && count >= 1 && count <= 5, 'INVALID_SETTINGS', 'count must be from 1 to 5.');
+    const executionMode = options.executionMode ?? 'robot';
+    invariant(['robot', 'simulated_fast_forward'].includes(executionMode), 'INVALID_SETTINGS', 'Unknown executionMode.');
+    if (executionMode === 'simulated_fast_forward') {
+      const epoch = cancellationEpoch, results = [];
+      let reason = null;
+      // Reconcile each part against live board/source state, never a completion ledger.
+      for (let index = 0; index < count; index++) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        if (options.signal?.aborted || epoch !== cancellationEpoch || disposed) { reason = 'cancelled'; break; }
+        if (bridgeHost) assertPreparedBuildCurrent(preparedBuild, bridgeHost);
+        assertBoardTargets(preparedBuild, buildBoard);
+        const placement = eligibleBatch(preparedBuild, buildBoard, 1, true).selected[0];
+        if (!placement) { reason = getBuildProgress().remaining ? 'support_not_ready' : null; break; }
+        const record = preparedBuild.registry.resolve(placement);
+        invariant(record.allowedActors.includes('agent'), 'UNSUPPORTED_PART', 'Part does not support the agent actor.');
+        const priorSourceId = placementCoordinator.getState().queue.find(p => p.placementId === placement.placementId)?.brickId;
+        activateSources({ placements: [placement], controller, inventory: preparedBuild.inventory });
+        const brickId = sourceResolver.resolveBrickId(placement);
+        if (!brickId || !preparedBuild.inventory.compatibleSources(placement.compatibilityKey).some(s => s.sourceId === brickId)) { reason = 'source_unavailable'; break; }
+        const source = controller.getBricks().find(b => b.id === brickId);
+        invariant(source.bridgePart?.registryId === record.registryId && source.bridgePart?.registryKey === record.registryKey
+          && source.bridgePart?.allowedActors?.includes('agent')
+          && JSON.stringify(source.bridgePart.physicalDimensions) === JSON.stringify(record.physicalDimensions),
+        'UNSUPPORTED_PART', 'Live source does not match the frozen PartRegistry.');
+        const accepted = controller.commitSimulatedPlacement({ brickId, targetId: placement.placementId, expectedWorldRevision: controller.worldRevision, signal: options.signal });
+        if (!accepted.ok) { reason = accepted.reason; break; }
+        results.push({ ...accepted, placementId: placement.placementId, brickId, actor: 'agent', sourceReassigned: Boolean(priorSourceId && priorSourceId !== brickId) });
+      }
+      lastExecution = deepFreeze({ ok: !reason, reason, executionMode, robotExecuted: false, motionCollisionVerified: false,
+        completedPlacements: results.length, requestedCount: count, results, progress: getBuildProgress(), worldRevision: controller.worldRevision });
+      return lastExecution;
+    }
     const planned = planNext({ count });
     if (!planned.ok) return planned;
     const result = await cycleRunner.run({
@@ -359,6 +392,7 @@ export function createBridgeBuildSession({
     lastExecution = deepFreeze(result);
     return deepFreeze({
       ...result,
+      executionMode,
       requestedCount: count,
       plannedCount: planned.selectedCount,
       progress: getBuildProgress()
@@ -367,6 +401,7 @@ export function createBridgeBuildSession({
 
   function cancelBuild(reason = 'bridge_build_cancelled') {
     requireLive();
+    cancellationEpoch += 1;
     const runner = cycleRunner.cancel(reason);
     const coordinator = typeof placementCoordinator.cancel === 'function' ? placementCoordinator.cancel() : null;
     return deepFreeze({ ok: true, runner, coordinator, progress: getBuildProgress() });

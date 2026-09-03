@@ -265,16 +265,17 @@ export async function runSubmissionGate(rawOptions = {}) {
 
   const evidenceFiles = await persistCommandLogs(commandResults, options.output);
   const requiredEvidence = [
-    '01-load.png',
-    '02-bridge-before-update.png',
-    '03-bridge-after-update.png',
-    '12-reset.png',
+    ...(process.env.ROBO_BRIDGE_CAPTURE_SCREENSHOTS === '1' ? ['01-load.png', '02-bridge-before-update.png', '03-bridge-after-update.png', '12-reset.png'] : []),
     'final-runtime.html',
     'runtime-metadata.json',
     'console-log.json',
     'webmcp-browser-audit.json'
   ];
   const evidence = await existingFiles(options.output, requiredEvidence);
+  if (process.env.ROBO_BRIDGE_CAPTURE_SCREENSHOTS !== '1') tests.push(makeTest({
+    id: 'evidence.visual_user_verification', area: 'EVIDENCE', status: STATUS.SKIPPED_WITH_REASON,
+    reason: 'VISUAL: USER-VERIFY PENDING', details: { screenshots: 'Not captured by user instruction; visual acceptance is not claimed.' }
+  }));
   tests.push(makeTest({
     id: 'evidence_current_runtime_package',
     area: 'EVIDENCE',

@@ -28,7 +28,7 @@ export async function runBrowserSuite(options = {}) {
   const profile = options.profile ?? 'auto';
   const heroAttempts = options.heroAttempts ?? 1;
   const resetCycles = options.resetCycles ?? 50;
-  const providerTimeoutMs = options.providerTimeoutMs ?? 180_000;
+  const providerTimeoutMs = options.providerTimeoutMs ?? 600_000;
   const explicitCatalogue = options.catalogueName ?? null;
   let catalogueName = explicitCatalogue ?? (profile === 'current' ? 'current' : profile === 'final' ? 'final' : 'minimum');
   let catalogue = options.catalogues?.[catalogueName];

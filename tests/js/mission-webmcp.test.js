@@ -63,6 +63,9 @@ test('build batch schema is one to five', () => {
   const tool = harness.tools.find((item) => item.name === 'build_next_parts');
   assert.equal(tool.inputSchema.properties.count.minimum, 1);
   assert.equal(tool.inputSchema.properties.count.maximum, 5);
+  assert.deepEqual(tool.inputSchema.properties.executionMode.enum, ['robot', 'simulated_fast_forward']);
+  assert.equal(tool.inputSchema.properties.executionMode.default, 'robot');
+  assert.equal(tool.inputSchema.required.includes('executionMode'), false);
 });
 
 test('reset requires explicit true confirmation', () => {

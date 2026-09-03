@@ -319,7 +319,7 @@ export function createConstructionServiceAdapter({
       }
     },
 
-    async buildNextParts({ identity, count = 1, expectedWorldRevision, signal } = {}, options = {}) {
+    async buildNextParts({ identity, count = 1, expectedWorldRevision, signal, executionMode = 'robot' } = {}, options = {}) {
       try {
         assertBound(identity, 'Construction execution identity');
         assertNotAborted(signal ?? options.signal);
@@ -331,6 +331,7 @@ export function createConstructionServiceAdapter({
         }
         const raw = await activeSession.buildNextParts(count, {
           ...options,
+          executionMode,
           expectedWorldRevision,
           signal: signal ?? options.signal
         });
@@ -359,6 +360,7 @@ export function createConstructionServiceAdapter({
           planId: binding.planId,
           designChecksum: binding.designChecksum,
           requested: count,
+          executionMode,
           completed,
           lastPlacement,
           worldRevision: progress.worldRevision,

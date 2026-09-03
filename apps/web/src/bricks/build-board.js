@@ -103,6 +103,7 @@ export class BuildBoard {
       target.claimOwner = 'none';
       target.correctness = false;
       target.completedBy = null;
+      target.executionMode = null;
     }
     this.#brickToTarget.clear();
     this.#placements.clear();
@@ -161,7 +162,7 @@ export class BuildBoard {
     return { ok: true, accepted: true, targetId, worldRevision: this.worldRevision };
   }
 
-  trySnapBrick({ brickId, colour, position, yawDeg, yawRad, actor = null, targetId = null }) {
+  trySnapBrick({ brickId, colour, position, yawDeg, yawRad, actor = null, targetId = null, executionMode = null }) {
     const effectiveYawDeg = Number.isFinite(yawDeg) ? yawDeg : Number(yawRad ?? 0) * 180 / Math.PI;
     if (!brickId || !position || ![position.xMm, position.yMm, position.zMm, effectiveYawDeg].every(Number.isFinite)) {
       return { ok: false, accepted: false, reason: 'invalid_input', worldRevision: this.worldRevision };
@@ -201,10 +202,11 @@ export class BuildBoard {
     target.placedBrickId = brickId;
     target.correctness = true;
     target.completedBy = ['human', 'agent'].includes(actor) ? actor : null;
+    target.executionMode = executionMode;
     target.claimOwner = 'none';
     this.#brickToTarget.set(brickId, target.id);
     if (target.completedBy) this.#contributions[target.completedBy] += 1;
-    this.#record('snap', { targetId: target.id, brickId, colour, actor });
+    this.#record('snap', { targetId: target.id, brickId, colour, actor, ...(executionMode ? { executionMode } : {}) });
     const snappedPose = { xMm: target.position.xMm, yMm: target.position.yMm, zMm: target.position.zMm, yawDeg: target.yawDeg };
     return {
       ok: true,
@@ -265,6 +267,7 @@ export class BuildBoard {
     target.placedBrickId = null;
     target.correctness = false;
     target.completedBy = null;
+    target.executionMode = null;
     this.#brickToTarget.delete(brickId);
     this.#corrections += 1;
     this.#record('remove', { targetId, brickId, actor });

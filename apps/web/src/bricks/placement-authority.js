@@ -149,7 +149,7 @@ export class PlacementAuthority {
     };
   }
 
-  commit({ brickId, position, yawRad = 0, actor = null, supportBrickId = null, supportSide = 'M', carriedSide = null } = {}) {
+  commit({ brickId, position, yawRad = 0, actor = null, supportBrickId = null, supportSide = 'M', carriedSide = null, executionMode = null } = {}) {
     const preview = this.preview({ brickId, position, yawRad, supportBrickId, supportSide, carriedSide });
     if (!preview.ok) return preview;
     const brick = this.getBricks().find((candidate) => candidate.id === brickId);
@@ -160,7 +160,8 @@ export class PlacementAuthority {
       targetId: candidate.targetId,
       position: candidate.position,
       yawRad: candidate.yawRad,
-      actor
+      actor,
+      executionMode
     });
     let accepted = targetSnap;
     if (!targetSnap.ok) {

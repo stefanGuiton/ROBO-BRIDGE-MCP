@@ -36,6 +36,7 @@ export function createMainDemoSubmissionAcceptance({
   construction,
   train,
   mission,
+  missionTools,
   renderer,
   getLeakSnapshot = () => null
 } = {}) {
@@ -47,6 +48,12 @@ export function createMainDemoSubmissionAcceptance({
   let lastConstructionEvidence = null;
   let lastSourceEvidence = null;
   let lastTrainFailureEvidence = null;
+  let lastHeroEvidence = null;
+  const invokeMissionTool = (name, input) => {
+    const tool = missionTools?.find(item => item.name === name);
+    if (!tool) throw new Error(`Registered mission tool unavailable: ${name}`);
+    return tool.execute(input);
+  };
 
   async function missionState() {
     return mission.getMissionState({ detail: 'detail' });
@@ -57,7 +64,7 @@ export function createMainDemoSubmissionAcceptance({
     if (state.phase === 'DESIGN' && !construction.preparedBuild) {
       return { ok: true, phase: 'DESIGN', missionId: state.missionId, idempotent: true };
     }
-    const result = await mission.resetMission({
+    const result = await invokeMissionTool('reset_mission', {
       expectedMissionId: state.missionId,
       expectedMissionRevision: state.revisions.missionRevision,
       expectedWorldRevision: state.revisions.worldRevision,
@@ -70,7 +77,7 @@ export function createMainDemoSubmissionAcceptance({
   async function startFreshBuild() {
     await resetCurrentMission();
     const state = await missionState();
-    const started = await mission.startBridgeBuild({
+    const started = await invokeMissionTool('start_bridge_build', {
       expectedMissionId: state.missionId,
       expectedMissionRevision: state.revisions.missionRevision,
       expectedWorldRevision: state.revisions.worldRevision,
@@ -80,7 +87,7 @@ export function createMainDemoSubmissionAcceptance({
     return started;
   }
 
-  async function runConstructionProbe() {
+  async function runConstructionProbe({ keepBuild = false } = {}) {
     const started = await startFreshBuild();
     const prepared = construction.preparedBuild;
     const requiredPlacementIds = [...prepared.frozenPlan.requiredPlacementIds];
@@ -178,8 +185,10 @@ export function createMainDemoSubmissionAcceptance({
       missionReset: false,
       adoptedStatus: adopted?.status ?? null
     };
-    const reset = await resetCurrentMission();
-    evidence.resetWorked = reset.ok === true && !construction.preparedBuild && (await missionState()).phase === 'DESIGN';
+    if (!keepBuild) {
+      const reset = await resetCurrentMission();
+      evidence.resetWorked = reset.ok === true && !construction.preparedBuild && (await missionState()).phase === 'DESIGN';
+    }
     lastConstructionEvidence = clone(evidence);
     return evidence;
   }
@@ -258,37 +267,55 @@ export function createMainDemoSubmissionAcceptance({
   }
 
   async function runFlagshipJourney() {
-    const started = await startFreshBuild();
+    const collaboration = await runConstructionProbe({ keepBuild: true });
     const state = await missionState();
-    const built = await mission.buildNextParts({
+    const revisions = value => ({ expectedMissionId: value.missionId,
+      expectedMissionRevision: value.revisions.missionRevision, expectedWorldRevision: value.revisions.worldRevision });
+    const built = await invokeMissionTool('build_next_parts', {
       expectedMissionId: state.missionId,
       expectedMissionRevision: state.revisions.missionRevision,
       expectedWorldRevision: state.revisions.worldRevision,
-      count: 5
+      count: 2
     });
     const afterBuild = await missionState();
-    let tested = null;
-    if (built?.ok === true) {
-      tested = await mission.testBridge({
-        expectedMissionId: afterBuild.missionId,
-        expectedMissionRevision: afterBuild.revisions.missionRevision,
-        expectedWorldRevision: afterBuild.revisions.worldRevision
-      });
+    const failed = await invokeMissionTool('test_bridge', revisions(afterBuild));
+    const afterFailure = await missionState();
+    const fastBatches = [];
+    if (built.ok && failed.outcome === 'TRAIN_FELL' && afterFailure.missionId === state.missionId && afterFailure.phase === 'BUILD') {
+      const maximumBatches = construction.preparedBuild.frozenPlan.requiredPlacementIds.length;
+      for (let batch = 0; batch < maximumBatches && construction.getBuildProgress().remaining; batch++) {
+        const next = await invokeMissionTool('build_next_parts', { ...revisions(await missionState()), count: 5, executionMode: 'simulated_fast_forward' });
+        fastBatches.push({ ok: next.ok, completed: next.completed, executionMode: next.executionMode, error: errorCode(next) });
+        if (!next.ok || !next.completed) break;
+      }
     }
+    const tested = construction.getBuildProgress().remaining === 0 ? await invokeMissionTool('test_bridge', revisions(await missionState())) : null;
     const final = await missionState();
     const progress = construction.getBuildProgress();
+    const authoritative = await mission.getBuildProgress();
+    const trainEvidence = train.getEvidence();
     const robot = controller.getState();
     const result = {
+      missionId: final.missionId,
+      executionMode: 'mixed_robot_and_simulated_fast_forward',
+      byExecutionMode: clone(progress.byExecutionMode),
+      collaboration,
+      failureTestResult: clone(failed),
+      sameMissionAfterFailure: afterFailure.missionId === state.missionId && afterFailure.phase === 'BUILD',
+      phaseHistory: ['DESIGN', 'BUILD', 'TEST', afterFailure.phase, 'TEST', final.phase, 'RESET'],
+      fastBatches,
+      buildBoard: clone(authoritative.build),
+      trainEvidence: clone(trainEvidence),
       phase: final.phase,
       trainOutcome: tested?.outcome ?? null,
-      frozenPlanId: started.plan?.planId ?? progress.planId,
-      frozenChecksum: started.plan?.designChecksum ?? progress.designChecksum,
+      frozenPlanId: progress.planId,
+      frozenChecksum: progress.designChecksum,
       testedPlanId: tested?.testedPlan?.planId ?? null,
       testedChecksum: tested?.testedPlan?.designChecksum ?? null,
       supportSource: BUILD_BOARD_SOURCE,
       robotIdle: robot.operationState === 'idle' && Number(robot.pendingMoveCount ?? 0) === 0,
       gripperEmpty: robot.heldBrickId === null,
-      incorrectPlacements: 0,
+      incorrectPlacements: authoritative.build.incorrect,
       requiredStructureComplete: progress.remaining === 0,
       placementsRequired: progress.total,
       humanPlacements: progress.contributions?.human ?? 0,
@@ -299,6 +326,8 @@ export function createMainDemoSubmissionAcceptance({
       worldRevision: controller.worldRevision
     };
     result.resetResult = await resetCurrentMission();
+    result.newMissionId = (await missionState()).missionId;
+    lastHeroEvidence = clone(result);
     return result;
   }
 
@@ -370,29 +399,28 @@ export function createMainDemoSubmissionAcceptance({
     },
     runTrainFailureAcceptance: () => runTrainFailureProbe(),
     async runTrainSuccessAcceptance() {
-      const failed = lastTrainFailureEvidence ?? await runTrainFailureProbe();
+      const completed = await runFlagshipJourney();
       return {
-        outcome: failed.outcome,
-        reachedExit: false,
-        routeFullySupported: false,
+        outcome: completed.trainOutcome,
+        reachedExit: completed.testResult?.outcome === 'CROSSED',
+        routeFullySupported: completed.requiredStructureComplete && completed.testResult?.outcome === 'CROSSED',
         supportSource: BUILD_BOARD_SOURCE,
         directCompletionFlagUsed: false,
-        blockedBy: 'FINAL_GEOMETRY_NOT_COMPLETE',
-        productionResult: failed.productionResult
+        executionMode: completed.executionMode,
+        productionResult: completed
       };
     },
     async runMissionAcceptance() {
-      const path = await runMissionFailurePath();
+      const path = lastHeroEvidence ?? await runFlagshipJourney();
       return {
-        phaseHistory: ['DESIGN', 'BUILD', 'TEST', path.failed?.phase ?? path.afterFailure.phase, 'RESET'],
-        firstTestOutcome: path.failed?.outcome ?? null,
-        finalTrainOutcome: null,
-        completePrecededByCrossed: false,
-        nonCrossedOutcomeProducedComplete: path.failed?.phase === 'COMPLETE',
-        resetPhase: path.reset?.phase ?? null,
-        previousMissionId: path.reset?.previousMissionId ?? path.afterFailure.missionId,
-        newMissionId: path.reset?.missionId ?? null,
-        blockedBy: 'FINAL_GEOMETRY_NOT_COMPLETE',
+        phaseHistory: path.phaseHistory,
+        firstTestOutcome: path.failureTestResult?.outcome ?? null,
+        finalTrainOutcome: path.trainOutcome,
+        completePrecededByCrossed: path.testResult?.outcome === 'CROSSED' && path.phase === 'COMPLETE',
+        nonCrossedOutcomeProducedComplete: path.failureTestResult?.phase === 'COMPLETE',
+        resetPhase: path.resetResult?.phase ?? null,
+        previousMissionId: path.missionId,
+        newMissionId: path.newMissionId,
         productionPath: clone(path)
       };
     },

@@ -384,10 +384,12 @@ export class MissionService {
     let operation=null;
     try {
       this._phase('BUILD'); this._session(input,{world:true}); const frozen=this._frozen(); if (!integer(input.count,1)||input.count>5) throw new MissionError('INVALID_PARAMETER','count must be an integer from 1 to 5.'); this._robotIdle();
+      const executionMode=input.executionMode??'robot';
+      if (!['robot','simulated_fast_forward'].includes(executionMode)) throw new MissionError('INVALID_PARAMETER','Unknown executionMode.');
       operation=this._begin('build',options.signal);
       const before=await this._progress(); this._check(operation);
       if (before.worldRevision!==null&&before.worldRevision!==input.expectedWorldRevision) throw new MissionError('STALE_WORLD_REVISION','The world changed before construction execution.');
-      const result=serviceResult(await this.services.constructionService.buildNextParts({identity:cloneValue(frozen),count:input.count,expectedWorldRevision:input.expectedWorldRevision,signal:operation.signal}),'CONSTRUCTION_ERROR','ConstructionService could not build the requested parts.');
+      const result=serviceResult(await this.services.constructionService.buildNextParts({identity:cloneValue(frozen),count:input.count,executionMode,expectedWorldRevision:input.expectedWorldRevision,signal:operation.signal}),'CONSTRUCTION_ERROR','ConstructionService could not build the requested parts.');
       this._check(operation); assertIdentity(result,frozen); const completed=count(result,['completed','completedCount'],0,'CONSTRUCTION_ERROR','completed'); if (completed>input.count) throw new MissionError('CONSTRUCTION_ERROR','ConstructionService completed more parts than requested.');
       const p=progressRecord(result.progress??await this.services.constructionService.getProgress({identity:cloneValue(frozen)}),frozen);
       if (p.accepted-before.accepted!==completed) throw new MissionError('CONSTRUCTION_ERROR','ConstructionService completed count does not match authoritative accepted progress.');
@@ -399,9 +401,9 @@ export class MissionService {
         if (placementId&&!frozen.requiredPlacementIds.includes(placementId)) throw new MissionError('STALE_PLAN','ConstructionService returned a placement outside the frozen plan.');
         lastPlacement={placementId,actor:compact(result.lastPlacement.actor,32,'codex'),status:compact(result.lastPlacement.status,64),sourceReassigned:Boolean(result.lastPlacement.sourceReassigned)};
       }
-      this.missionRevision+=1; this._event('BUILD',`Codex completed ${completed} of ${input.count} requested parts.`,'codex');
+      this.missionRevision+=1; this._event('BUILD',`Codex completed ${completed} of ${input.count} requested parts (${executionMode}).`,'codex');
       const robot=robotRecord(readRobotState(this.services));
-      return {ok:true,missionId:this.missionId,phase:this.phase,summary:`${completed} parts completed; ${p.remaining} remain.`,plan:{planId:frozen.planId,designChecksum:frozen.designChecksum},requested:input.count,completed,remaining:p.remaining,blocked:p.blocked,waitingSource:p.waitingSource,lastPlacement,robot,revisions:this._revisions(frozen.designRevision,worldRevision),nextActions:nextActions(this.phase)};
+      return {ok:true,missionId:this.missionId,phase:this.phase,executionMode,summary:`${completed} parts completed (${executionMode}); ${p.remaining} remain.`,plan:{planId:frozen.planId,designChecksum:frozen.designChecksum},requested:input.count,completed,remaining:p.remaining,blocked:p.blocked,waitingSource:p.waitingSource,lastPlacement,robot,revisions:this._revisions(frozen.designRevision,worldRevision),nextActions:nextActions(this.phase)};
     } catch (error) {
       const same=operation&&operation.epoch===this.epoch&&operation.missionId===this.missionId;
       if (same&&toMissionError(error).code==='CANCELLED') try { await this.services.constructionService.cancel({reason:'cancelled',identity:cloneValue(this.frozen)}); } catch {}

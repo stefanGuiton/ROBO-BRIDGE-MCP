@@ -163,13 +163,14 @@ export function getMissionToolDefinitions(service, { challengeIds = null } = {})
     ),
     makeTool(
       'build_next_parts',
-      'Execute one to five next frozen-plan parts through ConstructionService and the existing planned-cycle robot runner.',
+      'Place one to five frozen-plan parts. Default robot uses collision/IK-checked motion. Explicit simulated_fast_forward uses shared inventory and placement validation without robot motion; it is not motion-collision verified.',
       mutation({
+        executionMode: { type: 'string', enum: ['robot', 'simulated_fast_forward'], default: 'robot' },
         count: {
           type: 'integer',
           minimum: 1,
           maximum: 5,
-          description: 'Number of real planned placements to attempt in this bounded call.'
+          description: 'Number of authoritative placements to attempt in this bounded call.'
         }
       }, ['count']),
       WRITE_INTERNAL,
