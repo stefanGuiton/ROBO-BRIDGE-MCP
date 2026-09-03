@@ -143,6 +143,11 @@ function validateSelfCollision(jointPositions) {
 }
 
 export function validateCollision({ tcp, jointPositions = null, heldBrick = null, bricks = [], board = null, ignoreBrickIds = [] }, layout = CHALLENGE_LAYOUT) {
+  // Recording simulation only: skip arm, gripper and carried-part motion proxies.
+  // Final release still goes through PlacementAuthority/BuildBoard validation.
+  if (layout.simulationMotionCollisions === false) {
+    return { ok: true, motionCollisionVerified: false, collisionMode: 'simulation-disabled' };
+  }
   const ignored = new Set(ignoreBrickIds);
   const targetContext = board?.nearestTarget?.(tcp, 24) ?? null;
   const allowBoardContact = Boolean(targetContext && !targetContext.target.occupiedBy && Math.abs(tcp.xMm - targetContext.target.position.xMm) <= 12 && Math.abs(tcp.yMm - targetContext.target.position.yMm) <= 12);

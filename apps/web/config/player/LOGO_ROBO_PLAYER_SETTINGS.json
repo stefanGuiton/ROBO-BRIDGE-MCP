@@ -1,4 +1,9 @@
 {
+  "trainVisualOffsetXmm": 0,
+  "trainVisualOffsetYmm": 0,
+  "trainVisualOffsetZmm": 0,
+  "trainVisualOvershootMm": 100,
+  "overrideTrainTest": false,
   "mouseSensitivityRadPerPx": 0.00165,
   "invertY": false,
   "mouseSmoothingS": 0.012,

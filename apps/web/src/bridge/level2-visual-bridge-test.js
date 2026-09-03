@@ -1,6 +1,7 @@
 'use strict';
 
 import * as THREE from '../../vendor/three.module.min.js';
+import { loadLevel2TrainModel, disposeTrainModel } from './level2-train-model.js';
 
 const DEFAULT_DURATION_MS = 4500;
 const CUBE_SIZE_MM = Object.freeze({ x: 18, y: 14, z: 12 });
@@ -23,7 +24,7 @@ function cloneState(value) {
 // Presentation-only Level 2 crossing. It deliberately owns no physics,
 // BuildBoard, mission, train or revision state and runs on the existing frame loop.
 export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs = DEFAULT_DURATION_MS,
-  canStart = () => true, onStateChanged = () => {} } = {}) {
+  canStart = () => true, onStateChanged = () => {}, getOffsets = () => ({}), loadModel = loadLevel2TrainModel } = {}) {
   if (!renderer?.machineRoot?.add || typeof renderer.addFrameListener !== 'function') {
     throw new TypeError('The existing MAIN_DEMO renderer is required.');
   }
@@ -34,6 +35,7 @@ export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs =
   let elapsedMs = 0;
   let root = null;
   let body = null;
+  let modelReady = !loadModel;
   let state = { status: 'idle', progress: 0, durationMs, entry: null, exit: null };
 
   const publish = () => {
@@ -54,6 +56,24 @@ export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs =
     body.position.z = CUBE_SIZE_MM.z / 2;
     body.castShadow = true;
     root.add(body);
+    if (loadModel) {
+      modelReady = false;
+      body.visible = false;
+      const owner = root;
+      loadModel().then(model => {
+        if (root !== owner) { disposeTrainModel(model); return; }
+        owner.remove(body);
+        disposeTrainModel(body);
+        body = model;
+        owner.add(model);
+        modelReady = true;
+        renderer.render();
+      }).catch(error => {
+        if (root !== owner) return;
+        state = { ...state, status: 'error', error: String(error.message ?? error) };
+        publish();
+      });
+    }
     renderer.machineRoot.add(root);
     return root;
   }
@@ -61,8 +81,7 @@ export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs =
   function disposeVisual() {
     if (!root) return;
     root.removeFromParent();
-    body?.geometry?.dispose?.();
-    body?.material?.dispose?.();
+    disposeTrainModel(root);
     root = null;
     body = null;
   }
@@ -90,7 +109,8 @@ export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs =
     const visual = ensureVisual();
     elapsedMs = 0;
     visual.visible = true;
-    visual.position.set(entry.x, entry.y, entry.z);
+    const offsets = getOffsets();
+    visual.position.set(entry.x + (offsets.x || 0), entry.y + (offsets.y || 0), entry.z + (offsets.z || 0));
     const yawRad = Math.atan2(exit.y - entry.y, exit.x - entry.x);
     visual.rotation.set(0, 0, yawRad);
     state = { status: 'running', progress: 0, durationMs, entry, exit };
@@ -99,14 +119,29 @@ export function createLevel2VisualBridgeTest({ renderer, challenge, durationMs =
   }
 
   const unsubscribeFrame = renderer.addFrameListener((deltaSeconds) => {
-    if (state.status !== 'running' || !root) return;
+    if (!root) return;
+    const offsets = getOffsets();
+    // World/machine XYZ offset, independent of route yaw.
+    // Extend only the presentation route; authoritative ENTRY/EXIT stay intact.
+    if (!state.entry || !state.exit) return;
+    const direction = new THREE.Vector3(state.exit.x - state.entry.x, state.exit.y - state.entry.y, state.exit.z - state.entry.z).normalize();
+    const overshoot = Number.isFinite(offsets.overshootMm) ? Math.max(0, offsets.overshootMm) : 0;
+    const end = {
+      x: state.exit.x + direction.x * overshoot,
+      y: state.exit.y + direction.y * overshoot,
+      z: state.exit.z + direction.z * overshoot
+    };
+    if (state.status === 'complete') {
+      root.position.set(end.x + (offsets.x || 0), end.y + (offsets.y || 0), end.z + (offsets.z || 0));
+    }
+    if (state.status !== 'running' || !modelReady) return;
     elapsedMs += Math.max(0, Number(deltaSeconds) || 0) * 1000;
     const progress = Math.min(1, elapsedMs / durationMs);
     const eased = progress * progress * (3 - 2 * progress);
     root.position.set(
-      state.entry.x + (state.exit.x - state.entry.x) * eased,
-      state.entry.y + (state.exit.y - state.entry.y) * eased,
-      state.entry.z + (state.exit.z - state.entry.z) * eased
+      state.entry.x + (end.x - state.entry.x) * eased + (offsets.x || 0),
+      state.entry.y + (end.y - state.entry.y) * eased + (offsets.y || 0),
+      state.entry.z + (end.z - state.entry.z) * eased + (offsets.z || 0)
     );
     state = { ...state, progress };
     if (progress >= 1) {

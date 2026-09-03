@@ -18,7 +18,8 @@ const GROUP_RULES = [
   ['Scene Materials', /^(floor|gripperMaterial)/],
   ['Robot Mount', /^robotMount/],
   ['Scene', /^(restitution|friction|spawnCount|seed|hudHz)/],
-  ['Debug', /^debug/]
+  ['Debug', /^debug/],
+  ['Level 2 Visual Train', /^(trainVisual|overrideTrainTest)/]
 ];
 
 const SELECT_OPTIONS = Object.freeze({

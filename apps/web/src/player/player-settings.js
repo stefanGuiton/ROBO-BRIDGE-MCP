@@ -12,6 +12,11 @@ export const PLAYER_SOURCE_PROVENANCE = Object.freeze({
 });
 
 export const PLAYER_FALLBACK_SETTINGS = Object.freeze({
+  trainVisualOffsetXmm: 0,
+  trainVisualOffsetYmm: 0,
+  trainVisualOffsetZmm: 0,
+  trainVisualOvershootMm: 100,
+  overrideTrainTest: false,
   mouseSensitivityRadPerPx: 0.00165,
   invertY: false,
   mouseSmoothingS: 0.012,
@@ -167,6 +172,9 @@ function sanitizeSettings(input = {}, allowedKeys = null) {
     && (!SCENE_LAYOUT_CONTROLS[key] || (Number.isFinite(value) && value >= SCENE_LAYOUT_CONTROLS[key].min && value <= SCENE_LAYOUT_CONTROLS[key].max))
     && (key !== 'bridgeHologramOpacity' || (Number.isFinite(value) && value >= 0 && value <= 1))
     && (key !== 'bridgeHologramColor' || /^#[0-9a-f]{6}$/i.test(value))
+    && (!key.startsWith('trainVisualOffset') || (Number.isFinite(value) && Math.abs(value) <= 10000))
+    && (key !== 'overrideTrainTest' || typeof value === 'boolean')
+    && (key !== 'trainVisualOvershootMm' || (Number.isFinite(value) && value >= 0 && value <= 10000))
   )));
 }
 
