@@ -82,7 +82,9 @@ const controller = new RobotController({
   bricks: evidenceMode ? makeRoundBricks() : makePlayerBricks(),
   revisionClock,
   workspace: evidenceMode ? undefined : workcellProfile.workspace,
-  layout: evidenceMode ? undefined : workcellProfile.layout,
+  // Keep strict collision behavior in evidence/tests; the recording demo allows
+  // animated robot motion through geometry, not instant accepted placements.
+  layout: evidenceMode ? undefined : { ...workcellProfile.layout, simulationMotionCollisions: false },
   timeScale: evidenceMode ? 0 : 0.35
 });
 const connectionGraph = new ConnectionGraph(playerSettings);
@@ -970,7 +972,12 @@ try {
     level2VisualTest = createLevel2VisualBridgeTest({
       renderer,
       challenge: mainDemoChallenge,
+      getOffsets: () => {
+        const s = playerSettingsStore.get();
+        return { x: s.trainVisualOffsetXmm, y: s.trainVisualOffsetYmm, z: s.trainVisualOffsetZmm, overshootMm: s.trainVisualOvershootMm };
+      },
       canStart: () => {
+        if (playerSettingsStore.get().overrideTrainTest) return true;
         const progress = mainDemoConstruction?.getBuildProgress();
         return Boolean(progress && progress.total > 0 && progress.completed === progress.total);
       },
@@ -978,6 +985,7 @@ try {
         if (!level2VisualTestStatusEl) return;
         level2VisualTestStatusEl.textContent = state.status === 'running'
           ? 'VISUAL TEST RUNNING · NO PHYSICS'
+          : state.status === 'error' ? `TRAIN MODEL LOAD FAILED: ${state.error}`
           : state.status === 'complete' ? 'ENTRY → EXIT COMPLETE · NO PHYSICS'
             : 'VISUAL TEST · NO PHYSICS';
       }
@@ -1096,7 +1104,7 @@ setInterval(() => {
     $('[data-build-actors]').textContent = modes ? `Accepted: Human ${modes.human} · Robot ${modes.robot} · Accelerated ${modes.simulated_fast_forward}` : 'Freeze the current design to start shared construction.';
     if (level2VisualTestButtonEl) {
       const running = level2VisualTest?.getState().status === 'running';
-      level2VisualTestButtonEl.disabled = demoMode !== 'bridge' || running || !(progress.total > 0 && progress.completed === progress.total);
+      level2VisualTestButtonEl.disabled = demoMode !== 'bridge' || running || !(playerSettingsStore.get().overrideTrainTest || (progress.total > 0 && progress.completed === progress.total));
       level2VisualTestButtonEl.textContent = running ? 'TESTING…' : 'TEST BRIDGE';
     }
   }

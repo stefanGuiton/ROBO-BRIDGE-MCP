@@ -3,6 +3,17 @@ import assert from 'node:assert/strict';
 import { segmentDistance, segmentIntersectsAabb, validateCollision } from '../../apps/web/src/robot/collision.js';
 import { BRICK_SPEC } from '../../apps/web/src/bricks/brick-spec.js';
 import { createLiveHarness } from '../helpers/live-harness.js';
+import { CHALLENGE_LAYOUT } from '../../apps/web/src/robot/ur10-definition.js';
+
+test('recording simulation explicitly skips motion proxies without changing strict defaults', () => {
+  const input = { tcp: { xMm: 580, yMm: 0, zMm: -100 } };
+  assert.equal(validateCollision(input).ok, false);
+  const layout = { ...CHALLENGE_LAYOUT, simulationMotionCollisions: false };
+  assert.deepEqual(validateCollision(input, layout), {
+    ok: true, motionCollisionVerified: false, collisionMode: 'simulation-disabled'
+  });
+  assert.equal(validateCollision(input, { ...layout, simulationMotionCollisions: true }).ok, false);
+});
 
 const box = { min: { xMm: -5, yMm: -5, zMm: -5 }, max: { xMm: 5, yMm: 5, zMm: 5 } };
 
