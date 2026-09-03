@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { constructionHarness } from '../helpers/construction-harness.js';
+import { TERRAIN7_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
+// Retain the historical three-row contribution fixture; current two-row
+// compilation is covered independently by bridge-width.test.js.
+const legacyThreeRowSettings = { ...TERRAIN7_BRIDGE_INITIAL_SETTINGS, bridgeWidthCells: 3 };
 import { createConstructionPlacementStream } from '../../apps/web/src/bridge-core/construction-adapter.js';
 import { inverseTransformPointFromMainDemo, transformPointToMainDemo } from '../../apps/web/src/bridge-core/world-transform.js';
 import { createBridgeCollaboration, classifyBridgeCollaboration } from '../../apps/web/src/bridge-construction/bridge-collaboration.js';
@@ -12,7 +16,7 @@ const revisionOptions = h => ({ expectedWorldRevision: h.controller.worldRevisio
 const sideCounts = progress => Object.fromEntries(Object.entries(progress.collaboration.byAdvisorySide).map(([actor, side]) => [actor, side.total]));
 
 test('current Terrain 7 Viaduct has immutable advisory 91 Human / 185 Codex labels, unchanged compiler preferences and shared supply', async () => {
-  const h = await constructionHarness({ terrain7: true });
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: legacyThreeRowSettings });
   const compilerPlanBefore = JSON.stringify(h.host.buildPlan);
   h.service.startBuild(revisionOptions(h));
   const prepared = h.service.preparedBuild;
@@ -136,7 +140,7 @@ test('pure hint fallback can unlock a preferred dependency but never bypasses st
 });
 
 test('Human can adopt a Codex-side target and real robot execution can accept a Human-side target with consistent 300 ms queue/runner settings', async () => {
-  const h = await constructionHarness({ terrain7: true });
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: legacyThreeRowSettings });
   h.service.startBuild(revisionOptions(h));
   const prepared = h.service.preparedBuild;
   const human = new HumanBuildAdapter({ controller: h.controller, board: h.board, graph: h.authority.graph, placementEngine: h.authority.placementEngine });
@@ -199,7 +203,7 @@ test('Human can adopt a Codex-side target and real robot execution can accept a 
 });
 
 test('invalid actor/cycle options reject before source or queue mutation and omitted cycle remains 1000 ms', async () => {
-  const h = await constructionHarness({ terrain7: true });
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: legacyThreeRowSettings });
   h.service.startBuild(revisionOptions(h));
   const before = JSON.stringify({ revision: h.controller.worldRevision, targets: h.board.getTargets(), bricks: h.controller.getBricks() });
   let admissions = 0;
@@ -253,7 +257,7 @@ test('read-only aggregate uses occupied correct board targets, including unknown
 });
 
 test('bounded explicitly labelled fast-forward with Codex hint still completes all 276 shared Viaduct targets with reported fallback', async () => {
-  const h = await constructionHarness({ terrain7: true });
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: legacyThreeRowSettings });
   h.service.startBuild(revisionOptions(h));
   const prepared = h.service.preparedBuild;
   const placements = new Map(prepared.normalisedBuild.placements.map(placement => [placement.placementId, placement]));

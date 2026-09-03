@@ -4,6 +4,29 @@ Started 2026-09-03. Governing task: `Downloads/OVERALL_PLAN_LAUNCH_READY.md`; us
 
 ## Current state
 
+**Post-merge current Level1 native PASS:** `launch-level1-current-full-r3`
+passes12/12required gates,30checks,31tools,actual35blue wall and real canvas
+Human+11robot tower,physical double-contact refill,settings/identity/console.
+All8images opened. Same runtime as main2abb010; only acceptance script/docs
+changed. Wall49.1941s at1333ms requested(16overruns);11robot tower cycles11.345s
+at1000ms requested(6overruns). Earlier current-Level1-rerun-pending notes below
+are superseded; Level2 Terrain9 full replay and Level3/final gates are not.
+
+**Latest user direction:** Level1 was tested by the user; collision/clash work
+is now deferred to prioritize shipping. Isolated browser testing is permitted,
+but messages to the other task remain paused. Do not mistake deferred Level3
+physics acceptance for a passing crossing. Live GitHub PR7 still points to
+bf75ef5 (open/draft/unmerged), containing Terrain9, Level3 code and Simple fast
+timing/guidance. Today's source-only harness/audit follow-up remains local.
+
+**Recording hold / acceptance audit:** the user requested no messages to the
+other task while recording; its browser and the served runtime stay untouched.
+See `LAUNCH_READY_ACCEPTANCE_AUDIT.md` for the complete plan sections0–37 map.
+The historical full Level1/2 milestones below are not current all-level release
+acceptance: current14/14 starter/smooth timing needs the full35wall/Human native
+regression, and the full Level2 evidence predates Terrain9. Sol is strengthening
+only the Level1 browser harness; no new browser result is claimed until it runs.
+
 **Latest checkpoint verification:** frozen runtime/test head ec23aed196e7b324afce95b74df26fe5526d5ead passes642/642 JavaScript,20/20 reliability,174JS+4Python syntax and repository checks. Follow-up changes are documentation only. Read-only static audit:188 served files /28,947,210 bytes,454 literal+3 configured references resolved,4 hydrated/self-contained GLBs, no selected private/untracked files. Final Level3 crossing and release gates are still pending; no main merge/deployment.
 
 **Latest asset follow-up:** Terrain9 replaces the production GLB, 3.49MB versus31.38MB, with unchanged shared placement/datum, ENTRY/EXIT and initial Viaduct identity. Terrain25/25 and native31-tool smoke pass with console0/0/0 and both screenshots inspected; no Level2 Train. See `docs/TERRAIN9_CHECKPOINT.md`. The old served copy is retired recoverably and original source assets are untouched. Terrain f573d86, contact74b0477 and packaging aa90ae6 are pushed and remote-SHA verified; two remote attribution-only updates through0da5479 are preserved. Balanced14red/14blue starter pool ec23aed is committed for final publication. Native12-blue wall completes12.6585s at1000ms target, five overruns,console0/0/0; three images inspected. Two stale starter-count test expectations reproduced/fixed; focused Simple30/30 and full rerun642/642 pass. Older full-suite counts below predate these edits.

@@ -2,7 +2,7 @@
 
 import { BridgeCoreError, cloneValue } from './errors.js';
 
-const SLICE_COUNT = 3;
+const widthCells = (settings) => settings.bridgeWidthCells ?? 3;
 const TERRITORY = Object.freeze({ NONE: 0, USER: 1, SHARED: 2, CODEX: 3, SHARED_MACRO: 4 });
 
 export function canonicalJson(value) {
@@ -28,7 +28,7 @@ const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, v
 
 export function derivedAnchors(settings) {
   const roadY = settings.anchorBaseY + settings.anchorHeightY;
-  const width = SLICE_COUNT * settings.voxelSize;
+  const width = widthCells(settings) * settings.voxelSize;
   const entryCentreX = settings.anchorGroupX - (settings.anchorGapX * 0.5 + settings.anchorBlockLengthX * 0.5);
   const exitCentreX = settings.anchorGroupX + (settings.anchorGapX * 0.5 + settings.anchorBlockLengthX * 0.5);
   return {
@@ -53,7 +53,7 @@ export function derivedAnchors(settings) {
 }
 
 export function sliceInfo(settings) {
-  return { count: SLICE_COUNT, pitch: settings.voxelSize, width: SLICE_COUNT * settings.voxelSize };
+  return { count: widthCells(settings), pitch: settings.voxelSize, width: widthCells(settings) * settings.voxelSize };
 }
 
 function trackDesignForSettings(settings, compiled) {
@@ -74,10 +74,10 @@ function trackDesignForSettings(settings, compiled) {
     partClass: 'TRACK_SEGMENT',
     geometryVersion: 1,
     segmentLength: round6(segmentLength),
-    widthWorld: round6(SLICE_COUNT * dx),
+    widthWorld: round6(widthCells(settings) * dx),
     sleeperCount: 4,
     sleeperWidth: round6(settings.trackSleeperWidthCells * dx),
-    sleeperDepth: round6(Math.min(SLICE_COUNT, settings.trackSleeperDepthCells) * dx),
+    sleeperDepth: round6(Math.min(widthCells(settings), settings.trackSleeperDepthCells) * dx),
     sleeperHeight: round6(settings.trackSleeperHeightLayers * dy),
     sleeperEndInset: round6(settings.trackSleeperEndInsetCells * dx),
     railGauge: round6(settings.trackRailGaugeCells * dx),
@@ -89,10 +89,10 @@ function trackDesignForSettings(settings, compiled) {
     cellZ: dx
   };
   if (parameters.railGauge * 0.5 + parameters.railWidth * 0.5 > parameters.widthWorld * 0.5 + 1e-9) {
-    throw new BridgeCoreError('OUT_OF_RANGE', 'Track rail gauge exceeds the fixed three-cell bridge width.');
+    throw new BridgeCoreError('OUT_OF_RANGE', 'Track rail gauge exceeds the configured bridge width.');
   }
   if (parameters.sleeperDepth > parameters.widthWorld + 1e-9) {
-    throw new BridgeCoreError('OUT_OF_RANGE', 'Track sleeper depth exceeds the fixed three-cell bridge width.');
+    throw new BridgeCoreError('OUT_OF_RANGE', 'Track sleeper depth exceeds the configured bridge width.');
   }
   const geometryHash = checksumFNV(parameters);
   const definitionId = `track_${geometryHash}`;
@@ -169,14 +169,14 @@ function roleColour(role, settings) {
 
 function expandCustomPlacements(customDesign, compiled, settings) {
   const result = [];
-  const standardPhysicalCount = compiled.placements.length * SLICE_COUNT;
+  const standardPhysicalCount = compiled.placements.length * widthCells(settings);
   const slice = sliceInfo(settings);
   for (const master of customDesign.masterPlacements) {
     const repeat = master.repeatAcrossSlices !== false;
-    const count = repeat ? SLICE_COUNT : 1;
+    const count = repeat ? widthCells(settings) : 1;
     for (let sliceIndex = 0; sliceIndex < count; sliceIndex += 1) {
       const worldZ = repeat
-        ? settings.anchorGroupZ + (sliceIndex - 1) * slice.pitch
+        ? settings.anchorGroupZ + (sliceIndex - (widthCells(settings) - 1) / 2) * slice.pitch
         : settings.anchorGroupZ;
       result.push({
         ...cloneValue(master),
@@ -201,10 +201,10 @@ function buildBom(compiled, customPhysicalPlacements, settings) {
   const byRole = {};
   const byColour = {};
   for (const placement of compiled.placements) {
-    byPartType[placement.partType] += SLICE_COUNT;
-    byRole[placement.role] = (byRole[placement.role] || 0) + SLICE_COUNT;
+    byPartType[placement.partType] += widthCells(settings);
+    byRole[placement.role] = (byRole[placement.role] || 0) + widthCells(settings);
     const colour = roleColour(placement.role, settings);
-    byColour[colour] = (byColour[colour] || 0) + SLICE_COUNT;
+    byColour[colour] = (byColour[colour] || 0) + widthCells(settings);
   }
   const byCustomDefinitionId = {};
   let archCount = 0;
@@ -219,7 +219,7 @@ function buildBom(compiled, customPhysicalPlacements, settings) {
   const spawnInventory = { ...byPartType, ...byCustomDefinitionId };
   return {
     masterSliceBricks: compiled.placements.length,
-    sliceCount: SLICE_COUNT,
+    sliceCount: widthCells(settings),
     totalPhysicalParts,
     totalPhysicalBricks: standardCount,
     byPartClass: {
@@ -267,7 +267,7 @@ function classCountsForActor(compiled, customPhysicalPlacements, settings, actor
   const counts = { standard: 0, arch: 0, track: 0 };
   for (const placement of compiled.placements) {
     const assigned = assignedActorForStandard(placement, settings);
-    if (assigned === actor || assigned === 'shared') counts.standard += SLICE_COUNT;
+    if (assigned === actor || assigned === 'shared') counts.standard += widthCells(settings);
   }
   for (const placement of customPhysicalPlacements) {
     const assigned = assignedActorForCustom(placement, settings);
@@ -311,7 +311,7 @@ function buildRequiredCellSet(compiled, customDesign) {
 
 function initialNextEligible(compiled, customDesign, customPhysicalPlacements, settings) {
   const requiredCells = buildRequiredCellSet(compiled, customDesign);
-  const standardPhysicalCount = compiled.placements.length * SLICE_COUNT;
+  const standardPhysicalCount = compiled.placements.length * widthCells(settings);
   const layerPlacementIds = new Map();
   for (const placement of compiled.placements) {
     if (!layerPlacementIds.has(placement.layer)) layerPlacementIds.set(placement.layer, []);
@@ -319,7 +319,7 @@ function initialNextEligible(compiled, customDesign, customPhysicalPlacements, s
   }
 
   function physicalId(basePlacementId, sliceIndex) {
-    return basePlacementId * SLICE_COUNT + sliceIndex;
+    return basePlacementId * widthCells(settings) + sliceIndex;
   }
   function standardPhysical(basePlacementId, sliceIndex) {
     const placement = compiled.placements[basePlacementId];
@@ -342,7 +342,7 @@ function initialNextEligible(compiled, customDesign, customPhysicalPlacements, s
   }
   const taskSortData = (task, actor) => {
     const placement = task.kind === 'preferred'
-      ? standardPhysical(Math.floor(task.id / SLICE_COUNT), task.id % SLICE_COUNT)
+      ? standardPhysical(Math.floor(task.id / widthCells(settings)), task.id % widthCells(settings))
       : customPhysicalPlacements[task.id];
     const phase = placement.custom ? (placement.partClass === 'TRACK_SEGMENT' ? 5 : 2) : standardPhase(placement);
     const layer = placement.custom ? placement.baseLayer : placement.gridY;
@@ -366,7 +366,7 @@ function initialNextEligible(compiled, customDesign, customPhysicalPlacements, s
   }
   for (const placement of compiled.placements) {
     const assigned = assignedActorForStandard(placement, settings);
-    for (let sliceIndex = 0; sliceIndex < SLICE_COUNT; sliceIndex += 1) {
+    for (let sliceIndex = 0; sliceIndex < widthCells(settings); sliceIndex += 1) {
       append({ kind: 'preferred', id: physicalId(placement.basePlacementId, sliceIndex) }, assigned);
     }
   }
@@ -408,7 +408,7 @@ function initialNextEligible(compiled, customDesign, customPhysicalPlacements, s
   }
   function eligible(task, actor) {
     const placement = task.kind === 'preferred'
-      ? standardPhysical(Math.floor(task.id / SLICE_COUNT), task.id % SLICE_COUNT)
+      ? standardPhysical(Math.floor(task.id / widthCells(settings)), task.id % widthCells(settings))
       : customPhysicalPlacements[task.id];
     return Boolean(placement)
       && actorCanTake(placement, actor)
@@ -499,10 +499,10 @@ export function createV46StaticDesign({ compiled, settings, customDesign = null 
         }))
       },
       sliceArray: {
-        count: SLICE_COUNT,
+        count: widthCells(settings),
         pitch: slice.pitch,
         width: slice.width,
-        physicalPlacementIdFormula: 'standard: basePlacementId * 3 + sliceIndex; custom: standardPhysicalCount + customPhysicalIndex'
+        physicalPlacementIdFormula: 'standard: basePlacementId * sliceCount + sliceIndex; custom: standardPhysicalCount + customPhysicalIndex'
       },
       track: {
         routeLength: round6(design.track.routeLength),
@@ -534,7 +534,7 @@ export function createV46BuildPlan({ compiled, settings, designRevision, executi
   const codexCounts = classCountsForActor(compiled, customPhysicalPlacements, settings, 'codex');
   const inventoryDelta = Object.fromEntries(Object.keys(billOfMaterials.spawnInventory).map((key) => [key, 0]));
   const customSnapshot = customPhysicalPlacements.map((placement, index) => ({
-    physicalPlacementId: compiled.placements.length * SLICE_COUNT + index,
+    physicalPlacementId: compiled.placements.length * widthCells(settings) + index,
     customPhysicalIndex: index,
     definitionId: placement.definitionId,
     partClass: placement.partClass,
@@ -598,4 +598,4 @@ export function summariseBuildPlan(plan) {
   };
 }
 
-export const V46_SLICE_COUNT = SLICE_COUNT;
+export const V46_SLICE_COUNT = 3; // Legacy default; use plan.geometry.sliceArray.count.

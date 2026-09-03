@@ -20,6 +20,7 @@ const ENUMS = Object.freeze({
 });
 
 const BOUNDS = Object.freeze({
+  bridgeWidthCells: [2, 3],
   anchorGroupX: [-100000, 100000],
   anchorBaseY: [-100000, 100000],
   anchorGroupZ: [-100000, 100000],
@@ -78,6 +79,7 @@ const BOUNDS = Object.freeze({
 });
 
 const INTEGER_FIELDS = new Set([
+  'bridgeWidthCells',
   'aqTopCount', 'aqMiddleCount', 'aqBottomCount', 'viArchCount', 'meetBandCells',
   'brickPlaceTimeMs', 'archPlaceTimeMs', 'trackPlaceTimeMs', 'samplesPerAxis',
   'closurePasses', 'archSegmentsPerCell', 'maxGridCells', 'terrainSeed',
@@ -145,8 +147,8 @@ function validateCrossField(settings) {
       anchorHeightY: settings.anchorHeightY
     });
   }
-  if (settings.trackRailGaugeCells + settings.trackRailWidthCells > 3 + 1e-9) {
-    throw new BridgeCoreError('OUT_OF_RANGE', 'Track rail gauge and rail width exceed the fixed three-cell bridge width.', {
+  if (settings.trackRailGaugeCells + settings.trackRailWidthCells > settings.bridgeWidthCells + 1e-9) {
+    throw new BridgeCoreError('OUT_OF_RANGE', 'Track rail gauge and rail width exceed the configured bridge width.', {
       trackRailGaugeCells: settings.trackRailGaugeCells,
       trackRailWidthCells: settings.trackRailWidthCells
     });

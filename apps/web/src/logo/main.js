@@ -24,6 +24,7 @@ import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spa
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { robotBasePoseFromSettings, SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
+import { createLevel2VisualBridgeTest } from '../bridge/level2-visual-bridge-test.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
@@ -37,6 +38,7 @@ import { THREE } from '../render/real-gripper-visual.js';
 import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
 import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
 import { createSceneSettingsTools } from '../webmcp/scene-settings-tools.js';
+import { createRecolourLooseBricksTool } from '../workcell/recolour-loose-bricks-tool.js';
 import { createSimpleSourceRefill } from '../workcell/simple-source-refill.js';
 import { createMoreBricksButton } from '../workcell/more-bricks-button.js';
 import { guardDemoLevelTools } from './demo-level-tools.js';
@@ -192,6 +194,12 @@ const bridgeHudEl = $('[data-bridge-hud]');
 const bridgeFamilyEl = $('[data-bridge-family]');
 const bridgeRevisionEl = $('[data-bridge-revision]');
 const bridgePlanEl = $('[data-bridge-plan]');
+const level2PartSummaryEl = $('[data-level2-part-summary]');
+const level2HologramVisibleEl = $('[data-level2-hologram-visible]');
+const level2HologramOpacityEl = $('[data-level2-hologram-opacity]');
+const level2HologramColourEl = $('[data-level2-hologram-colour]');
+const level2VisualTestButtonEl = $('[data-level2-visual-test]');
+const level2VisualTestStatusEl = $('[data-level2-visual-test-status]');
 
 const settingsPanelController = installPlayerSettingsPanel({
   store: playerSettingsStore,
@@ -338,6 +346,11 @@ function updateBridgeHologramStatus({ source, summary }) {
   if (bridgeFamilyEl) bridgeFamilyEl.textContent = `${family} HOLOGRAM`;
   if (bridgeRevisionEl) bridgeRevisionEl.textContent = `REV ${source.designRevision} · ${summary.totalPhysicalCount} PARTS`;
   if (bridgePlanEl) bridgePlanEl.textContent = `${source.planId} · ${source.designChecksum}`;
+  if (level2PartSummaryEl) {
+    level2PartSummaryEl.textContent = `${summary.totalPhysicalCount} PARTS · ${summary.standardPhysicalCount} BRICKS · ${summary.physicalArchCount} ARCH · ${summary.trackSegmentCount} TRACK`;
+    level2PartSummaryEl.dataset.planId = source.planId;
+    level2PartSummaryEl.dataset.partCount = String(summary.totalPhysicalCount);
+  }
   if (bridgeHudEl) {
     bridgeHudEl.dataset.state = 'ready';
     bridgeHudEl.dataset.family = source.family;
@@ -879,6 +892,7 @@ let mainDemoBridge = null;
 let mainDemoConstruction = null;
 let mainDemoTrain = null;
 let mainDemoMission = null;
+let level2VisualTest = null;
 const level3Telemetry = createLevel3ResultsCollector();
 const level3ResultsPanel = !evidenceMode ? createLevel3ResultsPanel() : null;
 if (level3ResultsPanel) Object.assign(level3ResultsPanel.element.style, {
@@ -953,6 +967,24 @@ try {
         else if (!prepared) Promise.resolve(mainDemoTrain.clear()).catch(error => addLog(`Train cleanup: ${error.message}`, 'bad'));
       }
     });
+    level2VisualTest = createLevel2VisualBridgeTest({
+      renderer,
+      challenge: mainDemoChallenge,
+      canStart: () => {
+        const progress = mainDemoConstruction?.getBuildProgress();
+        return Boolean(progress && progress.total > 0 && progress.completed === progress.total);
+      },
+      onStateChanged: state => {
+        if (!level2VisualTestStatusEl) return;
+        level2VisualTestStatusEl.textContent = state.status === 'running'
+          ? 'VISUAL TEST RUNNING · NO PHYSICS'
+          : state.status === 'complete' ? 'ENTRY → EXIT COMPLETE · NO PHYSICS'
+            : 'VISUAL TEST · NO PHYSICS';
+      }
+    });
+    // demoMode starts at Level 2 before the selector controller is installed;
+    // activate the presentation lifecycle even when its first change is a no-op.
+    level2VisualTest.setLevelActive(demoMode === 'bridge');
     mainDemoMission = await createProductionMissionRuntime({
       bridgeHost: mainDemoBridge.host,
       bridgeDesignPackage: mainDemoBridge.bridgeDesign,
@@ -1019,14 +1051,28 @@ for (const button of document.querySelectorAll('[data-construction-action]')) bu
     }) : action === 'start' ? mainDemoConstruction.startBuild(options)
       : action === 'next' ? await mainDemoConstruction.buildNextParts(Number($('[data-construction-count]').value), options)
       : action === 'cancel' ? mainDemoConstruction.cancelBuild(options) : mainDemoConstruction.reset(options);
+    if (action === 'start' || action === 'reset') level2VisualTest?.reset();
     const progress = mainDemoConstruction.getBuildProgress();
     const status = $('[data-construction-status]');
     if (status) status.textContent = result.ok === false ? result.reason : progress.status + ' · ' + progress.completed + '/' + (progress.total ?? '—');
   } catch (error) { const status = $('[data-construction-status]'); if (status) status.textContent = error.message; addLog('Construction: ' + error.message, 'bad'); }
 });
+if (mainDemoBridge && level2HologramVisibleEl && level2HologramOpacityEl && level2HologramColourEl) {
+  const appearance = playerSettingsStore.get();
+  level2HologramVisibleEl.checked = mainDemoBridge.visible;
+  level2HologramOpacityEl.value = String(appearance.bridgeHologramOpacity);
+  level2HologramColourEl.value = appearance.bridgeHologramColor;
+  level2HologramVisibleEl.addEventListener('change', () => mainDemoBridge.setVisible(level2HologramVisibleEl.checked));
+  level2HologramOpacityEl.addEventListener('input', () => playerSettingsStore.set('bridgeHologramOpacity', Number(level2HologramOpacityEl.value)));
+  level2HologramColourEl.addEventListener('input', () => playerSettingsStore.set('bridgeHologramColor', level2HologramColourEl.value));
+}
+level2VisualTestButtonEl?.addEventListener('click', () => {
+  const result = level2VisualTest?.start() ?? { ok: false, reason: 'visual_test_unavailable' };
+  if (!result.ok) showToast(result.reason === 'bridge_incomplete' ? 'Complete the bridge first.' : result.reason);
+});
 const demoModeControl = !evidenceMode ? createDemoModeControl({ controller, board, runtime, streamControl, coordinator: fastPlacement, workcellProfile,
   challenge: mainDemoChallenge, bridge: mainDemoBridge, train: mainDemoTrain, mission: mainDemoMission?.service,
-  renderer, setMode: value => { demoMode = value; }, originalBlueprint: blueprint,
+  renderer, setMode: value => { demoMode = value; level2VisualTest?.setLevelActive(value === 'bridge'); }, originalBlueprint: blueprint,
   getPreparedBuild: () => mainDemoConstruction?.preparedBuild }) : null;
 if (demoModeControl) {
   $('select[data-demo-mode]').addEventListener('change', async event => {
@@ -1048,6 +1094,11 @@ setInterval(() => {
     $('[data-collaboration-status]').textContent = `${demoMode === 'bridge' ? 'LEVEL 2 · NO TRAIN' : 'LEVEL 3 · TRAIN'} · ${progress.completed}/${progress.total ?? '—'} ${progress.status.toUpperCase()}`;
     const modes = progress.byExecutionMode;
     $('[data-build-actors]').textContent = modes ? `Accepted: Human ${modes.human} · Robot ${modes.robot} · Accelerated ${modes.simulated_fast_forward}` : 'Freeze the current design to start shared construction.';
+    if (level2VisualTestButtonEl) {
+      const running = level2VisualTest?.getState().status === 'running';
+      level2VisualTestButtonEl.disabled = demoMode !== 'bridge' || running || !(progress.total > 0 && progress.completed === progress.total);
+      level2VisualTestButtonEl.textContent = running ? 'TESTING…' : 'TEST BRIDGE';
+    }
   }
   if (streamControl && demoMode === 'simple') {
     const stream = streamControl.getState();
@@ -1102,6 +1153,8 @@ try {
   const bridgeTools = guardDemoLevelTools(mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? [],
     () => demoMode, () => controller.worldRevision);
   const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : []), moreBricksButton.tool,
+    ...(fastPlacement && placementCycleRunner ? [createRecolourLooseBricksTool({ controller, coordinator: fastPlacement,
+      runner: placementCycleRunner, isSimpleMode: () => demoMode === 'simple' })] : []),
     ...createSceneSettingsTools({ settingsStore: playerSettingsStore, revisionClock,
       canUpdate: () => !controller.moving && !controller.pendingMoveCount && controller.operationState === 'idle'
         && !controller.operationBlocked() && !humanBuildAdapter.getState().heldBrickId })];
@@ -1156,6 +1209,7 @@ const publicRuntime = Object.freeze({
   train: mainDemoTrain,
   mission: mainDemoMission?.service ?? null,
   missionRuntime: mainDemoMission,
+  level2VisualTest,
   submissionAcceptance,
   bridgeHost: mainDemoBridge?.host ?? null,
   bridgeDesign: mainDemoBridge?.bridgeDesign ?? null,
@@ -1172,6 +1226,7 @@ if (Object.isExtensible(window)) {
 }
 document.documentElement.dataset.robotShowcase = robotShowcaseMode ? 'true' : 'false';
 document.documentElement.dataset.runtimeReady = 'true';
+window.addEventListener('beforeunload', () => level2VisualTest?.dispose(), { once: true });
 
 if (['connection', 'snap'].includes(params.get('parityPreview'))) {
   setTimeout(() => { window.__LOGO_ROBO_PARITY_PREVIEW__ = stageV8ParityConnection(); }, 80);

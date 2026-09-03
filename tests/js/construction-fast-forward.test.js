@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { constructionHarness } from '../helpers/construction-harness.js';
 import { validateCollision } from '../../apps/web/src/robot/collision.js';
+import { TERRAIN7_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
 
 const options = h => ({ expectedWorldRevision: h.controller.worldRevision, executionMode: 'simulated_fast_forward' });
 
 test('known 183/276 empty-gripper arch collision still fails closed in normal collision validation', async () => {
-  const h = await constructionHarness({ terrain7: true });
+  const h = await constructionHarness({ terrain7: true, bridgeSettings: { ...TERRAIN7_BRIDGE_INITIAL_SETTINGS, bridgeWidthCells: 3 } });
   h.service.startBuild({ expectedWorldRevision: h.controller.worldRevision });
-  const arch = h.service.preparedBuild.normalisedBuild.placements.find(p => p.placementId === 'bp_9453b510.c.0.0');
+  const arch = h.service.preparedBuild.normalisedBuild.placements.find(p => p.placementId === `${h.host.buildPlan.planId}.c.0.0`);
   assert.ok(arch, 'regression is pinned to the measured Viaduct checkpoint');
   const obstacle = { ...arch, id: 'supporting-arch', snapped: true };
   const result = validateCollision({ tcp: { xMm: 481.9602456802, yMm: -127.1733127981, zMm: 122.1175874451 }, bricks: [obstacle] }, h.controller.layout);

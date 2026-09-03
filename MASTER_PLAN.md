@@ -4,13 +4,28 @@
 **Plan version:** 2026-09-03-N  
 **Production branch:** `main`  
 **Candidate Simple checkpoint:** Level 1 completion commit on `codex/p0-downstream-integration-prep` (see `docs/LAUNCH_READY_PROGRESS.md`)
-**Draft PR:** #7 — three-level launch readiness — **NOT MERGED**
+**Integration PR:** #7 — merged by explicit user request at `2abb01012ee6a2af18c3fd8fe27cc11626c3120b`; Level3 collision/physical-crossing limitations remain deferred
 **Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
 **Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
 
 # 0. Authority
+
+## Current follow-up — Terrain9 and verification scope
+
+The user's later compact Terrain9 asset replaces Terrain7 without changing the
+shared spatial contract, water datum or Viaduct plan identity. Latest runtime
+checkpoint `ec23aed196e7b324afce95b74df26fe5526d5ead` has recorded642/642 JS and
+20/20 reliability passes; `bf75ef5f11cc893588d3b3a3014debb554290566` adds handoff
+documentation. Current native Terrain9 smoke and balanced-pool12-blue-wall
+timing checks pass. A post-merge full Level1 native rerun now also passes all12
+gates/30checks:35blue wall, physical double-press refill, real canvas Human blue
+adoption+11redrobot tower, settings,31tools and console0/0/0; all8images inspected.
+Evidence: `output/playwright/launch-level1-current-full-r3/acceptance.json`.
+Full collaborative bridge acceptance on Terrain9 remains to rerun. Level3 still rejects actual
+Entry_Structure clearance; no physical failure-repair-crossing or final release
+acceptance is claimed. Requirement map: `docs/LAUNCH_READY_ACCEPTANCE_AUDIT.md`.
 
 ## Verified Level 2 checkpoint — 2026-09-03
 

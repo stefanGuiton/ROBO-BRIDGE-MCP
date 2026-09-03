@@ -1,4 +1,5 @@
 import { BRICK_SPEC } from '../bricks/brick-spec.js';
+import { RECOLOUR_PALETTE } from '../bricks/recolour-palette.js';
 import { findLatchCandidate } from '../bricks/latch.js';
 import { validateCollision } from './collision.js';
 import {
@@ -274,6 +275,37 @@ export class RobotController {
   }
 
   heldBrick() { return this.heldBrickId ? this.bricks.find((brick) => brick.id === this.heldBrickId) ?? null : null; }
+
+  // Simulator inventory edit only: no motion, spawn, or accepted-board edit.
+  recolourLooseBricks({ changes, expectedWorldRevision, signal, reservedBrickIds = [], actor = 'agent' } = {}) {
+    const fail = reason => ({ ok: false, reason, worldRevision: this.worldRevision });
+    if (signal?.aborted) return fail('cancelled');
+    if (!Number.isSafeInteger(expectedWorldRevision) || expectedWorldRevision < 0) return fail('invalid_input');
+    if (expectedWorldRevision !== this.worldRevision) return fail('stale_state');
+    if (this.operationBlocked() || this.moving || this.operationState !== 'idle' || this.pendingMoveCount || this.bricks.some(b => b.heldBy)) return fail('operation_in_progress');
+    if (!Array.isArray(changes) || changes.length < 1 || changes.length > 50) return fail('invalid_input');
+    const protectedIds = new Set([...reservedBrickIds,
+      ...(this.board?.getPlacements() ?? []).map(p => p.brickId),
+      ...(this.board?.getTargets() ?? []).flatMap(t => [t.occupiedBy, t.placedBrickId]).filter(Boolean)]);
+    const seen = new Set(), edits = [];
+    for (const change of changes) {
+      if (!change || typeof change.brickId !== 'string' || !/^[A-Za-z0-9_.:-]{1,64}$/.test(change.brickId)
+        || seen.has(change.brickId) || !RECOLOUR_PALETTE.includes(change.colour)
+        || Object.keys(change).some(k => !['brickId', 'colour'].includes(k))) return fail('invalid_input');
+      seen.add(change.brickId);
+      const brick = this.bricks.find(b => b.id === change.brickId);
+      if (!brick) return fail('source_unavailable');
+      if (brick.bridgePart || brick.heldBy || brick.snapped || brick.placedTargetId || brick.placementType || brick.ownership || protectedIds.has(brick.id)) return fail('source_unavailable');
+      if (brick.colour !== change.colour) edits.push({ brick, previousColour: brick.colour, colour: change.colour });
+    }
+    if (signal?.aborted) return fail('cancelled');
+    // No await between validation and commit; observers see the entire batch.
+    const applied = edits.map(e => ({ brickId: e.brick.id, previousColour: e.previousColour, colour: e.colour }));
+    for (const edit of edits) { edit.brick.colour = edit.colour; delete edit.brick.displayHex; }
+    if (edits.length) this.#bumpRobot('loose_bricks_recoloured', { actor, changes: applied });
+    return { ok: true, simulationOnly: true, changedCount: edits.length, unchangedCount: changes.length - edits.length,
+      changes: applied, worldRevisionBefore: expectedWorldRevision, worldRevisionAfter: this.worldRevision, worldRevision: this.worldRevision };
+  }
 
   moveLooseBrick(brickId, position, { actor = 'human', yawRad = null, freeQuaternion = null } = {}) {
     if (typeof brickId !== 'string' || !position || ![position.xMm, position.yMm, position.zMm].every(isFiniteNumber)
