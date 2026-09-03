@@ -27,7 +27,9 @@ export function createBridgePartVisual(brick, registry, { ghost = false, opacity
       materials[2].color.set(brick.bridgePart.material.railsHex ?? '#8b9299');
       for (let i = 0; i < data.materials.length; i += 3) geometry.addGroup(i, 3, data.materials[i]);
     }
-    root.add(new THREE.Mesh(geometry, materials));
+    // Three draws a material array only through geometry groups. Arches have
+    // one ungrouped material; tracks retain their explicit sleeper/rail groups.
+    root.add(new THREE.Mesh(geometry, part.partClass === 'TRACK_SEGMENT' ? materials : material));
   } else {
     const d = part.physicalDimensions;
     root.add(new THREE.Mesh(new THREE.BoxGeometry(d.lengthMm, d.widthMm, d.heightMm), material));

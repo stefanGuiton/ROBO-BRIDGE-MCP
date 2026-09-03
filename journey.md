@@ -1,5 +1,12 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — launch Levels 1 and 2 verified sequentially
+
+- Level1 committed/pushed9c73e80, native14/14 and exact-checkpoint27/27 regression. Preserved PlanN/main and draftPR7; no deployment/merge.
+- Level2 adds lazy noTrain mode, exact depth-occluded hologram, spatial advisory side labels/scheduling and bounded cycle options, one sharedboard/inventory. Full native replay276/276:58testHuman,120realrobot,98labelledfast-forward after fail-closed154/276retreat collision. CustomARCH_B visibly carried/accepted; a real ungrouped-array-material invisibility bug was caught by image inspection and fixed without changing geometry/physics.
+-468/468JS,20/20reliability, nativeLevel2 15/15, fresh label/selector check and Level1native14/14regression PASS. Main+Sol independently opened images. Appconsole0errors/0warnings/unexpectedexceptions0, with2exact intentional abort-probe exceptions retained.300ms requested; measured full-cycle mean1201ms, no achieved300msclaim. See docs/LEVEL2_COLLABORATIVE_VIADUCT.md and docs/LAUNCH_READY_PROGRESS.md for evidence and publication SHA.
+- Level3 physical TCP contact/Train failure-repair-crossing remains next and unaccepted. Read-only recon identified genuine existing analytic-motion, terrain/water and train-clearance blockers to resolve; do not claim launch readiness from Level2 alone.
+
 ## 2026-09-03 — user visual check worked; checkpoint publication requested
 
 - User confirmed the demo worked visually and requested push of the accelerated-simulation checkpoint on the existing branch / draft PR #6. No additional testing, no retarget or merge. Prior 372/372 JS and mixed-mode hero evidence retained; hero:3 remains incomplete. User binaries/imports and generated evidence excluded. Exact checkpoint identity is the Git commit containing this entry.

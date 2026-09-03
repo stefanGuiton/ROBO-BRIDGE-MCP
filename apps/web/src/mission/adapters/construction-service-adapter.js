@@ -319,12 +319,21 @@ export function createConstructionServiceAdapter({
       }
     },
 
-    async buildNextParts({ identity, count = 1, expectedWorldRevision, signal, executionMode = 'robot' } = {}, options = {}) {
+    async buildNextParts({ identity, count = 1, expectedWorldRevision, signal, executionMode = 'robot', cycleTimeMs, actorHint } = {}, options = {}) {
       try {
         assertBound(identity, 'Construction execution identity');
         assertNotAborted(signal ?? options.signal);
         if (!Number.isSafeInteger(count) || count < 1 || count > 5) {
           throw new MissionError('INVALID_PARAMETER', 'count must be from 1 to 5.');
+        }
+        const requestedCycleTimeMs = cycleTimeMs === undefined ? options.cycleTimeMs : cycleTimeMs;
+        const requestedActorHint = actorHint === undefined ? options.actorHint : actorHint;
+        if (requestedCycleTimeMs !== undefined
+          && (!Number.isSafeInteger(requestedCycleTimeMs) || requestedCycleTimeMs < 250 || requestedCycleTimeMs > 60000)) {
+          throw new MissionError('INVALID_PARAMETER', 'cycleTimeMs must be an integer from 250 to 60000.');
+        }
+        if (requestedActorHint !== undefined && !['human', 'agent'].includes(requestedActorHint)) {
+          throw new MissionError('INVALID_PARAMETER', 'actorHint must be human or agent.');
         }
         if (expectedWorldRevision !== currentWorldRevision()) {
           throw new MissionError('STALE_WORLD_REVISION', 'The world revision is stale.');
@@ -332,6 +341,8 @@ export function createConstructionServiceAdapter({
         const raw = await activeSession.buildNextParts(count, {
           ...options,
           executionMode,
+          ...(requestedCycleTimeMs === undefined ? {} : { cycleTimeMs: requestedCycleTimeMs }),
+          ...(requestedActorHint === undefined ? {} : { actorHint: requestedActorHint }),
           expectedWorldRevision,
           signal: signal ?? options.signal
         });

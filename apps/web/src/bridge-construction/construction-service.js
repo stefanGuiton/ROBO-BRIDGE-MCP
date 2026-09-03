@@ -93,10 +93,11 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
         throw error;
       }
     },
-    planNext({ count = 1, expectedWorldRevision } = {}) {
+    planNext({ count = 1, expectedWorldRevision, actorHint, cycleTimeMs, signal } = {}) {
       revision(expectedWorldRevision); idle();
+      if (signal?.aborted) throw new Error('aborted');
       if (!session) throw new Error('build_not_started');
-      return session.planNext({ count });
+      return session.planNext({ count, actorHint, cycleTimeMs, signal });
     },
     refillSources({ count = 6, expectedWorldRevision, signal } = {}) {
       revision(expectedWorldRevision); idle();

@@ -28,7 +28,14 @@
     </section>
 
     <section class="demo-mode-control" aria-label="Demo mode">
-      <label>DEMO MODE <select data-demo-mode title="Switching modes resets the current build"><option value="simple">SIMPLE BRICKS</option><option value="bridge">BRIDGE</option></select></label>
+      <label>DEMO LEVEL <select data-demo-mode title="Simple resets the build; Levels 2 and 3 share the frozen bridge"><option value="simple">1 · SIMPLE BRICKS</option><option value="bridge">2 · VIADUCT (NO TRAIN)</option><option value="train">3 · TRAIN (EXPERIMENTAL)</option></select></label>
+      <div class="bridge-only" data-collaboration-hud>
+        <b data-collaboration-status>DESIGN · SHARED BRIDGE</b>
+        <span class="human-side" data-human-side>Human: negative-width side</span>
+        <span class="agent-side" data-agent-side>Codex: positive-width side + centre</span>
+        <small>Sides are suggestions. Either actor may place any compatible part.</small>
+        <small data-build-actors></small>
+      </div>
       <span data-human-guide hidden style="color:#8a5100;font-weight:700" aria-live="polite"></span>
       <div class="simple-only"><small data-simple-status>0/0 · 2000 ms/cycle · READY</small>
         <button type="button" data-simple-reset>RESET SIMPLE DEMO</button><button type="button" data-simple-stop>STOP BUILD</button></div>

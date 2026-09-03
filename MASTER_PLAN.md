@@ -1,16 +1,24 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** THREE-LEVEL DEMO RELEASE — LEVEL 1 ACCEPTED; LEVEL 2 IS NEXT
+**Status:** THREE-LEVEL DEMO RELEASE — LEVELS 1 AND 2 ACCEPTED; LEVEL 3 IS NEXT
 **Plan version:** 2026-09-03-N  
 **Production branch:** `main`  
 **Candidate Simple checkpoint:** Level 1 completion commit on `codex/p0-downstream-integration-prep` (see `docs/LAUNCH_READY_PROGRESS.md`)
-**Draft PR:** #7 — `Fix pickup colours and alternating tower demo` — **NOT MERGED**  
+**Draft PR:** #7 — three-level launch readiness — **NOT MERGED**
 **Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
 **Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
 
 # 0. Authority
+
+## Verified Level 2 checkpoint — 2026-09-03
+
+Level2 is the current Type2 Viaduct on Terrain7 with no Train initialized. Native Chrome148 acceptance15/15: four/five arches, opening-width change and restored exact four-arch design; one frozen276-part plan, one shared inventory/board,91Human/185Codex advisory targets, both actors allowed every class,276 unique accepted targets/sources. Actual contributions:58 test-Human through normal HumanBuildAdapter,120 genuine simulator robot placements (including visible ARCH_B carry/acceptance),98 explicitly labelled accelerated placements. At154/276 the empty gripper retreat collided with the accepted arch; remaining122 comprised24 more Human and98 accelerated. No collision/IK/workspace rule was relaxed. This is not robot-only276-part completion.
+
+The exact depth-prepass hologram hides interior clutter and preserves arches/track. Visual review discovered and fixed invisible solid arches caused by ungrouped geometry with an array material; scalar arch material now renders and raycasts exact geometry. Main and Sol reviewers opened the corrected carried-arch, accepted/full bridge and fresh label/selector screenshots. No Train service, physics, renderer root or frame subscription exists in Level2; native test_bridge rejects before mutation.31unique native tools retain one registrar.
+
+Verification468/468JS,20/20reliability,167JS+4Python syntax/repository checks PASS; full Level1 native regression14/14 PASS after Level2. Level2 browser application errors0/warnings0/unexpected exceptions0; two exact intentional native pre-aborted probe exceptions are retained in raw evidence, not counted as runtime faults.300ms was requested, not achieved:119 successful full-cycle samples mean1201.26ms,p951978ms. Evidence: `output/playwright/launch-level2-final/acceptance.json`, `output/playwright/launch-level2-ui-current/acceptance.json`, and `output/playwright/launch-level1-after-level2/acceptance.json`. See `docs/LEVEL2_COLLABORATIVE_VIADUCT.md` and active progress for limitations/checkpoint SHA. Level3 physical TCP push/failure/crossing and final release audit remain unaccepted; no main merge or deployment.
 
 ## Verified Level 1 checkpoint — 2026-09-03
 

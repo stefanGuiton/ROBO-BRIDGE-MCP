@@ -245,6 +245,9 @@ export class RobotRenderer {
     };
     this.heldVisual = new HeldBrickController(this.playerSettings);
     this.raycaster = new THREE.Raycaster();
+    // Exact bridge targets remain pickable without drawing a duplicate ghost
+    // over the authoritative BuildPlan hologram (camera renders layer 0).
+    this.raycaster.layers.enable(31);
     this.raycaster.far = this.playerSettings.unlimitedPickupReach
       ? this.playerSettings.farClipMm
       : this.playerSettings.maximumPickupDistanceMm;
@@ -763,6 +766,10 @@ export class RobotRenderer {
         this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
+      if (target.bridgeConstruction && !mesh.userData.pickOnlyBridgeTarget) {
+        mesh.traverse(object => object.layers.set(31));
+        mesh.userData.pickOnlyBridgeTarget = true;
+      }
       mesh.visible = (target.bridgeConstruction || this.playerSettings.robotTargetsVisible === true) && !target.occupiedBy;
       mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
       mesh.rotation.z = target.yawRad ?? 0;
@@ -775,7 +782,7 @@ export class RobotRenderer {
   syncHumanGuide() {
     const carriedId = this.humanBuildAdapter?.getState?.().heldBrickId;
     const carried = carriedId ? this.controller.getBricks().find(brick => brick.id === carriedId) : null;
-    this.humanGuide = globalThis.document?.documentElement?.dataset?.demoMode === 'bridge' ? null : pendingHumanGuide(this.fastPlacement, carried);
+    this.humanGuide = (globalThis.document?.documentElement?.dataset?.demoMode ?? 'simple') !== 'simple' ? null : pendingHumanGuide(this.fastPlacement, carried);
     if (!this.humanGuideMesh && this.humanGuide) {
       this.humanGuideMesh = makeBox({ xMm: 32, yMm: 16, zMm: 9.6 }, this.humanGuide.position,
         new THREE.MeshBasicMaterial({ color: 0xffc040, transparent: true, opacity: 0.33, depthWrite: false }));
