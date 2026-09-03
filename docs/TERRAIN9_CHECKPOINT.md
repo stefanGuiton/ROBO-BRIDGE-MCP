@@ -16,6 +16,8 @@ User-requested replacement of the active terrain asset only. The existing shared
 
 ## Acceptance
 
+- Full frozen-runtime verification at `ec23aed196e7b324afce95b74df26fe5526d5ead`:642/642 JavaScript, reliability gate,174JS+4Python syntax and repository checks PASS. This includes the balanced starter pool and its corrected refill/preferred-colour regression expectations.
+
 - Focused terrain/challenge/Viaduct regression: **25/25 passed**.
 - Fresh native Chrome 148 smoke: actual Terrain 9 HTTP 200, no Terrain 7 request, **31 unique tools**, successful native `get_bridge_design`, one shared RevisionClock, unchanged initial plan **bp_9453b510 / 9453b510 / 276 parts**.
 - Loaded mesh anchors agree with ChallengeService positions; Level 2 creates no Train subsystem or Train scene root. Water normal map remains bound.
@@ -26,4 +28,6 @@ User-requested replacement of the active terrain asset only. The existing shared
 
 ## Limits
 
-This asset smoke is not a repeated full Level 2 construction run, a frame-rate benchmark, or Level 3 crossing acceptance. Current-mesh contact tests still detect the original low tunnel and closed end wall; the smaller file does not fix Train clearance. Full Level 3 failure/repair/all-car crossing remains outstanding. Main and Cloudflare are unchanged.
+Read-only static/release preflight at runtime checkpoint `ec23aed196e7b324afce95b74df26fe5526d5ead`:188 served files /28,947,210 bytes;454 literal references plus3 configured URLs resolve with correct case and no external/escaping/missing paths. All four GLBs are hydrated/self-contained. Terrain9's committed LFS pointer matches the actual hash/size. Release selection545 tracked files excludes old Terrain7, the private local handoff, untracked files and denied private artifacts. Counts include then-current documentation edits, not a generated ZIP manifest. No release ZIP or deployment was created.
+
+This asset smoke is not a repeated full Level 2 construction run, a frame-rate benchmark, or Level 3 crossing acceptance. Current-mesh contact tests still detect the original low tunnel and closed end wall; the smaller file does not fix Train clearance. A separate real native Terrain9 diagnostic confirms6 robot moves/118 samples, current aligned TCP contact, and the existing Entry_Structure obstruction (4.90448656mm residual), same Mission BUILD, clean cleanup/console. Its three screenshots are inspected: `output/playwright/level3-terrain9-current/`. Full Level 3 failure/repair/all-car crossing remains outstanding. Main and Cloudflare are unchanged.

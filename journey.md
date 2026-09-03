@@ -1,5 +1,12 @@
 # P0 EASY Terrain Integration Journey
 
+## 2026-09-03 — Terrain9 replacement and bounded preflight hardening
+
+- Replaced only the active terrain GLB with the user's3.49MB Terrain9 (was31.38MB), one shared asset descriptor, unchanged bridge/world/water/anchors. Retired the old served copy to recoverable local backup; all source Scene/Blender assets untouched. Terrain25/25 and native Chrome148 smoke pass:31 tools, unchanged276-part Viaduct, no Level2 Train, console0/0/0; both images inspected. Details in `docs/TERRAIN9_CHECKPOINT.md`.
+- Independent Sol follow-ups preserve actual Train contacts while skipping unused column diagnostics (77/77 focused), and close release-packaging privacy gaps by selecting tracked hydrated files only (Python14pass/1Windows skip, Node1/1). Terrain f573d86/contact74b0477/packaging aa90ae6 are pushed and remote-SHA verified. These are not Level3 clearance/crossing fixes.
+- Preserved remote attribution-only changes464e920/0da5479 through same-branch fast-forward, no main merge. User-requested14red/14blue starter-pool preset is committed ec23aed; native blue12wall passes12.6585s, five reported overruns,clean console. Initial full verify638/640 exposed two stale24/4 test assumptions; corrected tests preserve strict refill/adoption capability, focused Simple30/30 passes. Full frozen-runtime ec23aed verification then passed642/642 JS,reliability,174JS+4Python syntax and repository checks. Other task made no Git writes. Final handoff changes documentation only.
+- Real current-Terrain9 native Train diagnostic preserves aligned TCP/cleanup and same Mission but rejects Entry_Structure residual4.90448656mm. Three images inspected,console0/0/0; clearance approval requested. No completed Level3 or release claim.
+
 ## 2026-09-03 — Simple smooth cadence and measured Train pacing follow-up
 
 - Published runtime checkpoints: 188acafb3691c769127ffd5e1c9df3d75a20f10f (Simple timing), then 3dc9ca95e517840985fefbb9de0168c3c45277ed (measured contact/pacing); remote SHA equality verified, exact-head focused regression 153/153. No main merge. Final documentation-only follow-up preserves the other task's timing learnings and the user's generic recording defaults (single, 3x4 wall, five-layer/two-brick tower); historical six-layer acceptance is unchanged.

@@ -4,6 +4,12 @@ Started 2026-09-03. Governing task: `Downloads/OVERALL_PLAN_LAUNCH_READY.md`; us
 
 ## Current state
 
+**Latest checkpoint verification:** frozen runtime/test head ec23aed196e7b324afce95b74df26fe5526d5ead passes642/642 JavaScript,20/20 reliability,174JS+4Python syntax and repository checks. Follow-up changes are documentation only. Read-only static audit:188 served files /28,947,210 bytes,454 literal+3 configured references resolved,4 hydrated/self-contained GLBs, no selected private/untracked files. Final Level3 crossing and release gates are still pending; no main merge/deployment.
+
+**Latest asset follow-up:** Terrain9 replaces the production GLB, 3.49MB versus31.38MB, with unchanged shared placement/datum, ENTRY/EXIT and initial Viaduct identity. Terrain25/25 and native31-tool smoke pass with console0/0/0 and both screenshots inspected; no Level2 Train. See `docs/TERRAIN9_CHECKPOINT.md`. The old served copy is retired recoverably and original source assets are untouched. Terrain f573d86, contact74b0477 and packaging aa90ae6 are pushed and remote-SHA verified; two remote attribution-only updates through0da5479 are preserved. Balanced14red/14blue starter pool ec23aed is committed for final publication. Native12-blue wall completes12.6585s at1000ms target, five overruns,console0/0/0; three images inspected. Two stale starter-count test expectations reproduced/fixed; focused Simple30/30 and full rerun642/642 pass. Older full-suite counts below predate these edits.
+
+Current Terrain9 native Level3 diagnostic still fails actual Entry_Structure clearance (4.90448656mm solid residual), with8contacts/14impulses, aligned actual TCP, six robot moves/118samples, same Mission BUILD, idle cleanup and clean console; all three images inspected. This is not physical crossing acceptance. Geometry approval remains pending.
+
 Published Level 3 foundation: `9a0a9e922059df47ab6cc66c4f94b1903bfd2f91`. The measured contact/pacing repair is now checkpointed and pushed below, but the full Level 3 journey remains unaccepted. Reported unrelated JS differences were confirmed line-ending-only by matching normalized Git blob hashes; original Blender/assets remain untouched.
 
 Current follow-up is independently reviewed, verified and pushed. The branch safely fast-forwarded the three remote attribution-only commits through `ac004577559a3185e030261c947e44b48a9bb35a`; no main merge or unrelated asset edits:

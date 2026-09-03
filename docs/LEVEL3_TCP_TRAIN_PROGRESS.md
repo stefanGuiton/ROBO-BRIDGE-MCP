@@ -2,7 +2,9 @@
 
 ## Current asset/performance follow-up
 
-The user-supplied Terrain9 is now the active asset; legacy Terrain7 names retain the same coordinate contract. Current-mesh tests preserve the original low-tunnel/end-wall assertions, so replacement is not a clearance fix. The native diagnostic below ran on Terrain7 and remains historical until repeated on the new asset.
+The user-supplied Terrain9 is now the active asset; legacy Terrain7 names retain the same coordinate contract. Current-mesh tests preserve the original low-tunnel/end-wall assertions, so replacement is not a clearance fix. The earlier native diagnostic below ran on Terrain7; current Terrain9 evidence is recorded here separately.
+
+Fresh Chrome148 `output/playwright/level3-terrain9-current/diagnostic.json`:31 native tools, current276-part plan,6 real robot moves/118 samples and249 observed frames, exact TCP/render/collider alignment,8 contacts/14 impulses, residual pusher penetration0.000005mm. Actual Entry_Structure still leaves4.90448656mm solid-contact residual, correctly returning TRAIN_CONTACT_FAILED/TERRAIN_CONTACT_RESIDUAL and the same Mission BUILD. Robot idle, no pending moves/lease; console0/0/0. All three screenshots inspected. This is truthful current-asset obstruction/cleanup evidence, not physical crossing or a frame-rate claim.
 
 An independently reviewed opt-out removes only unused ground/ceiling diagnostic columns from the two physics contact-query call sites. Exact body contacts, embedded-solid containment, sweeps and residual checks are unchanged; ordinary callers retain columns by default. Omitted values are explicitly null with `columnDiagnosticsAvailable:false`. New parity tests cover synthetic solids/water/void and the current Terrain9 mesh. Focused Train/contact suite77/77 passes. CPU-only microbenchmark:0.0295294 to0.0199515ms/query (32.4% lower), identical contact checksum; not browser FPS or physical acceptance. No geometry, Train dimensions, controller limits or success criteria changed.
 
