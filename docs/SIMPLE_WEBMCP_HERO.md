@@ -35,8 +35,9 @@ generic wall request use 3 wide x 4 high x 1 deep (12 bricks). For a generic
 tower use a 2 x 2 footprint, five layers, two flat parallel bricks per layer
 (10 bricks total), rotating each successive pair 90 degrees. A 2 x 2 footprint
 does not mean four bricks per layer. Explicit dimensions override these defaults:
-a 4 x 5 wall has 20 bricks; an explicit six-layer tower has 12 bricks. Honour
-the requested colour. Keep the requested 1000 ms target for the fast recording;
+a 4 x 5 wall has 20 bricks; an explicit six-layer tower has 12 bricks. Recording
+colour defaults are blue for the single brick and red for the wall/tower;
+explicit colour requests override these. Keep the requested 1000 ms target for the fast recording;
 do not lower the Simple minimum or change its normal 2000 ms default.
 
 The presenter's thinking/planning targets are **5 seconds for one brick** and
