@@ -8,7 +8,7 @@ import { FINAL_TOWER_REQUEST, simplePlacements, SIMPLE_DEMO_SCENARIOS } from '..
 // Observe real native registration. Do not install a modelContext shim.
 const preload = `(() => {
   window.__simpleTools = new Map();
-  const context = navigator.modelContext;
+  const context = document.modelContext ?? navigator.modelContext;
   if (!context?.registerTool) return;
   const proto = Object.getPrototypeOf(context);
   const register = proto.registerTool;
@@ -45,7 +45,7 @@ try {
   await browser.waitFor(`document.documentElement.dataset.runtimeReady === 'true'`, { timeoutMs: 90000 });
 
   const boot = await evaluate(() => ({
-    native: Boolean(navigator.modelContext?.registerTool),
+    native: Boolean(document.modelContext?.registerTool ?? navigator.modelContext?.registerTool),
     names: [...window.__simpleTools.keys()],
     mode: __ROBO_BRIDGE__.demoModeControl.getState().mode,
     terrain: __ROBO_BRIDGE__.challenge?.terrainGroup?.visible ?? false,
