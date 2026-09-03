@@ -63,6 +63,8 @@ export class BuildBoard {
   get worldRevision() { return this.#clock.value; }
   get revisionClock() { return this.#clock; }
   get eventLog() { return clone(this.#events); }
+  // Read-only cursor into the existing ledger, not another revision counter.
+  get eventCursor() { return { count: this.#events.length, latestWorldRevision: this.#events.at(-1)?.revision ?? null }; }
 
   #record(type, payload = {}) {
     const revision = this.#clock.bump();

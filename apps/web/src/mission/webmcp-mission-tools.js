@@ -156,7 +156,7 @@ export function getMissionToolDefinitions(service, { challengeIds = null } = {})
     ),
     makeTool(
       'get_build_progress',
-      'Read concise authoritative ConstructionService and BuildBoard progress for the frozen plan.',
+      'Read concise authoritative ConstructionService and BuildBoard progress, with a bounded advisory-side collaboration summary for the frozen plan.',
       { type: 'object', properties: {}, additionalProperties: false },
       READ_INTERNAL,
       () => service.getBuildProgress()
@@ -166,6 +166,17 @@ export function getMissionToolDefinitions(service, { challengeIds = null } = {})
       'Place one to five frozen-plan parts. Default robot uses collision/IK-checked motion. Explicit simulated_fast_forward uses shared inventory and placement validation without robot motion; it is not motion-collision verified.',
       mutation({
         executionMode: { type: 'string', enum: ['robot', 'simulated_fast_forward'], default: 'robot' },
+        cycleTimeMs: {
+          type: 'integer',
+          minimum: 250,
+          maximum: 60000,
+          description: 'Optional bridge placement-cycle request in milliseconds; preserves collision and IK checks. Does not change Simple mode speed settings.'
+        },
+        actorHint: {
+          type: 'string',
+          enum: ['human', 'agent'],
+          description: 'Optional advisory-side scheduling preference, not permission or actor attribution. Dependencies and acceptance remain authoritative; robot execution is still attributed to the agent.'
+        },
         count: {
           type: 'integer',
           minimum: 1,

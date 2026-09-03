@@ -12,6 +12,7 @@ import {
   multiply,
   normalise,
   orientedBoxOverlap,
+  quaternionAngularError,
   rotateVector,
   subtract,
   vector,
@@ -19,6 +20,15 @@ import {
 } from './math.js';
 import { createGridCollisionSystem } from './train-grid-collision.js';
 import { createPerformanceRecorder } from './performance-recorder.js';
+import {
+  applyContactVelocity,
+  boxRadiusAlong,
+  contactError,
+  kinematicStepTravelLimitMm,
+  kinematicTravelMm,
+  queryKinematicContact,
+  TCP_CONTACT_LIMITS
+} from './train-kinematic-contact.js';
 
 const now = () => performance.now();
 
@@ -40,7 +50,12 @@ function dynamicBody(source, velocity, angularVelocity, mass) {
     collisionKind: 'none',
     contactNormal: { x: 0, y: 1, z: 0 },
     previousPosition: { ...source.position },
-    previousRotation: { ...(source.rotation || identityQuaternion()) }
+    previousRotation: { ...(source.rotation || identityQuaternion()) },
+    railContact: false,
+    groundContact: false,
+    railSupport: null,
+    velocityContacts: [],
+    kinematicCorrection: vector()
   };
 }
 
@@ -112,12 +127,12 @@ function neighbourCapsuleOverlap(bodyA, bodyB) {
   };
 }
 
-function pairDiagnostic(bodyA, bodyB, neighbour) {
+function pairDiagnostic(bodyA, bodyB, neighbour, exactBoxes = false) {
   const delta = subtract(bodyB.position, bodyA.position);
   const centreDistanceMm = length(delta);
-  const overlap = neighbour ? neighbourCapsuleOverlap(bodyA, bodyB) : orientedBoxOverlap(bodyA, bodyB);
+  const overlap = neighbour && !exactBoxes ? neighbourCapsuleOverlap(bodyA, bodyB) : orientedBoxOverlap(bodyA, bodyB);
   const axis = normalise(delta, { x: -1, y: 0, z: 0 });
-  const projectedSeparationMm = neighbour
+  const projectedSeparationMm = neighbour && !exactBoxes
     ? overlap.separationMm
     : centreDistanceMm - projectedRadius(bodyA, axis) - projectedRadius(bodyB, axis);
   return {
@@ -125,7 +140,7 @@ function pairDiagnostic(bodyA, bodyB, neighbour) {
     bodyA: bodyA.id,
     bodyB: bodyB.id,
     neighbour,
-    collisionMode: neighbour ? 'coupler-owned-capsule-non-penetration' : 'inelastic-non-neighbour',
+    collisionMode: exactBoxes ? 'contact-mode-obb-non-penetration' : neighbour ? 'coupler-owned-capsule-non-penetration' : 'inelastic-non-neighbour',
     centreDistanceMm,
     projectedSeparationMm,
     overlap: overlap.overlap,
@@ -133,9 +148,12 @@ function pairDiagnostic(bodyA, bodyB, neighbour) {
   };
 }
 
-function surfaceSample(provider, forwardMm, rightMm) {
+function surfaceSample(provider, forwardMm, rightMm, query = {}) {
   if (typeof provider === 'function') {
-    const value = provider({ forwardMm, rightMm });
+    const value = provider({ forwardMm, rightMm, ...query });
+    if (query.noFallback && (value === null || value === undefined || value?.supported === false)) {
+      return { heightMm: -Infinity, normal: { x: 0, y: 1, z: 0 }, kind: 'none' };
+    }
     if (Number.isFinite(value)) return { heightMm: value, normal: { x: 0, y: 1, z: 0 }, kind: 'terrain' };
     if (value && Number.isFinite(value.heightMm)) return {
       heightMm: value.heightMm,
@@ -143,13 +161,21 @@ function surfaceSample(provider, forwardMm, rightMm) {
       kind: value.kind || 'terrain'
     };
   }
-  if (provider?.sample) return surfaceSample(provider.sample.bind(provider), forwardMm, rightMm);
-  if (provider?.heightAt) return surfaceSample(provider.heightAt.bind(provider), forwardMm, rightMm);
+  if (provider?.sample) return surfaceSample(provider.sample.bind(provider), forwardMm, rightMm, query);
+  if (provider?.heightAt) return surfaceSample(provider.heightAt.bind(provider), forwardMm, rightMm, query);
+  if (query.noFallback) return { heightMm: -Infinity, normal: { x: 0, y: 1, z: 0 }, kind: 'none' };
   return { heightMm: -300, normal: { x: 0, y: 1, z: 0 }, kind: 'fallback-floor' };
 }
 
 export function createTrainPhysics(options = {}) {
   const configuration = { ...DEFAULT_TRAIN_PHYSICS_SETTINGS, ...options };
+  const contactConfiguration = {
+    rollingDampingPerSecond: 0.025,
+    settleLinearSpeedMmPerSecond: 0.1,
+    contactMarginMm: 0.025,
+    maximumRailGuideCorrectionMm: 0.2,
+    ...options.contactSettings
+  };
   let bodies = [];
   let joints = [];
   let collisionSnapshot = null;
@@ -164,6 +190,17 @@ export function createTrainPhysics(options = {}) {
   let neighbourImpactFilterCount = 0;
   let maximumSingleBodyCorrectionMm = 0;
   let lastPairDiagnostics = [];
+  let contactModeActive = false;
+  let contactTelemetry;
+  function resetContactTelemetry() {
+    contactTelemetry = {
+      contactCount: 0, impulseCount: 0, impulseMagnitudeTotal: 0,
+      maximumPenetrationMm: 0, measuredPusherSpeedMmPerSecond: 0,
+      maximumResidualPusherPenetrationMm: 0, maximumResidualSolidPenetrationMm: 0,
+      lastContact: null, solidCollisionCount: 0, lastSolidContact: null
+    };
+  }
+  resetContactTelemetry();
   const recorder = createPerformanceRecorder({
     channels: [
       'stepTotalMs', 'integrateMs', 'bridgeCollisionMs', 'terrainCollisionMs',
@@ -243,7 +280,7 @@ export function createTrainPhysics(options = {}) {
   }
 
   function solveBodyPair(bodyA, bodyB, neighbour) {
-    const overlap = neighbour ? neighbourCapsuleOverlap(bodyA, bodyB) : orientedBoxOverlap(bodyA, bodyB);
+    const overlap = neighbour && !contactModeActive ? neighbourCapsuleOverlap(bodyA, bodyB) : orientedBoxOverlap(bodyA, bodyB);
     currentMaximumBodyOverlapDepthMm = Math.max(currentMaximumBodyOverlapDepthMm, overlap.overlap ? overlap.depthMm : 0);
     maximumBodyOverlapDepthMm = Math.max(maximumBodyOverlapDepthMm, overlap.overlap ? overlap.depthMm : 0);
     if (!overlap.overlap || overlap.depthMm <= configuration.bodyContactSlopMm) return 0;
@@ -321,6 +358,144 @@ export function createTrainPhysics(options = {}) {
     return true;
   }
 
+  function rememberContact(body, contact) {
+    if (!contact?.point || !contact?.normal
+      || !['x', 'y', 'z'].every((axis) => Number.isFinite(contact.point[axis]) && Number.isFinite(contact.normal[axis]))) return;
+    const canonical = { ...contact, normal: normalise(contact.normal, { x: 0, y: 1, z: 0 }) };
+    const duplicate = body.velocityContacts.findIndex((item) => item.sourceId === canonical.sourceId
+      && dot(item.normal, canonical.normal) > 0.999);
+    if (duplicate >= 0) body.velocityContacts[duplicate] = canonical;
+    else if (body.velocityContacts.length < 16) body.velocityContacts.push(canonical);
+    body.contacts += 1;
+    body.collisionKind = canonical.kind;
+    body.contactNormal = { ...canonical.normal };
+    if (canonical.normal.y > 0.7 && canonical.kind !== 'tcp-pusher-contact') body.groundContact = true;
+  }
+
+  function solidBodyQuery(body) {
+    return {
+      id: body.id, size: { ...body.size }, position: { ...body.position }, rotation: { ...body.rotation }
+    };
+  }
+
+  function solidContactDepth(contact) {
+    if (!contact?.point || !contact?.normal
+      || !['x', 'y', 'z'].every(axis => Number.isFinite(contact.point[axis]) && Number.isFinite(contact.normal[axis]))
+      || length(contact.normal) < 1e-8 || typeof contact.penetrationMm !== 'number'
+      || !Number.isFinite(contact.penetrationMm) || contact.penetrationMm < 0) {
+      throw contactError('INVALID_TERRAIN_CONTACT', 'Terrain contacts require a finite point, normal and nonnegative penetration.');
+    }
+    return contact.penetrationMm;
+  }
+
+  function resolveSolidContacts(body, provider, sweep = false) {
+    if (!provider?.queryBodyContacts) return;
+    if (sweep && provider.sweepBody) {
+      const hit = provider.sweepBody({
+        body: solidBodyQuery(body), previousPosition: { ...body.previousPosition },
+        previousRotation: { ...body.previousRotation }, contactMarginMm: 0
+      });
+      if (hit && Number.isFinite(hit.timeOfImpact)) {
+        const remainder = 1 - clamp(hit.timeOfImpact, 0, 1);
+        for (const contact of (hit.contacts || []).slice(0, 32)) {
+          solidContactDepth(contact);
+          const motion = subtract(body.position, body.previousPosition);
+          const inward = dot(motion, contact.normal);
+          if (inward < 0) body.position = subtract(body.position, multiply(contact.normal, inward * remainder));
+          rememberContact(body, contact);
+        }
+      }
+    }
+    const queried = provider.queryBodyContacts({
+      body: solidBodyQuery(body), previousPosition: { ...body.previousPosition },
+      previousRotation: { ...body.previousRotation }, contactMarginMm: contactConfiguration.contactMarginMm,
+      includeColumnDiagnostics: false
+    });
+    for (const contact of (queried?.contacts || []).slice(0, 32)) {
+      const penetration = solidContactDepth(contact);
+      if (penetration > 0) {
+        const correction = Math.min(configuration.bodyContactMaximumCorrectionMm, penetration);
+        body.position = add(body.position, multiply(contact.normal, correction));
+      }
+      rememberContact(body, contact);
+      if (contact.kind === 'terrain-wall' || contact.kind === 'terrain-ceiling') {
+        contactTelemetry.solidCollisionCount += 1;
+        contactTelemetry.lastSolidContact = { bodyId: body.id, ...cloneValue(contact) };
+      }
+    }
+  }
+
+  function resolveContactSurface(body, provider) {
+    const halfHeight = verticalHalfExtent(body);
+    const bottom = body.position.y - halfHeight;
+    const previousBottom = body.previousPosition.y - boxRadiusAlong({ ...body, rotation: body.previousRotation }, { x: 0, y: 1, z: 0 });
+    const probes = [[0, 0], [body.size.x * 0.32, 0], [-body.size.x * 0.32, 0], [0, body.size.z * 0.32], [0, -body.size.z * 0.32]];
+    let highest = null;
+    for (const [x, z] of probes) {
+      const offset = rotateVector(body.rotation, { x, y: -body.size.y * 0.5, z });
+      const sample = surfaceSample(provider, body.position.x + offset.x, body.position.z + offset.z, {
+        probeHeightMm: bottom + contactConfiguration.contactMarginMm,
+        previousHeightMm: previousBottom + contactConfiguration.contactMarginMm,
+        noFallback: true
+      });
+      if (Number.isFinite(sample.heightMm) && sample.heightMm <= previousBottom + contactConfiguration.contactMarginMm
+        && (!highest || sample.heightMm > highest.heightMm)) highest = sample;
+    }
+    if (!highest || bottom > highest.heightMm + contactConfiguration.contactMarginMm) return;
+    body.position.y = Math.max(body.position.y, highest.heightMm + halfHeight);
+    rememberContact(body, {
+      point: { x: body.position.x, y: highest.heightMm, z: body.position.z },
+      normal: highest.normal, kind: highest.kind, sourceId: highest.sourceId || 'solid-surface', penetrationMm: Math.max(0, highest.heightMm - bottom)
+    });
+  }
+
+  function resolveRailContact(body, provider) {
+    body.railSupport = provider?.queryBodySupport?.(solidBodyQuery(body)) || null;
+    const support = body.railSupport;
+    if (!support?.supported) return;
+    const halfHeight = verticalHalfExtent(body);
+    const bottom = body.position.y - halfHeight;
+    const previousBottom = body.previousPosition.y - boxRadiusAlong({ ...body, rotation: body.previousRotation }, { x: 0, y: 1, z: 0 });
+    // A rail can catch a descending footprint, never lift a body out of a gap
+    // or manufacture an approach ramp from a lower bank.
+    if (bottom > support.heightMm + contactConfiguration.contactMarginMm
+      || previousBottom < support.heightMm - contactConfiguration.contactMarginMm) return;
+    body.position.y = Math.max(body.position.y, support.heightMm + halfHeight);
+    body.railContact = true;
+    for (const contact of support.contacts) rememberContact(body, contact);
+    if (support.fullyOnRoute) {
+      // Ideal wheel/rail lateral guide. It exists only at actual accepted rail
+      // contacts, is bounded, and never changes longitudinal position/speed.
+      body.position.z += clamp(-body.position.z, -contactConfiguration.maximumRailGuideCorrectionMm, contactConfiguration.maximumRailGuideCorrectionMm);
+      body.linearVelocity.z = 0;
+    }
+  }
+
+  function resolveMeasuredPusher(body, collider) {
+    const contact = queryKinematicContact(body, collider, { marginMm: contactConfiguration.contactMarginMm });
+    if (!contact) return;
+    const correction = multiply(contact.normal, Math.min(configuration.bodyContactMaximumCorrectionMm, contact.penetrationMm));
+    body.position = add(body.position, correction);
+    body.kinematicCorrection = add(body.kinematicCorrection, correction);
+    rememberContact(body, contact);
+    const firstInStep = !body.pusherContactSeen;
+    body.pusherContactSeen = true;
+    if (firstInStep) contactTelemetry.contactCount += 1;
+    contactTelemetry.maximumPenetrationMm = Math.max(contactTelemetry.maximumPenetrationMm, contact.penetrationMm);
+    contactTelemetry.lastContact = {
+      ...cloneValue(contact), worldRevision: collider.worldRevision, robotRevision: collider.robotRevision,
+      sampleTimeSeconds: collider.sampleTimeSeconds, sequence: collider.sequence,
+      colliderPosition: { ...collider.position }, colliderRotation: { ...collider.rotation }
+    };
+  }
+
+  function resolveContactEnvironment(body, environment, sweep = false) {
+    if (environment.solidContactProvider?.queryBodyContacts) resolveSolidContacts(body, environment.solidContactProvider, sweep);
+    else resolveContactSurface(body, environment.surfaceProvider);
+    resolveRailContact(body, environment.railContactProvider);
+    if (environment.kinematicCollider) resolveMeasuredPusher(body, environment.kinematicCollider);
+  }
+
   function clampVelocities(body) {
     const linearSpeed = length(body.linearVelocity);
     if (linearSpeed > configuration.maximumLinearSpeedMmPerSecond) {
@@ -348,7 +523,7 @@ export function createTrainPhysics(options = {}) {
     minimumPairSeparationMm = Infinity;
     for (let left = 0; left < bodies.length; left += 1) {
       for (let right = left + 1; right < bodies.length; right += 1) {
-        const diagnostic = pairDiagnostic(bodies[left], bodies[right], right - left === 1);
+        const diagnostic = pairDiagnostic(bodies[left], bodies[right], right - left === 1, contactModeActive);
         lastPairDiagnostics.push(diagnostic);
         minimumPairSeparationMm = Math.min(minimumPairSeparationMm, diagnostic.projectedSeparationMm);
         currentMaximumBodyOverlapDepthMm = Math.max(currentMaximumBodyOverlapDepthMm, diagnostic.overlapDepthMm);
@@ -388,30 +563,68 @@ export function createTrainPhysics(options = {}) {
     bodyContactCorrectionCount = 0;
     neighbourImpactFilterCount = 0;
     maximumSingleBodyCorrectionMm = 0;
+    resetContactTelemetry();
     updateTelemetry();
     return snapshot();
   }
 
   function step(dt, environment = {}) {
+    const contactMode = environment.motionMode === 'tcp_contact';
+    const suppliedDt = Number(dt);
+    if (contactMode) {
+      if (!(Number.isFinite(suppliedDt) && suppliedDt > 0
+        && suppliedDt <= TCP_CONTACT_LIMITS.maximumStepSeconds + TCP_CONTACT_LIMITS.timeEpsilonSeconds)) {
+        throw contactError('TCP_CONTACT_STEP_UNBOUNDED', 'A positive bounded measured-contact step is required.');
+      }
+      const collider = environment.kinematicCollider;
+      if (collider) {
+        const travelMm = kinematicTravelMm(
+          { ...collider, position: collider.previousPosition, rotation: collider.previousRotation }, collider);
+        const travelLimitMm = kinematicStepTravelLimitMm(bodies, collider);
+        if (travelMm > travelLimitMm + TCP_CONTACT_LIMITS.travelEpsilonMm) {
+          throw contactError('TCP_CONTACT_STEP_UNBOUNDED', 'Measured TCP motion must be subdivided before physics contact.', {
+            travelMm, travelLimitMm
+          });
+        }
+        const displacementErrorMm = length(subtract(
+          subtract(collider.position, collider.previousPosition), multiply(collider.linearVelocity, suppliedDt)));
+        const angularErrorRad = Math.abs(quaternionAngularError(collider.previousRotation, collider.rotation)
+          - length(collider.angularVelocity) * suppliedDt);
+        if (displacementErrorMm > 1e-5 || angularErrorRad > 1e-5) {
+          throw contactError('TCP_CONTACT_TIME_MISMATCH', 'TCP collider motion does not match its measured integration interval.', {
+            displacementErrorMm, angularErrorRad
+          });
+        }
+      }
+    }
     const stepStart = now();
-    const fixed = clamp(Number(dt) || 1 / 120, 0.001, 0.05);
+    const fixed = contactMode ? suppliedDt : clamp(suppliedDt || 1 / 120, 0.001, 0.05);
+    contactModeActive = contactMode;
     const linearDamping = Math.exp(-configuration.airDampingPerSecond * fixed);
     const lateralDamping = Math.exp(-configuration.lateralAirDampingPerSecond * fixed);
     const angularDamping = Math.exp(-configuration.angularDampingPerSecond * fixed);
     if (gridCollider) gridCollider.resetStepCounters();
     currentMaximumBodyOverlapDepthMm = 0;
+    if (contactMode) contactTelemetry.measuredPusherSpeedMmPerSecond = environment.kinematicCollider
+      ? length(environment.kinematicCollider.linearVelocity) : 0;
     for (const joint of joints) joint.correctionMm = 0;
 
     let stage = now();
     for (const body of bodies) {
+      const rolling = contactMode && (body.railContact || body.groundContact);
       body.contacts = 0;
       body.collisionKind = 'none';
       body.contactNormal = { x: 0, y: 1, z: 0 };
       body.resting = false;
+      body.railContact = false;
+      body.groundContact = false;
+      body.velocityContacts = [];
+      body.kinematicCorrection = vector();
+      body.pusherContactSeen = false;
       body.previousPosition = { ...body.position };
       body.previousRotation = { ...body.rotation };
       body.linearVelocity.y -= configuration.gravityMmPerSecondSquared * fixed;
-      body.linearVelocity.x *= linearDamping;
+      body.linearVelocity.x *= rolling ? Math.exp(-contactConfiguration.rollingDampingPerSecond * fixed) : linearDamping;
       body.linearVelocity.y *= linearDamping;
       body.linearVelocity.z *= lateralDamping;
       body.angularVelocity.x *= angularDamping;
@@ -431,7 +644,10 @@ export function createTrainPhysics(options = {}) {
     const bridgeCollisionMs = now() - stage;
 
     stage = now();
-    for (const body of bodies) resolveSurface(body, environment.surfaceProvider, fixed, true);
+    for (const body of bodies) {
+      if (contactMode) resolveContactEnvironment(body, environment, true);
+      else resolveSurface(body, environment.surfaceProvider, fixed, true);
+    }
     const terrainCollisionMs = now() - stage;
 
     stage = now();
@@ -444,7 +660,8 @@ export function createTrainPhysics(options = {}) {
     stage = now();
     for (const body of bodies) {
       if (gridCollider) gridCollider.resolveBodyPenetration(body, fixed, 3);
-      resolveSurface(body, environment.surfaceProvider, fixed, false);
+      if (contactMode) resolveContactEnvironment(body, environment);
+      else resolveSurface(body, environment.surfaceProvider, fixed, false);
     }
     for (let iteration = 0; iteration < configuration.bodyContactIterations; iteration += 1) {
       for (const joint of joints) solveJointPosition(joint, configuration.couplerStiffness * 0.35);
@@ -452,16 +669,64 @@ export function createTrainPhysics(options = {}) {
     }
     // The last operation is non-penetration. It prevents the visual self-intersection defect.
     for (let iteration = 0; iteration < 3; iteration += 1) solveBodyContacts();
+    if (contactMode) for (const body of bodies) resolveContactEnvironment(body, environment);
+    if (contactMode && environment.kinematicCollider) {
+      let worst = null;
+      for (const body of bodies) {
+        const overlap = orientedBoxOverlap(environment.kinematicCollider, body);
+        if (overlap.overlap && (!worst || overlap.depthMm > worst.depthMm)) worst = { bodyId: body.id, ...overlap };
+      }
+      const depthMm = worst?.depthMm ?? 0;
+      contactTelemetry.maximumResidualPusherPenetrationMm = Math.max(
+        contactTelemetry.maximumResidualPusherPenetrationMm, depthMm);
+      if (depthMm > TCP_CONTACT_LIMITS.maximumResidualPenetrationMm) {
+        throw contactError('TCP_CONTACT_RESIDUAL', 'The pusher contact solver left excessive Train penetration.', worst);
+      }
+    }
+    if (contactMode && environment.solidContactProvider?.queryBodyContacts) {
+      let worst = null;
+      for (const body of bodies) {
+        const queried = environment.solidContactProvider.queryBodyContacts({
+          body: solidBodyQuery(body), previousPosition: { ...body.position },
+          previousRotation: { ...body.rotation }, contactMarginMm: 0, includeColumnDiagnostics: false
+        });
+        for (const contact of queried?.contacts || []) {
+          const depthMm = solidContactDepth(contact);
+          if (!worst || depthMm > worst.depthMm) worst = { bodyId: body.id, depthMm, contact };
+        }
+      }
+      const depthMm = worst?.depthMm ?? 0;
+      contactTelemetry.maximumResidualSolidPenetrationMm = Math.max(
+        contactTelemetry.maximumResidualSolidPenetrationMm, depthMm);
+      if (depthMm > TCP_CONTACT_LIMITS.maximumResidualPenetrationMm) {
+        throw contactError('TERRAIN_CONTACT_RESIDUAL', 'The terrain contact solver left excessive Train penetration.', worst);
+      }
+    }
     const postCollisionMs = now() - stage;
 
     // Reconstruct velocity after position-based contact and coupler correction.
     // This prevents the hard couplers from storing unbounded hidden velocity.
     for (const body of bodies) {
-      body.linearVelocity = multiply(subtract(body.position, body.previousPosition), configuration.pbdVelocityDamping / fixed);
+      const displacement = subtract(subtract(body.position, body.previousPosition), contactMode ? body.kinematicCorrection : vector());
+      body.linearVelocity = multiply(displacement, (contactMode ? 1 : configuration.pbdVelocityDamping) / fixed);
     }
 
     stage = now();
     for (const joint of joints) dampJointVelocity(joint);
+    if (contactMode) {
+      for (let iteration = 0; iteration < 4; iteration += 1) {
+        for (const body of bodies) {
+          for (const contact of body.velocityContacts) {
+            const impulse = applyContactVelocity(body, contact);
+            if (contact.kind === 'tcp-pusher-contact' && impulse > 1e-8) {
+              contactTelemetry.impulseCount += 1;
+              contactTelemetry.impulseMagnitudeTotal += impulse;
+            }
+          }
+        }
+        for (const joint of joints) dampJointVelocity(joint);
+      }
+    }
     const velocityConstraintMs = now() - stage;
 
     stage = now();
@@ -469,11 +734,15 @@ export function createTrainPhysics(options = {}) {
       clampVelocities(body);
       const speed = length(body.linearVelocity);
       const spin = length(body.angularVelocity);
-      const surface = surfaceSample(environment.surfaceProvider, body.position.x, body.position.z);
+      const surface = surfaceSample(environment.surfaceProvider, body.position.x, body.position.z, contactMode ? {
+        probeHeightMm: body.position.y - verticalHalfExtent(body) + contactConfiguration.contactMarginMm,
+        previousHeightMm: body.previousPosition.y - verticalHalfExtent(body) + contactConfiguration.contactMarginMm,
+        noFallback: true
+      } : {});
       const clearance = body.position.y - verticalHalfExtent(body) - surface.heightMm;
       const nearSurface = clearance <= configuration.restClearanceMm;
-      body.resting = (body.contacts > 0 || nearSurface)
-        && speed <= configuration.settleLinearSpeedMmPerSecond
+      body.resting = (contactMode ? body.groundContact : body.contacts > 0 || nearSurface)
+        && speed <= (contactMode ? contactConfiguration.settleLinearSpeedMmPerSecond : configuration.settleLinearSpeedMmPerSecond)
         && spin <= configuration.settleAngularSpeedRadPerSecond;
       if (body.resting) {
         body.linearVelocity = vector();
@@ -524,6 +793,7 @@ export function createTrainPhysics(options = {}) {
     neighbourImpactFilterCount = 0;
     maximumSingleBodyCorrectionMm = 0;
     lastPairDiagnostics = [];
+    resetContactTelemetry();
   }
 
   function snapshot() {
@@ -540,7 +810,10 @@ export function createTrainPhysics(options = {}) {
       contacts: body.contacts,
       resting: body.resting,
       collisionKind: body.collisionKind,
-      contactNormal: { ...body.contactNormal }
+      contactNormal: { ...body.contactNormal },
+      railContact: body.railContact,
+      groundContact: body.groundContact,
+      railSupport: cloneValue(body.railSupport)
     }));
   }
 
@@ -596,7 +869,8 @@ export function createTrainPhysics(options = {}) {
       neighbourImpactFilterCount,
       maximumSingleCorrectionMm: maximumSingleBodyCorrectionMm,
       currentMaximumCouplerAnchorErrorMm: currentMaximumAnchorErrorMm,
-      lifetimeMaximumCouplerAnchorErrorMm: maximumAnchorErrorMm
+      lifetimeMaximumCouplerAnchorErrorMm: maximumAnchorErrorMm,
+      physicalContact: cloneValue(contactTelemetry)
     };
   }
 

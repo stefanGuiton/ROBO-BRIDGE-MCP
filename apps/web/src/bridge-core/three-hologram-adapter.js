@@ -3,8 +3,9 @@
 import { BridgeCoreError } from './errors.js';
 import { createCustomPartRegistry } from './custom-part-geometry.js';
 
-function requireThree(THREE) {
+function requireThree(THREE, depthPrepass) {
   const required = ['Group', 'BoxGeometry', 'BufferGeometry', 'BufferAttribute', 'MeshStandardMaterial', 'InstancedMesh', 'Matrix4', 'Quaternion', 'Vector3'];
+  if (depthPrepass) required.push('MeshBasicMaterial');
   const missing = required.filter((name) => typeof THREE?.[name] !== 'function');
   if (missing.length) throw new BridgeCoreError('INVALID_SETTINGS', 'A compatible Three.js namespace is required.', { missing });
 }
@@ -13,12 +14,14 @@ function defaultPosition(THREE, point) {
   return new THREE.Vector3(point.xMm, point.zMm, point.yMm);
 }
 
-function material(THREE, colour, opacity) {
+function material(THREE, colour, opacity, depthPrepass) {
   return new THREE.MeshStandardMaterial({
     color: colour || '#888888',
-    transparent: opacity < 1,
+    transparent: depthPrepass || opacity < 1,
     opacity,
-    depthWrite: opacity >= 1,
+    depthTest: true,
+    depthWrite: !depthPrepass && opacity >= 1,
+    depthFunc: THREE.LessEqualDepth,
     roughness: 0.72,
     metalness: 0.02
   });
@@ -42,17 +45,25 @@ export function createThreeBridgeHologram({
   snapshot,
   buildPlan,
   opacity = 0.34,
+  depthPrepass = false,
+  renderOrder = 0,
   machinePositionToThree = null,
   machineYawToThree = (yawRad) => -yawRad,
   name = 'ROBO_BRIDGE_HOLOGRAM'
 } = {}) {
-  requireThree(THREE);
+  // A fully hidden hologram must not become an invisible scene occluder.
+  const useDepthPrepass = Boolean(depthPrepass) && opacity > 0;
+  requireThree(THREE, useDepthPrepass);
   if (!snapshot?.placements || !Array.isArray(snapshot.placements)) {
     throw new BridgeCoreError('BUILDPLAN_UNAVAILABLE', 'A hologram snapshot is required.');
+  }
+  if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+    throw new BridgeCoreError('INVALID_SETTINGS', 'Hologram opacity must be between zero and one.', { opacity });
   }
   const toPosition = machinePositionToThree ?? ((point) => defaultPosition(THREE, point));
   const group = new THREE.Group();
   group.name = name;
+  group.renderOrder = renderOrder;
   group.userData = {
     planId: snapshot.source.planId,
     designChecksum: snapshot.source.designChecksum,
@@ -60,6 +71,53 @@ export function createThreeBridgeHologram({
     family: snapshot.source.family,
     hologram: true
   };
+  const stats = {
+    mode: useDepthPrepass ? 'exact-depth-prepass' : 'transparent',
+    opacity,
+    placementCount: snapshot.placements.length,
+    colourMeshCount: 0,
+    depthMeshCount: 0,
+    uniqueGeometryCount: 0,
+    colourDrawCalls: 0,
+    depthDrawCalls: 0,
+    colourTriangles: 0,
+    depthTriangles: 0,
+    instanceMatrixBytes: 0
+  };
+  let depthMaterial = null;
+  function addMesh(mesh) {
+    const triangles = (mesh.geometry.index?.count ?? mesh.geometry.getAttribute('position').count) / 3 * mesh.count;
+    mesh.userData.renderPass = 'colour';
+    mesh.userData.hologramMeshIndex = stats.colourMeshCount;
+    mesh.renderOrder = renderOrder + 1;
+    stats.colourMeshCount += 1;
+    stats.uniqueGeometryCount += 1;
+    stats.colourDrawCalls += Array.isArray(mesh.material) ? mesh.geometry.groups.length : 1;
+    stats.colourTriangles += triangles;
+    stats.instanceMatrixBytes += mesh.instanceMatrix.array.byteLength;
+    if (useDepthPrepass) {
+      depthMaterial ??= new THREE.MeshBasicMaterial({
+        colorWrite: false,
+        depthWrite: true,
+        depthTest: true,
+        depthFunc: THREE.LessEqualDepth,
+        transparent: false,
+        blending: THREE.NoBlending
+      });
+      // The opaque depth queue finishes before ANY transparent colour pass.
+      // Sharing the exact geometry and instance buffer preserves real arches,
+      // openings and track; there is no approximate exterior/artistic mesh.
+      const depthMesh = new THREE.InstancedMesh(mesh.geometry, depthMaterial, mesh.count);
+      depthMesh.instanceMatrix = mesh.instanceMatrix;
+      depthMesh.userData = { ...mesh.userData, renderPass: 'depth' };
+      depthMesh.renderOrder = renderOrder;
+      group.add(depthMesh);
+      stats.depthMeshCount += 1;
+      stats.depthDrawCalls += 1;
+      stats.depthTriangles += triangles;
+    }
+    group.add(mesh);
+  }
 
   const standardGroups = new Map();
   for (const placement of snapshot.placements.filter((item) => item.geometryKind === 'box')) {
@@ -72,7 +130,7 @@ export function createThreeBridgeHologram({
     const first = placements[0];
     const size = first.localSizeMm;
     const geometry = new THREE.BoxGeometry(size.xMm, size.yMm, size.zMm);
-    const mesh = new THREE.InstancedMesh(geometry, material(THREE, first.colourHex, opacity), placements.length);
+    const mesh = new THREE.InstancedMesh(geometry, material(THREE, first.colourHex, opacity, useDepthPrepass), placements.length);
     const matrix = new THREE.Matrix4();
     const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3(1, 1, 1);
@@ -84,7 +142,9 @@ export function createThreeBridgeHologram({
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.userData.placementIds = placements.map((placement) => placement.placementId);
-    group.add(mesh);
+    mesh.userData.geometryKind = 'box';
+    mesh.userData.partClass = first.partClass;
+    addMesh(mesh);
   }
 
   const registry = createCustomPartRegistry(buildPlan);
@@ -101,8 +161,8 @@ export function createThreeBridgeHologram({
     geometry.setAttribute('normal', new THREE.BufferAttribute(source.normals, 3));
     const first = placements[0];
     const materials = definition.partClass === 'TRACK_SEGMENT'
-      ? [material(THREE, '#888888', opacity), material(THREE, first.trackMaterials?.sleepers, opacity), material(THREE, first.trackMaterials?.rails, opacity)]
-      : [material(THREE, first.colourHex, opacity)];
+      ? [material(THREE, '#888888', opacity, useDepthPrepass), material(THREE, first.trackMaterials?.sleepers, opacity, useDepthPrepass), material(THREE, first.trackMaterials?.rails, opacity, useDepthPrepass)]
+      : [material(THREE, first.colourHex, opacity, useDepthPrepass)];
     geometryGroups({ ...source, addGroup: geometry.addGroup.bind(geometry) }, materials);
     const mesh = new THREE.InstancedMesh(geometry, materials, placements.length);
     const matrix = new THREE.Matrix4();
@@ -119,16 +179,34 @@ export function createThreeBridgeHologram({
     mesh.userData.definitionId = definitionId;
     mesh.userData.partClass = definition.partClass;
     mesh.userData.placementIds = placements.map((placement) => placement.placementId);
-    group.add(mesh);
+    mesh.userData.geometryKind = 'custom-definition';
+    addMesh(mesh);
   }
+  // Geometry workload, not a measured FPS claim. The second pass shares its
+  // geometry and instance buffers; actual GPU cost still needs browser QA.
+  group.userData.renderStats = Object.freeze({ ...stats,
+    totalDrawCalls: stats.colourDrawCalls + stats.depthDrawCalls,
+    totalTriangles: stats.colourTriangles + stats.depthTriangles
+  });
   return group;
 }
 
+const disposedGroups = new WeakSet();
+
 export function disposeThreeBridgeHologram(group) {
+  if (!group || disposedGroups.has(group)) return;
+  disposedGroups.add(group);
+  const geometries = new Set();
+  const materials = new Set();
   group?.traverse?.((object) => {
-    object.geometry?.dispose?.();
-    if (Array.isArray(object.material)) object.material.forEach((item) => item?.dispose?.());
-    else object.material?.dispose?.();
+    if (object.geometry) geometries.add(object.geometry);
+    for (const item of Array.isArray(object.material) ? object.material : [object.material]) {
+      if (item) materials.add(item);
+    }
+    // InstancedMesh owns GPU instance attributes separately from geometry.
+    if (object.isInstancedMesh) object.dispose?.();
   });
+  for (const geometry of geometries) geometry.dispose?.();
+  for (const item of materials) item.dispose?.();
   group?.removeFromParent?.();
 }

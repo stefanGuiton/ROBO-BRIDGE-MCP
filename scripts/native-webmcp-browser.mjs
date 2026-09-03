@@ -43,21 +43,22 @@ try {
       registeredToolCount: toolNames.length,
       registeredToolNames: toolNames,
       uniqueToolCount: new Set(toolNames).size,
-      expectedToolNames: window.__ROBO_BRIDGE__?.missionRuntime?.fullToolNames ?? [],
+      expectedToolNames: [...(window.__ROBO_BRIDGE__?.missionRuntime?.fullToolNames ?? []),
+        'control_placement_stream', 'request_more_bricks', 'get_scene_settings', 'update_scene_settings'],
       submissionFacadeAbsent: !window.__ROBO_BRIDGE__?.submissionAcceptance
     };
   });
   evidence.passed = evidence.navigatorModelContext
     && evidence.nativeRegisterTool
-    && evidence.registeredToolCount === 27
-    && evidence.uniqueToolCount === 27
-    && evidence.expectedToolNames.length === 27
+    && evidence.registeredToolCount === 31
+    && evidence.uniqueToolCount === 31
+    && evidence.expectedToolNames.length === 31
     && evidence.registeredToolNames.every(name => evidence.expectedToolNames.includes(name))
     && evidence.submissionFacadeAbsent;
   const result = { evidence, consoleErrors, warnings };
   console.log(JSON.stringify(result, null, 2));
   if (write) {
-    if (args.includes('--screenshots')) await page.screenshot({ path: path.join(output, '01-native-27-tools.png'), fullPage: true });
+    if (args.includes('--screenshots')) await page.screenshot({ path: path.join(output, '01-native-31-tools.png'), fullPage: true });
     await writeFile(path.join(output, 'acceptance.json'), JSON.stringify(result, null, 2));
   }
   if (!evidence.passed || consoleErrors.length) process.exitCode = 1;

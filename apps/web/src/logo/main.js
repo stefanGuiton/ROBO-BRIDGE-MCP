@@ -24,14 +24,24 @@ import { makeReachableV8MoreSpawn, makeReachableV8Spawn } from '../player/v8-spa
 import { createV8WorkcellProfile } from '../workcell/v8-workcell-profile.js';
 import { robotBasePoseFromSettings, SCENE_LAYOUT_CONTROLS } from '../workcell/scene-layout-settings.js';
 import { createMainDemoBridge } from '../bridge/main-demo-bridge.js';
+import { createBridgeSideLabels } from '../bridge/bridge-side-labels.js';
 import { createMainDemoEasyChallenge } from '../challenge/main-demo-easy.js';
 import { installEndpointSettings } from '../challenge/endpoint-settings.js';
 import { createMainDemoTrainIntegration } from '../train-integration/index.js';
+import { createLevelGatedTrain } from '../train-integration/level-gated-train.js';
+import { createRobotTcpPusher } from '../train-integration/robot-tcp-pusher.js';
+import { createTrainBoardFingerprint } from '../train-integration/train-board-fingerprint.js';
+import { createTerrainMeshContact } from '../train-integration/terrain-mesh-contact.js';
 import { createMainDemoConstructionSession, createProductionMissionRuntime } from '../mission/index.js';
 import { createMainDemoSubmissionAcceptance } from '../submission/main-demo-acceptance.js';
 import { THREE } from '../render/real-gripper-visual.js';
 import { createDemoModeControl, SIMPLE_DEMO_COLOURS } from './simple-demo-mode.js';
 import { createPlacementStreamControl } from '../webmcp/placement-stream-control.js';
+import { createSceneSettingsTools } from '../webmcp/scene-settings-tools.js';
+import { createSimpleSourceRefill } from '../workcell/simple-source-refill.js';
+import { createMoreBricksButton } from '../workcell/more-bricks-button.js';
+import { guardDemoLevelTools } from './demo-level-tools.js';
+import { createLevel3ResultsCollector, createLevel3ResultsPanel, deriveLevel3Results } from './level3-results.js';
 
 const params = new URLSearchParams(window.__LOGO_ROBO_QUERY__ ?? location.search);
 const evidenceMode = params.has('evidence');
@@ -207,7 +217,15 @@ playerSettingsStore.addGuard((next, keys) => {
   if (status) status.textContent = 'Layout saved. World / BuildPlan coordinates unchanged. VISUAL: USER-VERIFY PENDING';
   return true;
 });
-playerSettingsStore.subscribe((key) => {
+playerSettingsStore.subscribe((key, _value, _settings, change) => {
+  if (key === '*' && change?.changedKeys?.length
+    && change.changedKeys.every(name => ['exposure', 'tableColor'].includes(name))) {
+    // A presentation-only batch must not reset the orbit/player camera,
+    // rebuild brick geometry or reapply the live machine transform.
+    revisionClock.bump();
+    for (const name of change.changedKeys) renderer.applySettings(name);
+    return;
+  }
   if (key === 'tableYawDeg' || key === '*') {
     const next = createV8WorkcellProfile(playerSettings);
     Object.assign(workcellProfile, next);
@@ -217,8 +235,19 @@ playerSettingsStore.subscribe((key) => {
   renderer.applySettings(key);
 });
 let moreBricksBurst = 0;
-function spawnMoreBricks() {
-  if (!evidenceMode && demoMode === 'bridge' && mainDemoConstruction) {
+const simpleSourceRefill = createSimpleSourceRefill({ controller, coordinator: fastPlacement,
+  settings: playerSettings, profile: workcellProfile,
+  getExclusions: () => {
+    const anchor = renderer.workbench.getMoreBricksAnchor?.();
+    return anchor ? [{ xMm: anchor.pose.xMm, yMm: anchor.pose.yMm, radiusMm: anchor.radiusMm + 20 }] : [];
+  }
+});
+function spawnMoreBricks(options = {}) {
+  if (!evidenceMode && demoMode === 'simple') {
+    const result = simpleSourceRefill(options);
+    return result;
+  }
+  if (!evidenceMode && demoMode !== 'simple' && mainDemoConstruction) {
     if (!mainDemoConstruction.preparedBuild) return { ok: false, reason: 'Start BUILD BRIDGE first to use the shared source feeder.' };
     if (mainDemoMission?.service.phase === 'TEST') return { ok: false, reason: 'Finish the train test before refilling sources.' };
     let result;
@@ -244,8 +273,15 @@ function spawnMoreBricks() {
   renderer.workbench.pressMoreBricks();
   return { ...result, action: 'more_bricks' };
 }
-renderer.setMoreBricksHandler(() => handleAction(null, spawnMoreBricks, 'Shared source inventory replenished'));
-for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, spawnMoreBricks, 'Shared source inventory replenished'));
+const moreBricksButton = createMoreBricksButton({ controller, settings: playerSettings, profile: workcellProfile,
+  refill: spawnMoreBricks,
+  onPress: () => renderer.workbench.pressMoreBricks(),
+  canRequest: ({ actor }) => !humanBuildAdapter.getState().heldBrickId
+    && (actor === 'human' || (demoMode === 'simple' && !placementCycleRunner?.getState().running))
+});
+const activateMoreBricks = () => moreBricksButton.activateHuman({ expectedWorldRevision: controller.worldRevision });
+renderer.setMoreBricksHandler(() => handleAction(null, activateMoreBricks, 'Shared source inventory replenished'));
+for (const button of document.querySelectorAll('[data-more-bridge-bricks]')) button.addEventListener('click', () => handleAction(button, activateMoreBricks, 'Shared source inventory replenished'));
 const seedEl = $('[data-seed]');
 if (seedEl) seedEl.textContent = String(playerSettings.seed);
 
@@ -575,7 +611,7 @@ function stageV8ParityConnection() {
 }
 
 const actions = {
-  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks, runOnePickPlace, runRound, captureCamera,
+  getSceneState, getRobotState, getWorkspace, moveTool, latch, unlatch, resetScene, spawnMoreBricks: activateMoreBricks, runOnePickPlace, runRound, captureCamera,
   planSimpleStructure: (spec = {}) => {
     const availableColourCounts = {};
     for (const brick of fastPlacement?.availableBricks?.() ?? []) {
@@ -621,8 +657,8 @@ controller.subscribe((event) => {
 });
 
 humanBuildAdapter.subscribe((event) => {
-  if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId}`, 'ok');
-  if (event.type === 'released') addLog(`Player placed ${event.brickId}`, 'ok');
+  if (event.type === 'picked_up') addLog(`Player picked up ${event.brickId} · colour ${event.colour} · after pickup ${event.colourAfterPickup} · ${event.colourPreserved ? 'unchanged' : 'COLOUR MISMATCH'}`, event.colourPreserved ? 'ok' : 'bad');
+  if (event.type === 'released') addLog(`Player placed ${event.brickId} · colour ${event.colour} · ${event.colourPreserved ? 'unchanged' : 'COLOUR MISMATCH'}`, event.colourPreserved ? 'ok' : 'bad');
   if (event.type === 'dropped') addLog(`Player dropped ${event.brickId}`);
   if (event.type === 'undone') addLog(`Player undid ${event.brickId}`, 'ok');
   if (event.type === 'mode_changed') addLog(`Player mode: ${event.mode}`);
@@ -844,6 +880,25 @@ let mainDemoBridge = null;
 let mainDemoConstruction = null;
 let mainDemoTrain = null;
 let mainDemoMission = null;
+const level3Telemetry = createLevel3ResultsCollector();
+const level3ResultsPanel = !evidenceMode ? createLevel3ResultsPanel() : null;
+if (level3ResultsPanel) Object.assign(level3ResultsPanel.element.style, {
+  position: 'fixed', top: '145px', right: '16px', width: '300px',
+  maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', zIndex: '20'
+});
+let resultsReadPending = false;
+async function updateLevel3Results() {
+  if (!level3ResultsPanel) return;
+  if (demoMode !== 'train') { level3ResultsPanel.render({ visible: false }); return; }
+  if (!mainDemoMission || resultsReadPending) return;
+  resultsReadPending = true;
+  try {
+    const state = await mainDemoMission.service.getMissionState({ detail: 'detail', eventLimit: 1 });
+    level3ResultsPanel.render(deriveLevel3Results({ mode: demoMode, missionState: state,
+      constructionProgress: mainDemoConstruction?.getBuildProgress(), frozenMission: mainDemoMission.service.frozen,
+      telemetry: level3Telemetry.getSnapshot({ missionId: state.missionId }) }));
+  } finally { resultsReadPending = false; }
+}
 try {
   mainDemoChallenge = await createMainDemoEasyChallenge({ renderer, playerSettings });
   const entry = mainDemoChallenge.getEntry().position;
@@ -855,6 +910,7 @@ try {
     onHologramChanged: updateBridgeHologramStatus
   });
   if (!evidenceMode) {
+    renderer.bridgeSideLabels = createBridgeSideLabels({ renderer, bridgeHost: mainDemoBridge.host });
     const initial = prepareBridgeBuild({ host: mainDemoBridge.host, workspace: controller.workspace });
     const bottom = physicalBuildReport(initial).physicalBoundsMm.min.zMm;
     if (bottom < workcellProfile.placementSurfaceZMm) {
@@ -862,26 +918,40 @@ try {
       await mainDemoChallenge.elevateForConstruction(mainDemoBridge.host, elevation);
       addLog('Challenge elevation corrected from live physical bounds: ' + elevation.toFixed(2) + ' mm', 'ok');
     }
-    mainDemoTrain = createMainDemoTrainIntegration({
-      challengeService: mainDemoChallenge,
-      THREE,
-      machineRoot: renderer.machineRoot,
-      requestRender: () => renderer.render(),
-      pusher: { mode: 'placeholder' },
-      preconditions: {
-        isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
-        isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
-        isGripperHoldingPart: () => Boolean(controller.heldBrick())
+    mainDemoTrain = createLevelGatedTrain({
+      subscribeFrame: listener => renderer.addFrameListener(listener),
+      createIntegration: () => {
+        // Created lazily in Level 3 only. The pusher reads the one controller;
+        // its private witness also binds unchanged board and source geometry.
+        const robotPusher = createRobotTcpPusher({ controller,
+          getBoardFingerprint: createTrainBoardFingerprint({ board, controller }) });
+        return createMainDemoTrainIntegration({
+          challengeService: mainDemoChallenge, THREE,
+          machineRoot: renderer.machineRoot,
+          requestRender: () => renderer.render(),
+          motionMode: 'tcp_contact', robotPusher,
+          pusher: { adapter: robotPusher },
+          trainProfile: ({ routeFrame }) => ({
+            pusherRotationQuaternion: robotPusher.getOrientationForYaw(Math.atan2(routeFrame.forward.y, routeFrame.forward.x))
+          }),
+          createSolidContactProvider: ({ routeFrame }) => createTerrainMeshContact({ routeFrame,
+            getSolidMeshes: () => mainDemoChallenge.getTerrainOccluders(),
+            machineMount: mainDemoChallenge.getState().machineMount }),
+          preconditions: {
+            isRobotExecuting: () => controller.operationState !== 'idle' || controller.pendingMoveCount > 0,
+            isRobotIdle: () => controller.operationState === 'idle' && controller.pendingMoveCount === 0 && !controller.operationBlocked(),
+            isGripperHoldingPart: () => Boolean(controller.heldBrick())
+          }
+        });
       }
     });
-    renderer.addFrameListener(deltaSeconds => mainDemoTrain.updateFrame(deltaSeconds));
     mainDemoConstruction = createConstructionService({ bridgeHost: mainDemoBridge.host, challenge: mainDemoChallenge,
       buildBoard: board, controller, placementAuthority, placementCoordinator: fastPlacement, cycleRunner: placementCycleRunner,
       onPrepared: prepared => {
         renderer.brickFactory.partRegistry = prepared?.registry ?? null;
         mainDemoBridge.setConstructionBoard(prepared ? board : null);
-        if (prepared) mainDemoTrain.prepare({ preparedBuild: prepared, buildBoard: board });
-        else if (mainDemoTrain.getState().configured) mainDemoTrain.reset({ instant: true, reason: 'construction_reset' });
+        if (prepared && demoMode === 'train') mainDemoTrain.prepare({ preparedBuild: prepared, buildBoard: board });
+        else if (!prepared) Promise.resolve(mainDemoTrain.clear()).catch(error => addLog(`Train cleanup: ${error.message}`, 'bad'));
       }
     });
     mainDemoMission = await createProductionMissionRuntime({
@@ -896,10 +966,13 @@ try {
       trainIntegration: mainDemoTrain,
       robotController: controller,
       runtime,
-      eventSink: event => addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok')
+      eventSink: event => {
+        level3Telemetry.recordMissionEvent(event, { worldRevision: controller.worldRevision });
+        addLog(`Mission ${event.type}: ${event.summary}`, event.type === 'RECOVER' ? 'bad' : 'ok');
+      }
     });
     controller.subscribe(event => {
-      if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup'].includes(event.type)) mainDemoBridge.refreshHologram();
+      if (mainDemoConstruction.preparedBuild && ['human_placement', 'unlatched', 'human_pickup', 'simulated_placement'].includes(event.type)) mainDemoBridge.refreshHologram();
     });
     const endpointPanel = await installEndpointSettings({ groups: document.querySelector('[data-settings-groups]'), challenge: mainDemoChallenge,
       bridgeHost: mainDemoBridge.host, getSettings: () => playerSettingsStore.get(),
@@ -953,20 +1026,32 @@ for (const button of document.querySelectorAll('[data-construction-action]')) bu
 });
 const demoModeControl = !evidenceMode ? createDemoModeControl({ controller, board, runtime, streamControl, coordinator: fastPlacement, workcellProfile,
   challenge: mainDemoChallenge, bridge: mainDemoBridge, train: mainDemoTrain, mission: mainDemoMission?.service,
-  renderer, setMode: value => { demoMode = value; }, originalBlueprint: blueprint }) : null;
+  renderer, setMode: value => { demoMode = value; }, originalBlueprint: blueprint,
+  getPreparedBuild: () => mainDemoConstruction?.preparedBuild }) : null;
 if (demoModeControl) {
-  $('[data-demo-mode]').addEventListener('change', async event => {
+  $('select[data-demo-mode]').addEventListener('change', async event => {
     const result = await demoModeControl.change(event.target.value);
     if (!result.ok) showToast(result.reason);
   });
   $('[data-simple-reset]').addEventListener('click', () => demoModeControl.change('simple', { reset: true }));
   $('[data-simple-stop]').addEventListener('click', () => streamControl.stop());
-  const initialMode = params.get('demo') === 'simple' || (!params.has('demo') && !params.has('submissionGate') && !robotShowcaseMode) ? 'simple' : 'bridge';
+  const initialMode = params.get('demo') === 'train' || params.get('level') === '3' || params.has('submissionGate') ? 'train'
+    : params.get('demo') === 'simple' || (!params.has('demo') && !robotShowcaseMode) ? 'simple' : 'bridge';
   const result = await demoModeControl.change(initialMode);
   if (!result.ok) addLog(`Demo mode: ${result.reason}`, 'bad');
 }
 renderer.start();
 setInterval(() => {
+  void updateLevel3Results().catch(error => addLog(`Results unavailable: ${error.message}`, 'bad'));
+  if (mainDemoConstruction && demoMode !== 'simple') {
+    const progress = mainDemoConstruction.getBuildProgress();
+    const sides = progress.collaboration?.byAdvisorySide;
+    $('[data-collaboration-status]').textContent = `${demoMode === 'bridge' ? 'LEVEL 2 · NO TRAIN' : 'LEVEL 3 · TRAIN'} · ${progress.completed}/${progress.total ?? '—'} ${progress.status.toUpperCase()}`;
+    $('[data-human-side]').textContent = `Human · negative-width side${sides ? `: ${sides.human.completed}/${sides.human.total}` : ''}`;
+    $('[data-agent-side]').textContent = `Codex · positive side + centre${sides ? `: ${sides.agent.completed}/${sides.agent.total}` : ''}`;
+    const modes = progress.byExecutionMode;
+    $('[data-build-actors]').textContent = modes ? `Accepted: Human ${modes.human} · Robot ${modes.robot} · Accelerated ${modes.simulated_fast_forward}` : 'Freeze the current design to start shared construction.';
+  }
   if (streamControl && demoMode === 'simple') {
     const stream = streamControl.getState();
     $('[data-simple-status]').textContent = `${stream.satisfiedPlacements}/${stream.totalPlacements} · ${stream.cycleTimeMs} ms/cycle · ${stream.running ? 'RUNNING' : stream.lastResult?.reason ?? fastPlacement.getState().status}`;
@@ -1017,11 +1102,12 @@ setInterval(() => {
 window.addEventListener('resize', () => renderer.render());
 
 try {
-  const bridgeTools = (mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? []).map(tool => ({ ...tool,
-    execute: (input, options) => demoMode === 'simple' && !tool.annotations?.readOnlyHint
-      ? { ok: false, reason: 'wrong_mode', message: 'Select BRIDGE mode before changing a bridge mission.', worldRevision: controller.worldRevision }
-      : tool.execute(input, options) }));
-  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : [])];
+  const bridgeTools = guardDemoLevelTools(mainDemoMission?.additionalTools ?? mainDemoBridge?.bridgeDesign.tools ?? [],
+    () => demoMode, () => controller.worldRevision);
+  const additionalTools = [...bridgeTools, ...(streamControl ? [streamControl.tool] : []), moreBricksButton.tool,
+    ...createSceneSettingsTools({ settingsStore: playerSettingsStore, revisionClock,
+      canUpdate: () => !controller.moving && !controller.pendingMoveCount && controller.operationState === 'idle'
+        && !controller.operationBlocked() && !humanBuildAdapter.getState().heldBrickId })];
   const result = await registerWebMcpTools(runtime, updateToolDiagnostics, additionalTools);
   if (webmcpEl) {
     if (result.ok) { webmcpEl.textContent = `${result.toolCount} TOOLS READY`; webmcpEl.dataset.kind = 'ok'; addLog(`WebMCP ready: ${result.toolNames.join(', ')}`, 'ok'); }
@@ -1060,6 +1146,7 @@ const publicRuntime = Object.freeze({
   fastPlacement,
   placementCycleRunner,
   streamControl,
+  moreBricksButton,
   demoModeControl,
   connectionGraph,
   playerSettingsStore,

@@ -20,6 +20,9 @@ export function createMainDemoTrainSubsystem(options = {}) {
     pusher = { mode: 'placeholder' },
     preconditions = {},
     surfaceProvider,
+    solidContactProvider,
+    motionMode = 'fixture_analytic',
+    trainProfile,
     settings = {}
   } = options;
   if (typeof getFrozenBuildPlan !== 'function') throw new TypeError('getFrozenBuildPlan() is required.');
@@ -57,6 +60,9 @@ export function createMainDemoTrainSubsystem(options = {}) {
     surfaceProvider,
     onChange: onStateChange,
     ...settings.motion,
+    motionMode,
+    solidContactProvider,
+    trainProfile,
     physicsSettings: settings.physics
   });
   const runtime = createTrainRuntime({

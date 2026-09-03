@@ -16,6 +16,21 @@ import { getLogoRoboToolDefinitions } from '../../apps/web/src/webmcp/register-t
 import { createPlacementStreamControl } from '../../apps/web/src/webmcp/placement-stream-control.js';
 import { createV8WorkcellProfile } from '../../apps/web/src/workcell/v8-workcell-profile.js';
 import { SIMPLE_DEMO_COLOURS, SIMPLE_DEMO_CLEARANCE_MM } from '../../apps/web/src/logo/simple-demo-mode.js';
+import { FINAL_TOWER_REQUEST } from '../../apps/web/src/logo/simple-human-slot-guide.js';
+import { createSimpleStructurePlan, toWebMcpPlacements } from '../../apps/web/src/robot/simple-structure-planner.js';
+
+export { FINAL_TOWER_REQUEST };
+export const FINAL_TOWER_SCENARIO = Object.freeze({
+  prefix: 'tower', width: 2, height: 6, pattern: 'cross_laminated_tower', request: FINAL_TOWER_REQUEST
+});
+export const TEN_LAYER_TOWER_SCENARIO = Object.freeze({
+  prefix: 'tower-20', width: 2, height: 10, pattern: 'cross_laminated_tower'
+});
+export const SIMPLE_DEMO_SCENARIOS = Object.freeze([
+  Object.freeze({ prefix: 'single', width: 1, depth: 1, height: 1 }),
+  Object.freeze({ prefix: 'wall', width: 3, depth: 1, height: 4 }),
+  FINAL_TOWER_SCENARIO
+]);
 
 export async function simpleHarness({ wait = async () => {} } = {}) {
   const settings = { ...PLAYER_FALLBACK_SETTINGS, ...JSON.parse(await readFile(new URL('../../apps/web/config/player/LOGO_ROBO_PLAYER_SETTINGS.json', import.meta.url))) };
@@ -37,11 +52,18 @@ export async function simpleHarness({ wait = async () => {} } = {}) {
   const handlers = createLogoRoboToolHandlers({ bridge: createRuntimeBridge(runtime) });
   const tools = [...getLogoRoboToolDefinitions(handlers, controller.getWorkspace()), control.tool];
   const call = (name, input, options) => tools.find(t => t.name === name).execute(input, options);
-  return { controller, board, authority, coordinator, runner, control, runtime, call, profile };
+  return { controller, board, authority, coordinator, runner, control, runtime, call, profile, graph, engine };
 }
 
 // Test-generated ordinary stream coordinates, not a production shape shortcut.
-export function simplePlacements({ width, depth, height, prefix }, workspace) {
+export function simplePlacements({ width, depth, height, prefix, pattern }, workspace) {
+  if (pattern === 'cross_laminated_tower') {
+    const plan = createSimpleStructurePlan({ structure: pattern, width, height, colour: 'red' }, { profile: workspace });
+    if (!plan.ok) throw new Error(JSON.stringify(plan.errors));
+    // Reuse the established two-brick alternating-layer geometry and connector
+    // metadata. This remains an ordinary plan submitted to the generic stream.
+    return toWebMcpPlacements(plan).map(p => ({ ...p, colour: null, preferredColour: 'red' }));
+  }
   const zone = workspace.buildZone;
   const centreX = Math.round(((zone.minX + zone.maxX) / 2) / 8) * 8;
   const centreY = Math.round(((zone.minY + zone.maxY) / 2 - 6) / 8) * 8 + 6;

@@ -4,7 +4,7 @@ export const MISSION_ERROR_CODES = Object.freeze([
   'CANCELLED','INVALID_PARAMETER','INVALID_PHASE','STALE_MISSION','STALE_MISSION_REVISION',
   'STALE_DESIGN_REVISION','STALE_WORLD_REVISION','STALE_PLAN','PLAN_NOT_FROZEN',
   'BUILD_NOT_STARTED','BUILD_IN_PROGRESS','OPERATION_IN_PROGRESS','ROBOT_BUSY',
-  'GRIPPER_NOT_EMPTY','TRAIN_NOT_READY','TEST_IN_PROGRESS','STALE_TRAIN_RESULT',
+  'GRIPPER_NOT_EMPTY','TRAIN_NOT_READY','LEVEL3_ONLY','TEST_IN_PROGRESS','STALE_TRAIN_RESULT',
   'INVALID_TRAIN_RESULT','INVALID_SUPPORT_SNAPSHOT','CHALLENGE_NOT_FOUND',
   'RUNTIME_UNAVAILABLE','SERVICE_UNAVAILABLE','START_BUILD_FAILED','CONSTRUCTION_ERROR',
   'TRAIN_ERROR','RESET_FAILED','INTERNAL_ERROR'
@@ -12,6 +12,7 @@ export const MISSION_ERROR_CODES = Object.freeze([
 
 const EXTERNAL_ERROR_CODE_MAP = Object.freeze({
   cancelled: 'CANCELLED',
+  train_test_cancelled: 'CANCELLED',
   abort_err: 'CANCELLED',
   invalid_input: 'INVALID_PARAMETER',
   invalid_parameter: 'INVALID_PARAMETER',
@@ -56,6 +57,7 @@ const POLICY = Object.freeze({
   ROBOT_BUSY:[true,'Wait until the robot is idle.'],
   GRIPPER_NOT_EMPTY:[true,'Place or release the held part.'],
   TRAIN_NOT_READY:[true,'Read mission state and retry when the train is ready.'],
+  LEVEL3_ONLY:[false,'Continue Level 2 construction or select Level 3 before testing the bridge.'],
   TEST_IN_PROGRESS:[true,'Wait for the active test to stop.'],
   STALE_TRAIN_RESULT:[true,'Run a new test for the current frozen plan.'],
   INVALID_TRAIN_RESULT:[true,'Reset the train service and run a new test.'],

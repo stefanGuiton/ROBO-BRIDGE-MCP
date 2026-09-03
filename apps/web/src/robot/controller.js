@@ -241,8 +241,8 @@ export class RobotController {
     return { ok: true, bricks: this.getBricks(), worldRevision: this.worldRevision };
   }
 
-  addLooseBricks(bricks, { actor = 'human' } = {}) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
+  addLooseBricks(bricks, { actor = 'human', operationToken = null } = {}) {
+    if (this.operationBlocked(operationToken) || this.operationState !== 'idle' || this.pendingMoveCount > 0 || this.heldBrickId) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!Array.isArray(bricks) || bricks.length < 1 || bricks.length > 50) {
@@ -320,7 +320,7 @@ export class RobotController {
     delete brick.freeQuaternion;
     brick.placementType = null;
     brick.connection = null;
-    this.#bumpRobot('human_pickup', { brickId, actor: 'human' });
+    this.#bumpRobot('human_pickup', { brickId, actor: 'human', colour: brick.colour, displayHex: brick.displayHex ?? null });
     return { ok: true, brick: clone(brick), worldRevision: this.worldRevision };
   }
 
@@ -494,8 +494,9 @@ export class RobotController {
     brick.yawRad = pose.yawRad;
   }
 
-  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision }) {
+  validateMoveRequest({ xMm, yMm, zMm, speedMmS, yawRad = undefined, expectedWorldRevision, timingMode = undefined }) {
     if (![xMm, yMm, zMm, speedMmS].every(isFiniteNumber) || speedMmS <= 0) return { ok: false, reason: 'invalid_input' };
+    if (timingMode !== undefined && timingMode !== 'realtime') return { ok: false, reason: 'invalid_input' };
     if (yawRad !== undefined && !isFiniteNumber(yawRad)) return { ok: false, reason: 'invalid_input' };
     if (expectedWorldRevision !== undefined && expectedWorldRevision !== this.worldRevision) return { ok: false, reason: 'stale_state', expectedWorldRevision, worldRevision: this.worldRevision };
     if (speedMmS > this.speedLimitMmS) return { ok: false, reason: 'speed_limit', speedLimitMmS: this.speedLimitMmS };
@@ -653,7 +654,11 @@ export class RobotController {
         throw new RobotError('cancelled');
       }
       const validation = this.validateMoveRequest(request);
-      if (!validation.ok) throw new RobotError(validation.reason, validation);
+      if (!validation.ok) {
+        // Queued validation runs before the motion cleanup finally below.
+        this.pendingMoveCount = Math.max(0, this.pendingMoveCount - 1);
+        throw new RobotError(validation.reason, validation);
+      }
       const epoch = queuedEpoch;
       const internalAbort = new AbortController();
       this.activeAbortController = internalAbort;
@@ -669,19 +674,33 @@ export class RobotController {
         this.operationState = 'moving';
         this.emit('motion_started', { target: plan.target, durationMs: plan.durationMs, diagnostics: plan.diagnostics });
         const startedAt = nowMs();
+        const realtime = request.timingMode === 'realtime';
+        let priorSampleFinishedAt = startedAt;
+        let priorProfileElapsedMs = 0;
         let acceptedIndex = -1;
         for (let i = 0; i < plan.points.length; i += 1) {
           if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
           const point = plan.points[i];
-          if (this.timeScale > 0) {
-            const targetElapsed = point.targetElapsedMs * this.timeScale;
+          const profileIntervalMs = point.targetElapsedMs - priorProfileElapsedMs;
+          if (realtime && (!Number.isFinite(profileIntervalMs) || profileIntervalMs < 0
+            || (profileIntervalMs === 0 && (distance3(point.tcp, this.tcp) > 1e-6 || angleDistance(point.yawRad, this.toolYawRad) > 1e-8)))) {
+            throw new RobotError('invalid_motion_timing', { acceptedIndex });
+          }
+          if (realtime || this.timeScale > 0) {
+            // Contact-driven motion must not bunch overdue accepted poses after
+            // a renderer/observer stall. Reuse the validated physical profile,
+            // measuring each interval after the previous sample's observers.
+            // Other moves retain existing absolute playback scheduling.
+            const dueAt = realtime ? priorSampleFinishedAt + profileIntervalMs
+              : startedAt + point.targetElapsedMs * this.timeScale;
             while (true) {
               if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
-              const wait = targetElapsed - (nowMs() - startedAt);
+              const wait = dueAt - nowMs();
               if (wait <= 0) break;
               await new Promise((resolve) => setTimeout(resolve, Math.min(16, wait)));
             }
           }
+          if (signal?.aborted || epoch !== this.operationEpoch) throw new RobotError('cancelled', { acceptedIndex });
           const currentFk = forwardKinematics(point.jointsRad, this.definition);
           const liveCollision = validateCollision({ tcp: point.tcp, jointPositions: [...currentFk.jointPositions, currentFk.tcp], heldBrick: this.heldBrick() ? { ...this.heldBrick(), yawRad: wrapPi(point.yawRad + this.brickYawInTcpRad) } : null, bricks: this.bricks, board: this.board, ignoreBrickIds: this.releaseClearanceBrickId && plan.target.zMm > this.tcp.zMm && Math.hypot(plan.target.xMm - this.tcp.xMm, plan.target.yMm - this.tcp.yMm) <= 2 ? [this.releaseClearanceBrickId] : [] }, this.layout);
           if (!liveCollision.ok) throw new RobotError(liveCollision.reason, liveCollision);
@@ -691,6 +710,8 @@ export class RobotController {
           this.updateHeldBrickPose();
           acceptedIndex = i;
           this.#bumpRobot('motion_sample', { sampleIndex: i, sampleCount: plan.points.length });
+          priorProfileElapsedMs = point.targetElapsedMs;
+          priorSampleFinishedAt = nowMs();
           if (this.timeScale === 0) await Promise.resolve();
         }
         this.moving = false;

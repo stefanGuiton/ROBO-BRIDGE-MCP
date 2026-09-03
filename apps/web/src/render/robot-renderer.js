@@ -11,6 +11,7 @@ import { PlacedBrickBatcher } from '../player/placed-brick-batcher.js';
 import { PlayerCapsuleSolver } from '../player/player-collision.js';
 import { PlayerController } from '../player/player-controller.js';
 import { V8Workbench } from './v8-workbench.js';
+import { pendingHumanGuide, previewHumanGuide } from '../player/pending-placement-guide.js';
 import {
   applyV8BrickGeometry,
   applyV8BrickMaterial,
@@ -244,6 +245,9 @@ export class RobotRenderer {
     };
     this.heldVisual = new HeldBrickController(this.playerSettings);
     this.raycaster = new THREE.Raycaster();
+    // Exact bridge targets remain pickable without drawing a duplicate ghost
+    // over the authoritative BuildPlan hologram (camera renders layer 0).
+    this.raycaster.layers.enable(31);
     this.raycaster.far = this.playerSettings.unlimitedPickupReach
       ? this.playerSettings.farClipMm
       : this.playerSettings.maximumPickupDistanceMm;
@@ -392,9 +396,13 @@ export class RobotRenderer {
     const yawRad = preview.previewYawRad ?? preview.yawRad ?? 0;
     visuals.ghost.position.set(position.xMm, position.yMm, position.zMm);
     visuals.ghost.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawRad);
-    const overhang = preview.valid && preview.overhang && this.playerSettings.connectionOverhangGhostStyle === 'Yellow';
     const proposalColour = preview.status === 'STALE' ? 0xe5a52e : preview.valid ? 0x35d6ff : 0xe34f45;
-    visuals.ghost.userData.material.color.setHex(preview.proposal ? proposalColour : preview.valid ? (overhang ? 0xe5b72e : 0x21c77a) : 0xe34f45);
+    // Human previews retain the picked brick's colour; status belongs to the HUD
+    // and markers, not a red ghost overlapping the held physical brick.
+    const humanColour = previewBrick?.bridgePart
+      ? new THREE.Color(previewBrick.displayColour ?? '#cda86c').getHex()
+      : previewBrick ? colourHex(previewBrick) : 0x21c77a;
+    visuals.ghost.userData.material.color.setHex(preview.proposal ? proposalColour : humanColour);
     visuals.ghost.userData.material.opacity = this.playerSettings.ghostOpacity * (preview.opacityScale ?? 1);
     const connectionVisible = preview.type === 'BRICK';
     visuals.supportMarks.visible = connectionVisible && this.playerSettings.connectionStudHighlightEnabled !== false;
@@ -636,6 +644,7 @@ export class RobotRenderer {
     const carried = bricks.find((brick) => brick.id === active.brickId);
     if (!carried) return;
     const supportMeshes = [
+      ...(this.humanGuideMesh?.visible ? [this.humanGuideMesh] : []),
       ...this.targetMeshes.values(),
       ...this.brickMeshes.values(),
       ...this.batcher.pickMeshes(),
@@ -645,6 +654,11 @@ export class RobotRenderer {
     this.workbench.setMoreBricksHighlighted(false);
     let candidate = null;
     for (const hit of hits) {
+      if (hit.object.userData?.pendingHumanGuide) {
+        candidate = previewHumanGuide({ guide: this.humanGuide, carried, authority: this.controller.placementAuthority,
+          yawRad: this.humanBuildAdapter.placementEngine.rotationQuarterTurns * Math.PI / 2 });
+        if (candidate) break;
+      }
       const targetId = hit.object.userData?.targetId;
       if (targetId) {
         const target = this.board.getTarget(targetId);
@@ -722,15 +736,15 @@ export class RobotRenderer {
     this.heldGhost.visible = true;
     this.heldGhost.position.set(pose.position.xMm, pose.position.yMm, pose.position.zMm);
     this.heldGhost.quaternion.fromArray(pose.quaternion);
-    const valid = pose.candidate?.valid;
-    const blocked = pose.candidate && !pose.candidate.valid;
     this.heldGhost.userData.material.opacity = 1;
     this.heldGhost.userData.material.transparent = false;
-    this.heldGhost.userData.material.emissive.setHex(blocked ? 0xff3300 : valid ? 0x22c47a : 0x000000);
-    this.heldGhost.userData.material.emissiveIntensity = blocked || valid ? 0.22 : 0;
+    // Status colour belongs to the placement preview, not the held brick.
+    this.heldGhost.userData.material.emissive.setHex(0x000000);
+    this.heldGhost.userData.material.emissiveIntensity = 0;
   }
 
   syncTargets() {
+    this.syncHumanGuide();
     const targets = this.board?.getTargets?.() ?? [];
     const seen = new Set();
     for (const target of targets) {
@@ -752,12 +766,44 @@ export class RobotRenderer {
         this.machineRoot.add(mesh);
         this.targetMeshes.set(target.id, mesh);
       }
+      if (target.bridgeConstruction && !mesh.userData.pickOnlyBridgeTarget) {
+        mesh.traverse(object => object.layers.set(31));
+        mesh.userData.pickOnlyBridgeTarget = true;
+      }
       mesh.visible = (target.bridgeConstruction || this.playerSettings.robotTargetsVisible === true) && !target.occupiedBy;
       mesh.position.set(target.position.xMm, target.position.yMm, target.position.zMm);
       mesh.rotation.z = target.yawRad ?? 0;
     }
     for (const [id, mesh] of this.targetMeshes) {
       if (!seen.has(id)) { this.machineRoot.remove(mesh); this.targetMeshes.delete(id); }
+    }
+  }
+
+  syncHumanGuide() {
+    const carriedId = this.humanBuildAdapter?.getState?.().heldBrickId;
+    const carried = carriedId ? this.controller.getBricks().find(brick => brick.id === carriedId) : null;
+    this.humanGuide = (globalThis.document?.documentElement?.dataset?.demoMode ?? 'simple') !== 'simple' ? null : pendingHumanGuide(this.fastPlacement, carried);
+    if (!this.humanGuideMesh && this.humanGuide) {
+      this.humanGuideMesh = makeBox({ xMm: 32, yMm: 16, zMm: 9.6 }, this.humanGuide.position,
+        new THREE.MeshBasicMaterial({ color: 0xffc040, transparent: true, opacity: 0.33, depthWrite: false }));
+      this.humanGuideMesh.name = 'SIMPLE_PENDING_HUMAN_TARGET';
+      this.humanGuideMesh.userData.pendingHumanGuide = true;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(this.humanGuideMesh.geometry), new THREE.LineBasicMaterial({ color: 0xffad00 }));
+      this.humanGuideMesh.add(edges);
+      this.machineRoot.add(this.humanGuideMesh);
+    }
+    if (this.humanGuideMesh) {
+      this.humanGuideMesh.visible = Boolean(this.humanGuide);
+      if (this.humanGuide) {
+        const p = this.humanGuide.position;
+        this.humanGuideMesh.position.set(p.xMm, p.yMm, p.zMm);
+        this.humanGuideMesh.rotation.z = this.humanGuide.yawRad;
+      }
+    }
+    const label = globalThis.document?.querySelector?.('[data-human-guide]');
+    if (label) {
+      label.hidden = !this.humanGuide;
+      label.textContent = this.humanGuide ? `HUMAN SLOT · aim at amber brick · yaw ${Math.round(this.humanGuide.yawRad * 180 / Math.PI)}° · R to rotate · click to place` : '';
     }
   }
 
@@ -772,7 +818,7 @@ export class RobotRenderer {
     const brickById = new Map(bricks.map((brick) => [brick.id, brick]));
     const batchSignature = `${animatedBrickId ?? '-'}:${[...batchPlacedIds].sort().map((id) => {
       const brick = brickById.get(id);
-      return brick ? `${id}:${brick.position.xMm}:${brick.position.yMm}:${brick.position.zMm}:${brick.yawRad ?? 0}:${brick.colour}` : id;
+      return brick ? `${id}:${brick.position.xMm}:${brick.position.yMm}:${brick.position.zMm}:${brick.yawRad ?? 0}:${brick.colour}:${brick.displayHex ?? '-'}` : id;
     }).join('|')}`;
     if (batchSignature !== this.lastBatchSignature) {
       this.batcher.rebuild(bricks, batchPlacedIds);
@@ -791,6 +837,9 @@ export class RobotRenderer {
         mesh = body;
         this.brickMeshes.set(brick.id, mesh);
       }
+      // Reset inventory reuses IDs with new colours. Refresh cached source meshes
+      // before a pickup recreates the held visual from the same live record.
+      if (!brick.bridgePart) mesh.userData.material.color.setHex(colourHex(brick));
       mesh.position.set(brick.position.xMm, brick.position.yMm, brick.position.zMm);
       if (Array.isArray(brick.freeQuaternion) && brick.freeQuaternion.length === 4) mesh.quaternion.fromArray(brick.freeQuaternion).normalize();
       else mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), brick.yawRad ?? 0);

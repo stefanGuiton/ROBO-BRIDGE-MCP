@@ -65,7 +65,7 @@ function missionState(subsystem, evidence, configured) {
 
 function terminalResult(snapshot, evidence) {
   const outcome = snapshot?.result?.outcome ?? (snapshot?.state === TRAIN_STATES.CROSSED ? 'CROSSED' : snapshot?.state === TRAIN_STATES.FAILED ? 'TRAIN_FELL' : 'STOPPED');
-  const completed = outcome === 'CROSSED' || outcome === 'TRAIN_FELL';
+  const completed = outcome === 'CROSSED' || snapshot?.state === TRAIN_STATES.FAILED;
   return deepFreezePlain({
     ok: completed,
     success: outcome === 'CROSSED',
@@ -95,6 +95,10 @@ export function createMainDemoTrainIntegration(options = {}) {
   let preparedInput = null;
   let pending = null;
   let disposed = false;
+  let disposal = null;
+  let motionTask = null;
+  let testMotion = null;
+  const robotPusher = options.robotPusher ?? null;
 
   function clearSubsystem() {
     subsystemUnsubscribe?.();
@@ -145,7 +149,7 @@ export function createMainDemoTrainIntegration(options = {}) {
 
   function prepare(input = {}) {
     invariant(!disposed, 'TRAIN_INTEGRATION_DISPOSED', 'Train integration is disposed.', {}, { recoverable: false });
-    invariant(!pending, 'TRAIN_TEST_ACTIVE', 'A train test is already active.');
+    invariant(!pending && !motionTask, 'TRAIN_TEST_ACTIVE', 'A train test or its robot cleanup is already active.');
     const normalized = normalizedInput(input);
     const nextEvidence = createTrainTestEvidence({
       challengeService,
@@ -169,6 +173,8 @@ export function createMainDemoTrainIntegration(options = {}) {
       ...(options.terrain || {}),
       ...(input.terrain || {})
     });
+    const solidContactProvider = options.createSolidContactProvider?.({ routeFrame: evidence.routeContract.trainRouteFrame }) ?? null;
+    if (solidContactProvider) terrainSurface = solidContactProvider;
     const userStateChange = options.onStateChange;
     subsystem = createMainDemoTrainSubsystem({
       THREE: options.THREE,
@@ -180,6 +186,10 @@ export function createMainDemoTrainIntegration(options = {}) {
       getAcceptedBuildBoardSnapshot: () => evidence.buildBoardSnapshot,
       getWorldTransform: () => evidence.routeContract.worldTransform,
       surfaceProvider: terrainSurface,
+      solidContactProvider,
+      motionMode: options.motionMode,
+      trainProfile: typeof options.trainProfile === 'function'
+        ? options.trainProfile({ routeFrame: evidence.routeContract.trainRouteFrame }) : options.trainProfile,
       pusher: options.pusher,
       settings: options.settings,
       preconditions: {
@@ -216,11 +226,14 @@ export function createMainDemoTrainIntegration(options = {}) {
   }
 
   function test(input = {}) {
+    invariant(!disposed, 'TRAIN_INTEGRATION_DISPOSED', 'Train integration is disposed.', {}, { recoverable: false });
+    invariant(!pending && !motionTask, 'TRAIN_TEST_ACTIVE', 'A train test or its robot cleanup is already active.');
     ensurePrepared(input);
     invariant(subsystem.service.getState() === TRAIN_STATES.READY, 'TRAIN_NOT_READY', 'TrainService must be READY before TEST.', {
       state: subsystem.service.getState()
     });
     const signal = input.signal ?? null;
+    testMotion = null;
     if (signal?.aborted) {
       return Promise.resolve(deepFreezePlain({
         ok: false,
@@ -263,12 +276,58 @@ export function createMainDemoTrainIntegration(options = {}) {
         subsystem.service.stopTest();
       }
       checkTerminal();
+      if (!pending) return promise;
+      if (robotPusher && options.motionMode === 'tcp_contact') {
+        const activeSubsystem = subsystem;
+        const activeEvidence = evidence;
+        const sampledWorldRevision = activeEvidence.identity.buildBoardWorldRevision;
+        const record = { testId: input.testId ?? null, sampledWorldRevision, witness: null, finished: false };
+        testMotion = record;
+        // Drive only the existing controller. The Train terminal promise and
+        // real robot sequence run concurrently, but completion waits for both.
+        motionTask = (async () => {
+          try {
+            const settings = activeSubsystem.service.getSnapshot().settings ?? {};
+            await robotPusher.run({
+              startPose: activeSubsystem.service.getPushStartPose(),
+              routeFrame: activeEvidence.routeContract.trainRouteFrame,
+              expectedWorldRevision: sampledWorldRevision,
+              signal,
+              speedMmS: options.robotPushSpeedMmS ?? settings.trainSpeedMmPerSecond ?? 120,
+              pushDistanceMm: options.robotPushDistanceMm ?? settings.pushDistanceMm ?? 64,
+              onWitness: witness => { record.witness = witness; },
+              onAtStart: () => activeSubsystem.service.armPhysicalPush()
+            });
+            record.finished = true;
+            const result = await promise;
+            const finalWorldRevision = robotPusher.getSample().worldRevision;
+            if (!validateTestMotion({ testId: record.testId, sampledWorldRevision, finalWorldRevision })) {
+              throw Object.assign(new Error('Unowned world or board mutation during Train TEST.'), { code: 'STALE_WORLD_REVISION' });
+            }
+            return deepFreezePlain({ ...result, worldRevision: finalWorldRevision,
+              robotMotion: robotPusher.getSnapshot().motion });
+          } catch (error) {
+            await robotPusher.cancel('train_test_stopped');
+            activeSubsystem.service.stopTest();
+            checkTerminal();
+            const normalized = asTrainIntegrationError(error, 'TRAIN_ROBOT_PUSH_FAILED');
+            return deepFreezePlain({ ok: false, error: normalized.toJSON(), state: activeSubsystem.service.getState() });
+          }
+        })();
+        return motionTask.finally(() => { motionTask = null; });
+      }
       return promise;
     } catch (error) {
       const normalized = asTrainIntegrationError(error, 'TRAIN_START_FAILED');
       settlePending(deepFreezePlain({ ok: false, error: normalized.toJSON(), state: subsystem.service.getState() }));
       return promise;
     }
+  }
+
+  function validateTestMotion({ testId, sampledWorldRevision, finalWorldRevision } = {}) {
+    return Boolean(robotPusher && testMotion?.finished && testMotion.testId === testId
+      && testMotion.sampledWorldRevision === sampledWorldRevision
+      && robotPusher.isMotionWitnessValid(testMotion.witness, { sampledWorldRevision, finalWorldRevision, requireComplete: true }));
   }
 
   function updateFrame(deltaSeconds) {
@@ -297,6 +356,7 @@ export function createMainDemoTrainIntegration(options = {}) {
 
   function reset({ instant = false, reason = 'mission_reset' } = {}) {
     invariant(subsystem, 'TRAIN_NOT_CONFIGURED', 'Prepare Train integration first.');
+    invariant(!motionTask && !robotPusher?.getSnapshot().running, 'TRAIN_TEST_ACTIVE', 'Await Train robot cancellation before resetting.');
     if (pending) {
       pending.cancelled = true;
       pending.cancelReason = reason;
@@ -313,6 +373,7 @@ export function createMainDemoTrainIntegration(options = {}) {
   }
 
   function dispose() {
+    if (disposal) return disposal;
     if (disposed) return { ok: true, disposed: true, idempotent: true };
     if (pending) {
       pending.cancelled = true;
@@ -320,11 +381,18 @@ export function createMainDemoTrainIntegration(options = {}) {
       subsystem?.service?.stopTest?.();
       checkTerminal();
     }
-    clearSubsystem();
-    evidence = null;
-    preparedInput = null;
     disposed = true;
-    return { ok: true, disposed: true, idempotent: false };
+    const finish = () => {
+      clearSubsystem(); evidence = null; preparedInput = null;
+      return { ok: true, disposed: true, idempotent: false };
+    };
+    if (!robotPusher) return finish();
+    disposal = (async () => {
+      await robotPusher.dispose();
+      await motionTask;
+      return finish();
+    })();
+    return disposal;
   }
 
   return Object.freeze({
@@ -342,6 +410,16 @@ export function createMainDemoTrainIntegration(options = {}) {
     getCollisionSnapshot: () => subsystem?.service?.getCollisionSnapshot?.() ?? evidence?.collisionSnapshot ?? null,
     getTerrainDiagnostics: () => terrainSurface?.getDiagnostics?.() ?? null,
     getSubsystem: () => subsystem,
+    validateTestMotion,
+    async cancelMotion(reason = 'train_cancelled') {
+      if (pending) {
+        pending.cancelled = true; pending.cancelReason = reason;
+        subsystem?.service.stopTest(); checkTerminal();
+      }
+      await robotPusher?.cancel(reason);
+      await motionTask;
+      return { ok: true };
+    },
     dispose
   });
 }

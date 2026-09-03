@@ -4,6 +4,7 @@ import { createBridgeHost } from '../../apps/web/src/bridge-core/index.js';
 import { MAIN_DEMO_BRIDGE_INITIAL_SETTINGS, TERRAIN7_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
 import { createChallengeService } from '../../apps/web/src/challenge/challenge-service.js';
 import { createEasyBridgeChallenge } from '../../apps/web/src/challenge/main-demo-easy.js';
+import { MAIN_DEMO_TERRAIN_URL } from '../../apps/web/src/challenge/terrain-asset.js';
 import { prepareBridgeBuild } from '../../apps/web/src/bridge-construction/bridge-build-session.js';
 import { createConstructionService, physicalBuildReport } from '../../apps/web/src/bridge-construction/construction-service.js';
 import { BuildBoard } from '../../apps/web/src/bricks/build-board.js';
@@ -27,7 +28,7 @@ export async function constructionHarness({ terrain7 = false, bridgeSettings = n
   controller.setPlacementAuthority(authority);
   const coordinator = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
   const runner = new PlannedPlacementCycleRunner({ controller, coordinator });
-  const terrainBytes = terrain7 ? await readFile(new URL('../../apps/web/assets/terrain/Terrain_7_Main.glb', import.meta.url)) : null;
+  const terrainBytes = terrain7 ? await readFile(MAIN_DEMO_TERRAIN_URL) : null;
   const challenge = createChallengeService({ terrain7, displayOffset: { x: -170, z: 4 }, challengeYawDeg: -90,
     ...(terrain7 ? { THREE, terrainUrl: 'fixture', decodeImage: async () => ({ width: 1, height: 1 }),
       fetchImpl: async () => ({ ok: true, arrayBuffer: async () => terrainBytes.buffer.slice(terrainBytes.byteOffset, terrainBytes.byteOffset + terrainBytes.byteLength) }) } : {}) });

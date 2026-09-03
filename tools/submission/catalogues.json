@@ -70,8 +70,19 @@
       "update_bridge_design",
       "get_bridge_build_plan",
       "reset_bridge_design",
-      "control_placement_stream"
+      "control_placement_stream",
+      "get_mission_state",
+      "get_terrain_options",
+      "select_terrain",
+      "start_bridge_build",
+      "get_build_progress",
+      "build_next_parts",
+      "test_bridge",
+      "reset_mission",
+      "request_more_bricks",
+      "get_scene_settings",
+      "update_scene_settings"
     ],
-    "targetApprox": 28
+    "targetApprox": 31
   }
 }

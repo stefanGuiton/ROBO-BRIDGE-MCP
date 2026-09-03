@@ -108,13 +108,48 @@ function robotRecord(value) {
 }
 function trainRecord(value) {
   if (value?.ok===false) return {state:'unavailable',result:null};
-  return { state:compact(value?.state??value?.status,64,'ready'),result:compact(value?.result??value?.outcome,64) };
+  return { state:compact(value?.state??value?.status,64,'ready'),result:compact(value?.result??value?.outcome,64),
+    ...(typeof value?.enabled==='boolean'?{enabled:value.enabled}:{}) };
 }
 function assertTrainReady(value) {
+  if (value?.enabled===false) throw new MissionError('LEVEL3_ONLY','Train tests are available only in Level 3.');
   const source=serviceResult(value,'TRAIN_NOT_READY','TrainService state is unavailable.');
   const record=trainRecord(source); const state=String(record.state).toUpperCase();
   if (source?.ready===false||source?.canTest===false||['TESTING','RUNNING','BUSY','RESETTING','UNAVAILABLE'].includes(state)) throw new MissionError('TRAIN_NOT_READY','TrainService is not ready to start a test.');
   return record;
+}
+function collaborationRecord(value,{required,accepted}) {
+  if (value===undefined||value===null) return null;
+  const actors=['human','agent'];
+  if (!value||typeof value!=='object'||Array.isArray(value)
+    ||value.schemaVersion!=='robo-bridge.collaboration.v1'||value.mode!=='lateral_advisory'
+    ||value.advisoryOnly!==true||value.axis!=='bridge_local_z'
+    ||!Number.isFinite(value.centreLocalZ)||!Number.isFinite(value.centrelineToleranceLocal)||value.centrelineToleranceLocal<0
+    ||!actors.includes(value.negativeSideActor)||!actors.includes(value.positiveSideActor)||!actors.includes(value.centrelineActor)) {
+    throw new MissionError('CONSTRUCTION_ERROR','Construction returned invalid advisory collaboration metadata.');
+  }
+  const byAdvisorySide={};
+  for (const actor of actors) {
+    const side=value.byAdvisorySide?.[actor];
+    if (!side||typeof side!=='object'||Array.isArray(side)) throw new MissionError('CONSTRUCTION_ERROR','Construction returned no advisory-side progress.');
+    const total=count(side,['total']),completed=count(side,['completed']),remaining=count(side,['remaining']);
+    const contributions=Object.fromEntries(['human','agent','unknown'].map((key)=>[key,count(side,[`contributions.${key}`])]));
+    const byExecutionMode=Object.fromEntries(['simulated_fast_forward','robot','human','unknown'].map((key)=>[key,count(side,[`byExecutionMode.${key}`])]));
+    if (total>required||completed>accepted||completed+remaining!==total
+      ||Object.values(contributions).reduce((sum,item)=>sum+item,0)!==completed
+      ||Object.values(byExecutionMode).reduce((sum,item)=>sum+item,0)!==completed) {
+      throw new MissionError('CONSTRUCTION_ERROR','Construction returned inconsistent advisory-side progress.');
+    }
+    byAdvisorySide[actor]={total,completed,remaining,contributions,byExecutionMode};
+  }
+  if (byAdvisorySide.human.total+byAdvisorySide.agent.total!==required
+    ||byAdvisorySide.human.completed+byAdvisorySide.agent.completed!==accepted) {
+    throw new MissionError('CONSTRUCTION_ERROR','Advisory-side progress does not match authoritative build progress.');
+  }
+  // Fixed fields only: no target lists, raw plans, or future unbounded metadata.
+  return {schemaVersion:value.schemaVersion,mode:value.mode,advisoryOnly:true,axis:value.axis,
+    centreLocalZ:value.centreLocalZ,centrelineToleranceLocal:value.centrelineToleranceLocal,
+    negativeSideActor:value.negativeSideActor,positiveSideActor:value.positiveSideActor,centrelineActor:value.centrelineActor,byAdvisorySide};
 }
 function progressRecord(value,frozen) {
   const source=serviceResult(value,'CONSTRUCTION_ERROR','ConstructionService could not read build progress.');
@@ -138,6 +173,7 @@ function progressRecord(value,frozen) {
     codex:count(source,['codex','codexCount','agent','agentCount','actors.codex','actors.agent','contributions.codex','contributions.agent']),
     blocked:count(source,['blocked','blockedCount','progress.blocked']),waitingSource:count(source,['waitingSource','waitingSourceCount','progress.waitingSource']),
     robotStatus:compact(source.robotStatus??source.robot?.status,64),worldRevision:integer(source.worldRevision)?source.worldRevision:null,
+    collaboration:collaborationRecord(source.sourceProgress?.collaboration??source.collaboration,{required,accepted}),
     supportSource:get(source,['supportSource','acceptedSnapshot.supportSource','supportSnapshot.supportSource']),
     acceptedSnapshot:cloneValue(source.acceptedSnapshot??source.supportSnapshot??source.testSnapshot??null) };
 }
@@ -226,7 +262,7 @@ export class MissionService {
   }
   _error(error,fallback='INTERNAL_ERROR',designRevision=null) {
     const safe=toMissionError(error,fallback); const policy=errorPolicy(safe.code);
-    return {ok:false,error:{code:safe.code,message:safe.message,retryable:policy.retryable,recovery:policy.recovery,allowedNextActions:nextActions(this.phase)},missionId:this.missionId,phase:this.phase,revisions:this._revisions(designRevision)};
+    return {ok:false,error:{code:safe.code,message:safe.message,retryable:policy.retryable,recovery:policy.recovery,allowedNextActions:nextActions(this.phase).filter((action)=>safe.code!=='LEVEL3_ONLY'||action!=='test_bridge')},missionId:this.missionId,phase:this.phase,revisions:this._revisions(designRevision)};
   }
   _session(input,{world=false}={}) {
     if (!input||typeof input!=='object'||Array.isArray(input)) throw new MissionError('INVALID_PARAMETER','Tool input must be an object.');
@@ -271,11 +307,12 @@ export class MissionService {
       ]);
       const robot=robotRecord(robotRaw); let build=null;
       if (this.frozen) { const p=await this._progress(); build={required:p.required,accepted:p.accepted,remaining:p.remaining,correct:p.correct,incorrect:p.incorrect,human:p.human,codex:p.codex,blocked:p.blocked,waitingSource:p.waitingSource}; }
-      const result={ok:true,missionId:this.missionId,phase:this.phase,summary:`${this.phase}: ${nextActions(this.phase)[0]}.`,
+      const actions=nextActions(this.phase).filter((action)=>train.enabled!==false||action!=='test_bridge');
+      const result={ok:true,missionId:this.missionId,phase:this.phase,summary:`${this.phase}: ${actions[0]}.`,
         challenge:{id:challenge.id,label:challenge.label,checksum:challenge.checksum},
         bridge:{family:this.frozen?.bridgeSpec?.family??design.family,designRevision:this.frozen?.designRevision??design.designRevision},
         plan:{planId:this.frozen?.planId??design.planId,designChecksum:this.frozen?.designChecksum??design.designChecksum,frozen:Boolean(this.frozen)},
-        build,robot,train,revisions:this._revisions(this.frozen?.designRevision??design.designRevision),nextActions:nextActions(this.phase)};
+        build,robot,train,revisions:this._revisions(this.frozen?.designRevision??design.designRevision),nextActions:actions};
       if (detail==='detail') {
         result.freeze=this.frozen?{challengeId:this.frozen.challengeId,requiredPartCount:this.frozen.requiredPlacementIds.length,partRegistryRevision:this.frozen.partRegistryRevision,partRegistryHash:this.frozen.partRegistryHash,partRegistryIdentity:cloneValue(this.frozen.partRegistryIdentity),timestamp:this.frozen.freezeTimestamp,sequence:this.frozen.freezeSequence,worldRevisionAtFreeze:this.frozen.worldRevisionAtFreeze}:null;
         result.draftDesign=this.frozen?{designRevision:design.designRevision,planId:design.planId,designChecksum:design.designChecksum,differsFromFrozen:design.designRevision!==this.frozen.designRevision||design.planId!==this.frozen.planId||design.designChecksum!==this.frozen.designChecksum}:null;
@@ -376,7 +413,7 @@ export class MissionService {
     try {
       if (this.phase==='DESIGN'||!this.frozen) throw new MissionError('BUILD_NOT_STARTED','The bridge build has not started.');
       const p=await this._progress(); const robot=robotRecord(readRobotState(this.services));
-      return {ok:true,missionId:this.missionId,phase:this.phase,summary:`${p.accepted}/${p.required} parts accepted.`,plan:{planId:this.frozen.planId,designChecksum:this.frozen.designChecksum},build:{required:p.required,accepted:p.accepted,remaining:p.remaining,correct:p.correct,incorrect:p.incorrect,human:p.human,codex:p.codex,blocked:p.blocked,waitingSource:p.waitingSource},robot,revisions:this._revisions(this.frozen.designRevision,p.worldRevision),nextActions:nextActions(this.phase)};
+      return {ok:true,missionId:this.missionId,phase:this.phase,summary:`${p.accepted}/${p.required} parts accepted.`,plan:{planId:this.frozen.planId,designChecksum:this.frozen.designChecksum},build:{required:p.required,accepted:p.accepted,remaining:p.remaining,correct:p.correct,incorrect:p.incorrect,human:p.human,codex:p.codex,blocked:p.blocked,waitingSource:p.waitingSource},...(p.collaboration?{collaboration:p.collaboration}:{}),robot,revisions:this._revisions(this.frozen.designRevision,p.worldRevision),nextActions:nextActions(this.phase)};
     } catch (error) { return this._error(error); }
   }
 
@@ -386,10 +423,14 @@ export class MissionService {
       this._phase('BUILD'); this._session(input,{world:true}); const frozen=this._frozen(); if (!integer(input.count,1)||input.count>5) throw new MissionError('INVALID_PARAMETER','count must be an integer from 1 to 5.'); this._robotIdle();
       const executionMode=input.executionMode??'robot';
       if (!['robot','simulated_fast_forward'].includes(executionMode)) throw new MissionError('INVALID_PARAMETER','Unknown executionMode.');
+      if (input.cycleTimeMs!==undefined&&(!integer(input.cycleTimeMs,250)||input.cycleTimeMs>60000)) throw new MissionError('INVALID_PARAMETER','cycleTimeMs must be an integer from 250 to 60000.');
+      if (input.actorHint!==undefined&&!['human','agent'].includes(input.actorHint)) throw new MissionError('INVALID_PARAMETER','actorHint must be human or agent.');
       operation=this._begin('build',options.signal);
       const before=await this._progress(); this._check(operation);
       if (before.worldRevision!==null&&before.worldRevision!==input.expectedWorldRevision) throw new MissionError('STALE_WORLD_REVISION','The world changed before construction execution.');
-      const result=serviceResult(await this.services.constructionService.buildNextParts({identity:cloneValue(frozen),count:input.count,executionMode,expectedWorldRevision:input.expectedWorldRevision,signal:operation.signal}),'CONSTRUCTION_ERROR','ConstructionService could not build the requested parts.');
+      const result=serviceResult(await this.services.constructionService.buildNextParts({identity:cloneValue(frozen),count:input.count,executionMode,
+        ...(input.cycleTimeMs===undefined?{}:{cycleTimeMs:input.cycleTimeMs}),...(input.actorHint===undefined?{}:{actorHint:input.actorHint}),
+        expectedWorldRevision:input.expectedWorldRevision,signal:operation.signal}),'CONSTRUCTION_ERROR','ConstructionService could not build the requested parts.');
       this._check(operation); assertIdentity(result,frozen); const completed=count(result,['completed','completedCount'],0,'CONSTRUCTION_ERROR','completed'); if (completed>input.count) throw new MissionError('CONSTRUCTION_ERROR','ConstructionService completed more parts than requested.');
       const p=progressRecord(result.progress??await this.services.constructionService.getProgress({identity:cloneValue(frozen)}),frozen);
       if (p.accepted-before.accepted!==completed) throw new MissionError('CONSTRUCTION_ERROR','ConstructionService completed count does not match authoritative accepted progress.');
@@ -415,8 +456,13 @@ export class MissionService {
     let operation=null,entered=false;
     try {
       if (this.phase==='TEST'||this.active?.type==='test') throw new MissionError('TEST_IN_PROGRESS','A train test is already active.');
-      this._phase('BUILD'); this._session(input,{world:true}); const frozen=this._frozen(); this._robotIdle(); operation=this._begin('test',options.signal);
-      assertTrainReady(await this.services.trainService.getState()); this._check(operation); const p=await this._progress(); this._check(operation);
+      this._phase('BUILD'); this._session(input,{world:true}); const frozen=this._frozen(); this._robotIdle(); assertNotAborted(options.signal);
+      const trainState=await this.services.trainService.getState(); assertNotAborted(options.signal); assertTrainReady(trainState);
+      // The readiness read can yield. Recheck the live session before reserving
+      // TEST so a disabled Level 2 train never starts mutation bookkeeping.
+      if (this.phase==='TEST'||this.active?.type==='test') throw new MissionError('TEST_IN_PROGRESS','A train test is already active.');
+      this._phase('BUILD'); this._session(input,{world:true}); this._robotIdle(); operation=this._begin('test',options.signal);
+      this._check(operation); const p=await this._progress(); this._check(operation);
       const currentWorld=readWorldRevision(this.services); if (currentWorld!==input.expectedWorldRevision||(p.worldRevision!==null&&p.worldRevision!==currentWorld)) throw new MissionError('STALE_WORLD_REVISION','The world changed while the test snapshot was prepared.');
       const snapshot=p.acceptedSnapshot; const source=p.supportSource??snapshot?.supportSource;
       if (!snapshot||source!==BUILD_BOARD_SOURCE) throw new MissionError('INVALID_SUPPORT_SNAPSHOT','Train TEST requires an authoritative BUILD_BOARD accepted snapshot.');
@@ -431,7 +477,10 @@ export class MissionService {
       const resultSnapshotId=evidence(raw.supportSnapshotId??raw.identity?.supportSnapshotId,'resultSupportSnapshotId',{required:false,code:'INVALID_TRAIN_RESULT'});
       const resultSnapshotChecksum=evidence(raw.supportSnapshotChecksum??raw.identity?.supportSnapshotChecksum,'resultSupportSnapshotChecksum',{required:false,code:'INVALID_TRAIN_RESULT'});
       if ((snapshotId&&resultSnapshotId!==snapshotId)||(snapshotChecksum&&resultSnapshotChecksum!==snapshotChecksum)) throw new MissionError('STALE_TRAIN_RESULT','The train result used another BUILD_BOARD snapshot.');
-      const resultOutcome=outcome(raw.outcome??raw.result); const resultWorldRevision=verifyWorld(this.services,[raw.worldRevision,currentWorld],'INVALID_TRAIN_RESULT','TrainService test'); this._robotIdle();
+      const liveFinalWorld=readWorldRevision(this.services);
+      const ownedRobotMotion=liveFinalWorld!==currentWorld&&this.services.trainService.validateTestMotion?.({testId,sampledWorldRevision:currentWorld,finalWorldRevision:liveFinalWorld})===true;
+      if (ownedRobotMotion&&raw.worldRevision!==liveFinalWorld) throw new MissionError('INVALID_TRAIN_RESULT','Owned Train motion must report the exact final world revision.');
+      const resultOutcome=outcome(raw.outcome??raw.result); const resultWorldRevision=verifyWorld(this.services,ownedRobotMotion?[raw.worldRevision]:[raw.worldRevision,currentWorld],'INVALID_TRAIN_RESULT','TrainService test'); this._robotIdle();
       const record=Object.freeze({testId,missionId:frozen.missionId,planId:frozen.planId,designChecksum:frozen.designChecksum,supportSource:BUILD_BOARD_SOURCE,supportSnapshotId:snapshotId,supportSnapshotChecksum:snapshotChecksum,outcome:resultOutcome,firstUnsupportedSegment:compact(raw.firstUnsupportedSegment,160),firstUnsupportedProgress:typeof raw.firstUnsupportedProgress==='number'&&Number.isFinite(raw.firstUnsupportedProgress)&&raw.firstUnsupportedProgress>=0?raw.firstUnsupportedProgress:null});
       if (resultOutcome===TRAIN_CROSSED) {
         if (p.accepted!==p.required||p.correct!==p.required||p.incorrect!==0) throw new MissionError('INVALID_TRAIN_RESULT','CROSSED cannot complete an incomplete or incorrect build.');

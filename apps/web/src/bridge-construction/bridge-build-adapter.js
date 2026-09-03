@@ -7,6 +7,7 @@ import {
   normalizeWorldTransform
 } from '../bridge-core/index.js';
 import { createPlacementCompatibilityKey } from './part-registry.js';
+import { createBridgeCollaboration, classifyBridgeCollaboration } from './bridge-collaboration.js';
 import {
   addPosition,
   cloneFrozen,
@@ -21,17 +22,13 @@ function insideWorkspace(point, workspace) {
     && point.zMm >= workspace.zMinMm && point.zMm <= workspace.zMaxMm;
 }
 
-function actorAssignment(entry, registryRecord, targetReachable) {
-  return { actor: entry.actorPreference === 'user' ? 'human' : 'agent', reason: targetReachable ? null : 'This placement is currently unreachable: capture TCP outside RobotController workspace.' };
-}
-
 function customProxyOffset(registryRecord, worldTransform) {
   const local = registryRecord.geometryOriginToProxyCentreLocal;
   if (!local) return { xMm: 0, yMm: 0, zMm: 0 };
   return rotateMachineOffset(local, worldTransform);
 }
 
-function normalizeEntry(entry, registry, worldTransform, workspace) {
+function normalizeEntry(entry, registry, worldTransform, workspace, collaborationRule) {
   const part = registry.resolve(entry);
   const renderPosition = { ...entry.position };
   const offset = customProxyOffset(part, worldTransform);
@@ -42,7 +39,12 @@ function normalizeEntry(entry, registry, worldTransform, workspace) {
     zMm: proxyPosition.zMm + part.captureProxy.tcpAboveCentreMm
   };
   const targetReachable = insideWorkspace(captureTcp, workspace);
-  const assignment = actorAssignment(entry, part, targetReachable);
+  const renderPose = {
+    position: renderPosition,
+    yawRad: entry.yawRad,
+    uniformScale: worldTransform.scale
+  };
+  const collaboration = classifyBridgeCollaboration({ renderPose, worldTransform, collaboration: collaborationRule });
   const compatibilityKey = createPlacementCompatibilityKey(part, entry.material);
   return deepFreeze({
     ...entry,
@@ -57,11 +59,7 @@ function normalizeEntry(entry, registry, worldTransform, workspace) {
       position: proxyPosition,
       yawRad: entry.yawRad
     },
-    renderPose: {
-      position: renderPosition,
-      yawRad: entry.yawRad,
-      uniformScale: worldTransform.scale
-    },
+    renderPose,
     renderOriginOffsetFromProxyMm: {
       xMm: -offset.xMm,
       yMm: -offset.yMm,
@@ -73,11 +71,14 @@ function normalizeEntry(entry, registry, worldTransform, workspace) {
     captureProxy: part.captureProxy,
     robotTarget: {
       reachable: targetReachable,
+      reason: targetReachable ? null : 'Capture TCP outside RobotController workspace.',
       requiredTcp: captureTcp,
       workspace
     },
-    actorAssignment: assignment.actor,
-    actorAssignmentReason: assignment.reason,
+    collaboration,
+    allowedActors: ['human', 'agent'],
+    actorAssignment: collaboration.advisoryActor,
+    actorAssignmentReason: `${collaboration.side} bridge-local lateral side (advisory only; both actors allowed).`,
     originalActorPreference: entry.actorPreference
   });
 }
@@ -112,10 +113,11 @@ export function createNormalisedBridgeConstruction({ frozenPlan, registry, works
   invariant(frozenPlan?.buildPlan?.schemaVersion === '4.6', 'BUILDPLAN_UNAVAILABLE', 'A frozen V4.6 bridge plan is required.');
   invariant(registry?.revision && registry?.hash, 'UNSUPPORTED_PART', 'A production bridge PartRegistry is required.');
   const worldTransform = normalizeWorldTransform(frozenPlan.worldTransform);
+  const collaboration = createBridgeCollaboration({ buildPlan: frozenPlan.buildPlan });
   const raw = createConstructionPlacementStream(frozenPlan.buildPlan, worldTransform, {
     resolveColour: typeof resolveColour === 'function' ? resolveColour : () => null
   });
-  const placements = raw.entries.map((entry) => normalizeEntry(entry, registry, worldTransform, workspace));
+  const placements = raw.entries.map((entry) => normalizeEntry(entry, registry, worldTransform, workspace, collaboration));
   const unsupported = raw.entries.filter((entry) => !registry.supportsPart(entry));
   invariant(unsupported.length === 0, 'UNSUPPORTED_PART', 'The PartRegistry does not support the frozen plan.', {
     unsupported: unsupported.slice(0, 10).map((entry) => ({
@@ -133,6 +135,7 @@ export function createNormalisedBridgeConstruction({ frozenPlan, registry, works
     designRevision: raw.designRevision,
     coordinateFrame: raw.coordinateFrame,
     worldTransform,
+    collaboration,
     partRegistryRevision: registry.revision,
     partRegistryHash: registry.hash,
     customDefinitions: raw.customDefinitions,
@@ -167,7 +170,10 @@ export function createBridgeBuildBoardTargets(normalisedBuild) {
         renderPose: placement.renderPose,
         collisionProxy: placement.collisionProxy,
         captureProxy: placement.captureProxy,
+        collaboration: placement.collaboration,
         actorAssignment: placement.actorAssignment,
+        actorAssignmentReason: placement.actorAssignmentReason,
+        originalActorPreference: placement.originalActorPreference,
         robotTarget: placement.robotTarget,
         bridgeConstruction: true,
         allowedActors: ['human', 'agent'],

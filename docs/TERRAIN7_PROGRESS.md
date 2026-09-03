@@ -1,5 +1,7 @@
 # Terrain 7 resume checkpoint — 2026-09-03
 
+> Historical checkpoint below. The active production asset is now the user-supplied Terrain 9, preserving the same coordinate/water contract. See `docs/TERRAIN9_CHECKPOINT.md` and the latest launch handoff; do not restore the old production GLB from these historical instructions.
+
 Branch: `codex/p0-downstream-integration-prep`, base `eae3ba1415f6e4edeb8fa6be92526c8e92036787`. No merge or PR retarget authorized. Single agent; no Oracle-loop workflow. User owns all visual inspection; **VISUAL: USER-VERIFY PENDING**. No screenshots taken.
 
 Published Terrain7/geometry/hardening checkpoint: `23f254bca37fdef2a283d09d5e2bfe9b77211d74` (local/remote SHA verified). The later Z-hop checkpoint is identified by `git log -1 --format=%H -- apps/web/src/robot/terrain-travel-policy.js`. Neither is a final hero freeze. User Blender files, Downloads and temporary Oracle extraction are untouched; explicitly requested diagnostic evidence is local under `artifacts/terrain7/` and is not committed.

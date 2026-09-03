@@ -35,7 +35,7 @@ export function createMissionTrainAdapter(trainIntegration) {
             code: 'STALE_TRAIN_RESULT'
           }), 'STALE_TRAIN_RESULT');
         }
-        const result = await trainIntegration.test({ signal: input.signal });
+        const result = await trainIntegration.test({ signal: input.signal, testId: binding.testId });
         if (result?.ok === false) return result;
         const supportSource = 'BUILD_BOARD';
         const testIdentity = {
@@ -55,14 +55,16 @@ export function createMissionTrainAdapter(trainIntegration) {
           testedSupportSource: supportSource,
           supportSnapshotId: testIdentity.supportSnapshotId,
           supportSnapshotChecksum: testIdentity.supportSnapshotChecksum,
-          worldRevision: result.buildBoardWorldRevision
+          worldRevision: result.worldRevision ?? result.buildBoardWorldRevision
         });
       } catch (error) {
         return boundedErrorResult(error, 'TRAIN_TEST_FAILED');
       }
     },
-    reset(options = {}) {
+    validateTestMotion(input) { return trainIntegration.validateTestMotion?.(input) === true; },
+    async reset(options = {}) {
       try {
+        await trainIntegration.cancelMotion?.(options.reason ?? 'mission_reset');
         if (!trainIntegration.getState().configured) return { ok: true, state: 'UNCONFIGURED' };
         return options.identity
           ? trainIntegration.reset({ instant: true, reason: options.reason ?? 'mission_reset' })
@@ -71,8 +73,9 @@ export function createMissionTrainAdapter(trainIntegration) {
         return boundedErrorResult(error, 'TRAIN_RESET_FAILED');
       }
     },
-    cancel(options = {}) {
+    async cancel(options = {}) {
       try {
+        await trainIntegration.cancelMotion?.(options.reason ?? 'mission_cancelled');
         if (!trainIntegration.getState().configured) return { ok: true, state: 'UNCONFIGURED' };
         return trainIntegration.reset({ instant: true, reason: options.reason ?? 'mission_cancelled' });
       } catch (error) {

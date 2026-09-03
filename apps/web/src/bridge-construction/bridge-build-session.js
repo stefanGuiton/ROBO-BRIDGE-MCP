@@ -14,8 +14,11 @@ import { freezeBridgeConstructionPlan } from './bridge-freeze.js';
 import { createBridgePartInventory, allocateFeederSources } from './bridge-part-inventory.js';
 import { createBridgePartRegistry } from './part-registry.js';
 import { createBridgeSourceResolver } from './bridge-source-resolver.js';
+import { bridgeSchedulingSummary, validateBridgeActorHint } from './bridge-collaboration.js';
 import { cloneFrozen, deepFreeze, hashRecord, invariant } from './internal.js';
 import { partBounds } from '../bricks/part-spec.js';
+import { assertNotAborted } from '../bridge-core/errors.js';
+import { MIN_PLACEMENT_CYCLE_MS, MAX_PLACEMENT_CYCLE_MS } from '../robot/placement-cycle-runner.js';
 
 function planSnapshot(host) {
   invariant(host?.ready && host.buildPlan?.schemaVersion === '4.6', 'BUILDPLAN_UNAVAILABLE', 'The authoritative BridgeHost must be ready.');
@@ -156,7 +159,9 @@ function activateSources({ placements, controller, inventory }) {
   return { ok: true, added: bounded.map((brick) => brick.id), skipped: false };
 }
 
-function eligibleBatch(preparedBuild, buildBoard, count, simulated = false) {
+export function eligibleBatch(preparedBuild, buildBoard, count = 1, { simulated = false, actorHint } = {}) {
+  invariant(Number.isSafeInteger(count) && count >= 1 && count <= 5, 'INVALID_SETTINGS', 'count must be from 1 to 5.');
+  validateBridgeActorHint(actorHint);
   const accepted = acceptedPlacementMap(buildBoard);
   const selected = [];
   const selectedIds = new Set();
@@ -169,16 +174,29 @@ function eligibleBatch(preparedBuild, buildBoard, count, simulated = false) {
   // the empty gripper's retreat collide despite non-overlapping final parts.
   const accessOrder = [...preparedBuild.normalisedBuild.placements].sort((a, b) =>
     partBounds(a).max.zMm - partBounds(b).max.zMm || a.placementId.localeCompare(b.placementId));
-  for (const placement of accessOrder) {
-    if (selected.length >= count) break;
-    if ((!simulated && !placement.robotTarget.reachable) || accepted.has(placement.placementId)) continue;
-    if (placement.requiresStructureComplete && !structureComplete) continue;
-    const dependenciesReady = placement.dependencyIds.every((dependencyId) => accepted.has(dependencyId) || selectedIds.has(dependencyId));
-    if (!dependenciesReady) continue;
+  while (selected.length < count) {
+    const ready = accessOrder.filter(placement => {
+      if ((!simulated && !placement.robotTarget.reachable) || accepted.has(placement.placementId) || selectedIds.has(placement.placementId)) return false;
+      if (placement.requiresStructureComplete && !structureComplete) return false;
+      return placement.dependencyIds.every(dependencyId => accepted.has(dependencyId) || selectedIds.has(dependencyId));
+    });
+    // Re-evaluate readiness after each choice: an opposite-side support can
+    // unlock the preferred side within this bounded batch. Hints never reserve
+    // targets or exclude the other actor. Preserve max-Z access order within
+    // the preferred eligible set and within the explicit fallback set.
+    const preferred = actorHint === undefined ? null : ready.find(placement => placement.collaboration?.advisoryActor === actorHint);
+    const placement = preferred ?? ready[0];
+    if (!placement) break;
     selected.push(placement);
     selectedIds.add(placement.placementId);
   }
-  return { accepted, selected };
+  return { accepted, selected, scheduling: bridgeSchedulingSummary(selected, actorHint) };
+}
+
+function validateBridgeCycleTime(cycleTimeMs) {
+  invariant(Number.isSafeInteger(cycleTimeMs) && cycleTimeMs >= MIN_PLACEMENT_CYCLE_MS && cycleTimeMs <= MAX_PLACEMENT_CYCLE_MS,
+    'INVALID_SETTINGS', `cycleTimeMs must be an integer from ${MIN_PLACEMENT_CYCLE_MS} to ${MAX_PLACEMENT_CYCLE_MS}.`);
+  return cycleTimeMs;
 }
 
 export function createBridgeBuildSession({
@@ -194,6 +212,7 @@ export function createBridgeBuildSession({
   invariant(preparedBuild?.schemaVersion === 'robo-bridge.prepared-build.v1', 'BUILDPLAN_UNAVAILABLE', 'A prepared bridge build is required.');
   assertAuthorityGraph({ buildBoard, controller, placementCoordinator, cycleRunner });
   assertBoardTargets(preparedBuild, buildBoard);
+  validateBridgeCycleTime(cycleTimeMs);
   const sourceResolver = createBridgeSourceResolver({ controller, inventory: preparedBuild.inventory });
   let started = false;
   let disposed = false;
@@ -292,15 +311,20 @@ export function createBridgeBuildSession({
     });
   }
 
-  function planNext({ count = 1 } = {}) {
+  function planNext({ count = 1, actorHint, cycleTimeMs: requestedCycleTimeMs = cycleTimeMs, signal } = {}) {
     requireStarted();
     invariant(Number.isSafeInteger(count) && count >= 1 && count <= 5, 'INVALID_SETTINGS', 'count must be from 1 to 5.');
+    validateBridgeActorHint(actorHint);
+    const effectiveCycleTimeMs = validateBridgeCycleTime(requestedCycleTimeMs);
+    assertNotAborted(signal);
     if (bridgeHost) assertPreparedBuildCurrent(preparedBuild, bridgeHost);
-    const eligible = eligibleBatch(preparedBuild, buildBoard, count);
+    assertBoardTargets(preparedBuild, buildBoard);
+    const eligible = eligibleBatch(preparedBuild, buildBoard, count, { actorHint });
     const { accepted } = eligible;
     let selected = eligible.selected;
     if (!selected.length) {
-      lastPlan = deepFreeze({ ok: false, reason: getBuildProgress().remaining === 0 ? 'build_complete' : 'no_agent_eligible_placement', selectedCount: 0 });
+      lastPlan = deepFreeze({ ok: false, reason: getBuildProgress().remaining === 0 ? 'build_complete' : 'no_agent_eligible_placement', selectedCount: 0,
+        cycleTimeMs: effectiveCycleTimeMs, scheduling: eligible.scheduling });
       return lastPlan;
     }
     const activation = activateSources({ placements: selected, controller, inventory: preparedBuild.inventory });
@@ -315,7 +339,11 @@ export function createBridgeBuildSession({
       sourceIds.set(placement.placementId, source.id); used.add(source.id); admitted.add(placement.placementId);
       return true;
     });
-    if (!selected.length) return { ok: false, reason: 'source_unavailable', recoveryAction: 'Clear space in the shared source feeder and retry build_next_parts.' };
+    if (!selected.length) {
+      lastPlan = deepFreeze({ ok: false, reason: 'source_unavailable', selectedCount: 0, cycleTimeMs: effectiveCycleTimeMs,
+        scheduling: bridgeSchedulingSummary(selected, actorHint), recoveryAction: 'Clear space in the shared source feeder and retry build_next_parts.' });
+      return lastPlan;
+    }
     const queueEntries = createBridgePlacementQueueEntries(selected, {
       acceptedPlacementIds: new Set(accepted.keys()),
       resolveBrickId: (placement) => sourceIds.get(placement.placementId)
@@ -330,13 +358,15 @@ export function createBridgeBuildSession({
       streamId,
       mode: 'replace',
       finalChunk: true,
-      cycleTimeMs
+      cycleTimeMs: effectiveCycleTimeMs
     });
     invariant(result?.ok !== false, 'INVALID_SETTINGS', 'The existing placement coordinator rejected the bridge queue.', result ?? {});
     lastPlan = deepFreeze({
       ok: true,
       streamId,
       selectedCount: selected.length,
+      cycleTimeMs: effectiveCycleTimeMs,
+      scheduling: bridgeSchedulingSummary(selected, actorHint),
       placementIds: selected.map((placement) => placement.placementId),
       sourceIds: queueEntries.map((entry) => entry.brickId),
       worldRevision,
@@ -349,10 +379,13 @@ export function createBridgeBuildSession({
   async function buildNextParts(count = 1, options = {}) {
     requireStarted();
     invariant(Number.isSafeInteger(count) && count >= 1 && count <= 5, 'INVALID_SETTINGS', 'count must be from 1 to 5.');
+    const actorHint = validateBridgeActorHint(options.actorHint);
+    const effectiveCycleTimeMs = validateBridgeCycleTime(options.cycleTimeMs === undefined ? cycleTimeMs : options.cycleTimeMs);
+    assertNotAborted(options.signal);
     const executionMode = options.executionMode ?? 'robot';
     invariant(['robot', 'simulated_fast_forward'].includes(executionMode), 'INVALID_SETTINGS', 'Unknown executionMode.');
     if (executionMode === 'simulated_fast_forward') {
-      const epoch = cancellationEpoch, results = [];
+      const epoch = cancellationEpoch, results = [], acceptedPlacements = [];
       let reason = null;
       // Reconcile each part against live board/source state, never a completion ledger.
       for (let index = 0; index < count; index++) {
@@ -360,7 +393,7 @@ export function createBridgeBuildSession({
         if (options.signal?.aborted || epoch !== cancellationEpoch || disposed) { reason = 'cancelled'; break; }
         if (bridgeHost) assertPreparedBuildCurrent(preparedBuild, bridgeHost);
         assertBoardTargets(preparedBuild, buildBoard);
-        const placement = eligibleBatch(preparedBuild, buildBoard, 1, true).selected[0];
+        const placement = eligibleBatch(preparedBuild, buildBoard, 1, { simulated: true, actorHint }).selected[0];
         if (!placement) { reason = getBuildProgress().remaining ? 'support_not_ready' : null; break; }
         const record = preparedBuild.registry.resolve(placement);
         invariant(record.allowedActors.includes('agent'), 'UNSUPPORTED_PART', 'Part does not support the agent actor.');
@@ -375,28 +408,31 @@ export function createBridgeBuildSession({
         'UNSUPPORTED_PART', 'Live source does not match the frozen PartRegistry.');
         const accepted = controller.commitSimulatedPlacement({ brickId, targetId: placement.placementId, expectedWorldRevision: controller.worldRevision, signal: options.signal });
         if (!accepted.ok) { reason = accepted.reason; break; }
+        acceptedPlacements.push(placement);
         results.push({ ...accepted, placementId: placement.placementId, brickId, actor: 'agent', sourceReassigned: Boolean(priorSourceId && priorSourceId !== brickId) });
       }
       lastExecution = deepFreeze({ ok: !reason, reason, executionMode, robotExecuted: false, motionCollisionVerified: false,
-        completedPlacements: results.length, requestedCount: count, results, progress: getBuildProgress(), worldRevision: controller.worldRevision });
+        completedPlacements: results.length, requestedCount: count, results, scheduling: bridgeSchedulingSummary(acceptedPlacements, actorHint),
+        progress: getBuildProgress(), worldRevision: controller.worldRevision });
       return lastExecution;
     }
-    const planned = planNext({ count });
+    const planned = planNext({ count, actorHint, cycleTimeMs: effectiveCycleTimeMs, signal: options.signal });
     if (!planned.ok) return planned;
     const result = await cycleRunner.run({
-      cycleTimeMs: options.cycleTimeMs ?? cycleTimeMs,
+      cycleTimeMs: effectiveCycleTimeMs,
       physicalSpeedMmS: options.physicalSpeedMmS ?? physicalSpeedMmS,
       maximumPlacements: planned.selectedCount,
       signal: options.signal ?? null
     });
-    lastExecution = deepFreeze(result);
-    return deepFreeze({
+    lastExecution = deepFreeze({
       ...result,
       executionMode,
       requestedCount: count,
       plannedCount: planned.selectedCount,
+      scheduling: planned.scheduling,
       progress: getBuildProgress()
     });
+    return lastExecution;
   }
 
   function cancelBuild(reason = 'bridge_build_cancelled') {

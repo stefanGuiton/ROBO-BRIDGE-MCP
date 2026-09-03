@@ -1,16 +1,32 @@
 # ROBO BRIDGE MCP — Submission Master Plan
 
-**Status:** THREE-LEVEL DEMO RELEASE — LEVEL 1 + LEVEL 2 ARE THE NEXT TWO-HOUR CRITICAL PATH  
+**Status:** THREE-LEVEL DEMO RELEASE — LEVELS 1 AND 2 ACCEPTED; LEVEL 3 TCP FOUNDATION IN PROGRESS, PHYSICAL CROSSING BLOCKED
 **Plan version:** 2026-09-03-N  
 **Production branch:** `main`  
-**Candidate Simple checkpoint:** `29953f01d994b9b877a7871e6c2aeda2dee3d77e` on `codex/p0-downstream-integration-prep`  
-**Draft PR:** #7 — `Fix pickup colours and alternating tower demo` — **NOT MERGED**  
+**Candidate Simple checkpoint:** Level 1 completion commit on `codex/p0-downstream-integration-prep` (see `docs/LAUNCH_READY_PROGRESS.md`)
+**Draft PR:** #7 — three-level launch readiness — **NOT MERGED**
 **Submission deadline:** 2026-09-03 13:00 PDT / **21:00 BST**  
 **Production hosting target:** `https://robo-bridge-mcp-git.pages.dev`
 
 ---
 
 # 0. Authority
+
+## Verified Level 2 checkpoint — 2026-09-03
+
+Level2 is the current Type2 Viaduct on Terrain7 with no Train initialized. Native Chrome148 acceptance15/15: four/five arches, opening-width change and restored exact four-arch design; one frozen276-part plan, one shared inventory/board,91Human/185Codex advisory targets, both actors allowed every class,276 unique accepted targets/sources. Actual contributions:58 test-Human through normal HumanBuildAdapter,120 genuine simulator robot placements (including visible ARCH_B carry/acceptance),98 explicitly labelled accelerated placements. At154/276 the empty gripper retreat collided with the accepted arch; remaining122 comprised24 more Human and98 accelerated. No collision/IK/workspace rule was relaxed. This is not robot-only276-part completion.
+
+The exact depth-prepass hologram hides interior clutter and preserves arches/track. Visual review discovered and fixed invisible solid arches caused by ungrouped geometry with an array material; scalar arch material now renders and raycasts exact geometry. Main and Sol reviewers opened the corrected carried-arch, accepted/full bridge and fresh label/selector screenshots. No Train service, physics, renderer root or frame subscription exists in Level2; native test_bridge rejects before mutation.31unique native tools retain one registrar.
+
+Verification468/468JS,20/20reliability,167JS+4Python syntax/repository checks PASS; full Level1 native regression14/14 PASS after Level2. Level2 browser application errors0/warnings0/unexpected exceptions0; two exact intentional native pre-aborted probe exceptions are retained in raw evidence, not counted as runtime faults.300ms was requested, not achieved:119 successful full-cycle samples mean1201.26ms,p951978ms. Evidence: `output/playwright/launch-level2-final/acceptance.json`, `output/playwright/launch-level2-ui-current/acceptance.json`, and `output/playwright/launch-level1-after-level2/acceptance.json`. See `docs/LEVEL2_COLLABORATIVE_VIADUCT.md` and active progress for limitations/checkpoint SHA. Level3 physical TCP push/failure/crossing and final release audit remain unaccepted; no main merge or deployment.
+
+## Verified Level 1 checkpoint — 2026-09-03
+
+Plan N direction is preserved. The release branch safely incorporated main at `14441e3` and parallel feature updates at `6edffc4`; main is not merged or deployed by this task. Level 1 passes: requested-blue single, strict-blue5×7×1 wall35/35 with35 unique sources and physical double-press refill/resume, six-layer12-target tower with one actual canvas Human blue ADOPTED plus11 robot placements,1333ms cadence and1000ms floor, camera-invariant brightness/table-colour tools,31 unique native WebMCP tools/one registrar. Test-only concurrent Human Simulator also passes without duplicate acceptance or colour changes.
+
+Verification:425/425 JavaScript,20/20 reliability,163 JS and4 Python syntax files; Chrome148 full Level1 browser14/14 and legacy Simple browser8/8, console0errors/0warnings/0exceptions. Main and independent Sol reviewer opened the fresh screenshots, including measured button approach/contact/retreat. Local evidence: `output/playwright/launch-level1/acceptance.json` and its eight listed PNGs; legacy report `output/playwright/simple-webmcp/acceptance.json`. Evidence is generated explicitly and not committed. Do not use the unlisted historical `03-more-bricks-press.png`.
+
+This accepts Level1 only, not arbitrary off-plan replanning, Level2 bridge completion, Level3 TCP-pushed Train physics, external MCP-client transport, hardware performance, or public deployment. Continue the remaining gates sequentially under `Downloads/OVERALL_PLAN_LAUNCH_READY.md`; do not merge main or change Cloudflare.
 
 This file is the authoritative submission execution plan.
 

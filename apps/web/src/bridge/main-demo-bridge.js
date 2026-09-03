@@ -71,32 +71,26 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
   function refreshHologram() {
     const buildPlan = host.buildPlan;
     const snapshot = createHologramSnapshot(buildPlan, host.worldTransform, { limit: 5000 });
-    if (constructionBoard) {
-      const accepted = new Set(constructionBoard.getTargets().filter(t => t.occupiedBy).map(t => t.id));
+    // Slot IDs can repeat after regeneration: only the current plan's real,
+    // correctly occupied BuildBoard targets remove pending shell instances.
+    if (constructionBoard?.blueprintId === buildPlan.planId) {
+      const accepted = new Set(constructionBoard.getTargets().filter(t => t.occupiedBy && t.correctness).map(t => t.id));
       snapshot.placements = snapshot.placements.filter(p => !accepted.has(p.placementId));
     }
+    snapshot.summary.pendingPhysicalCount = snapshot.placements.length;
+    snapshot.summary.acceptedPhysicalCount = snapshot.page.returnedCount - snapshot.placements.length;
+    snapshot.page.returnedCount = snapshot.placements.length;
     const nextGroup = createThreeBridgeHologram({
       THREE,
       snapshot,
       buildPlan,
-      opacity: 0.46,
+      opacity: 0.74,
+      depthPrepass: true,
+      renderOrder: 3,
       name: 'V46_EXACT_BUILDPLAN_HOLOGRAM'
     });
     alignThreeYUpHologramToMachineZUp(nextGroup);
-    nextGroup.renderOrder = 3;
     nextGroup.visible = visible;
-    nextGroup.traverse((object) => {
-      object.renderOrder = 3;
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      for (const material of materials) {
-        if (!material) continue;
-        // This MVP is an exact design hologram, not physical construction.
-        // Keep every BuildPlan tier readable through the low EASY ravine and
-        // existing solid workbench top until physical support is integrated.
-        material.depthTest = false;
-        material.depthWrite = false;
-      }
-    });
     disposeThreeBridgeHologram(hologramGroup);
     renderer.machineRoot.add(nextGroup);
     hologramGroup = nextGroup;
@@ -105,7 +99,8 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     onHologramChanged({
       source: structuredClone(snapshot.source),
       summary: structuredClone(snapshot.summary),
-      worldTransform: structuredClone(snapshot.worldTransform)
+      worldTransform: structuredClone(snapshot.worldTransform),
+      renderStats: structuredClone(nextGroup.userData.renderStats)
     });
   }
 
@@ -123,6 +118,7 @@ export async function createMainDemoBridge({ renderer, challenge, onHologramChan
     setConstructionBoard(board) { constructionBoard = board; refreshHologram(); },
     get hologramGroup() { return hologramGroup; },
     get hologramSnapshot() { return structuredClone(hologramSnapshot); },
+    get hologramRenderStats() { return structuredClone(hologramGroup?.userData.renderStats ?? null); },
     dispose() {
       unsubscribe();
       disposeThreeBridgeHologram(hologramGroup);

@@ -207,8 +207,9 @@ test('an agent builds an interlocked three-brick wall using only primitive WebMC
   assert.ok(available.length >= 3);
 
   const baseZ = profile.placementSurfaceZMm + settings.brickBodyHeightMm / 2;
-  const first = await placeBrick(handlers, available[0], { xMm: 700, yMm: -220, zMm: baseZ, yawDeg: 0 });
-  const second = await placeBrick(handlers, available[1], { xMm: 732, yMm: -220, zMm: baseZ, yawDeg: 0 });
+  const baseY = profile.buildZone.minY + settings.gridPitchMm;
+  const first = await placeBrick(handlers, available[0], { xMm: 700, yMm: baseY, zMm: baseZ, yawDeg: 0 });
+  const second = await placeBrick(handlers, available[1], { xMm: 732, yMm: baseY, zMm: baseZ, yawDeg: 0 });
   assert.ok(Number.isFinite(first.preview.requiredTcp.yawDeg), 'placement preview must return the fixed-down tool yaw needed to honour brick yaw');
   const beforeRejectedPreview = await currentRevision(handlers);
   const mismatched = await handlers.previewPlacement({
