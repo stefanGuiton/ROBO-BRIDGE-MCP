@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXCLUDED_SOURCE_PARTS = {
     '.git', '.venv', '.playwright-cli', '.test-dist', '.npm-cache', 'ARCHIVE', 'dist',
     'downloads from oracle', 'evidence', 'output', '__pycache__', '.pytest_cache', '.cache',
-    'node_modules', 'Scene_and_3D_Files', 'Downloads', 'artifacts', 'apps.zip'
+    'node_modules', 'Scene_and_3D_Files', 'Downloads', 'artifacts', 'apps.zip', 'Downloads.zip'
 }
 
 

@@ -83,14 +83,16 @@ try {
 
   const planned = await page.evaluate(() => {
     const runtime = window.__ROBO_BRIDGE__;
+    const sources = runtime.robotController.getBricks();
+    const compatibleSource = (entry) => sources.find((brick) =>
+      brick.bridgePart?.partClass === 'STANDARD_BRICK' && brick.colour === entry.compatibilityKey
+    );
     const placement = runtime.construction.preparedBuild.normalisedBuild.placements.find((entry) =>
       entry.partClass === 'STANDARD_BRICK'
-      && entry.partType === '1x1x1'
       && entry.dependencyIds.length === 0
+      && compatibleSource(entry)
     );
-    const source = runtime.robotController.getBricks().find((brick) =>
-      brick.bridgePart?.partClass === 'STANDARD_BRICK' && brick.colour === placement.compatibilityKey
-    );
+    const source = placement && compatibleSource(placement);
     if (!placement || !source) throw new Error('current_standard_player_fixture_unavailable');
     const target = runtime.board.getTarget(placement.placementId);
     return {

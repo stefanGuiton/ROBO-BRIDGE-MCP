@@ -1,5 +1,6 @@
 import { prepareBridgeBuild, createBridgeBuildSession } from './bridge-build-session.js';
 import { partBounds, boundsOverlap } from '../bricks/part-spec.js';
+import { createTerrainTravelPolicy } from '../robot/terrain-travel-policy.js';
 
 export function machineTerrainBoxes(challenge) {
   return (challenge?.getCollisionProxy().machine.proxies ?? []).map(box => ({ id: box.id,
@@ -30,6 +31,7 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
       if (!changed.ok) throw Object.assign(new Error(changed.reason), { code: changed.reason });
       buildBoard.loadBlueprint(restore.blueprint, { expectedWorldRevision: controller.worldRevision });
       controller.layout = restore.layout;
+      placementCoordinator.travelPolicy = restore.travelPolicy;
     }
     unlock?.(); unlock = null; session = null; restore = null;
     placementAuthority.constructionObstacles = [];
@@ -64,10 +66,12 @@ export function createConstructionService({ bridgeHost, challenge, buildBoard, c
       if (buildBoard.progress().filled || buildBoard.getPlacements().length) throw new Error('clear_existing_build_before_start');
       const prepared = prepare(), physical = report(prepared);
       if (physical.invalidTargets.length) throw Object.assign(new Error('invalid_physical_targets'), { details: physical });
+      const travelPolicy = createTerrainTravelPolicy(challenge?.getTerrainTravelPlane?.(), prepared.normalisedBuild.placements, controller.workspace);
       unlock = bridgeHost.lockConstruction(prepared.frozenPlan.planId);
-      restore = { blueprint: { blueprintId: buildBoard.blueprintId, targets: buildBoard.getTargets() }, bricks: controller.getBricks(), layout: controller.layout };
+      restore = { blueprint: { blueprintId: buildBoard.blueprintId, targets: buildBoard.getTargets() }, bricks: controller.getBricks(), layout: controller.layout, travelPolicy: placementCoordinator.travelPolicy };
       try {
         placementCoordinator.invalidateStream('bridge_build_start');
+        placementCoordinator.travelPolicy = travelPolicy;
         controller.setBricks([]);
         buildBoard.loadBlueprint({ blueprintId: prepared.frozenPlan.planId, targets: prepared.targetSet.targets }, { expectedWorldRevision: controller.worldRevision });
         const obstacles = machineTerrainBoxes(challenge);

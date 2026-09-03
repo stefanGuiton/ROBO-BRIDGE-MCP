@@ -1,9 +1,9 @@
 import { CHALLENGE_PRESETS, DEFAULT_PRESET_ID, buildPreset } from './challenge-presets.js';
 import { MAIN_DEMO_MACHINE_MOUNT, deepClone } from './challenge-transforms.js';
 import { applyTerrainTransform, loadTerrainAsset } from './terrain-loader.js';
-import { buildTerrain7Preset, inspectTerrain7, TERRAIN7_OCCLUDERS } from './terrain7-preset.js';
+import { buildTerrain7Preset, inspectTerrain7, measureTerrain7TravelPlane, TERRAIN7_OCCLUDERS } from './terrain7-preset.js';
 
-export function createChallengeService({ THREE = null, terrainUrl = null, fetchImpl = globalThis.fetch, machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0, terrain7 = false } = {}) {
+export function createChallengeService({ THREE = null, terrainUrl = null, fetchImpl = globalThis.fetch, decodeImage, machineMount = MAIN_DEMO_MACHINE_MOUNT, displayOffset = {}, challengeYawDeg = 0, terrain7 = false } = {}) {
   let presetId = DEFAULT_PRESET_ID;
   let loaded = false;
   let terrainRoot = null;
@@ -49,7 +49,7 @@ export function createChallengeService({ THREE = null, terrainUrl = null, fetchI
     async load() {
       if (loaded) return this.getState();
       if (THREE && terrainUrl) {
-        const loadedTerrain = await loadTerrainAsset({ url: terrainUrl, THREE, fetchImpl });
+        const loadedTerrain = await loadTerrainAsset({ url: terrainUrl, THREE, fetchImpl, decodeImage });
         terrainRoot = loadedTerrain.root;
         terrainMetrics = loadedTerrain.metrics;
         if (terrain7) {
@@ -76,6 +76,7 @@ export function createChallengeService({ THREE = null, terrainUrl = null, fetchI
     getBridgeChallengeInput() { return deepClone(current().bridgeChallengeInput); },
     getCollisionProxy() { return deepClone(current().collisionProxy); },
     getTerrainGroup() { return requireLoadedScene(); },
+    getTerrainTravelPlane() { return terrain7 ? measureTerrain7TravelPlane(requireLoadedScene(), current().machineMount) : null; },
     getTerrainOccluders() {
       const meshes = [];
       if (terrain7 && terrainRoot) for (const name of TERRAIN7_OCCLUDERS) terrainRoot.getObjectByName(name)?.traverse(object => { if (object.isMesh) meshes.push(object); });

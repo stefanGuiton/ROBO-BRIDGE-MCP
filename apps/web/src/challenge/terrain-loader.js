@@ -196,13 +196,13 @@ export async function decodeTerrainArrayBuffer(buffer, THREE, { decodeImage = (b
   };
 }
 
-export async function loadTerrainAsset({ url, THREE, fetchImpl = fetch }) {
+export async function loadTerrainAsset({ url, THREE, fetchImpl = fetch, decodeImage }) {
   const loadStarted = performance.now();
   const response = await fetchImpl(url);
   if (!response.ok) throw new Error(`terrain_fetch_failed:${response.status}`);
   const buffer = await response.arrayBuffer();
   const fetchMs = performance.now() - loadStarted;
-  const decoded = await decodeTerrainArrayBuffer(buffer, THREE);
+  const decoded = await decodeTerrainArrayBuffer(buffer, THREE, { decodeImage });
   return {
     ...decoded,
     metrics: Object.freeze({ ...decoded.metrics, bytes: buffer.byteLength, fetchMs, loadMs: performance.now() - loadStarted })

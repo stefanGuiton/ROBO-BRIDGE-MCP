@@ -115,7 +115,7 @@ function brickAabb(brick) {
   return { ...partBounds(brick), id: 'brick:' + brick.id };
 }
 
-function movingBodyAabb(tcp, heldBrick) {
+export function movingBodyAabb(tcp, heldBrick) {
   if (heldBrick) {
     return { ...partBounds(heldBrick, { xMm: tcp.xMm, yMm: tcp.yMm, zMm: tcp.zMm - captureOffset(heldBrick) }), id: 'held:' + heldBrick.id };
   }

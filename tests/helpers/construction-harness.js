@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import * as THREE from '../../apps/web/vendor/three.module.min.js';
 import { createBridgeHost } from '../../apps/web/src/bridge-core/index.js';
 import { MAIN_DEMO_BRIDGE_INITIAL_SETTINGS, TERRAIN7_BRIDGE_INITIAL_SETTINGS } from '../../apps/web/src/bridge/main-demo-bridge.js';
 import { createChallengeService } from '../../apps/web/src/challenge/challenge-service.js';
@@ -26,7 +27,11 @@ export async function constructionHarness({ terrain7 = false } = {}) {
   controller.setPlacementAuthority(authority);
   const coordinator = new PlacementLookaheadCoordinator({ controller, placementAuthority: authority, workcellProfile: profile });
   const runner = new PlannedPlacementCycleRunner({ controller, coordinator });
-  const challenge = createChallengeService({ terrain7, displayOffset: { x: -170, z: 4 }, challengeYawDeg: -90 });
+  const terrainBytes = terrain7 ? await readFile(new URL('../../apps/web/assets/terrain/Terrain_7_Main.glb', import.meta.url)) : null;
+  const challenge = createChallengeService({ terrain7, displayOffset: { x: -170, z: 4 }, challengeYawDeg: -90,
+    ...(terrain7 ? { THREE, terrainUrl: 'fixture', decodeImage: async () => ({ width: 1, height: 1 }),
+      fetchImpl: async () => ({ ok: true, arrayBuffer: async () => terrainBytes.buffer.slice(terrainBytes.byteOffset, terrainBytes.byteOffset + terrainBytes.byteLength) }) } : {}) });
+  if (terrain7) await challenge.load();
   const host = await createBridgeHost({ initialSettings: terrain7 ? TERRAIN7_BRIDGE_INITIAL_SETTINGS : MAIN_DEMO_BRIDGE_INITIAL_SETTINGS, challenge: createEasyBridgeChallenge(challenge), challengePolicy: 'locked', compilerOptions: { preferWorker: false } });
   const initial = prepareBridgeBuild({ host, workspace: controller.workspace });
   const elevation = Math.max(0, 4 - physicalBuildReport(initial).physicalBoundsMm.min.zMm);

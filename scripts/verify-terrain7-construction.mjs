@@ -18,6 +18,7 @@ for (let batch = 0; run.ok && h.service.getBuildProgress().remaining > 0 && batc
   console.log(JSON.stringify({ batch, completed: h.service.getBuildProgress().completed, ok: run.ok, reason: run.reason }));
 }
 const report = { mode: 'deterministic service/controller integration; not browser, native MCP, or real-time performance',
+  travelPolicy: h.coordinator.travelPolicy,
   planId: prepared.frozenPlan.planId, checksum: prepared.frozenPlan.designChecksum, partCount: prepared.inventory.count,
   partRegistryHash: prepared.registry.hash, heroBom: prepared.heroBom,
   supportedClasses: [...new Set(prepared.normalisedBuild.placements.map(p => p.partClass === 'STANDARD_BRICK' ? p.partType : p.partClass))],

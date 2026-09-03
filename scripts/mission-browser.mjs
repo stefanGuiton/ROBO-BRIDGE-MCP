@@ -6,7 +6,7 @@ import path from 'node:path';
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const { chromium } = createRequire(import.meta.url)(option('--playwright-module', 'playwright'));
-const output = path.resolve('output/playwright/mission');
+const output = path.resolve(option('--output', 'output/playwright/mission'));
 const write = args.includes('--write-evidence');
 if (write) await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
@@ -46,7 +46,7 @@ try {
   if (build.mission.plan.planId !== build.progress.planId || build.train.planIdentity.planId !== build.progress.planId) {
     throw new Error('Mission, Construction, and Train do not share one plan identity.');
   }
-  if (write) await page.screenshot({ path: path.join(output, '01-mission-build.png'), fullPage: true });
+  if (write && args.includes('--screenshots')) await page.screenshot({ path: path.join(output, '01-mission-build.png'), fullPage: true });
 
   const guarded = await page.evaluate(async () => {
     const tool = window.__ROBO_BRIDGE__.missionRuntime.guardedBridgeTools.find(item => item.name === 'update_bridge_design');
@@ -68,7 +68,7 @@ try {
   if (failed.outcome !== 'TRAIN_FELL' || failed.phase !== 'BUILD' || failed.missionComplete !== false) {
     throw new Error(`Expected TEST failure to return BUILD: ${JSON.stringify(failed)}.`);
   }
-  if (write) await page.screenshot({ path: path.join(output, '02-mission-train-fell.png'), fullPage: true });
+  if (write && args.includes('--screenshots')) await page.screenshot({ path: path.join(output, '02-mission-train-fell.png'), fullPage: true });
 
   const reset = await page.evaluate(async () => {
     const service = window.__ROBO_BRIDGE__.mission;
@@ -86,7 +86,7 @@ try {
   const acceptance = { initial, build, guarded, failed, reset, consoleErrors, warnings };
   console.log(JSON.stringify(acceptance, null, 2));
   if (write) {
-    await page.screenshot({ path: path.join(output, '03-mission-reset.png'), fullPage: true });
+    if (args.includes('--screenshots')) await page.screenshot({ path: path.join(output, '03-mission-reset.png'), fullPage: true });
     await writeFile(path.join(output, 'acceptance.json'), JSON.stringify(acceptance, null, 2));
   }
   if (consoleErrors.length) process.exitCode = 1;

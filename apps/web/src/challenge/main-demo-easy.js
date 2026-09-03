@@ -121,6 +121,7 @@ export async function createMainDemoEasyChallenge({ renderer, playerSettings } =
     getExit: () => service.getExit(),
     getTrainRoute: () => service.getTrackRoute(),
     getCollisionProxy: () => service.getCollisionProxy(),
+    getTerrainTravelPlane: () => service.getTerrainTravelPlane(),
     getTerrainOccluders: () => service.getTerrainOccluders()
   });
 }

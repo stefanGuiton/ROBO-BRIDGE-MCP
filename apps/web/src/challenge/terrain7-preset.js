@@ -14,6 +14,26 @@ export const TERRAIN7_AUTHORED = Object.freeze({
   bounds: Object.freeze({ min: { x: -386.583374, y: -439.004446, z: -288.883031 }, max: { x: 753.340354, y: 711.117441, z: 213.116915 } })
 });
 
+// Read final transformed vertices, not the bounds of water/markers or a stale
+// asset fixture. Display and machine frames share Z-up and differ by mount Z.
+export function measureTerrain7TravelPlane(root, machineMount) {
+  root.updateWorldMatrix(true, true);
+  let terrainMaxZMm = -Infinity;
+  let vertexCount = 0;
+  const point = new THREE.Vector3();
+  for (const name of TERRAIN7_OCCLUDERS) root.getObjectByName(name)?.traverse(object => {
+    if (!object.isMesh) return;
+    const positions = object.geometry.getAttribute('position');
+    for (let i = 0; i < positions.count; i++) {
+      point.fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld);
+      terrainMaxZMm = Math.max(terrainMaxZMm, point.z - machineMount.position.z);
+      vertexCount++;
+    }
+  });
+  if (!vertexCount || !Number.isFinite(terrainMaxZMm)) throw new Error('terrain_solid_geometry_unavailable');
+  return { terrainMaxZMm, vertexCount, solidNames: [...TERRAIN7_OCCLUDERS], coordinateFrame: MAIN_DEMO_MACHINE_FRAME.id };
+}
+
 // Read actual glTF nodes before applying the display transform. glTF Y-up is
 // converted back to Blender Z-up mm once: (x,y,z) -> (x,-z,y)*1000.
 export function inspectTerrain7(root) {

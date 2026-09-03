@@ -203,10 +203,11 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
 
   trajectoryFor(proposal, anchor) {
     if (!proposal.pickupTcp || !proposal.requiredTcp) return null;
-    const safeZ = Math.max(proposal.clearanceZMm, proposal.pickupTcp.zMm + 24, proposal.requiredTcp.zMm + 24);
+    const safeZ = proposal.travelPolicy ? proposal.clearanceZMm : Math.max(proposal.clearanceZMm, proposal.pickupTcp.zMm + 24, proposal.requiredTcp.zMm + 24);
     const sourceApproach = { ...proposal.pickupTcp, zMm: safeZ };
     const targetApproach = { ...proposal.requiredTcp, zMm: safeZ };
     const waypoints = [
+      ...(proposal.travelPolicy ? [{ stage: 'initial_z_hop', action: 'move', tcp: { ...clone(anchor), zMm: safeZ } }] : []),
       { stage: 'source_approach', action: 'move', tcp: clone(sourceApproach) },
       { stage: 'source_descend', action: 'move', tcp: clone(proposal.pickupTcp) },
       { stage: 'capture', action: 'latch', brickId: proposal.brickId },

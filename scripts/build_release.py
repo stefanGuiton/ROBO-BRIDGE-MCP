@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / 'dist' / 'ROBO_BRIDGE_MCP_MAIN_DEMO.zip'
 EXCLUDED_DIRECTORIES = {'.git', '.venv', '.playwright-cli', '.test-dist', '.npm-cache', 'ARCHIVE', 'dist', 'downloads from oracle', 'Downloads', 'Scene_and_3D_Files', 'artifacts', 'evidence', 'node_modules', 'output', '__pycache__', '.pytest_cache', '.cache', 'generated'}
-EXCLUDED_FILES = {'.git', 'RELEASE_MANIFEST.json', 'apps.zip'}
+EXCLUDED_FILES = {'.git', 'RELEASE_MANIFEST.json', 'apps.zip', 'Downloads.zip'}
 
 
 def sha256_bytes(data: bytes) -> str:
