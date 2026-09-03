@@ -6,42 +6,88 @@
 
 ---
 
-## 1. Finish the final tower
+## 1. Decide the exact final tower
 
-Confirm the final Simple Bricks tower is:
+Current PR #7 candidate:
 
 ```text
-2 bricks per layer
-6 layers
-12 total placements
+commit 29953f01d994b9b877a7871e6c2aeda2dee3d77e
+14/14 focused tests PASS
+PR #7 is NOT merged
 ```
 
-Use this exact request:
+Important: PR #7 currently uses a **10-level / 20-brick** alternating tower, while our earlier final handoff specified:
+
+```text
+6 layers
+2 bricks per layer
+12 placements
+```
+
+Do not record until Codex confirms which exact tower specification is final and tests that same prompt.
+
+Preferred handoff prompt unless explicitly changed:
 
 ```text
 Build a tower six layers tall using two red bricks per layer.
 ```
 
-Pass condition:
+---
+
+## 2. Make the Human blue-brick moment reliable
+
+The colour fix looks good: the latest blue pickups stayed blue.
+
+The latest Human placement was off-plan and blocked the 20-target tower at:
 
 ```text
-12/12
+6 / 20
 ```
 
-Also check that a compatible Human blue brick becomes `ADOPTED`, the robot does not place a duplicate, and the build continues.
+For the video, do **not** place the blue brick arbitrarily.
+
+Use a clearly indicated valid pending slot and the correct orientation.
+
+Required result:
+
+```text
+blue brick -> ADOPTED
+robot skips duplicate
+robot continues
+build completes
+```
+
+We do not need a general arbitrary off-plan replanner for the submission.
 
 ---
 
-## 2. Run the final Simple demo test
+## 3. Review and merge PR #7 only when ready
 
-Test these in the external WebMCP browser:
+Before merge, confirm:
+
+```text
+final tower count/spec is correct
+Human valid-slot interjection works
+pickup colours stay correct
+no unrelated changes
+no blocking console regression
+```
+
+Then merge the bounded fix and note the exact final `main` SHA.
+
+---
+
+## 4. Run the final Simple demo test
+
+Test the exact final release in the external WebMCP browser:
 
 ```text
 1. Place one red brick.
-2. Build a 3 by 3 wall.
-3. Build the 12-brick tower.
-4. Insert the blue Human brick during the tower.
-5. Ask: "Move 50% faster."
+2. Build the chosen wall.
+3. Build the final agreed tower.
+4. Insert the blue Human brick into the known compatible slot.
+5. Confirm ADOPTED and no duplicate.
+6. Ask: "Move 50% faster."
 ```
 
 Expected speed change:
@@ -50,43 +96,34 @@ Expected speed change:
 2000 ms -> about 1333 ms
 ```
 
-If these work, stop changing the Simple demo.
-
----
-
-## 3. Freeze the release
-
-Before deployment, confirm:
+Also confirm:
 
 ```text
-Simple mode works
-28 WebMCP tools register
-one brick works
-wall works
-12-target tower works
-blue brick ADOPTED works
-speed change works
+28 WebMCP tools
 no blocking console errors
 ```
 
-Do not return to Bridge collision work.
+If this passes, stop changing the Simple demo.
 
 ---
 
-## 4. Deploy the real app
+## 5. Deploy the real app
 
-Use the existing Cloudflare project:
+Cloudflare Git deployment is already proven.
+
+Use the existing project:
 
 ```text
 robo-bridge-mcp-git
+https://robo-bridge-mcp-git.pages.dev
 ```
 
-Do not delete or change the old `robo-bridge-mcp` project.
+Do not delete or modify the old `robo-bridge-mcp` project.
 
-In the working Git-connected project, change only:
+Change only:
 
 ```text
-Build output directory
+Build output directory:
 cloudflare-smoke
 ->
 apps/web
@@ -102,13 +139,7 @@ Root: /
 
 ---
 
-## 5. Check the public site
-
-Open:
-
-```text
-https://robo-bridge-mcp-git.pages.dev
-```
+## 6. Check the public site
 
 Check:
 
@@ -116,17 +147,17 @@ Check:
 page loads
 canvas renders
 Terrain 7 loads
-textures load
+textures/assets load
 controls work
 no blocking console errors
-WebMCP tools are available in the supported browser
+WebMCP tools are available where supported
 ```
 
-Then run one small live WebMCP test on the public site if possible.
+If possible, run one small real WebMCP action on the public site.
 
 ---
 
-## 6. Record the video
+## 7. Record the video
 
 Target:
 
@@ -138,33 +169,33 @@ maximum: under 3:00
 Recommended order:
 
 ```text
-0:00  place one red brick
-0:10  build 3x3 wall
-0:40  build 6-layer tower, 2 bricks per layer
-      insert Human blue brick -> ADOPTED
-1:15  "Move 50% faster"
-1:30  explain shared world / WebMCP / BuildBoard
-1:55  briefly show Bridge mode and Viaduct
-2:20  close
+1. one red brick
+2. wall
+3. final tower
+4. Human blue brick -> ADOPTED
+5. "Move 50% faster"
+6. short shared-world/WebMCP explanation
+7. brief Bridge/Terrain/Viaduct view if stable
+8. close
 ```
 
-Start with the working demo. Do not use a long title screen or setup sequence.
+Start with the working app. Do not show setup/login/loading.
 
 ---
 
-## 7. Upload and submit
+## 8. Upload and submit
 
-Upload the final video to YouTube as public.
+Upload the final video to YouTube as public and confirm audio/playback.
 
-Then complete the submission form with:
+Have ready:
 
 ```text
-project name
-description
-WebMCP explanation
-GitHub repository
-live Cloudflare URL
+public app URL
+GitHub repository link
 public YouTube URL
+project description
+WebMCP explanation
+safe simulation claims
 ```
 
 Submit **well before 21:00 BST**.
@@ -175,6 +206,7 @@ Submit **well before 21:00 BST**.
 
 ```text
 Bridge retreat collision
+arbitrary off-plan Human replanning
 Aqueduct
 new terrain
 new physics
