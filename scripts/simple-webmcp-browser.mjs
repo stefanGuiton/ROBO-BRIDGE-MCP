@@ -36,7 +36,8 @@ const check = (name, details) => {
 };
 const evaluate = (fn, args = null) => browser.evaluate(`(${fn.toString()})(${JSON.stringify(args)})`);
 const call = (name, input = {}) => evaluate(async ({ name, input }) => {
-  const value = await navigator.modelContextTesting.executeTool(name, JSON.stringify(input));
+  const testing = document.modelContextTesting ?? navigator.modelContextTesting;
+  const value = await testing.executeTool(name, JSON.stringify(input));
   return typeof value === 'string' ? JSON.parse(value) : value;
 }, { name, input });
 
@@ -178,7 +179,8 @@ try {
     if (shape.prefix === 'tower') {
       for (const cycleTimeMs of [1333, 889]) {
         const changed = await evaluate(async requestedCycleTimeMs => {
-          const value = await navigator.modelContextTesting.executeTool(
+          const testing = document.modelContextTesting ?? navigator.modelContextTesting;
+          const value = await testing.executeTool(
             'control_placement_stream',
             JSON.stringify({
               action: 'set_speed',
