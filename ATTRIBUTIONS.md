@@ -9,6 +9,10 @@ This file gives a concise, human-readable list of third-party assets and project
 - **UR10 visual mesh and kinematic reference** — Universal Robots / `UniversalRobots/Universal_Robots_ROS2_Description` — BSD 3-Clause for the referenced UR10 content. The project mesh was modified, including removal of logos/branding and simulator-specific adaptation. Source reference: https://github.com/UniversalRobots/Universal_Robots_ROS2_Description/tree/89bbe795f38a7ab00fb66fe8831dfff79dc99edf
 - **Rapier 3D compatibility package 0.20.0** — Dimforge / Sébastien Crozet — Apache-2.0. Present in the Train prototype vendor directory.
 
+## Project-authored 3D assets
+
+- **`train_full.glb`** — project-authored asset used for the Level 2 visual bridge test. The repository owner created the source concept with AI image generation, converted it into a 3D model, then edited and integrated the resulting model into ROBO BRIDGE MCP. It is not a separately licensed third-party train model.
+
 ## Terrain provenance
 
 The base terrain concept image was generated with OpenAI ChatGPT image generation. Vizcom was then used to convert the concept into a 3D model. The terrain was subsequently edited, configured and integrated into ROBO BRIDGE MCP by the repository owner.
