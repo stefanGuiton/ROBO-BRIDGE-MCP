@@ -130,6 +130,7 @@ export class PlannedPlacementCycleRunner {
           return fail({ ok: false, reason: 'cycle_waiting', state });
         }
         const worldRevision = this.controller.getState().worldRevision;
+        const humanEditSequence = this.controller.humanEditSequence;
         if (proposal.expectedWorldRevision !== worldRevision) {
           return fail({ ok: false, reason: 'stale_state', expectedWorldRevision: proposal.expectedWorldRevision, worldRevision });
         }
@@ -144,6 +145,12 @@ export class PlannedPlacementCycleRunner {
             return fail({ ok: false, reason: 'wrong_mode' });
           }
           timing = await this.coordinator.estimateCycleTiming({ proposal, physicalSpeedMmS, previous: previousTiming, signal: abortController.signal });
+          if (abortController.signal.aborted) throw abortController.signal.reason;
+          if (humanEditSequence !== this.controller.humanEditSequence) {
+            activeCycle = null;
+            this.coordinator.repairQueue('human_edit_during_preparation');
+            continue;
+          }
           if (!timing.ok) return fail(timing);
           if (!Number.isFinite(timing.physicalDurationMs) || timing.physicalDurationMs < 0) return fail({ ok: false, reason: 'timing_unavailable' });
           const motionBudgetMs = Math.max(1, currentCycleMs - (this.clock() - startedAt) - observedOverheadMs);
@@ -188,6 +195,7 @@ export class PlannedPlacementCycleRunner {
         const sample = {
           placementId: result.placementId,
           brickId: result.brickId,
+          ...(result.divertedBrickId ? { divertedBrickId: result.divertedBrickId, outcome: result.outcome } : {}),
           worldRevision: result.worldRevision,
           physicalDurationMs: result.physicalDurationMs,
           playbackDurationMs: result.playbackDurationMs,
@@ -233,7 +241,7 @@ export class PlannedPlacementCycleRunner {
       };
       return structuredClone(this.lastResult);
     } catch (error) {
-      const cancelled = abortController.signal.aborted;
+      const cancelled = abortController.signal.aborted || error?.name === 'AbortError';
       return fail({ ok: false, reason: cancelled ? 'cancelled' : error?.code ?? 'internal_error' });
     } finally {
       signal?.removeEventListener('abort', forwardAbort);

@@ -163,9 +163,8 @@ export function getMissionToolDefinitions(service, { challengeIds = null } = {})
     ),
     makeTool(
       'build_next_parts',
-      'Place one to five frozen-plan parts. Default robot uses collision/IK-checked motion. Explicit simulated_fast_forward uses shared inventory and placement validation without robot motion; it is not motion-collision verified.',
+      'Place one to five frozen-plan bridge parts using the simulated UR10 robot pick-and-place path with the existing motion, IK, inventory and placement validation.',
       mutation({
-        executionMode: { type: 'string', enum: ['robot', 'simulated_fast_forward'], default: 'robot' },
         cycleTimeMs: {
           type: 'integer',
           minimum: 250,

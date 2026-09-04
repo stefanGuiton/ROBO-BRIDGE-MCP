@@ -114,6 +114,8 @@ export class RobotController {
     this.pendingMoveCount = 0;
     this.exclusiveOperationToken = null;
     this.exclusiveOperationLabel = null;
+    this.activePlacementBrickId = null;
+    this.humanEditSequence = 0;
     this.releaseClearanceBrickId = null;
     this.placementAuthority = placementAuthority;
   }
@@ -132,6 +134,7 @@ export class RobotController {
   }
 
   #bumpRobot(type, details = {}, { bumpWorld = true } = {}) {
+    if (type.startsWith('human_')) this.humanEditSequence += 1;
     this.robotRevision += 1;
     if (bumpWorld) this.revisionClock.bump();
     this.emit(type, details);
@@ -191,15 +194,26 @@ export class RobotController {
     return Boolean(this.exclusiveOperationToken && operationToken !== this.exclusiveOperationToken);
   }
 
-  beginExclusiveOperation(label = 'compound') {
+  beginExclusiveOperation(label = 'compound', { brickId = null } = {}) {
     if (this.exclusiveOperationToken || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     const token = Symbol(label);
     this.exclusiveOperationToken = token;
     this.exclusiveOperationLabel = label;
+    this.activePlacementBrickId = brickId;
     this.emit('exclusive_operation_started', { label });
     return { ok: true, token, worldRevision: this.worldRevision };
+  }
+
+  humanOperationBlocked(brickId) {
+    // Simple sandbox actors can carry separate bricks concurrently. Only the
+    // active robot source is reserved, not every source in its lookahead queue.
+    if (this.board?.blueprintId === 'simple-bricks' && this.exclusiveOperationLabel === 'fast-placement') {
+      return brickId === this.activePlacementBrickId || brickId === this.heldBrickId
+        || this.operationState === 'resetting';
+    }
+    return this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0;
   }
 
   endExclusiveOperation(token) {
@@ -207,6 +221,7 @@ export class RobotController {
     const label = this.exclusiveOperationLabel;
     this.exclusiveOperationToken = null;
     this.exclusiveOperationLabel = null;
+    this.activePlacementBrickId = null;
     this.emit('exclusive_operation_completed', { label });
     return true;
   }
@@ -332,10 +347,10 @@ export class RobotController {
   }
 
   beginHumanCarry(brickId) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.humanOperationBlocked(brickId)) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
-    if (this.heldBrickId) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
+    if (this.heldBrickId && this.board?.blueprintId !== 'simple-bricks') return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
     if (!brick) return { ok: false, reason: 'invalid_input', worldRevision: this.worldRevision };
     if (brick.heldBy) return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
@@ -384,7 +399,7 @@ export class RobotController {
     brickId, position, yawRad = 0, connection = null, placementType = 'free-build',
     supportBrickId = null, supportSide = null, carriedSide = null
   } = {}) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.humanOperationBlocked(brickId)) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -478,7 +493,7 @@ export class RobotController {
   }
 
   commitHumanDrop({ brickId, position, yawRad = 0 } = {}) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.humanOperationBlocked(brickId)) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     if (!position || ![position.xMm, position.yMm, position.zMm, yawRad].every(isFiniteNumber)) {
@@ -500,7 +515,7 @@ export class RobotController {
   }
 
   cancelHumanCarry(brickId, original) {
-    if (this.operationBlocked() || this.operationState !== 'idle' || this.pendingMoveCount > 0) {
+    if (this.humanOperationBlocked(brickId)) {
       return { ok: false, reason: 'operation_in_progress', worldRevision: this.worldRevision };
     }
     const brick = this.bricks.find((candidate) => candidate.id === brickId);
@@ -895,6 +910,7 @@ export class RobotController {
   }
 
   async reset({ bricks = null } = {}) {
+    this.activePlacementBrickId = null;
     this.operationEpoch += 1;
     this.exclusiveOperationToken = null;
     this.exclusiveOperationLabel = null;

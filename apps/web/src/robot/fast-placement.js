@@ -199,7 +199,7 @@ export class FastPlacementCoordinator {
     if (state.proposal.expectedWorldRevision !== this.controller.getState().worldRevision) {
       return { ok: false, reason: 'stale_state', worldRevision: this.controller.getState().worldRevision };
     }
-    const lease = this.controller.beginExclusiveOperation('fast-placement');
+    const lease = this.controller.beginExclusiveOperation('fast-placement', { brickId: state.proposal.brickId });
     if (!lease.ok) return lease;
     const proposal = this.proposal;
     const abortController = combineAbortSignals(signal, new AbortController());
@@ -213,13 +213,26 @@ export class FastPlacementCoordinator {
     const move = async (stage, target, speed = physicalSpeedMmS) => {
       activeStage = stage;
       requestedTcp = clone(target);
-      const result = await this.controller.moveTool({
-        ...target,
-        speedMmS: Math.min(speed, physicalSpeedMmS),
-        expectedWorldRevision: this.controller.getState().worldRevision,
-        operationToken: lease.token,
-        signal: abortController.signal
-      });
+      let result;
+      for (let attempt = 0; ; attempt++) {
+        const humanEditSequence = this.controller.humanEditSequence;
+        try {
+          result = await this.controller.moveTool({
+            ...target,
+            speedMmS: Math.min(speed, physicalSpeedMmS),
+            expectedWorldRevision: this.controller.getState().worldRevision,
+            operationToken: lease.token,
+            signal: abortController.signal
+          });
+          break;
+        } catch (error) {
+          // A human may edit while responsive planning yields. Replan against
+          // the new exact revision, never execute the rejected stale profile.
+          if (error?.code !== 'stale_state' || attempt >= 2 || abortController.signal.aborted
+            || this.controller.board?.blueprintId !== 'simple-bricks'
+            || humanEditSequence === this.controller.humanEditSequence) throw error;
+        }
+      }
       stages.push({ stage, requestedTcp: clone(target), durationMs: result.durationMs, diagnostics: result.diagnostics });
       physicalDurationMs += result.durationMs;
       return result;
@@ -256,7 +269,7 @@ export class FastPlacementCoordinator {
       else await move('pickup_lift', pickupApproach);
       await move('target_transfer', orientedTargetApproach);
       await move('target_descend', orientedTargetTcp, Math.min(physicalSpeedMmS, 420));
-      const release = await this.controller.unlatch({
+      let release = await this.controller.unlatch({
         actor: 'agent',
         expectedWorldRevision: this.controller.getState().worldRevision,
         operationToken: lease.token,
@@ -266,15 +279,34 @@ export class FastPlacementCoordinator {
         placementPosition: proposal.candidate?.position ?? null,
         placementYawRad: proposal.candidate?.yawRad ?? proposal.yawRad ?? null
       });
+      let divertedBrickId = null;
+      let retreat = orientedTargetApproach;
+      if (!release.ok && !abortController.signal.aborted
+        && (release.reason === 'mat_occupied' || release.reason === 'target_occupied' || release.reason?.startsWith('collision:'))) {
+        const parking = this.humanTakeoverParking?.(proposal);
+        if (parking) {
+          await verticalToTravel('human_takeover_lift');
+          const parkingTcp = { ...parking.requiredTcp,
+            yawRad: parking.candidate.yawRad - (Number.isFinite(heldYawOffset) ? heldYawOffset : 0) };
+          retreat = { ...parkingTcp, zMm: proposal.clearanceZMm };
+          await move('spare_transfer', retreat);
+          await move('spare_descend', parkingTcp, Math.min(physicalSpeedMmS, 420));
+          release = await this.controller.unlatch({ actor: 'agent', operationToken: lease.token,
+            expectedWorldRevision: this.controller.getState().worldRevision,
+            placementPosition: parking.candidate.position, placementYawRad: parking.candidate.yawRad });
+          if (release.ok) divertedBrickId = proposal.brickId;
+        }
+      }
       if (!release.ok) throw new RobotError(release.reason, release);
       stages.push({ stage: 'unlatch', placementType: release.placementType, targetId: release.targetId });
       if (proposal.travelPolicy) await verticalToTravel('target_retreat');
-      else await move('target_retreat', orientedTargetApproach);
+      else await move('target_retreat', retreat);
       this.proposal = null;
       this.emit();
       return {
         ok: true,
         brickId: proposal.brickId,
+        ...(divertedBrickId ? { divertedBrickId, outcome: 'human_target_preserved' } : {}),
         finalPosition: release.finalPosition,
         placementType: release.placementType,
         targetId: release.targetId,

@@ -300,6 +300,12 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     if (!target) return { compatible: null, conflict: null };
     const expected = { position: target, yawRad: entry.request.yawRad ?? 0 };
     const overlapping = placed.filter((brick) => rectanglesOverlap(expected, brick));
+    // Simple Bricks is collaborative play: preserve the human's design even
+    // when its colour or footprint differs. Subsequent supports still pass
+    // through the placement authority using this actual brick, not the plan.
+    const humanOverride = this.placementAuthority.board.blueprintId === 'simple-bricks'
+      ? overlapping.find(brick => brick.actor === 'human') : null;
+    if (humanOverride) return { compatible: humanOverride, conflict: null, humanOverride: true };
     for (const brick of overlapping) {
       const close = Math.hypot(brick.position.xMm - target.xMm, brick.position.yMm - target.yMm) <= 3
         && Math.abs(brick.position.zMm - target.zMm) <= 2;
@@ -339,6 +345,7 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
         this.setEntryStatus(entry, wasAgentCompleted ? 'COMPLETED' : 'ADOPTED', null, {
           actor: entry.actor,
           actualBrickId: entry.actualBrickId,
+          humanOverride: Boolean(occupancy.humanOverride),
           reconciledBecause: reason
         });
         continue;
@@ -678,6 +685,29 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
     return result;
   }
 
+  humanTakeoverParking(proposal) {
+    if (this.controller.board?.blueprintId !== 'simple-bricks' || this.travelPolicy) return null;
+    const entry = this.stream?.byId.get(proposal.placementId);
+    if (!entry || !this.evaluateOccupancy(entry).humanOverride) return null;
+    const target = this.expectedTarget(entry);
+    const zMm = this.workcellProfile.placementSurfaceZMm + BRICK_SPEC.bodyHeightMm / 2;
+    // Bounded search outside the build plan. Every spare placement still uses
+    // the existing mat occupancy, support and robot motion validation.
+    for (const radius of [40, 80, 120, 160]) {
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const preview = this.placementAuthority.preview({ brickId: proposal.brickId,
+          position: { xMm: target.xMm + dx * radius, yMm: target.yMm + dy * radius, zMm }, yawRad: 0 });
+        if (!preview.ok || preview.candidate.type !== 'MAT') continue;
+        const reserved = this.stream.entries.some(other => {
+          const position = this.expectedTarget(other);
+          return position && rectanglesOverlap(preview.candidate, { position, yawRad: other.request.yawRad ?? 0 });
+        });
+        if (!reserved) return preview;
+      }
+    }
+    return null;
+  }
+
   async execute({ proposalId = null, ...options } = {}) {
     const next = this.queue[0] ?? this.proposal;
     if (proposalId && proposalId !== next?.proposalId) {
@@ -703,10 +733,14 @@ export class PlacementLookaheadCoordinator extends FastPlacementCoordinator {
       return { ...result, streamInvalidated: true, remainingQueued: 0 };
     }
     if (result.ok) {
-      entry.actualBrickId = result.brickId;
-      entry.actor = 'agent';
-      entry.satisfiedAtWorldRevision = result.worldRevision;
-      this.setEntryStatus(entry, 'COMPLETED', null, { actor: 'agent', actualBrickId: result.brickId, worldRevision: result.worldRevision });
+      if (!result.divertedBrickId) {
+        entry.actualBrickId = result.brickId;
+        entry.actor = 'agent';
+        entry.satisfiedAtWorldRevision = result.worldRevision;
+        this.setEntryStatus(entry, 'COMPLETED', null, { actor: 'agent', actualBrickId: result.brickId, worldRevision: result.worldRevision });
+      } else {
+        this.setEntryStatus(entry, 'PENDING');
+      }
       const completed = this.queue.shift();
       this.proposal = this.queue[0] ?? null;
       this.reconcileLogicalEntries('previous_proposal_completed');
