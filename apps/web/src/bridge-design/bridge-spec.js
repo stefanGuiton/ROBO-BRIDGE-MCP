@@ -47,7 +47,7 @@ export const BRIDGE_PARAMETER_DEFINITIONS = Object.freeze({
     archThicknessCells: number('aqArchThicknessCells', 0.25, 4, 'Aqueduct arch crown thickness in cells.')
   }),
   viaduct: Object.freeze({
-    archCount: integer('viArchCount', 2, 14, 'Viaduct arch count.'),
+    archCount: integer('viArchCount', 3, 14, 'Viaduct arch count.'),
     openingWidthRatio: number('viOpeningWidthRatio', 0.35, 0.96, 'Opening width as a ratio of arch pitch. Increase it for wider openings.'),
     terrainPenetration: number('viPenetration', 0, 45, 'Extra pier penetration into terrain.'),
     pierDraftAngleDeg: number('viDraftDeg', 0, 7, 'Pier draft angle in degrees.'),
