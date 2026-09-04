@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROBO BRIDGE Terrain Block Compiler</title>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"}}
+</script>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:#1e252b;background:#f4f6f7}*{box-sizing:border-box}body{margin:0}main{display:grid;grid-template-columns:minmax(260px,330px) 1fr;min-height:100vh}.panel{padding:16px;background:#fff;border-right:1px solid #d9dee2;overflow:auto}.brand{font-size:18px;font-weight:700;margin:0 0 4px}.sub{font-size:12px;color:#66727c;margin:0 0 8px}.agent-status{display:inline-flex;padding:3px 6px;border-radius:999px;background:#f0f2f3;color:#68747e;font-size:10px;font-weight:700;letter-spacing:.04em}.agent-status.ok{background:#e7f4e8;color:#28713a}.agent-status.warn{background:#fff4dd;color:#8b5a00}.section{border-top:1px solid #e4e8eb;padding-top:12px;margin-top:12px}.section h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#68747e;margin:0 0 9px}.row{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin:7px 0}.row label,.check label{font-size:13px}.row input,.row select,button,.file{font:inherit}input[type=number],select{width:100%;padding:6px 7px;border:1px solid #cdd4d9;border-radius:5px;background:#fff}input[type=range]{width:100%}.check{display:flex;align-items:center;gap:7px;margin:7px 0}.buttons{display:flex;gap:7px;flex-wrap:wrap}.buttons button{padding:7px 10px;border:1px solid #bfc7cd;background:#f8f9fa;border-radius:5px;cursor:pointer}.buttons .primary{background:#151b20;color:#fff;border-color:#151b20}.buttons button:disabled{opacity:.45;cursor:default}.file{font-size:12px;width:100%}.stats{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px}.stats .k{color:#6b7780}.stats .v{font-variant-numeric:tabular-nums;font-weight:600}.status{font-size:12px;line-height:1.35;background:#eef2f4;padding:9px;border-radius:5px;margin-top:10px;min-height:34px}.status.error{background:#fff0ef;color:#8d2017}progress{width:100%;height:8px}.progressline{display:flex;align-items:center;gap:8px;margin-top:8px}.progressline span{font-size:11px;color:#68747e;width:30px;text-align:right}.view{position:relative;min-width:0;min-height:100vh}.viewport{position:absolute;inset:0}.badge{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.9);border:1px solid #d1d8dd;padding:7px 9px;border-radius:5px;font-size:11px;pointer-events:none}.hint{font-size:11px;color:#7a858e;margin-top:8px;line-height:1.4}@media(max-width:760px){main{grid-template-columns:1fr}.panel{border-right:0;border-bottom:1px solid #d9dee2}.view{min-height:65vh}.viewport{position:absolute}.row{grid-template-columns:1fr 100px}}
+</style>
+<style>
+body{overflow:hidden}main{height:100vh;min-height:0}.panel{min-height:0}.view{height:100vh;min-height:0}
+@media(max-width:760px){body{overflow:auto}main{height:auto}.panel{max-height:none}.view{height:65vh;min-height:65vh}}
+</style>
+</head>
+<body><main>
+<aside class="panel">
+<h1 class="brand">Terrain Block Compiler</h1><p class="sub">ROBO BRIDGE · fixed-grid surface compiler</p><span id="webmcpStatus" class="agent-status">WEBMCP CHECKING</span>
+<div class="section"><h2>Source</h2>
+<div class="row"><label for="terrainFile">Load GLB</label><input id="terrainFile" class="file" type="file" accept=".glb,model/gltf-binary"></div>
+<div class="row"><label for="worldScale">World scale</label><input id="worldScale" type="number" step="0.1" value="1"></div>
+<div class="check"><input id="sourceVisible" type="checkbox"><label for="sourceVisible">Show source mesh</label></div>
+<div class="stats"><span class="k">Source vertices</span><span class="v" id="sourceVertices">—</span><span class="k">Source triangles</span><span class="v" id="sourceTriangles">—</span><span class="k">Source size</span><span class="v" id="sourceSize">—</span><span class="k">SHA-256</span><span class="v" id="sourceHash">—</span></div></div>
+<div class="section"><h2>Block grid</h2>
+<div class="row"><label for="blockWidth">Block width</label><input id="blockWidth" type="number" min="0.001" step="0.0025" value="0.02"></div>
+<div class="row"><label for="blockHeight">Block height</label><input id="blockHeight" type="number" min="0.001" step="0.0025" value="0.0125"></div>
+<div class="row"><label for="offsetX">Grid offset X</label><input id="offsetX" type="number" step="0.001" value="0"></div>
+<div class="row"><label for="offsetZ">Grid offset Z</label><input id="offsetZ" type="number" step="0.001" value="0"></div>
+<div class="row"><label for="chunkSize">Chunk cells</label><select id="chunkSize"><option>16</option><option selected>32</option><option>64</option></select></div>
+<div class="check"><input id="sideWalls" type="checkbox" checked><label for="sideWalls">Generate exposed side walls</label></div>
+<div class="check"><input id="compiledVisible" type="checkbox" checked><label for="compiledVisible">Show compiled terrain</label></div>
+<div class="check"><input id="gridVisible" type="checkbox"><label for="gridVisible">Show world grid</label></div>
+<div class="buttons"><button class="primary" id="compileBtn">Compile</button><button id="cancelBtn" disabled>Cancel</button><button id="resetView">Reset view</button></div>
+<div class="progressline"><progress id="progress" max="1" value="0"></progress><span id="progressText">0%</span></div></div>
+<div class="section"><h2>Baked lighting</h2>
+<div class="row"><label for="ambientFile">Ambient / GI</label><input id="ambientFile" class="file" type="file" accept="image/*"></div>
+<div class="row"><label for="aoFile">AO bake</label><input id="aoFile" class="file" type="file" accept="image/*"></div>
+<div class="row"><label for="bakedStrength">Baked strength</label><input id="bakedStrength" type="number" min="0" max="1" step="0.1" value="1"></div>
+<div class="row"><label for="aoStrength">AO strength</label><input id="aoStrength" type="number" min="0" max="2" step="0.1" value="1"></div>
+<div class="row"><label for="previewAO">Preview AO</label><input id="previewAO" type="number" min="0" max="1" step="0.05" value="0.05"></div>
+<p class="hint">Preview AO is a cheap fallback. Use Cycles images for the final map.</p></div>
+<div class="section"><h2>Runtime light</h2>
+<div class="row"><label for="sunAzimuth">Sun azimuth</label><input id="sunAzimuth" type="range" min="0" max="360" value="38"></div>
+<div class="row"><label for="sunElevation">Sun elevation</label><input id="sunElevation" type="range" min="5" max="89" value="60"></div>
+<div class="row"><label for="sunIntensity">Sun intensity</label><input id="sunIntensity" type="number" min="0" max="5" step="0.1" value="1.2"></div>
+<div class="row"><label for="shadowQuality">Shadow map</label><select id="shadowQuality"><option>512</option><option selected>1024</option><option>2048</option></select></div></div>
+<div class="section"><h2>Look</h2>
+<div class="row"><label for="exposure">Exposure</label><input id="exposure" type="number" min="0.5" max="2" step="0.05" value="1.28"></div>
+<div class="row"><label for="ambientIntensity">Ambient fill</label><input id="ambientIntensity" type="number" min="0" max="3" step="0.05" value="0.82"></div>
+<div class="row"><label for="skyIntensity">Sky fill</label><input id="skyIntensity" type="number" min="0" max="3" step="0.05" value="1.32"></div>
+<div class="row"><label for="sideBrightness">Side brightness</label><input id="sideBrightness" type="number" min="0.5" max="1" step="0.02" value="0.92"></div></div>
+<div class="section"><h2>Culling</h2>
+<div class="check"><input id="frustumCulling" type="checkbox" checked><label for="frustumCulling">Frustum culling</label></div>
+<div class="row"><label for="maxDistance">Max distance (0 off)</label><input id="maxDistance" type="number" min="0" step="0.1" value="0"></div></div>
+<div class="section"><h2>Export and test</h2>
+<div class="buttons"><button id="exportBtn">Export package</button><button id="roundTripBtn">Round-trip test</button></div>
+<div class="row"><label for="stressTarget">Stress cells</label><select id="stressTarget"><option value="25000">25,000</option><option value="50000">50,000</option><option value="100000" selected>100,000</option></select></div>
+<div class="buttons"><button id="stressBtn">Run stress test</button></div></div>
+<div class="section"><h2>Statistics</h2><div class="stats">
+<span class="k">Grid cells</span><span class="v" id="gridCells">—</span><span class="k">Occupied tops</span><span class="v" id="occupiedCells">—</span><span class="k">Side walls</span><span class="v" id="sideCount">—</span><span class="k">Terrain triangles</span><span class="v" id="terrainTriangles">—</span><span class="k">Chunks</span><span class="v" id="chunkCount">—</span><span class="k">Visible chunks</span><span class="v" id="visibleChunks">—</span><span class="k">Terrain draw calls</span><span class="v" id="terrainCalls">—</span><span class="k">Scene draw calls</span><span class="v" id="drawCalls">—</span><span class="k">Compile time</span><span class="v" id="compileTime">—</span><span class="k">FPS</span><span class="v" id="fps">—</span></div></div>
+<div id="status" class="status">Starting…</div>
+</aside>
+<section class="view"><div id="viewport" class="viewport"></div><div class="badge">Drag: orbit · Wheel: zoom · Right-drag: pan</div></section>
+</main><script type="module" src="./app.js"></script></body></html>
